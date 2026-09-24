@@ -27,6 +27,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Đăng ký Services
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 var app = builder.Build();
 
