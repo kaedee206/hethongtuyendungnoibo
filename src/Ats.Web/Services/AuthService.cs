@@ -5,9 +5,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Ats.Web.Services;
 
-public class AuthService(ApplicationDbContext dbContext) : IAuthService
+public class AuthService(ApplicationDbContext dbContext, IEmailService emailService) : IAuthService
 {
     private readonly ApplicationDbContext _dbContext = dbContext;
+    private readonly IEmailService _emailService = emailService;
 
     public async Task<AuthResponseDto> AuthenticateAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
     {
@@ -29,6 +30,13 @@ public class AuthService(ApplicationDbContext dbContext) : IAuthService
         user.LastLoginAt = DateTimeOffset.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        // 2. Gửi email thông báo đăng nhập qua SMTP Google
+        _ = _emailService.SendEmailAsync(new SendEmailRequestDto(
+            user.Email,
+            "Thông báo đăng nhập hệ thống ATS",
+            $"<p>Xin chào <b>{user.FullName}</b>,</p><p>Tài khoản của bạn vừa đăng nhập thành công vào hệ thống ATS lúc {DateTime.Now:HH:mm dd/MM/yyyy}.</p>"
+
+        ), cancellationToken);
         var userInfo = new UserInfoDto(user.Id, user.Email, user.FullName);
         return new AuthResponseDto(true, "Đăng nhập thành công.", userInfo);
     }
