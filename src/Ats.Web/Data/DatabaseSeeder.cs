@@ -107,29 +107,7 @@ public static class DatabaseSeeder
             }
         }
 
-        // 6. Xóa bỏ dữ liệu người dùng mẫu cũ để làm mới dữ liệu
-        var deptsWithManager = await context.Departments.Where(d => d.ManagerId != null).ToListAsync();
-        foreach (var d in deptsWithManager)
-        {
-            d.ManagerId = null;
-        }
-        await context.SaveChangesAsync();
-
-        var oldUserRoles = await context.UserRoles.ToListAsync();
-        if (oldUserRoles.Count != 0)
-        {
-            context.UserRoles.RemoveRange(oldUserRoles);
-            await context.SaveChangesAsync();
-        }
-
-        var oldUsers = await context.Users.ToListAsync();
-        if (oldUsers.Count != 0)
-        {
-            context.Users.RemoveRange(oldUsers);
-            await context.SaveChangesAsync();
-        }
-
-        // 7. Seed danh sách tài khoản người dùng với tên thật chuẩn người Việt
+        // 6. Seed danh sách tài khoản người dùng (chỉ thêm nếu chưa tồn tại trong CSDL)
         var rolesMap = await context.Roles.ToDictionaryAsync(r => r.Code, r => r.Id);
         var deptsMap = await context.Departments.ToDictionaryAsync(d => d.Code, d => d.Id);
         var posMap = await context.JobPositions.ToDictionaryAsync(p => p.Code, p => p.Id);
@@ -154,56 +132,61 @@ public static class DatabaseSeeder
 
         foreach (var item in seedUsers)
         {
-            var user = new User
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Email == item.Email);
+            if (user == null)
             {
-                Id = Guid.NewGuid(),
-                Email = item.Email,
-                FullName = item.FullName,
-                PasswordHash = item.Password,
-                Status = "ACTIVE",
-                UserType = UserType.INTERNAL,
-                DepartmentId = item.DeptCode != null && deptsMap.TryGetValue(item.DeptCode, out var dId) ? dId : null,
-                JobPositionId = item.PosCode != null && posMap.TryGetValue(item.PosCode, out var pId) ? pId : null,
-                CreatedAt = DateTimeOffset.UtcNow,
-                UpdatedAt = DateTimeOffset.UtcNow
-            };
-
-            await context.Users.AddAsync(user);
-            await context.SaveChangesAsync();
-
-            if (rolesMap.TryGetValue(item.Role, out var roleId))
-            {
-                await context.UserRoles.AddAsync(new UserRole
+                user = new User
                 {
-                    UserId = user.Id,
-                    RoleId = roleId
-                });
-                await context.SaveChangesAsync();
-            }
+                    Id = Guid.NewGuid(),
+                    Email = item.Email,
+                    FullName = item.FullName,
+                    PasswordHash = item.Password,
+                    Status = "ACTIVE",
+                    UserType = UserType.INTERNAL,
+                    DepartmentId = item.DeptCode != null && deptsMap.TryGetValue(item.DeptCode, out var dId) ? dId : null,
+                    JobPositionId = item.PosCode != null && posMap.TryGetValue(item.PosCode, out var pId) ? pId : null,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
 
-            // Gán Manager cho phòng ban tương ứng
-            if (item.Role == RoleCode.APPROVER && item.DeptCode == "BOD")
-            {
-                var bodDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "BOD");
-                if (bodDept != null) { bodDept.ManagerId = user.Id; }
-            }
-            else if (item.Role == RoleCode.HR_MANAGER && item.DeptCode == "HR")
-            {
-                var hrDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "HR");
-                if (hrDept != null) { hrDept.ManagerId = user.Id; }
-            }
-            else if (item.Role == RoleCode.HIRING_MANAGER && item.DeptCode == "IT")
-            {
-                var itDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "IT");
-                if (itDept != null) { itDept.ManagerId = user.Id; }
-            }
-            else if (item.Role == RoleCode.HIRING_MANAGER && item.DeptCode == "SALES")
-            {
-                var salesDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "SALES");
-                if (salesDept != null) { salesDept.ManagerId = user.Id; }
+                await context.Users.AddAsync(user);
+                await context.SaveChangesAsync();
+
+                if (rolesMap.TryGetValue(item.Role, out var roleId))
+                {
+                    await context.UserRoles.AddAsync(new UserRole
+                    {
+                        UserId = user.Id,
+                        RoleId = roleId
+                    });
+                    await context.SaveChangesAsync();
+                }
+
+                // Gán Manager cho phòng ban tương ứng
+                if (item.Role == RoleCode.APPROVER && item.DeptCode == "BOD")
+                {
+                    var bodDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "BOD");
+                    if (bodDept != null) { bodDept.ManagerId = user.Id; }
+                }
+                else if (item.Role == RoleCode.HR_MANAGER && item.DeptCode == "HR")
+                {
+                    var hrDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "HR");
+                    if (hrDept != null) { hrDept.ManagerId = user.Id; }
+                }
+                else if (item.Role == RoleCode.HIRING_MANAGER && item.DeptCode == "IT")
+                {
+                    var itDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "IT");
+                    if (itDept != null) { itDept.ManagerId = user.Id; }
+                }
+                else if (item.Role == RoleCode.HIRING_MANAGER && item.DeptCode == "SALES")
+                {
+                    var salesDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "SALES");
+                    if (salesDept != null) { salesDept.ManagerId = user.Id; }
+                }
             }
         }
 
         await context.SaveChangesAsync();
     }
 }
+
