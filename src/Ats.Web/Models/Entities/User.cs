@@ -10,6 +10,10 @@ public class User
     public DateTimeOffset? LockedUntil { get; set; }
     public string Status { get; set; } = "ACTIVE";
     public DateTimeOffset? LastLoginAt { get; set; }
+
+    // Bổ sung thuộc tính theo dõi thời gian hoạt động cuối
+    public DateTimeOffset? LastActivityAt { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
