@@ -1,0 +1,78 @@
+﻿/* ============================================================
+   Trang xác thực (Đăng nhập / Quên mật khẩu)
+   NFR: Responsive từ 360px trở lên
+   ============================================================ */
+
+.account-body {
+    background-color: #f4f6fb;
+    min-height: 100vh;
+}
+
+.login-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 1rem;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 380px;
+    background: #ffffff;
+    border-radius: 0.75rem;
+    padding: 2rem 1.75rem;
+}
+
+.login-card__logo {
+    height: 40px;
+    margin-bottom: 0.75rem;
+}
+
+.login-card__title {
+    font-size: 1.35rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.login-card__subtitle {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+}
+
+/* Thông báo lỗi chung khi đăng nhập sai (AC S1-01).
+   ASP.NET tự gắn class validation-summary-valid khi ModelState hợp lệ
+   và validation-summary-errors khi có lỗi -> chỉ hiện khi thật sự có lỗi. */
+.login-card__alert.validation-summary-valid {
+    display: none;
+}
+
+.login-card__alert.validation-summary-errors {
+    display: block;
+    margin-bottom: 1.25rem;
+}
+
+.login-card__alert ul {
+    margin-bottom: 0;
+    padding-left: 1.1rem;
+}
+
+.login-card__forgot-link {
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+
+.login-card__submit {
+    padding: 0.6rem 0;
+    font-weight: 600;
+}   
+
+/* Màn hình rất nhỏ (>= 360px) */
+@media (max-width: 400px) {
+    .login-card {
+        padding: 1.5rem 1.25rem;
+        box-shadow: none;
+        border: 1px solid #e9ecef;
+    }
+}
