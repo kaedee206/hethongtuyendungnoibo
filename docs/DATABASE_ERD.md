@@ -4,60 +4,40 @@
 
 ---
 
-## 1. Sơ đồ ERD Tổng thể (Mermaid Diagram)
+## 1. Bản Vẽ Trực Quan Đồ Họa Vector (SVG 100% Vuông Góc)
+> Sơ đồ được thiết kế định dạng Vector SVG đạt chuẩn:
+> - **Các đường kẻ kết nối 100% đi vuông góc (Orthogonal Routing 90°)**, không cắt chéo, không đè lấn bảng, không vẽ vòng.
+> - **Kẻ nối liền (`Solid`)**: Quan hệ định danh (Identifying / PK-FK bắt buộc).
+> - **Kẻ nối ngắt (`Dashed`)**: Quan hệ không định danh (Non-identifying / Khóa ngoại Nullable / Tham chiếu).
+> - **Bảng cân đối**: Tỷ lệ chuẩn thẻ thực thể, hiển thị chính xác tên cột, kiểu dữ liệu, khóa PK/FK/UK.
+>
+> 📁 **Đường dẫn file gốc SVG**: [`docs/erd_human_actors.svg`](file:///c:/Users/kaedee206/Downloads/hethongtuyendungnoibo/hethongtuyendungnoibo/docs/erd_human_actors.svg)
+
+---
+
+## 2. Sơ đồ Thực Thể Trục Nhân Tố Con Người (Human Actors & Roles)
 
 ```mermaid
 erDiagram
-    %% MODULE: TỔ CHỨC & PHÂN QUYỀN (EP-01, EP-02)
-    departments ||--o{ departments : "parent/children"
-    departments ||--o{ job_positions : "has"
-    departments ||--o{ users : "employs"
-    job_positions ||--o{ users : "assigned_to"
-    users ||--o{ user_roles : "has"
-    roles ||--o{ user_roles : "assigned_to"
-    roles ||--o{ role_permissions : "has"
-    permissions ||--o{ role_permissions : "granted_to"
+    %% QUAN HỆ ĐỊNH DANH (KẺ LIỀN - SOLID)
+    roles ||--|{ user_roles : "gán_vai_trò (1:N)"
+    users ||--|{ user_roles : "thuộc_về (1:N)"
+    roles ||--|{ role_permissions : "gồm_quyền (1:N)"
+    permissions ||--|{ role_permissions : "thuộc_vai_trò (1:N)"
+    candidates ||--|{ resumes : "tải_lên_cv (1:N)"
+    candidates ||--|{ applications : "nộp_đơn (1:N)"
 
-    %% MODULE: YÊU CẦU & TIN TUYỂN DỤNG (EP-03, EP-04)
-    departments ||--o{ job_requisitions : "belongs_to"
-    job_positions ||--o{ job_requisitions : "requests_for"
-    users ||--o{ job_requisitions : "hiring_manager"
-    users ||--o{ job_requisitions : "assigned_recruiter"
-    job_requisitions ||--o{ requisition_approvals : "requires"
-    users ||--o{ requisition_approvals : "approver"
-    job_requisitions ||--o{ job_postings : "publishes"
+    %% QUAN HỆ THAM CHIẾU / NULLABLE (KẺ NGẮT - DASHED)
+    departments ||..o{ users : "phòng_ban (1:N)"
+    users ||..o| departments : "trưởng_phòng (1:1)"
+    job_positions ||..o{ users : "chức_danh (1:N)"
+    users ||..o| candidates : "liên_kết_nội_bộ (1:1)"
+    users ||..o{ candidates : "người_giới_thiệu (1:N)"
+    users ||..o{ audit_logs : "thực_hiện_bởi (1:N)"
 
-    %% MODULE: ỨNG VIÊN & PIPELINE (EP-05)
-    candidates ||--o{ resumes : "uploads"
-    job_postings ||--o{ applications : "receives"
-    candidates ||--o{ applications : "submits"
-    resumes ||--o{ applications : "attaches"
-    pipeline_stages ||--o{ applications : "current_stage"
-    applications ||--o{ application_stage_histories : "tracks"
-    pipeline_stages ||--o{ application_stage_histories : "stage"
-    users ||--o{ application_stage_histories : "changed_by"
-
-    %% MODULE: PHỎNG VẤN & ĐÁNH GIÁ (EP-06)
-    applications ||--o{ interviews : "scheduled_for"
-    interviews ||--o{ interview_panelists : "includes"
-    users ||--o{ interview_panelists : "interviewer"
-    interviews ||--o{ interview_evaluations : "evaluated_in"
-    users ||--o{ interview_evaluations : "evaluated_by"
-    interview_evaluations ||--o{ evaluation_scores : "contains"
-    evaluation_criterias ||--o{ evaluation_scores : "scored_against"
-
-    %% MODULE: ĐỀ NGHỊ TUYỂN DỤNG & ONBOARDING (EP-07)
-    applications ||--o{ job_offers : "offers_to"
-    job_offers ||--o{ offer_approvals : "requires"
-    users ||--o{ offer_approvals : "approver"
-
-    %% MODULE: GIÁM SÁT & LƯU VẾT
-    users ||--o{ audit_logs : "performed_by"
-    users ||--o{ notifications : "receives"
-
-    %% CHI TIẾT CÁC THỰC THỂ CHÍNH
     users {
         uuid id PK
+
         string email UK
         string full_name
         string password_hash
