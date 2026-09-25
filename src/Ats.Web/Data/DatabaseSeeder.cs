@@ -1,0 +1,147 @@
+using Ats.Web.Models.Entities;
+using Ats.Web.Models.Enums;
+using Microsoft.EntityFrameworkCore;
+
+namespace Ats.Web.Data;
+
+public static class DatabaseSeeder
+{
+    public static async Task SeedAsync(ApplicationDbContext context)
+    {
+        // 1. Seed Roles
+        if (!await context.Roles.AnyAsync())
+        {
+            var roles = new List<Role>
+            {
+                new() { Id = Guid.NewGuid(), Code = RoleCode.ADMIN, Name = "Quản trị viên hệ thống", Description = "Toàn quyền trên hệ thống", IsSystem = true },
+                new() { Id = Guid.NewGuid(), Code = RoleCode.HR_MANAGER, Name = "Trưởng phòng nhân sự", Description = "Quản lý tuyển dụng, duyệt yêu cầu và offer", IsSystem = true },
+                new() { Id = Guid.NewGuid(), Code = RoleCode.RECRUITER, Name = "Chuyên viên tuyển dụng", Description = "Đăng tin, lọc hồ sơ, xếp lịch phỏng vấn", IsSystem = true },
+                new() { Id = Guid.NewGuid(), Code = RoleCode.HIRING_MANAGER, Name = "Quản lý chuyên môn", Description = "Tạo yêu cầu tuyển dụng, tham gia phỏng vấn", IsSystem = true },
+                new() { Id = Guid.NewGuid(), Code = RoleCode.INTERVIEWER, Name = "Người phỏng vấn", Description = "Tham gia phỏng vấn và đánh giá ứng viên", IsSystem = true },
+                new() { Id = Guid.NewGuid(), Code = RoleCode.APPROVER, Name = "Người phê duyệt", Description = "Phê duyệt yêu cầu tuyển dụng và offer", IsSystem = true },
+                new() { Id = Guid.NewGuid(), Code = RoleCode.CANDIDATE, Name = "Ứng viên nội bộ", Description = "Xem và ứng tuyển các vị trí nội bộ", IsSystem = true }
+            };
+            await context.Roles.AddRangeAsync(roles);
+            await context.SaveChangesAsync();
+        }
+
+        // 2. Seed Departments
+        if (!await context.Departments.AnyAsync())
+        {
+            var bod = new Department { Id = Guid.NewGuid(), Code = "BOD", Name = "Ban Giám Đốc", IsActive = true };
+            var it = new Department { Id = Guid.NewGuid(), Code = "IT", Name = "Phòng Công Nghệ Thông Tin", IsActive = true, ParentId = bod.Id };
+            var hr = new Department { Id = Guid.NewGuid(), Code = "HR", Name = "Phòng Nhân Sự", IsActive = true, ParentId = bod.Id };
+            var sales = new Department { Id = Guid.NewGuid(), Code = "SALES", Name = "Phòng Kinh Doanh", IsActive = true, ParentId = bod.Id };
+
+            await context.Departments.AddRangeAsync(bod, it, hr, sales);
+            await context.SaveChangesAsync();
+        }
+
+        // 3. Seed JobPositions
+        if (!await context.JobPositions.AnyAsync())
+        {
+            var itDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "IT");
+            var hrDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "HR");
+
+            if (itDept != null && hrDept != null)
+            {
+                var positions = new List<JobPosition>
+                {
+                    new() { Id = Guid.NewGuid(), Code = "SWE-SENIOR", Title = "Senior Software Engineer", DepartmentId = itDept.Id, JobLevel = "SENIOR", IsActive = true },
+                    new() { Id = Guid.NewGuid(), Code = "QA-MID", Title = "Middle QA Engineer", DepartmentId = itDept.Id, JobLevel = "MIDDLE", IsActive = true },
+                    new() { Id = Guid.NewGuid(), Code = "REC-SENIOR", Title = "Senior Recruiter", DepartmentId = hrDept.Id, JobLevel = "SENIOR", IsActive = true },
+                    new() { Id = Guid.NewGuid(), Code = "HR-MANAGER", Title = "HR Manager", DepartmentId = hrDept.Id, JobLevel = "LEAD", IsActive = true }
+                };
+                await context.JobPositions.AddRangeAsync(positions);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        // 4. Seed PipelineStages
+        if (!await context.PipelineStages.AnyAsync())
+        {
+            var stages = new List<PipelineStage>
+            {
+                new() { Id = Guid.NewGuid(), Name = "Ứng tuyển mới", StageOrder = 1, ColorCode = "#0d6efd" },
+                new() { Id = Guid.NewGuid(), Name = "Sàng lọc CV", StageOrder = 2, ColorCode = "#6c757d" },
+                new() { Id = Guid.NewGuid(), Name = "Phỏng vấn sơ loại", StageOrder = 3, ColorCode = "#0dcaf0" },
+                new() { Id = Guid.NewGuid(), Name = "Phỏng vấn chuyên môn", StageOrder = 4, ColorCode = "#ffc107" },
+                new() { Id = Guid.NewGuid(), Name = "Đề nghị tuyển dụng (Offer)", StageOrder = 5, ColorCode = "#fd7e14" },
+                new() { Id = Guid.NewGuid(), Name = "Tuyển dụng thành công", StageOrder = 6, ColorCode = "#198754" },
+                new() { Id = Guid.NewGuid(), Name = "Từ chối", StageOrder = 7, ColorCode = "#dc3545" }
+            };
+            await context.PipelineStages.AddRangeAsync(stages);
+            await context.SaveChangesAsync();
+        }
+
+        // 5. Seed Permissions (Epics 01 -> 09)
+        if (!await context.Permissions.AnyAsync())
+        {
+            var permissions = new List<Permission>
+            {
+                new() { Id = Guid.NewGuid(), Code = "user.view", Module = "EP-01_UserRole", Description = "Xem danh sách người dùng" },
+                new() { Id = Guid.NewGuid(), Code = "user.manage", Module = "EP-01_UserRole", Description = "Quản lý tài khoản và phân quyền" },
+                new() { Id = Guid.NewGuid(), Code = "org.manage", Module = "EP-02_Organization", Description = "Quản lý cơ cấu phòng ban và vị trí" },
+                new() { Id = Guid.NewGuid(), Code = "requisition.create", Module = "EP-03_Requisition", Description = "Tạo yêu cầu tuyển dụng" },
+                new() { Id = Guid.NewGuid(), Code = "requisition.approve", Module = "EP-03_Requisition", Description = "Phê duyệt yêu cầu tuyển dụng" },
+                new() { Id = Guid.NewGuid(), Code = "job.post", Module = "EP-04_JobPosting", Description = "Đăng tin tuyển dụng" },
+                new() { Id = Guid.NewGuid(), Code = "candidate.manage", Module = "EP-05_CandidatePipeline", Description = "Quản lý hồ sơ và pipeline ứng viên" },
+                new() { Id = Guid.NewGuid(), Code = "interview.manage", Module = "EP-06_InterviewEvaluation", Description = "Xếp lịch và đánh giá phỏng vấn" },
+                new() { Id = Guid.NewGuid(), Code = "offer.manage", Module = "EP-07_OfferOnboarding", Description = "Tạo và duyệt thư mời nhận việc" },
+                new() { Id = Guid.NewGuid(), Code = "analytics.view", Module = "EP-09_AnalyticsDashboard", Description = "Xem báo cáo thống kê tuyển dụng" }
+            };
+            await context.Permissions.AddRangeAsync(permissions);
+            await context.SaveChangesAsync();
+
+            // Gán tất cả quyền cho role ADMIN
+            var adminRole = await context.Roles.FirstOrDefaultAsync(r => r.Code == RoleCode.ADMIN);
+            if (adminRole != null)
+            {
+                var rolePermissions = permissions.Select(p => new RolePermission
+                {
+                    RoleId = adminRole.Id,
+                    PermissionId = p.Id
+                });
+                await context.RolePermissions.AddRangeAsync(rolePermissions);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        // 6. Seed Default Admin User
+        var adminEmail = "admin@ats.local";
+        var existingAdmin = await context.Users.FirstOrDefaultAsync(u => u.Email == adminEmail);
+        if (existingAdmin == null)
+        {
+            var adminRole = await context.Roles.FirstOrDefaultAsync(r => r.Code == RoleCode.ADMIN);
+            var itDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "IT");
+            var swePosition = await context.JobPositions.FirstOrDefaultAsync(p => p.Code == "SWE-SENIOR");
+
+            var adminUser = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = adminEmail,
+                FullName = "Quản trị viên Hệ thống ATS",
+                PasswordHash = "Admin@123456",
+                Status = "ACTIVE",
+                UserType = UserType.INTERNAL,
+                DepartmentId = itDept?.Id,
+                JobPositionId = swePosition?.Id,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+
+            await context.Users.AddAsync(adminUser);
+            await context.SaveChangesAsync();
+
+            if (adminRole != null)
+            {
+                await context.UserRoles.AddAsync(new UserRole
+                {
+                    UserId = adminUser.Id,
+                    RoleId = adminRole.Id
+                });
+                await context.SaveChangesAsync();
+            }
+        }
+    }
+}
