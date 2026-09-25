@@ -41,20 +41,19 @@
   <rect width="100%" height="100%" fill="url(#grid)" />
 
   <!-- HEADER -->
-  <g transform="translate(60, 45)">
-    <text x="0" y="0" fill="#f8fafc" font-size="24" font-weight="700" letter-spacing="0.5">SƠ ĐỒ THỰC THỂ QUAN HỆ (ERD) — TRỤC NHÂN TỐ CON NGƯỜI</text>
-    <text x="0" y="24" fill="#94a3b8" font-size="13">Hệ thống Quản lý Tuyển dụng Nội bộ (ATS) | Đường nối 100% vuông góc, chuẩn xác theo schema PostgreSQL</text>
+  <g transform="translate(60, 48)">
+    <text x="0" y="0" fill="#f8fafc" font-size="24" font-weight="700" letter-spacing="0.5">SƠ ĐỒ THỰC THỂ QUAN HỆ (ERD)</text>
   </g>
 
-  <!-- LEGEND -->
-  <g transform="translate(1080, 30)">
-    <rect width="460" height="50" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1" />
-    <!-- Identifying -->
-    <line x1="20" y1="25" x2="60" y2="25" stroke="#38bdf8" stroke-width="2.5" />
-    <text x="70" y="29" fill="#e2e8f0" font-size="12">Quan hệ Xác định (Solid / PK-FK)</text>
-    <!-- Non-identifying -->
-    <line x1="250" y1="25" x2="290" y2="25" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,4" />
-    <text x="300" y="29" fill="#94a3b8" font-size="12">Không xác định (Dashed / Nullable)</text>
+  <!-- LEGEND (CHIA 2 DÒNG) -->
+  <g transform="translate(1180, 20)">
+    <rect width="360" height="64" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1" />
+    <!-- Dòng 1: Kẻ nối -->
+    <line x1="20" y1="22" x2="60" y2="22" stroke="#38bdf8" stroke-width="2.5" />
+    <text x="75" y="26" fill="#e2e8f0" font-size="12" font-weight="500">Kẻ nối: Quan hệ xác định (Identifying)</text>
+    <!-- Dòng 2: Kẻ đứt -->
+    <line x1="20" y1="46" x2="60" y2="46" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,4" />
+    <text x="75" y="50" fill="#94a3b8" font-size="12">Kẻ đứt: Quan hệ không xác định (Non-identifying)</text>
   </g>
 
   <!-- =============================================================== -->
