@@ -13,12 +13,14 @@ public record LoginRequestDto(
 
 public record AuthResponseDto(
     bool IsSuccess,
-    string? Message,
-    UserInfoDto? User
+    string Message,
+    UserInfoDto? Data
 );
 
 public record UserInfoDto(
     Guid Id,
     string Email,
-    string FullName
+    string FullName,
+    string Role,
+    string RedirectUrl
 );
