@@ -483,3 +483,4 @@ $RECYCLE.BIN/
 # Environment variables (chứa mật khẩu thật)
 *.env
 !.env.example
+secrets.txt
