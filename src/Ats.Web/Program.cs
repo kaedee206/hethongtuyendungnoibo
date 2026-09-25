@@ -52,4 +52,11 @@ app.MapControllerRoute(
     .WithStaticAssets();
 
 
+// Khởi tạo seed data tự động
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await DatabaseSeeder.SeedAsync(dbContext);
+}
+
 app.Run();
