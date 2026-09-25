@@ -6,7 +6,11 @@ public class User
     public string Email { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
-    public int FailedLoginAttempts { get; set; }
+
+    // Thuộc tính lưu Vai trò phân quyền (Mặc định: Candidate)
+    public string Role { get; set; } = "Candidate";
+
+    public int FailedLoginAttempts { get; set; } = 0;
     public DateTimeOffset? LockedUntil { get; set; }
     public string Status { get; set; } = "ACTIVE";
     public DateTimeOffset? LastLoginAt { get; set; }
