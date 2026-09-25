@@ -107,7 +107,29 @@ public static class DatabaseSeeder
             }
         }
 
-        // 6. Seed danh sách tài khoản người dùng (Các phòng ban và Nhân viên tuyển dụng)
+        // 6. Xóa bỏ dữ liệu người dùng mẫu cũ để làm mới dữ liệu
+        var deptsWithManager = await context.Departments.Where(d => d.ManagerId != null).ToListAsync();
+        foreach (var d in deptsWithManager)
+        {
+            d.ManagerId = null;
+        }
+        await context.SaveChangesAsync();
+
+        var oldUserRoles = await context.UserRoles.ToListAsync();
+        if (oldUserRoles.Count != 0)
+        {
+            context.UserRoles.RemoveRange(oldUserRoles);
+            await context.SaveChangesAsync();
+        }
+
+        var oldUsers = await context.Users.ToListAsync();
+        if (oldUsers.Count != 0)
+        {
+            context.Users.RemoveRange(oldUsers);
+            await context.SaveChangesAsync();
+        }
+
+        // 7. Seed danh sách tài khoản người dùng với tên thật chuẩn người Việt
         var rolesMap = await context.Roles.ToDictionaryAsync(r => r.Code, r => r.Id);
         var deptsMap = await context.Departments.ToDictionaryAsync(d => d.Code, d => d.Id);
         var posMap = await context.JobPositions.ToDictionaryAsync(p => p.Code, p => p.Id);
@@ -115,53 +137,73 @@ public static class DatabaseSeeder
         var seedUsers = new List<(string Email, string FullName, string Password, RoleCode Role, string? DeptCode, string? PosCode)>
         {
             // Tài khoản theo phòng ban (phong_ban@noveratech.vn)
-            ("admin@noveratech.vn", "Quản trị viên Hệ thống NoveraTech", "123456@@", RoleCode.ADMIN, "IT", "SWE-SENIOR"),
-            ("bod@noveratech.vn", "Ban Giám Đốc NoveraTech", "123456@@", RoleCode.APPROVER, "BOD", null),
-            ("hr@noveratech.vn", "Trưởng Phòng Nhân Sự", "123456@@", RoleCode.HR_MANAGER, "HR", "HR-MANAGER"),
-            ("it@noveratech.vn", "Trưởng Phòng Công Nghệ Thông Tin", "123456@@", RoleCode.HIRING_MANAGER, "IT", "SWE-SENIOR"),
-            ("sales@noveratech.vn", "Trưởng Phòng Kinh Doanh", "123456@@", RoleCode.HIRING_MANAGER, "SALES", null),
+            ("admin@noveratech.vn", "Đặng Hoàng Nam", "123456@@", RoleCode.ADMIN, "IT", "SWE-SENIOR"),
+            ("bod@noveratech.vn", "Trần Đức Minh", "123456@@", RoleCode.APPROVER, "BOD", null),
+            ("hr@noveratech.vn", "Nguyễn Mai Phương", "123456@@", RoleCode.HR_MANAGER, "HR", "HR-MANAGER"),
+            ("it@noveratech.vn", "Vũ Thành Long", "123456@@", RoleCode.HIRING_MANAGER, "IT", "SWE-SENIOR"),
+            ("sales@noveratech.vn", "Hoàng Gia Bảo", "123456@@", RoleCode.HIRING_MANAGER, "SALES", null),
 
             // Nhân viên tuyển dụng (Email cá nhân)
-            ("recruiter.nguyenvantuyen@gmail.com", "Nguyễn Văn Tuyển (Chuyên viên Tuyển dụng)", "123456@@", RoleCode.RECRUITER, "HR", "REC-SENIOR"),
-            ("recruiter.lethithuthao@gmail.com", "Lê Thị Thu Thảo (Chuyên viên Tuyển dụng)", "123456@@", RoleCode.RECRUITER, "HR", "REC-SENIOR"),
+            ("recruiter.thuydung@gmail.com", "Lê Thùy Dung", "123456@@", RoleCode.RECRUITER, "HR", "REC-SENIOR"),
+            ("recruiter.quocanh@gmail.com", "Phạm Quốc Anh", "123456@@", RoleCode.RECRUITER, "HR", "REC-SENIOR"),
 
             // Người phỏng vấn & Ứng viên nội bộ
-            ("interviewer.tranvantech@gmail.com", "Trần Văn TechLead (Interviewer)", "123456@@", RoleCode.INTERVIEWER, "IT", "SWE-SENIOR"),
-            ("candidate.phamvanungvien@gmail.com", "Phạm Văn Ứng Viên", "123456@@", RoleCode.CANDIDATE, "IT", "QA-MID")
+            ("interviewer.quanghuy@gmail.com", "Ngô Quang Huy", "123456@@", RoleCode.INTERVIEWER, "IT", "SWE-SENIOR"),
+            ("candidate.minhtuan@gmail.com", "Bùi Minh Tuấn", "123456@@", RoleCode.CANDIDATE, "IT", "QA-MID")
         };
 
         foreach (var item in seedUsers)
         {
-            var user = await context.Users.FirstOrDefaultAsync(u => u.Email == item.Email);
-            if (user == null)
+            var user = new User
             {
-                user = new User
-                {
-                    Id = Guid.NewGuid(),
-                    Email = item.Email,
-                    FullName = item.FullName,
-                    PasswordHash = item.Password,
-                    Status = "ACTIVE",
-                    UserType = UserType.INTERNAL,
-                    DepartmentId = item.DeptCode != null && deptsMap.TryGetValue(item.DeptCode, out var dId) ? dId : null,
-                    JobPositionId = item.PosCode != null && posMap.TryGetValue(item.PosCode, out var pId) ? pId : null,
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    UpdatedAt = DateTimeOffset.UtcNow
-                };
+                Id = Guid.NewGuid(),
+                Email = item.Email,
+                FullName = item.FullName,
+                PasswordHash = item.Password,
+                Status = "ACTIVE",
+                UserType = UserType.INTERNAL,
+                DepartmentId = item.DeptCode != null && deptsMap.TryGetValue(item.DeptCode, out var dId) ? dId : null,
+                JobPositionId = item.PosCode != null && posMap.TryGetValue(item.PosCode, out var pId) ? pId : null,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
 
-                await context.Users.AddAsync(user);
+            await context.Users.AddAsync(user);
+            await context.SaveChangesAsync();
+
+            if (rolesMap.TryGetValue(item.Role, out var roleId))
+            {
+                await context.UserRoles.AddAsync(new UserRole
+                {
+                    UserId = user.Id,
+                    RoleId = roleId
+                });
                 await context.SaveChangesAsync();
+            }
 
-                if (rolesMap.TryGetValue(item.Role, out var roleId))
-                {
-                    await context.UserRoles.AddAsync(new UserRole
-                    {
-                        UserId = user.Id,
-                        RoleId = roleId
-                    });
-                    await context.SaveChangesAsync();
-                }
+            // Gán Manager cho phòng ban tương ứng
+            if (item.Role == RoleCode.APPROVER && item.DeptCode == "BOD")
+            {
+                var bodDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "BOD");
+                if (bodDept != null) { bodDept.ManagerId = user.Id; }
+            }
+            else if (item.Role == RoleCode.HR_MANAGER && item.DeptCode == "HR")
+            {
+                var hrDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "HR");
+                if (hrDept != null) { hrDept.ManagerId = user.Id; }
+            }
+            else if (item.Role == RoleCode.HIRING_MANAGER && item.DeptCode == "IT")
+            {
+                var itDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "IT");
+                if (itDept != null) { itDept.ManagerId = user.Id; }
+            }
+            else if (item.Role == RoleCode.HIRING_MANAGER && item.DeptCode == "SALES")
+            {
+                var salesDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "SALES");
+                if (salesDept != null) { salesDept.ManagerId = user.Id; }
             }
         }
+
+        await context.SaveChangesAsync();
     }
 }
