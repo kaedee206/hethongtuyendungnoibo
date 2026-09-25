@@ -107,40 +107,60 @@ public static class DatabaseSeeder
             }
         }
 
-        // 6. Seed Default Admin User
-        var adminEmail = "admin@ats.local";
-        var existingAdmin = await context.Users.FirstOrDefaultAsync(u => u.Email == adminEmail);
-        if (existingAdmin == null)
+        // 6. Seed danh sách tài khoản người dùng (Các phòng ban và Nhân viên tuyển dụng)
+        var rolesMap = await context.Roles.ToDictionaryAsync(r => r.Code, r => r.Id);
+        var deptsMap = await context.Departments.ToDictionaryAsync(d => d.Code, d => d.Id);
+        var posMap = await context.JobPositions.ToDictionaryAsync(p => p.Code, p => p.Id);
+
+        var seedUsers = new List<(string Email, string FullName, string Password, RoleCode Role, string? DeptCode, string? PosCode)>
         {
-            var adminRole = await context.Roles.FirstOrDefaultAsync(r => r.Code == RoleCode.ADMIN);
-            var itDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "IT");
-            var swePosition = await context.JobPositions.FirstOrDefaultAsync(p => p.Code == "SWE-SENIOR");
+            // Tài khoản theo phòng ban (phong_ban@noveratech.vn)
+            ("admin@noveratech.vn", "Quản trị viên Hệ thống NoveraTech", "123456@@", RoleCode.ADMIN, "IT", "SWE-SENIOR"),
+            ("bod@noveratech.vn", "Ban Giám Đốc NoveraTech", "123456@@", RoleCode.APPROVER, "BOD", null),
+            ("hr@noveratech.vn", "Trưởng Phòng Nhân Sự", "123456@@", RoleCode.HR_MANAGER, "HR", "HR-MANAGER"),
+            ("it@noveratech.vn", "Trưởng Phòng Công Nghệ Thông Tin", "123456@@", RoleCode.HIRING_MANAGER, "IT", "SWE-SENIOR"),
+            ("sales@noveratech.vn", "Trưởng Phòng Kinh Doanh", "123456@@", RoleCode.HIRING_MANAGER, "SALES", null),
 
-            var adminUser = new User
+            // Nhân viên tuyển dụng (Email cá nhân)
+            ("recruiter.nguyenvantuyen@gmail.com", "Nguyễn Văn Tuyển (Chuyên viên Tuyển dụng)", "123456@@", RoleCode.RECRUITER, "HR", "REC-SENIOR"),
+            ("recruiter.lethithuthao@gmail.com", "Lê Thị Thu Thảo (Chuyên viên Tuyển dụng)", "123456@@", RoleCode.RECRUITER, "HR", "REC-SENIOR"),
+
+            // Người phỏng vấn & Ứng viên nội bộ
+            ("interviewer.tranvantech@gmail.com", "Trần Văn TechLead (Interviewer)", "123456@@", RoleCode.INTERVIEWER, "IT", "SWE-SENIOR"),
+            ("candidate.phamvanungvien@gmail.com", "Phạm Văn Ứng Viên", "123456@@", RoleCode.CANDIDATE, "IT", "QA-MID")
+        };
+
+        foreach (var item in seedUsers)
+        {
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Email == item.Email);
+            if (user == null)
             {
-                Id = Guid.NewGuid(),
-                Email = adminEmail,
-                FullName = "Quản trị viên Hệ thống ATS",
-                PasswordHash = "Admin@123456",
-                Status = "ACTIVE",
-                UserType = UserType.INTERNAL,
-                DepartmentId = itDept?.Id,
-                JobPositionId = swePosition?.Id,
-                CreatedAt = DateTimeOffset.UtcNow,
-                UpdatedAt = DateTimeOffset.UtcNow
-            };
-
-            await context.Users.AddAsync(adminUser);
-            await context.SaveChangesAsync();
-
-            if (adminRole != null)
-            {
-                await context.UserRoles.AddAsync(new UserRole
+                user = new User
                 {
-                    UserId = adminUser.Id,
-                    RoleId = adminRole.Id
-                });
+                    Id = Guid.NewGuid(),
+                    Email = item.Email,
+                    FullName = item.FullName,
+                    PasswordHash = item.Password,
+                    Status = "ACTIVE",
+                    UserType = UserType.INTERNAL,
+                    DepartmentId = item.DeptCode != null && deptsMap.TryGetValue(item.DeptCode, out var dId) ? dId : null,
+                    JobPositionId = item.PosCode != null && posMap.TryGetValue(item.PosCode, out var pId) ? pId : null,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
+
+                await context.Users.AddAsync(user);
                 await context.SaveChangesAsync();
+
+                if (rolesMap.TryGetValue(item.Role, out var roleId))
+                {
+                    await context.UserRoles.AddAsync(new UserRole
+                    {
+                        UserId = user.Id,
+                        RoleId = roleId
+                    });
+                    await context.SaveChangesAsync();
+                }
             }
         }
     }
