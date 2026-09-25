@@ -1,0 +1,74 @@
+﻿@model Ats.Web.Models.ViewModels.Account.AccountLoginViewModel
+@{
+    ViewData["Title"] = "Đăng nhập";
+    Layout = "_LoginLayout";
+}
+
+<div class="login-wrapper">
+    <div class="login-card shadow-sm">
+
+        <div class="login-card__header text-center">
+            <img src="~/img/logo.svg" alt="ATS - Hệ thống tuyển dụng nội bộ" class="login-card__logo" />
+            <h1 class="login-card__title">Đăng nhập hệ thống</h1>
+            <p class="login-card__subtitle">Sử dụng email công ty để truy cập ATS</p>
+        </div>
+
+        <form asp-controller="Account" asp-action="Login" method="post" novalidate class="login-card__form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="ReturnUrl" />
+
+            @* AC S1-01: đăng nhập sai -> hiển thị THÔNG BÁO CHUNG, không tiết lộ
+               email có tồn tại hay không. Controller phải add lỗi bằng
+               ModelState.AddModelError(string.Empty, "Email hoặc mật khẩu không chính xác.")
+               (không gắn lỗi vào field Email/Password riêng lẻ) để asp-validation-summary
+               bên dưới hiển thị đúng một thông báo chung duy nhất. *@
+            <div asp-validation-summary="ModelOnly"
+                 class="alert alert-danger login-card__alert"
+                 role="alert"
+                 aria-live="polite"></div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email"
+                       class="form-control"
+                       autocomplete="username"
+                       autofocus
+                       placeholder="[email protected]" />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Password" class="form-label"></label>
+                <div class="input-group">
+                    <input asp-for="Password" class="form-control" autocomplete="current-password" />
+                    <button class="btn btn-outline-secondary login-card__toggle-password"
+                            type="button"
+                            aria-label="Hiện/ẩn mật khẩu"
+                            aria-pressed="false">
+                        <i class="bi bi-eye" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+
+            <div class="form-group d-flex justify-content-between align-items-center mb-3">
+                <div class="form-check">
+                    <input asp-for="RememberMe" class="form-check-input" />
+                    <label asp-for="RememberMe" class="form-check-label"></label>
+                </div>
+                <a asp-controller="Account" asp-action="ForgotPassword" class="login-card__forgot-link">
+                    Quên mật khẩu?
+                </a>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 login-card__submit">
+                Đăng nhập
+            </button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/account-login.js" asp-append-version="true"></script>
+}
