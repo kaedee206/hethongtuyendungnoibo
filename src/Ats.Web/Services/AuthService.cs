@@ -28,15 +28,20 @@ public class AuthService(ApplicationDbContext dbContext, IEmailService emailServ
 
         // Cập nhật thông tin đăng nhập thành công
         user.LastLoginAt = DateTimeOffset.UtcNow;
+        user.FailedLoginAttempts = 0;
+        user.UpdatedAt = DateTimeOffset.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        // 2. Gửi email thông báo đăng nhập qua SMTP Google
+        // Múi giờ Việt Nam (UTC+7) theo quy chuẩn convention
+        var vietnamTime = DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(7));
+
+        // 2. Gửi email thông báo đăng nhập qua SMTP Google (chạy ngầm không phụ thuộc request token)
         _ = _emailService.SendEmailAsync(new SendEmailRequestDto(
             user.Email,
             "Thông báo đăng nhập hệ thống ATS",
-            $"<p>Xin chào <b>{user.FullName}</b>,</p><p>Tài khoản của bạn vừa đăng nhập thành công vào hệ thống ATS lúc {DateTime.Now:HH:mm dd/MM/yyyy}.</p>"
+            $"<p>Xin chào <b>{user.FullName}</b>,</p><p>Tài khoản của bạn vừa đăng nhập thành công vào hệ thống ATS lúc {vietnamTime:HH:mm dd/MM/yyyy}.</p>"
+        ), CancellationToken.None);
 
-        ), cancellationToken);
         var userInfo = new UserInfoDto(user.Id, user.Email, user.FullName);
         return new AuthResponseDto(true, "Đăng nhập thành công.", userInfo);
     }
