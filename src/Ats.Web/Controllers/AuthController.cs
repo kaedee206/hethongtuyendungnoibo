@@ -25,6 +25,13 @@ public class AuthController(IAuthService authService) : ControllerBase
         if (!result.IsSuccess)
             return Unauthorized(new { message = result.Message });
 
+        // Lưu thông tin phiên vào Session cho các API khác dùng
+        if (result.Data != null)
+        {
+            HttpContext.Session.SetString("UserId", result.Data.Id.ToString());
+            HttpContext.Session.SetString("UserRole", result.Data.Role);
+        }
+
         return Ok(result);
     }
 
