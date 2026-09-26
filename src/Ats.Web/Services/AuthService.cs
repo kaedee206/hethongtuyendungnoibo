@@ -19,14 +19,46 @@ public class AuthService(ApplicationDbContext dbContext, IEmailService emailServ
         if (user == null)
             return new AuthResponseDto(false, generalErrorMessage, null);
 
+        // 1. Kiểm tra tài khoản có đang trong thời gian bị khóa tạm thời 15 phút hay không
+        if (user.LockedUntil.HasValue)
+        {
+            if (user.LockedUntil.Value > DateTimeOffset.UtcNow)
+            {
+                var remainingMinutes = (int)Math.Ceiling((user.LockedUntil.Value - DateTimeOffset.UtcNow).TotalMinutes);
+                return new AuthResponseDto(false, $"Tài khoản tạm thời bị khóa do nhập sai mật khẩu quá 5 lần. Vui lòng thử lại sau {remainingMinutes} phút.", null);
+            }
+
+            // Nếu đã vượt quá 15 phút khóa -> Reset về trạng thái bình thường
+            user.LockedUntil = null;
+            user.FailedLoginAttempts = 0;
+        }
+
+        // 2. Kiểm tra trạng thái kích hoạt tài khoản
         if (user.Status != "ACTIVE")
             return new AuthResponseDto(false, "Tài khoản chưa được kích hoạt hoặc đã bị khóa.", null);
 
-        // So sánh mật khẩu (Thực tế nâng cấp dùng BCrypt/Argon2)
+        // 3. Kiểm tra mật khẩu
         if (user.PasswordHash != request.Password)
-            return new AuthResponseDto(false, generalErrorMessage, null);
+        {
+            user.FailedLoginAttempts += 1;
 
-        // Cập nhật thông tin đăng nhập thành công
+            if (user.FailedLoginAttempts >= 5)
+            {
+                // Khóa tài khoản tạm thời 15 phút tính từ hiện tại
+                user.LockedUntil = DateTimeOffset.UtcNow.AddMinutes(15);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+
+                return new AuthResponseDto(false, "Mật khẩu không chính xác. Bạn đã nhập sai 5 lần liên tiếp, tài khoản bị tạm khóa 15 phút.", null);
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            var remainingAttempts = 5 - user.FailedLoginAttempts;
+            return new AuthResponseDto(false, $"Mật khẩu không chính xác. Bạn còn {remainingAttempts} lần thử.", null);
+        }
+
+        // 4. Đăng nhập thành công -> Reset lại số lần sai và thời gian khóa
+        user.FailedLoginAttempts = 0;
+        user.LockedUntil = null;
         user.LastLoginAt = DateTimeOffset.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
