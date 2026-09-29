@@ -502,15 +502,20 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
             return Unauthorized(new { isSuccess = false, message = "Không tìm thấy thông tin tài khoản." });
         }
 
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+        var userAgent = Request.Headers["User-Agent"].ToString() ?? "Unknown";
+
         // SCRUM-115: Kiểm tra tài khoản có đang bị khóa chức năng đổi mật khẩu không
         if (user.ChangePasswordLockedUntil.HasValue && user.ChangePasswordLockedUntil.Value > DateTimeOffset.UtcNow)
         {
             var remainingTime = (int)Math.Ceiling((user.ChangePasswordLockedUntil.Value - DateTimeOffset.UtcNow).TotalMinutes);
+            
+            // SCRUM-117: Ghi log nỗ lực đổi mật khẩu khi đang bị khóa
+            _dbContext.AuthAuditLogs.Add(new AuthAuditLog { Email = user.Email, UserId = user.Id, IsSuccess = false, EventType = "ChangePasswordBlocked", Reason = "Tài khoản đang bị khóa đổi mật khẩu tạm thời", IpAddress = ip, UserAgent = userAgent });
+            await _dbContext.SaveChangesAsync();
+
             return BadRequest(new { isSuccess = false, message = $"Chức năng đổi mật khẩu bị khóa tạm thời do nhập sai quá nhiều lần. Vui lòng thử lại sau {remainingTime} phút." });
         }
-
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
-        var userAgent = Request.Headers["User-Agent"].ToString() ?? "Unknown";
 
         // 2. SCRUM-109: Xác thực mật khẩu hiện tại
         bool isCurrentPasswordValid = false;
@@ -528,6 +533,9 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
             {
                 user.ChangePasswordLockedUntil = DateTimeOffset.UtcNow.AddMinutes(15);
                 user.FailedChangePasswordAttempts = 0; // Reset lại đếm để lần sau đếm lại từ đầu sau khi hết khóa
+                
+                // SCRUM-117: Ghi log sự kiện khóa
+                _dbContext.AuthAuditLogs.Add(new AuthAuditLog { Email = user.Email, UserId = user.Id, IsSuccess = false, EventType = "ChangePasswordLocked", Reason = "Nhập sai mật khẩu hiện tại quá 5 lần", IpAddress = ip, UserAgent = userAgent });
             }
             await _dbContext.SaveChangesAsync();
 
