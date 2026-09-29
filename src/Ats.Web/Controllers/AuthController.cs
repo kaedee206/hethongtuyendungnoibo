@@ -255,6 +255,18 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
 
         if (user != null)
         {
+            // SCRUM-107: Ghi log yêu cầu khôi phục mật khẩu
+            _dbContext.AuthAuditLogs.Add(new AuthAuditLog {
+                Email = request.Email,
+                UserId = user.Id,
+                IsSuccess = true,
+                EventType = "PasswordResetRequest",
+                Reason = "Yêu cầu khôi phục mật khẩu",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
+                UserAgent = Request.Headers["User-Agent"].ToString() ?? "Unknown",
+                Timestamp = DateTimeOffset.UtcNow
+            });
+
             // Tạo token ngẫu nhiên, an toàn (không đoán được)
             var rawToken = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
             
@@ -346,15 +358,23 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
 
         var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
         
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+        var userAgent = Request.Headers["User-Agent"].ToString() ?? "Unknown";
+
         // 1. Kiểm tra Token có tồn tại và hợp lệ không
         if (user == null || string.IsNullOrEmpty(user.PasswordResetToken) || !user.PasswordResetTokenExpiresAt.HasValue)
         {
+            // SCRUM-107: Log thất bại
+            _dbContext.AuthAuditLogs.Add(new AuthAuditLog { Email = request.Email, UserId = user?.Id, IsSuccess = false, EventType = "PasswordResetFailed", Reason = "Liên kết không hợp lệ hoặc đã được sử dụng", IpAddress = ip, UserAgent = userAgent });
+            await _dbContext.SaveChangesAsync();
             return BadRequest(new { isSuccess = false, message = "Liên kết không hợp lệ hoặc đã được sử dụng." });
         }
 
         // 2. Kiểm tra Token có hết hạn không
         if (DateTimeOffset.UtcNow > user.PasswordResetTokenExpiresAt.Value)
         {
+            _dbContext.AuthAuditLogs.Add(new AuthAuditLog { Email = request.Email, UserId = user.Id, IsSuccess = false, EventType = "PasswordResetFailed", Reason = "Liên kết khôi phục mật khẩu đã hết hạn", IpAddress = ip, UserAgent = userAgent });
+            await _dbContext.SaveChangesAsync();
             return BadRequest(new { isSuccess = false, message = "Liên kết khôi phục mật khẩu đã hết hạn." });
         }
 
@@ -365,6 +385,8 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
 
         if (user.PasswordResetToken != hashedToken)
         {
+            _dbContext.AuthAuditLogs.Add(new AuthAuditLog { Email = request.Email, UserId = user.Id, IsSuccess = false, EventType = "PasswordResetFailed", Reason = "Liên kết không hợp lệ (Sai token)", IpAddress = ip, UserAgent = userAgent });
+            await _dbContext.SaveChangesAsync();
             return BadRequest(new { isSuccess = false, message = "Liên kết không hợp lệ." });
         }
 
@@ -378,6 +400,8 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
 
         if (isSamePassword)
         {
+            _dbContext.AuthAuditLogs.Add(new AuthAuditLog { Email = request.Email, UserId = user.Id, IsSuccess = false, EventType = "PasswordResetFailed", Reason = "Mật khẩu mới trùng với mật khẩu hiện tại", IpAddress = ip, UserAgent = userAgent });
+            await _dbContext.SaveChangesAsync();
             return BadRequest(new { isSuccess = false, message = "Mật khẩu mới không được trùng với mật khẩu hiện tại." });
         }
 
@@ -410,11 +434,22 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
                 IsSuccess = true,
                 EventType = "RemoteLogout",
                 Reason = "Hệ thống tự động hủy phiên do người dùng đổi mật khẩu",
-                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
+                IpAddress = ip,
                 UserAgent = "System",
                 Timestamp = DateTimeOffset.UtcNow
             });
         }
+
+        // SCRUM-107: Log thành công
+        _dbContext.AuthAuditLogs.Add(new AuthAuditLog {
+            Email = request.Email,
+            UserId = user.Id,
+            IsSuccess = true,
+            EventType = "PasswordResetSuccess",
+            Reason = "Đặt lại mật khẩu thành công",
+            IpAddress = ip,
+            UserAgent = userAgent
+        });
 
         await _dbContext.SaveChangesAsync();
 
