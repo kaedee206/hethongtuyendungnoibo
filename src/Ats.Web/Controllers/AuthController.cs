@@ -319,4 +319,51 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
 
         return Ok(new { isSuccess = true, message = "Token hợp lệ." });
     }
+    /// <summary>
+    /// API Đặt lại mật khẩu mới (POST: /api/xac-thuc/dat-lai-mat-khau)
+    /// </summary>
+    [HttpPost("dat-lai-mat-khau")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto request)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        
+        // 1. Kiểm tra Token có tồn tại và hợp lệ không
+        if (user == null || string.IsNullOrEmpty(user.PasswordResetToken) || !user.PasswordResetTokenExpiresAt.HasValue)
+        {
+            return BadRequest(new { isSuccess = false, message = "Liên kết không hợp lệ hoặc đã được sử dụng." });
+        }
+
+        // 2. Kiểm tra Token có hết hạn không
+        if (DateTimeOffset.UtcNow > user.PasswordResetTokenExpiresAt.Value)
+        {
+            return BadRequest(new { isSuccess = false, message = "Liên kết khôi phục mật khẩu đã hết hạn." });
+        }
+
+        // 3. Hash token từ request để so sánh với CSDL
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var hashedBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(request.Token));
+        var hashedToken = Convert.ToBase64String(hashedBytes);
+
+        if (user.PasswordResetToken != hashedToken)
+        {
+            return BadRequest(new { isSuccess = false, message = "Liên kết không hợp lệ." });
+        }
+
+        // 4. Nếu hợp lệ, đặt lại mật khẩu mới bằng BCrypt
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        
+        // 5. SCRUM-99: Vô hiệu hóa Token ngay lập tức để không thể tái sử dụng
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiresAt = null;
+        
+        // (Tùy chọn) Mở khóa tài khoản nếu đang bị khóa
+        user.FailedLoginAttempts = 0;
+        user.LockedUntil = null;
+
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(new { isSuccess = true, message = "Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại." });
+    }
 }
