@@ -96,6 +96,25 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
     }
 
     /// <summary>
+    /// API Gia hạn phiên làm việc khi người dùng còn tương tác (POST: /api/xac-thuc/gia-han-phien)
+    /// Dành cho Client gọi (Heartbeat/Ping) khi phát hiện thao tác chuột/phím.
+    /// </summary>
+    [HttpPost("gia-han-phien")]
+    public IActionResult RenewSession()
+    {
+        // Khi client gọi API này, SessionActivityMiddleware đã tự động làm tươi 
+        // thời gian Sliding Expiration của Session và cập nhật LastActivityAt trong DB.
+        // API chỉ cần kiểm tra xem session còn hợp lệ không rồi phản hồi.
+        var userId = HttpContext.Session.GetString("UserId");
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { isSuccess = false, message = "Phiên làm việc đã hết hạn." });
+        }
+
+        return Ok(new { isSuccess = true, message = "Gia hạn phiên làm việc thành công." });
+    }
+
+    /// <summary>
     /// API Đăng xuất (POST: /api/xac-thuc/dang-xuat)
     /// </summary>
     [HttpPost("dang-xuat")]
