@@ -10,6 +10,9 @@ public class User
     // Thuộc tính lưu Vai trò phân quyền (Mặc định: Candidate)
     public string Role { get; set; } = "Candidate";
 
+    // SCRUM-129: Phòng ban
+    public string? Department { get; set; }
+
     public int FailedLoginAttempts { get; set; } = 0;
     public DateTimeOffset? LockedUntil { get; set; }
     public string Status { get; set; } = "ACTIVE";
