@@ -54,3 +54,14 @@ public record ChangePasswordRequestDto(
     [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$", ErrorMessage = "Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.")]
     string NewPassword
 );
+
+public record CreateAccountRequestDto(
+    [Required(ErrorMessage = "Email không được để trống.")]
+    [EmailAddress(ErrorMessage = "Email không đúng định dạng.")]
+    string Email,
+    
+    [Required(ErrorMessage = "Họ tên không được để trống.")]
+    string FullName,
+
+    string? Role
+);

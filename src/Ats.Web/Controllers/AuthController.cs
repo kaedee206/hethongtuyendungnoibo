@@ -625,4 +625,102 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
 
         return Ok(new { isSuccess = true, message = "Đổi mật khẩu thành công." });
     }
+
+    /// <summary>
+    /// API Tạo tài khoản nội bộ (POST: /api/xac-thuc/tao-tai-khoan)
+    /// </summary>
+    [HttpPost("tao-tai-khoan")]
+    public async Task<IActionResult> CreateAccount([FromBody] CreateAccountRequestDto request)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var existingUser = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        if (existingUser != null)
+        {
+            return BadRequest(new { isSuccess = false, message = "Email đã được sử dụng." });
+        }
+
+        // Tạo mật khẩu tạm đủ mạnh (SCRUM-127)
+        var tempPassword = GenerateStrongPassword();
+
+        var newUser = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = request.Email,
+            FullName = request.FullName,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(tempPassword), // Mã hóa trước khi lưu DB
+            Role = string.IsNullOrEmpty(request.Role) ? "Candidate" : request.Role,
+            Status = "ACTIVE",
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+
+        _dbContext.Users.Add(newUser);
+        
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+        var userAgent = Request.Headers["User-Agent"].ToString() ?? "Unknown";
+
+        _dbContext.AuthAuditLogs.Add(new AuthAuditLog {
+            Email = newUser.Email,
+            UserId = newUser.Id,
+            IsSuccess = true,
+            EventType = "AccountCreated",
+            Reason = "Tạo tài khoản thành công",
+            IpAddress = ip,
+            UserAgent = userAgent
+        });
+
+        await _dbContext.SaveChangesAsync();
+
+        // Gửi email kèm mật khẩu tạm (Fire-and-forget để hoàn thành gửi mail ngầm dưới 30s)
+        var loginLink = "https://yourdomain.com/dang-nhap";
+        var emailBody = $@"
+            <h3>Chào mừng bạn đến với ATS</h3>
+            <p>Xin chào {newUser.FullName},</p>
+            <p>Tài khoản nội bộ của bạn đã được tạo thành công.</p>
+            <p>Dưới đây là thông tin đăng nhập của bạn:</p>
+            <ul>
+                <li><strong>Email:</strong> {newUser.Email}</li>
+                <li><strong>Mật khẩu tạm:</strong> {tempPassword}</li>
+            </ul>
+            <p>Vui lòng đăng nhập tại <a href='{loginLink}'>{loginLink}</a> và tiến hành <strong>đổi mật khẩu ngay lập tức</strong> để đảm bảo an toàn.</p>
+        ";
+
+        var sendEmailRequest = new SendEmailRequestDto(
+            ToEmail: newUser.Email,
+            Subject: "[ATS] Thông tin tài khoản và Mật khẩu tạm",
+            Body: emailBody
+        );
+
+        _ = Task.Run(async () => 
+        {
+            using var scope = HttpContext.RequestServices.CreateScope();
+            var scopedEmailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+            await scopedEmailService.SendEmailAsync(sendEmailRequest);
+        });
+
+        return Ok(new { isSuccess = true, message = "Tạo tài khoản thành công. Đã gửi thông tin đăng nhập qua email." });
+    }
+
+    private string GenerateStrongPassword()
+    {
+        const string uppers = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const string lowers = "abcdefghijklmnopqrstuvwxyz";
+        const string digits = "0123456789";
+        const string specials = "@$!%*?&";
+        
+        var passwordChars = new char[8];
+        passwordChars[0] = uppers[System.Security.Cryptography.RandomNumberGenerator.GetInt32(uppers.Length)];
+        passwordChars[1] = lowers[System.Security.Cryptography.RandomNumberGenerator.GetInt32(lowers.Length)];
+        passwordChars[2] = digits[System.Security.Cryptography.RandomNumberGenerator.GetInt32(digits.Length)];
+        passwordChars[3] = specials[System.Security.Cryptography.RandomNumberGenerator.GetInt32(specials.Length)];
+        
+        const string allChars = uppers + lowers + digits + specials;
+        for (int i = 4; i < 8; i++)
+        {
+            passwordChars[i] = allChars[System.Security.Cryptography.RandomNumberGenerator.GetInt32(allChars.Length)];
+        }
+        
+        return new string(passwordChars.OrderBy(c => System.Security.Cryptography.RandomNumberGenerator.GetInt32(100)).ToArray());
+    }
 }
