@@ -12,10 +12,11 @@ namespace Ats.Web.Controllers;
 
 [ApiController]
 [Route("api/xac-thuc")]
-public class AuthController(IAuthService authService, ApplicationDbContext dbContext) : ControllerBase
+public class AuthController(IAuthService authService, ApplicationDbContext dbContext, IEmailService emailService) : ControllerBase
 {
     private readonly IAuthService _authService = authService;
     private readonly ApplicationDbContext _dbContext = dbContext;
+    private readonly IEmailService _emailService = emailService;
 
     /// <summary>
     /// API Đăng nhập tài khoản nội bộ (POST: /api/xac-thuc/dang-nhap)
@@ -266,11 +267,26 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
         user.PasswordResetTokenExpiresAt = DateTimeOffset.UtcNow.AddMinutes(30);
         await _dbContext.SaveChangesAsync();
 
-        // Ở môi trường thực tế, gửi rawToken qua EmailService.
-        // Trả về rawToken trong payload chỉ dùng cho mục đích kiểm thử hiện tại.
+        // Gửi rawToken qua EmailService bằng SMTP.
         var resetLink = $"https://yourdomain.com/dat-lai-mat-khau?token={Uri.EscapeDataString(rawToken)}&email={Uri.EscapeDataString(request.Email)}";
+        var emailBody = $@"
+            <h3>Yêu cầu đặt lại mật khẩu</h3>
+            <p>Xin chào,</p>
+            <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản hệ thống ATS. Vui lòng click vào liên kết bên dưới để đặt lại mật khẩu:</p>
+            <p><a href='{resetLink}'>{resetLink}</a></p>
+            <p>Liên kết này sẽ hết hạn trong vòng 30 phút.</p>
+            <p>Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</p>
+        ";
 
-        return Ok(new { isSuccess = true, message = "Đã tạo liên kết khôi phục mật khẩu thành công.", testLink = resetLink });
+        var sendEmailRequest = new SendEmailRequestDto(
+            ToEmail: request.Email,
+            Subject: "[ATS] Yêu cầu khôi phục mật khẩu",
+            Body: emailBody
+        );
+
+        await _emailService.SendEmailAsync(sendEmailRequest);
+
+        return Ok(new { isSuccess = true, message = "Đã gửi liên kết khôi phục mật khẩu qua email." });
     }
 
     /// <summary>
