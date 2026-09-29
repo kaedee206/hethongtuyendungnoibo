@@ -368,10 +368,23 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
             return BadRequest(new { isSuccess = false, message = "Liên kết không hợp lệ." });
         }
 
-        // 4. Nếu hợp lệ, đặt lại mật khẩu mới bằng BCrypt
+        // 4. Kiểm tra mật khẩu mới có trùng mật khẩu cũ không (SCRUM-105)
+        bool isSamePassword = false;
+        try
+        {
+            isSamePassword = BCrypt.Net.BCrypt.Verify(request.NewPassword, user.PasswordHash);
+        }
+        catch { /* Bỏ qua nếu PasswordHash cũ không phải định dạng BCrypt */ }
+
+        if (isSamePassword)
+        {
+            return BadRequest(new { isSuccess = false, message = "Mật khẩu mới không được trùng với mật khẩu hiện tại." });
+        }
+
+        // 5. Nếu hợp lệ, đặt lại mật khẩu mới bằng BCrypt
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
         
-        // 5. SCRUM-99: Vô hiệu hóa Token ngay lập tức để không thể tái sử dụng
+        // 6. SCRUM-99: Vô hiệu hóa Token ngay lập tức để không thể tái sử dụng
         user.PasswordResetToken = null;
         user.PasswordResetTokenExpiresAt = null;
         
