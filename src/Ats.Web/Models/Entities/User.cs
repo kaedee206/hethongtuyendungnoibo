@@ -22,6 +22,10 @@ public class User
     public string? PasswordResetToken { get; set; }
     public DateTimeOffset? PasswordResetTokenExpiresAt { get; set; }
 
+    // SCRUM-115: Giới hạn số lần đổi mật khẩu thất bại
+    public int FailedChangePasswordAttempts { get; set; } = 0;
+    public DateTimeOffset? ChangePasswordLockedUntil { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

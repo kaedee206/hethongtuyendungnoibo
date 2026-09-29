@@ -477,6 +477,13 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
             return Unauthorized(new { isSuccess = false, message = "Không tìm thấy thông tin tài khoản." });
         }
 
+        // SCRUM-115: Kiểm tra tài khoản có đang bị khóa chức năng đổi mật khẩu không
+        if (user.ChangePasswordLockedUntil.HasValue && user.ChangePasswordLockedUntil.Value > DateTimeOffset.UtcNow)
+        {
+            var remainingTime = (int)Math.Ceiling((user.ChangePasswordLockedUntil.Value - DateTimeOffset.UtcNow).TotalMinutes);
+            return BadRequest(new { isSuccess = false, message = $"Chức năng đổi mật khẩu bị khóa tạm thời do nhập sai quá nhiều lần. Vui lòng thử lại sau {remainingTime} phút." });
+        }
+
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         var userAgent = Request.Headers["User-Agent"].ToString() ?? "Unknown";
 
@@ -490,10 +497,26 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
 
         if (!isCurrentPasswordValid)
         {
+            // SCRUM-115: Tăng số lần nhập sai và khóa nếu quá 5 lần
+            user.FailedChangePasswordAttempts++;
+            if (user.FailedChangePasswordAttempts >= 5)
+            {
+                user.ChangePasswordLockedUntil = DateTimeOffset.UtcNow.AddMinutes(15);
+                user.FailedChangePasswordAttempts = 0; // Reset lại đếm để lần sau đếm lại từ đầu sau khi hết khóa
+            }
+            await _dbContext.SaveChangesAsync();
+
             // Trả lỗi rõ ràng nhưng không quá chi tiết để tránh dò rỉ thông tin
             _dbContext.AuthAuditLogs.Add(new AuthAuditLog { Email = user.Email, UserId = user.Id, IsSuccess = false, EventType = "ChangePasswordFailed", Reason = "Sai mật khẩu hiện tại", IpAddress = ip, UserAgent = userAgent });
             await _dbContext.SaveChangesAsync();
             return BadRequest(new { isSuccess = false, message = "Mật khẩu hiện tại không chính xác." });
+        }
+        
+        // Reset đếm nếu nhập đúng
+        if (user.FailedChangePasswordAttempts > 0 || user.ChangePasswordLockedUntil.HasValue)
+        {
+            user.FailedChangePasswordAttempts = 0;
+            user.ChangePasswordLockedUntil = null;
         }
 
         // 3. Đảm bảo mật khẩu mới không trùng mật khẩu cũ
