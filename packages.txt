@@ -1,0 +1,69 @@
+# ==============================================================================
+# DANH SÁCH THƯ VIỆN & CÔNG CỤ DỰ ÁN HỆ THỐNG TUYỂN DỤNG NỘI BỘ (ATS SYSTEM)
+# Target Framework: .NET 9.0 (C# 12/13)
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. HƯỚNG DẪN CÀI ĐẶT TRÊN MÔI TRƯỜNG MỚI (CHỈ CẦN 2 LỆNH NHANH):
+# ------------------------------------------------------------------------------
+# Cách 1 (Khuyên dùng - Chuẩn .NET): 
+# Chỉ cần đứng tại thư mục gốc của dự án và chạy:
+#   dotnet restore
+#   dotnet tool restore
+#
+# Cách 2 (Cài đặt từng gói thủ công bằng lệnh CLI):
+#   cd src/Ats.Web
+#   dotnet add package BCrypt.Net-Next --version 4.2.0
+#   dotnet add package DotNetEnv --version 3.2.0
+#   dotnet add package EFCore.NamingConventions --version 9.0.0
+#   dotnet add package MailKit - 4.18.0-version
+#   dotnet add package Microsoft.EntityFrameworkCore --version 9.0.15
+#   dotnet add package Microsoft.EntityFrameworkCore.Design --version 9.0.15
+#   dotnet add package Microsoft.EntityFrameworkCore.Tools --version 9.0.15
+#   dotnet add package Npgsql.EntityFrameworkCore.PostgreSQL --version 9.0.0
+#
+# Cài đặt công cụ CLI Entity Framework Core:
+#   cd ../..
+#   dotnet tool install dotnet-ef --version 9.0.15
+
+# ------------------------------------------------------------------------------
+# 2. DANH SÁCH CHI TIẾT CÁC GÓI NUGET (NUGET PACKAGES):
+# ------------------------------------------------------------------------------
+
+BCrypt.Net-Next==4.2.0
+# Mục đích: Băm và xác thực mật khẩu an toàn (Bcrypt hash), tránh lưu mật khẩu plain-text.
+
+DotNetEnv==3.2.0
+# Mục đích: Đọc các biến cấu hình từ file môi trường .env (DB_HOST, DB_PASSWORD, SMTP_...).
+
+EFCore.NamingConventions==9.0.0
+# Mục đích: Tự động chuyển đổi tên bảng/cột từ PascalCase sang snake_case chuẩn quy ước PostgreSQL.
+
+MailKit==4.18.0
+# Mục đích: Gửi email thông báo (SMTP qua Google hoặc Mail Server công ty) hỗ trợ MIME message.
+
+Microsoft.EntityFrameworkCore==9.0.15
+# Mục đích: Core ORM Entity Framework cho .NET 9 để thao tác dữ liệu qua C# class.
+
+Microsoft.EntityFrameworkCore.Design==9.0.15
+# Mục đích: Hỗ trợ sinh mã CSDL (Scaffolding, Migrations) lúc thiết kế.
+
+Microsoft.EntityFrameworkCore.Tools==9.0.15
+# Mục đích: Công cụ hỗ trợ chạy lệnh EF Core trong Package Manager Console và .NET CLI.
+
+Npgsql.EntityFrameworkCore.PostgreSQL==9.0.0
+# Mục đích: Driver Database Provider kết nối Entity Framework Core với hệ quản trị PostgreSQL.
+
+# ------------------------------------------------------------------------------
+# 3. DANH SÁCH CÔNG CỤ .NET CLI (DOTNET TOOLS):
+# ------------------------------------------------------------------------------
+
+dotnet-ef==9.0.15
+# Mục đích: Chạy lệnh Migration CSDL (dotnet ef migrations add, dotnet ef database update).
+
+# ------------------------------------------------------------------------------
+# 4. YÊU CẦU MÔI TRƯỜNG PHẦN MỀM (SYSTEM PREREQUISITES):
+# ------------------------------------------------------------------------------
+# - .NET SDK: Version 9.0.100 trở lên (https://dotnet.microsoft.com/download/dotnet/9.0)
+# - Database: PostgreSQL 14.x, 15.x, hoặc 16.x
+# - IDE: Visual Studio 2022 (v17.12+) hoặc Visual Studio Code / JetBrains Rider

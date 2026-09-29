@@ -16,45 +16,54 @@ public class AuthService(ApplicationDbContext dbContext, IEmailService emailServ
         var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
 
         const string generalErrorMessage = "Email hoặc mật khẩu không chính xác.";
+        
+        // Dummy hash để chống Timing Attack khi user == null
+        // Giá trị hash mẫu của Bcrypt
+        string dummyHash = "$2a$11$9yC3Q2K5HjC9M3K4H6B8X.K7K8X9Y0Z1A2B3C4D5E6F7G8H9I0J1K";
+        
+        bool isPasswordValid = false;
 
-        if (user == null)
-            return new AuthResponseDto(false, generalErrorMessage, null);
-
-        // 1. Kiểm tra tài khoản có đang trong thời gian bị khóa tạm thời 15 phút hay không
-        if (user.LockedUntil.HasValue)
+        if (user != null)
         {
-            if (user.LockedUntil.Value > DateTimeOffset.UtcNow)
+            try
             {
-                var remainingMinutes = (int)Math.Ceiling((user.LockedUntil.Value - DateTimeOffset.UtcNow).TotalMinutes);
-                return new AuthResponseDto(false, $"Tài khoản tạm thời bị khóa do nhập sai mật khẩu quá 5 lần. Vui lòng thử lại sau {remainingMinutes} phút.", null);
+                isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
             }
-
-            // Nếu đã vượt quá 15 phút khóa -> Reset về trạng thái bình thường
-            user.LockedUntil = null;
-            user.FailedLoginAttempts = 0;
+            catch (BCrypt.Net.SaltParseException)
+            {
+                // Fallback nếu database còn lưu mật khẩu dạng plain-text cũ
+                isPasswordValid = (user.PasswordHash == request.Password);
+                if (isPasswordValid)
+                {
+                    // Tự động nâng cấp hash mật khẩu lên BCrypt
+                    user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+                }
+            }
+        }
+        else
+        {
+            // Chạy hàm verify giả lập để có thời gian phản hồi tương đương (chống timing attack)
+            BCrypt.Net.BCrypt.Verify(request.Password, dummyHash);
         }
 
-        // 2. Kiểm tra trạng thái kích hoạt tài khoản
-        if (user.Status != "ACTIVE")
-            return new AuthResponseDto(false, "Tài khoản chưa được kích hoạt hoặc đã bị khóa.", null);
-
-        // 3. Kiểm tra mật khẩu
-        if (user.PasswordHash != request.Password)
+        if (user == null || !isPasswordValid || user.Status != "ACTIVE" || (user.LockedUntil.HasValue && user.LockedUntil.Value > DateTimeOffset.UtcNow))
         {
-            user.FailedLoginAttempts += 1;
-
-            if (user.FailedLoginAttempts >= 5)
+            if (user != null && user.Status == "ACTIVE" && (!user.LockedUntil.HasValue || user.LockedUntil.Value <= DateTimeOffset.UtcNow))
             {
-                // Khóa tài khoản tạm thời 15 phút tính từ hiện tại
-                user.LockedUntil = DateTimeOffset.UtcNow.AddMinutes(15);
-                await _dbContext.SaveChangesAsync(cancellationToken);
-
-                return new AuthResponseDto(false, "Mật khẩu không chính xác. Bạn đã nhập sai 5 lần liên tiếp, tài khoản bị tạm khóa 15 phút.", null);
+                // Chỉ đếm số lần sai nếu tài khoản đang active và không bị khóa
+                if (!isPasswordValid)
+                {
+                    user.FailedLoginAttempts += 1;
+                    if (user.FailedLoginAttempts >= 5)
+                    {
+                        user.LockedUntil = DateTimeOffset.UtcNow.AddMinutes(15);
+                    }
+                    await _dbContext.SaveChangesAsync(cancellationToken);
+                }
             }
-
-            await _dbContext.SaveChangesAsync(cancellationToken);
-            var remainingAttempts = 5 - user.FailedLoginAttempts;
-            return new AuthResponseDto(false, $"Mật khẩu không chính xác. Bạn còn {remainingAttempts} lần thử.", null);
+            
+            // AC3: Dù là lỗi sai pass, bị khóa, không tồn tại hay inactive -> Trả về 1 message chung
+            return new AuthResponseDto(false, generalErrorMessage, null);
         }
 
         // 4. Đăng nhập thành công -> Reset lại số lần sai và thời gian khóa
