@@ -453,6 +453,31 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
 
         await _dbContext.SaveChangesAsync();
 
+        // SCRUM-116: Gửi email thông báo đổi mật khẩu thành công
+        var emailBody = $@"
+            <h3>Thông báo thay đổi mật khẩu</h3>
+            <p>Xin chào,</p>
+            <p>Mật khẩu cho tài khoản ATS của bạn vừa được thay đổi thành công vào lúc {DateTimeOffset.UtcNow:dd/MM/yyyy HH:mm:ss} (UTC).</p>
+            <ul>
+                <li><strong>IP thực hiện:</strong> {ip}</li>
+                <li><strong>Thiết bị/Trình duyệt:</strong> {userAgent}</li>
+            </ul>
+            <p>Nếu bạn không thực hiện yêu cầu này, tài khoản của bạn có thể đã bị xâm phạm. Vui lòng liên hệ với Quản trị viên (Admin) ngay lập tức để khóa tài khoản và được hỗ trợ.</p>
+        ";
+
+        var sendEmailRequest = new SendEmailRequestDto(
+            ToEmail: user.Email,
+            Subject: "[ATS] Cảnh báo bảo mật: Thay đổi mật khẩu thành công",
+            Body: emailBody
+        );
+
+        _ = Task.Run(async () => 
+        {
+            using var scope = HttpContext.RequestServices.CreateScope();
+            var scopedEmailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+            await scopedEmailService.SendEmailAsync(sendEmailRequest);
+        });
+
         return Ok(new { isSuccess = true, message = "Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại trên tất cả thiết bị." });
     }
 
@@ -564,6 +589,31 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
         });
 
         await _dbContext.SaveChangesAsync();
+
+        // SCRUM-116: Gửi email thông báo đổi mật khẩu thành công
+        var emailBody = $@"
+            <h3>Thông báo thay đổi mật khẩu</h3>
+            <p>Xin chào,</p>
+            <p>Mật khẩu cho tài khoản ATS của bạn vừa được thay đổi thành công vào lúc {DateTimeOffset.UtcNow:dd/MM/yyyy HH:mm:ss} (UTC).</p>
+            <ul>
+                <li><strong>IP thực hiện:</strong> {ip}</li>
+                <li><strong>Thiết bị/Trình duyệt:</strong> {userAgent}</li>
+            </ul>
+            <p>Nếu bạn không thực hiện yêu cầu này, tài khoản của bạn có thể đã bị xâm phạm. Vui lòng liên hệ với Quản trị viên (Admin) ngay lập tức để khóa tài khoản và được hỗ trợ.</p>
+        ";
+
+        var sendEmailRequest = new SendEmailRequestDto(
+            ToEmail: user.Email,
+            Subject: "[ATS] Cảnh báo bảo mật: Thay đổi mật khẩu thành công",
+            Body: emailBody
+        );
+
+        _ = Task.Run(async () => 
+        {
+            using var scope = HttpContext.RequestServices.CreateScope();
+            var scopedEmailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+            await scopedEmailService.SendEmailAsync(sendEmailRequest);
+        });
 
         return Ok(new { isSuccess = true, message = "Đổi mật khẩu thành công." });
     }
