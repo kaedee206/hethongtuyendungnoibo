@@ -29,22 +29,26 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
-// 1. Thêm cấu hình Session với thời gian hết hạn (ví dụ: 30 phút)
+// 1. Thêm cấu hình Session với thời gian hết hạn (30 phút không hoạt động)
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30); // Thời gian phiên 30 phút
+    options.Cookie.Name = "Ats.Session";
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
 // 2. Thêm cấu hình Authentication Cookie nếu ứng dụng dùng Cookie Auth
 builder.Services.AddAuthentication("AtsCookieScheme")
     .AddCookie("AtsCookieScheme", options =>
     {
-        options.Cookie.Name = "Ats.Session";
+        options.Cookie.Name = "Ats.AuthCookie";
         options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
         options.SlidingExpiration = true; // Tự động gia hạn phiên khi user hoạt động > 50% thời hạn
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
     });
 
 var app = builder.Build();
@@ -60,15 +64,13 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 
-// Kích hoạt Session & Auth
+// Kích hoạt Session & Auth đúng thứ tự pipeline
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
 // Kích hoạt Middleware gia hạn phiên tự động
 app.UseMiddleware<Ats.Web.Middlewares.SessionActivityMiddleware>();
-
-app.UseAuthorization();
 
 app.MapStaticAssets();
 
