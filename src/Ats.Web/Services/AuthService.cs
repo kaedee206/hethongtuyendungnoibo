@@ -48,10 +48,17 @@ public class AuthService(ApplicationDbContext dbContext, IEmailService emailServ
 
         if (user == null || !isPasswordValid || user.Status != "ACTIVE" || (user.LockedUntil.HasValue && user.LockedUntil.Value > DateTimeOffset.UtcNow))
         {
-            if (user != null && user.Status == "ACTIVE" && (!user.LockedUntil.HasValue || user.LockedUntil.Value <= DateTimeOffset.UtcNow))
+            if (user != null && user.Status == "ACTIVE")
             {
-                // Chỉ đếm số lần sai nếu tài khoản đang active và không bị khóa
-                if (!isPasswordValid)
+                // Nếu tài khoản đã hết thời gian khóa, reset lại số lần sai trước khi đếm tiếp
+                if (user.LockedUntil.HasValue && user.LockedUntil.Value <= DateTimeOffset.UtcNow)
+                {
+                    user.LockedUntil = null;
+                    user.FailedLoginAttempts = 0;
+                }
+
+                // Chỉ đếm số lần sai nếu tài khoản không bị khóa
+                if (!user.LockedUntil.HasValue && !isPasswordValid)
                 {
                     user.FailedLoginAttempts += 1;
                     if (user.FailedLoginAttempts >= 5)
