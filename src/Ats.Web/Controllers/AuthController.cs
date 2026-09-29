@@ -637,7 +637,8 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
         var existingUser = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
         if (existingUser != null)
         {
-            return BadRequest(new { isSuccess = false, message = "Email đã được sử dụng." });
+            // SCRUM-128: Trả về HTTP 409 Conflict với thông báo cụ thể
+            return Conflict(new { isSuccess = false, message = "Email này đã được sử dụng trong hệ thống." });
         }
 
         // Tạo mật khẩu tạm đủ mạnh (SCRUM-127)
