@@ -34,10 +34,39 @@ public class SessionActivityMiddleware(RequestDelegate next)
                 }
             }
 
+            // Kiểm tra trạng thái Session trong CSDL (SCRUM-94)
+            var currentSessionId = context.Session.Id;
+            var userSession = await dbContext.UserSessions.FirstOrDefaultAsync(s => s.SessionId == currentSessionId);
+            
+            if (userSession != null)
+            {
+                if (userSession.IsRevoked)
+                {
+                    // Phiên đã bị đăng xuất từ xa
+                    context.Session.Clear();
+                    await Microsoft.AspNetCore.Authentication.AuthenticationHttpContextExtensions.SignOutAsync(context, "AtsCookieScheme");
+                    context.Response.Cookies.Delete("Ats.Session");
+                    context.Response.Cookies.Delete("Ats.AuthCookie");
+                    context.Response.Cookies.Delete(".AspNetCore.Session");
+
+                    context.Response.StatusCode = 401; // Unauthorized
+                    context.Response.ContentType = "application/json";
+                    await context.Response.WriteAsync("{\"isSuccess\": false, \"message\": \"Phiên làm việc này đã bị đăng xuất từ thiết bị khác.\"}");
+                    return;
+                }
+
+                // Cập nhật LastActiveAt cho UserSession mỗi 5 phút/lần
+                if ((DateTimeOffset.UtcNow - userSession.LastActiveAt).TotalMinutes >= 5)
+                {
+                    userSession.LastActiveAt = DateTimeOffset.UtcNow;
+                    await dbContext.SaveChangesAsync();
+                }
+            }
+
             // Tự động làm tươi Session (Sliding Expiration tự kích hoạt khi truy cập Session)
             context.Session.SetString("LastActive", DateTimeOffset.UtcNow.ToString("o"));
 
-            // Cập nhật LastActivityAt trong DB mỗi 5 phút/lần để tránh spam SQL
+            // Cập nhật LastActivityAt trong DB User mỗi 5 phút/lần
             var user = await dbContext.Users.FindAsync(userId);
             if (user != null)
             {

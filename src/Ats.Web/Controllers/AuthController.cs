@@ -44,14 +44,29 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
         if (!result.IsSuccess)
             return Unauthorized(new { message = result.Message });
 
-        // SCRUM-84 & SCRUM-90: Tạo và lưu thông tin phiên vào Session phía Server
+        // SCRUM-84 & SCRUM-90 & SCRUM-94: Tạo và lưu thông tin phiên vào Session phía Server
         if (result.Data != null)
         {
+            var currentSessionId = HttpContext.Session.Id;
             HttpContext.Session.SetString("UserId", result.Data.Id.ToString());
             HttpContext.Session.SetString("UserEmail", result.Data.Email);
             HttpContext.Session.SetString("UserRole", result.Data.Role);
             HttpContext.Session.SetString("FullName", result.Data.FullName);
             HttpContext.Session.SetString("LastActive", DateTimeOffset.UtcNow.ToString("o"));
+
+            // Lưu UserSession vào CSDL để quản lý thiết bị
+            var userSession = new UserSession
+            {
+                UserId = result.Data.Id,
+                SessionId = currentSessionId,
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
+                UserAgent = Request.Headers["User-Agent"].ToString() ?? "Unknown",
+                CreatedAt = DateTimeOffset.UtcNow,
+                LastActiveAt = DateTimeOffset.UtcNow,
+                IsRevoked = false
+            };
+            _dbContext.UserSessions.Add(userSession);
+            await _dbContext.SaveChangesAsync(cancellationToken);
 
             // Tính toán và lưu Absolute Timeout
             var absoluteTimeoutStr = Environment.GetEnvironmentVariable("SESSION_ABSOLUTE_TIMEOUT_MINUTES") ?? "720"; // mặc định 12 tiếng
@@ -107,9 +122,6 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
     [HttpPost("gia-han-phien")]
     public IActionResult RenewSession()
     {
-        // Khi client gọi API này, SessionActivityMiddleware đã tự động làm tươi 
-        // thời gian Sliding Expiration của Session và cập nhật LastActivityAt trong DB.
-        // API chỉ cần kiểm tra xem session còn hợp lệ không rồi phản hồi.
         var userId = HttpContext.Session.GetString("UserId");
         if (string.IsNullOrEmpty(userId))
         {
@@ -117,6 +129,53 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
         }
 
         return Ok(new { isSuccess = true, message = "Gia hạn phiên làm việc thành công." });
+    }
+
+    /// <summary>
+    /// API Lấy danh sách các phiên đăng nhập đang hoạt động (GET: /api/xac-thuc/danh-sach-phien)
+    /// </summary>
+    [HttpGet("danh-sach-phien")]
+    public IActionResult GetActiveSessions()
+    {
+        var userIdString = HttpContext.Session.GetString("UserId");
+        if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId))
+            return Unauthorized(new { isSuccess = false, message = "Chưa đăng nhập." });
+
+        var sessions = _dbContext.UserSessions
+            .Where(s => s.UserId == userId && !s.IsRevoked)
+            .OrderByDescending(s => s.LastActiveAt)
+            .Select(s => new
+            {
+                s.Id,
+                s.IpAddress,
+                s.UserAgent,
+                s.CreatedAt,
+                s.LastActiveAt,
+                IsCurrentSession = s.SessionId == HttpContext.Session.Id
+            })
+            .ToList();
+
+        return Ok(new { isSuccess = true, data = sessions });
+    }
+
+    /// <summary>
+    /// API Đăng xuất từ xa trên thiết bị khác (POST: /api/xac-thuc/dang-xuat-tu-xa/{sessionId})
+    /// </summary>
+    [HttpPost("dang-xuat-tu-xa/{sessionId}")]
+    public async Task<IActionResult> RemoteLogout(Guid sessionId)
+    {
+        var userIdString = HttpContext.Session.GetString("UserId");
+        if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId))
+            return Unauthorized(new { isSuccess = false, message = "Chưa đăng nhập." });
+
+        var sessionToRevoke = _dbContext.UserSessions.FirstOrDefault(s => s.Id == sessionId && s.UserId == userId);
+        if (sessionToRevoke == null)
+            return NotFound(new { isSuccess = false, message = "Không tìm thấy phiên làm việc." });
+
+        sessionToRevoke.IsRevoked = true;
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(new { isSuccess = true, message = "Đã đăng xuất phiên làm việc từ xa." });
     }
 
     /// <summary>
