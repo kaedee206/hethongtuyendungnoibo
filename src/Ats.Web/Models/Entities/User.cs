@@ -18,6 +18,10 @@ public class User
     // Bổ sung thuộc tính theo dõi thời gian hoạt động cuối
     public DateTimeOffset? LastActivityAt { get; set; }
 
+    // Bổ sung thuộc tính cho chức năng Đặt lại mật khẩu (SCRUM-97)
+    public string? PasswordResetToken { get; set; }
+    public DateTimeOffset? PasswordResetTokenExpiresAt { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

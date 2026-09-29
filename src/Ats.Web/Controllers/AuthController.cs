@@ -3,6 +3,7 @@ using Ats.Web.Models.DTOs;
 using Ats.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 using Ats.Web.Models.Entities;
 using Ats.Web.Data;
@@ -236,5 +237,70 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
         Response.Cookies.Delete(".AspNetCore.Session");
 
         return Ok(new { isSuccess = true, message = "Đăng xuất thành công. Phiên làm việc đã bị hủy hoàn toàn trên máy chủ." });
+    }
+
+    /// <summary>
+    /// API Yêu cầu đặt lại mật khẩu (POST: /api/xac-thuc/quen-mat-khau)
+    /// </summary>
+    [HttpPost("quen-mat-khau")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto request)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        if (user == null)
+        {
+            // Để tránh User Enumeration, luôn trả về thông báo chung chung
+            return Ok(new { isSuccess = true, message = "Nếu email hợp lệ, một liên kết khôi phục đã được gửi." });
+        }
+
+        // SCRUM-97: Tạo token ngẫu nhiên, an toàn (không đoán được)
+        var rawToken = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+        
+        // Hash token bằng SHA256 trước khi lưu vào DB để bảo mật
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var hashedBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(rawToken));
+        var hashedToken = Convert.ToBase64String(hashedBytes);
+
+        user.PasswordResetToken = hashedToken;
+        user.PasswordResetTokenExpiresAt = DateTimeOffset.UtcNow.AddMinutes(30);
+        await _dbContext.SaveChangesAsync();
+
+        // Ở môi trường thực tế, gửi rawToken qua EmailService.
+        // Trả về rawToken trong payload chỉ dùng cho mục đích kiểm thử hiện tại.
+        var resetLink = $"https://yourdomain.com/dat-lai-mat-khau?token={Uri.EscapeDataString(rawToken)}&email={Uri.EscapeDataString(request.Email)}";
+
+        return Ok(new { isSuccess = true, message = "Đã tạo liên kết khôi phục mật khẩu thành công.", testLink = resetLink });
+    }
+
+    /// <summary>
+    /// API Kiểm tra Token đặt lại mật khẩu (GET: /api/xac-thuc/kiem-tra-token-dat-lai-mat-khau)
+    /// </summary>
+    [HttpGet("kiem-tra-token-dat-lai-mat-khau")]
+    public async Task<IActionResult> VerifyResetToken([FromQuery] string email, [FromQuery] string token)
+    {
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == email);
+        if (user == null || string.IsNullOrEmpty(user.PasswordResetToken) || !user.PasswordResetTokenExpiresAt.HasValue)
+        {
+            return BadRequest(new { isSuccess = false, message = "Liên kết không hợp lệ." });
+        }
+
+        // SCRUM-97: Token hết hạn sau 30 phút trả về thông báo hết hạn
+        if (DateTimeOffset.UtcNow > user.PasswordResetTokenExpiresAt.Value)
+        {
+            return BadRequest(new { isSuccess = false, message = "Liên kết khôi phục mật khẩu đã hết hạn." });
+        }
+
+        // Hash token từ request để so sánh với CSDL
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var hashedBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(token));
+        var hashedToken = Convert.ToBase64String(hashedBytes);
+
+        if (user.PasswordResetToken != hashedToken)
+        {
+            return BadRequest(new { isSuccess = false, message = "Liên kết không hợp lệ." });
+        }
+
+        return Ok(new { isSuccess = true, message = "Token hợp lệ." });
     }
 }

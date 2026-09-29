@@ -24,3 +24,9 @@ public record UserInfoDto(
     string Role,
     string RedirectUrl
 );
+
+public record ForgotPasswordRequestDto(
+    [Required(ErrorMessage = "Email không được để trống.")]
+    [EmailAddress(ErrorMessage = "Email không đúng định dạng.")]
+    string Email
+);
