@@ -65,6 +65,9 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// SCRUM-124: Đăng ký Global Exception Middleware cho API
+app.UseMiddleware<Ats.Web.Middlewares.GlobalExceptionMiddleware>();
+
 app.UseHttpsRedirection();
 app.UseRouting();
 
