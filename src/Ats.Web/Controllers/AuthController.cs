@@ -4,13 +4,17 @@ using Ats.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 
+using Ats.Web.Models.Entities;
+using Ats.Web.Data;
+
 namespace Ats.Web.Controllers;
 
 [ApiController]
 [Route("api/xac-thuc")]
-public class AuthController(IAuthService authService) : ControllerBase
+public class AuthController(IAuthService authService, ApplicationDbContext dbContext) : ControllerBase
 {
     private readonly IAuthService _authService = authService;
+    private readonly ApplicationDbContext _dbContext = dbContext;
 
     /// <summary>
     /// API Đăng nhập tài khoản nội bộ (POST: /api/xac-thuc/dang-nhap)
@@ -22,6 +26,20 @@ public class AuthController(IAuthService authService) : ControllerBase
             return BadRequest(ModelState);
 
         var result = await _authService.AuthenticateAsync(request, cancellationToken);
+
+        // SCRUM-85: Ghi log audit cho lần đăng nhập
+        var auditLog = new AuthAuditLog
+        {
+            Email = request.Email,
+            UserId = result.Data?.Id, // Có thể null nếu đăng nhập thất bại
+            IsSuccess = result.IsSuccess,
+            Reason = result.Message,
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
+            UserAgent = Request.Headers["User-Agent"].ToString() ?? "Unknown",
+            Timestamp = DateTimeOffset.UtcNow
+        };
+        _dbContext.AuthAuditLogs.Add(auditLog);
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
         if (!result.IsSuccess)
             return Unauthorized(new { message = result.Message });
