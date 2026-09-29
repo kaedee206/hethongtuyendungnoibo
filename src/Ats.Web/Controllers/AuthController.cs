@@ -249,44 +249,61 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
         var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-        if (user == null)
+        
+        // Luôn trả về 1 thông điệp duy nhất để ngăn ngừa User Enumeration (SCRUM-100)
+        var genericMessage = "Nếu email hợp lệ, một liên kết khôi phục đã được gửi.";
+
+        if (user != null)
         {
-            // Để tránh User Enumeration, luôn trả về thông báo chung chung
-            return Ok(new { isSuccess = true, message = "Nếu email hợp lệ, một liên kết khôi phục đã được gửi." });
+            // Tạo token ngẫu nhiên, an toàn (không đoán được)
+            var rawToken = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+            
+            // Hash token bằng SHA256 trước khi lưu vào DB để bảo mật
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var hashedBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(rawToken));
+            var hashedToken = Convert.ToBase64String(hashedBytes);
+
+            user.PasswordResetToken = hashedToken;
+            user.PasswordResetTokenExpiresAt = DateTimeOffset.UtcNow.AddMinutes(30);
+            await _dbContext.SaveChangesAsync();
+
+            var resetLink = $"https://yourdomain.com/dat-lai-mat-khau?token={Uri.EscapeDataString(rawToken)}&email={Uri.EscapeDataString(request.Email)}";
+            var emailBody = $@"
+                <h3>Yêu cầu đặt lại mật khẩu</h3>
+                <p>Xin chào,</p>
+                <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản hệ thống ATS. Vui lòng click vào liên kết bên dưới để đặt lại mật khẩu:</p>
+                <p><a href='{resetLink}'>{resetLink}</a></p>
+                <p>Liên kết này sẽ hết hạn trong vòng 30 phút.</p>
+                <p>Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</p>
+            ";
+
+            var sendEmailRequest = new SendEmailRequestDto(
+                ToEmail: request.Email,
+                Subject: "[ATS] Yêu cầu khôi phục mật khẩu",
+                Body: emailBody
+            );
+
+            // Gửi email không đợi (Fire-and-forget) để đảm bảo thời gian phản hồi API là như nhau
+            // Phải tạo Service Scope mới vì IEmailService của Controller sẽ bị huỷ khi Request kết thúc
+            _ = Task.Run(async () => 
+            {
+                using var scope = HttpContext.RequestServices.CreateScope();
+                var scopedEmailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                await scopedEmailService.SendEmailAsync(sendEmailRequest);
+            });
+        }
+        else
+        {
+            // Thực hiện tính toán giả và delay (Dummy Hash & Delay) để mô phỏng thời gian lưu DB
+            // Điều này giúp phản hồi API luôn đồng nhất về mặt thời gian (chống Timing Attack)
+            var dummyRaw = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            _ = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(dummyRaw));
+            
+            await Task.Delay(20); // Mô phỏng thời gian _dbContext.SaveChangesAsync()
         }
 
-        // SCRUM-97: Tạo token ngẫu nhiên, an toàn (không đoán được)
-        var rawToken = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
-        
-        // Hash token bằng SHA256 trước khi lưu vào DB để bảo mật
-        using var sha256 = System.Security.Cryptography.SHA256.Create();
-        var hashedBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(rawToken));
-        var hashedToken = Convert.ToBase64String(hashedBytes);
-
-        user.PasswordResetToken = hashedToken;
-        user.PasswordResetTokenExpiresAt = DateTimeOffset.UtcNow.AddMinutes(30);
-        await _dbContext.SaveChangesAsync();
-
-        // Gửi rawToken qua EmailService bằng SMTP.
-        var resetLink = $"https://yourdomain.com/dat-lai-mat-khau?token={Uri.EscapeDataString(rawToken)}&email={Uri.EscapeDataString(request.Email)}";
-        var emailBody = $@"
-            <h3>Yêu cầu đặt lại mật khẩu</h3>
-            <p>Xin chào,</p>
-            <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản hệ thống ATS. Vui lòng click vào liên kết bên dưới để đặt lại mật khẩu:</p>
-            <p><a href='{resetLink}'>{resetLink}</a></p>
-            <p>Liên kết này sẽ hết hạn trong vòng 30 phút.</p>
-            <p>Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</p>
-        ";
-
-        var sendEmailRequest = new SendEmailRequestDto(
-            ToEmail: request.Email,
-            Subject: "[ATS] Yêu cầu khôi phục mật khẩu",
-            Body: emailBody
-        );
-
-        await _emailService.SendEmailAsync(sendEmailRequest);
-
-        return Ok(new { isSuccess = true, message = "Đã gửi liên kết khôi phục mật khẩu qua email." });
+        return Ok(new { isSuccess = true, message = genericMessage });
     }
 
     /// <summary>
