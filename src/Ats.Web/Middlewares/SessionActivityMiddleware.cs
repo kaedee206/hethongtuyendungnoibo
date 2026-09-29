@@ -20,6 +20,22 @@ public class SessionActivityMiddleware(RequestDelegate next)
             {
                 if (DateTimeOffset.UtcNow > absoluteExp)
                 {
+                    // SCRUM-95: Ghi log sự kiện hết hạn phiên
+                    var auditLog = new Ats.Web.Models.Entities.AuthAuditLog
+                    {
+                        Email = context.Session.GetString("UserEmail") ?? "Unknown",
+                        UserId = userId,
+                        SessionId = context.Session.Id,
+                        IsSuccess = true,
+                        EventType = "SessionExpire",
+                        Reason = "Phiên làm việc hết hạn do Absolute Timeout",
+                        IpAddress = context.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
+                        UserAgent = context.Request.Headers["User-Agent"].ToString() ?? "Unknown",
+                        Timestamp = DateTimeOffset.UtcNow
+                    };
+                    dbContext.AuthAuditLogs.Add(auditLog);
+                    await dbContext.SaveChangesAsync();
+
                     // Đã vượt quá giới hạn phiên tuyệt đối -> Bắt buộc đăng xuất
                     context.Session.Clear();
                     await Microsoft.AspNetCore.Authentication.AuthenticationHttpContextExtensions.SignOutAsync(context, "AtsCookieScheme");
@@ -42,6 +58,22 @@ public class SessionActivityMiddleware(RequestDelegate next)
             {
                 if (userSession.IsRevoked)
                 {
+                    // SCRUM-95: Ghi log sự kiện bị đăng xuất do Revoke
+                    var revokeLog = new Ats.Web.Models.Entities.AuthAuditLog
+                    {
+                        Email = context.Session.GetString("UserEmail") ?? "Unknown",
+                        UserId = userId,
+                        SessionId = context.Session.Id,
+                        IsSuccess = true,
+                        EventType = "SessionRevoked",
+                        Reason = "Phiên làm việc bị đá văng do đăng xuất từ xa",
+                        IpAddress = context.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
+                        UserAgent = context.Request.Headers["User-Agent"].ToString() ?? "Unknown",
+                        Timestamp = DateTimeOffset.UtcNow
+                    };
+                    dbContext.AuthAuditLogs.Add(revokeLog);
+                    await dbContext.SaveChangesAsync();
+
                     // Phiên đã bị đăng xuất từ xa
                     context.Session.Clear();
                     await Microsoft.AspNetCore.Authentication.AuthenticationHttpContextExtensions.SignOutAsync(context, "AtsCookieScheme");
@@ -59,6 +91,22 @@ public class SessionActivityMiddleware(RequestDelegate next)
                 if ((DateTimeOffset.UtcNow - userSession.LastActiveAt).TotalMinutes >= 5)
                 {
                     userSession.LastActiveAt = DateTimeOffset.UtcNow;
+
+                    // SCRUM-95: Ghi log sự kiện gia hạn phiên (mỗi 5 phút để tránh spam DB)
+                    var renewLog = new Ats.Web.Models.Entities.AuthAuditLog
+                    {
+                        Email = context.Session.GetString("UserEmail") ?? "Unknown",
+                        UserId = userId,
+                        SessionId = context.Session.Id,
+                        IsSuccess = true,
+                        EventType = "SessionRenew",
+                        Reason = "Gia hạn phiên làm việc tự động",
+                        IpAddress = context.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
+                        UserAgent = context.Request.Headers["User-Agent"].ToString() ?? "Unknown",
+                        Timestamp = DateTimeOffset.UtcNow
+                    };
+                    dbContext.AuthAuditLogs.Add(renewLog);
+
                     await dbContext.SaveChangesAsync();
                 }
             }

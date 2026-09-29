@@ -27,12 +27,14 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
 
         var result = await _authService.AuthenticateAsync(request, cancellationToken);
 
-        // SCRUM-85: Ghi log audit cho lần đăng nhập
+        // SCRUM-85 & SCRUM-95: Ghi log audit cho lần đăng nhập / tạo phiên
         var auditLog = new AuthAuditLog
         {
             Email = request.Email,
             UserId = result.Data?.Id, // Có thể null nếu đăng nhập thất bại
+            SessionId = result.IsSuccess ? HttpContext.Session.Id : null,
             IsSuccess = result.IsSuccess,
+            EventType = result.IsSuccess ? "SessionCreate" : "LoginFailed",
             Reason = result.Message,
             IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
             UserAgent = Request.Headers["User-Agent"].ToString() ?? "Unknown",
@@ -173,6 +175,22 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
             return NotFound(new { isSuccess = false, message = "Không tìm thấy phiên làm việc." });
 
         sessionToRevoke.IsRevoked = true;
+
+        // SCRUM-95: Ghi log sự kiện đăng xuất từ xa
+        var auditLog = new AuthAuditLog
+        {
+            Email = HttpContext.Session.GetString("UserEmail") ?? "Unknown",
+            UserId = userId,
+            SessionId = sessionId.ToString(),
+            IsSuccess = true,
+            EventType = "RemoteLogout",
+            Reason = $"Đăng xuất từ xa thiết bị có ID: {sessionId}",
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
+            UserAgent = Request.Headers["User-Agent"].ToString() ?? "Unknown",
+            Timestamp = DateTimeOffset.UtcNow
+        };
+        _dbContext.AuthAuditLogs.Add(auditLog);
+
         await _dbContext.SaveChangesAsync();
 
         return Ok(new { isSuccess = true, message = "Đã đăng xuất phiên làm việc từ xa." });
@@ -184,6 +202,28 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
     [HttpPost("dang-xuat")]
     public async Task<IActionResult> Logout()
     {
+        var currentSessionId = HttpContext.Session.Id;
+        var userIdString = HttpContext.Session.GetString("UserId");
+
+        // SCRUM-95: Ghi log sự kiện đăng xuất (nếu có user)
+        if (!string.IsNullOrEmpty(userIdString) && Guid.TryParse(userIdString, out var userId))
+        {
+            var auditLog = new AuthAuditLog
+            {
+                Email = HttpContext.Session.GetString("UserEmail") ?? "Unknown",
+                UserId = userId,
+                SessionId = currentSessionId,
+                IsSuccess = true,
+                EventType = "SessionLogout",
+                Reason = "Người dùng chủ động đăng xuất",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
+                UserAgent = Request.Headers["User-Agent"].ToString() ?? "Unknown",
+                Timestamp = DateTimeOffset.UtcNow
+            };
+            _dbContext.AuthAuditLogs.Add(auditLog);
+            await _dbContext.SaveChangesAsync();
+        }
+
         // 1. Xóa sạch toàn bộ dữ liệu lưu trong Session phía Server
         HttpContext.Session.Clear();
 
