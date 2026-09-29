@@ -14,6 +14,26 @@ public class SessionActivityMiddleware(RequestDelegate next)
 
         if (!string.IsNullOrEmpty(userIdString) && Guid.TryParse(userIdString, out var userId))
         {
+            // Kiểm tra Absolute Timeout (SCRUM-90)
+            var absoluteExpStr = context.Session.GetString("AbsoluteExpiration");
+            if (!string.IsNullOrEmpty(absoluteExpStr) && DateTimeOffset.TryParse(absoluteExpStr, out var absoluteExp))
+            {
+                if (DateTimeOffset.UtcNow > absoluteExp)
+                {
+                    // Đã vượt quá giới hạn phiên tuyệt đối -> Bắt buộc đăng xuất
+                    context.Session.Clear();
+                    await Microsoft.AspNetCore.Authentication.AuthenticationHttpContextExtensions.SignOutAsync(context, "AtsCookieScheme");
+                    context.Response.Cookies.Delete("Ats.Session");
+                    context.Response.Cookies.Delete("Ats.AuthCookie");
+                    context.Response.Cookies.Delete(".AspNetCore.Session");
+
+                    context.Response.StatusCode = 401; // Unauthorized
+                    context.Response.ContentType = "application/json";
+                    await context.Response.WriteAsync("{\"isSuccess\": false, \"message\": \"Phiên làm việc đã vượt quá thời gian tối đa cho phép. Vui lòng đăng nhập lại.\"}");
+                    return;
+                }
+            }
+
             // Tự động làm tươi Session (Sliding Expiration tự kích hoạt khi truy cập Session)
             context.Session.SetString("LastActive", DateTimeOffset.UtcNow.ToString("o"));
 

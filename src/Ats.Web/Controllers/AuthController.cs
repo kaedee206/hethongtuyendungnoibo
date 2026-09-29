@@ -44,7 +44,7 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
         if (!result.IsSuccess)
             return Unauthorized(new { message = result.Message });
 
-        // SCRUM-84: Tạo và lưu thông tin phiên vào Session phía Server
+        // SCRUM-84 & SCRUM-90: Tạo và lưu thông tin phiên vào Session phía Server
         if (result.Data != null)
         {
             HttpContext.Session.SetString("UserId", result.Data.Id.ToString());
@@ -52,6 +52,11 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
             HttpContext.Session.SetString("UserRole", result.Data.Role);
             HttpContext.Session.SetString("FullName", result.Data.FullName);
             HttpContext.Session.SetString("LastActive", DateTimeOffset.UtcNow.ToString("o"));
+
+            // Tính toán và lưu Absolute Timeout
+            var absoluteTimeoutStr = Environment.GetEnvironmentVariable("SESSION_ABSOLUTE_TIMEOUT_MINUTES") ?? "720"; // mặc định 12 tiếng
+            int absoluteTimeoutMinutes = int.TryParse(absoluteTimeoutStr, out var parsedAbsolute) ? parsedAbsolute : 720;
+            HttpContext.Session.SetString("AbsoluteExpiration", DateTimeOffset.UtcNow.AddMinutes(absoluteTimeoutMinutes).ToString("o"));
 
             // Thiết lập Cookie Authentication song song để hỗ trợ User.Identity trong request pipeline
             var claims = new List<Claim>

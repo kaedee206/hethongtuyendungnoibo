@@ -29,11 +29,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
-// 1. Thêm cấu hình Session với thời gian hết hạn (30 phút không hoạt động)
+// Cấu hình thời gian Session (Idle timeout)
+var idleTimeoutMinutesStr = Environment.GetEnvironmentVariable("SESSION_IDLE_TIMEOUT_MINUTES") ?? "30";
+int idleTimeoutMinutes = int.TryParse(idleTimeoutMinutesStr, out var parsedIdle) ? parsedIdle : 30;
+
+// 1. Thêm cấu hình Session với thời gian hết hạn (Idle timeout)
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30); // Thời gian phiên 30 phút
+    options.IdleTimeout = TimeSpan.FromMinutes(idleTimeoutMinutes);
     options.Cookie.Name = "Ats.Session";
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
@@ -45,7 +49,7 @@ builder.Services.AddAuthentication("AtsCookieScheme")
     .AddCookie("AtsCookieScheme", options =>
     {
         options.Cookie.Name = "Ats.AuthCookie";
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(idleTimeoutMinutes);
         options.SlidingExpiration = true; // Tự động gia hạn phiên khi user hoạt động > 50% thời hạn
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
