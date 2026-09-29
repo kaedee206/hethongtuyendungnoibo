@@ -455,4 +455,93 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
 
         return Ok(new { isSuccess = true, message = "Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại trên tất cả thiết bị." });
     }
+
+    /// <summary>
+    /// API Đổi mật khẩu cho người dùng đang đăng nhập (POST: /api/xac-thuc/doi-mat-khau)
+    /// </summary>
+    [HttpPost("doi-mat-khau")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto request)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        // 1. Kiểm tra User đã đăng nhập chưa
+        var userIdString = HttpContext.Session.GetString("UserId");
+        if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId))
+        {
+            return Unauthorized(new { isSuccess = false, message = "Vui lòng đăng nhập để thực hiện chức năng này." });
+        }
+
+        var user = await _dbContext.Users.FindAsync(userId);
+        if (user == null)
+        {
+            return Unauthorized(new { isSuccess = false, message = "Không tìm thấy thông tin tài khoản." });
+        }
+
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+        var userAgent = Request.Headers["User-Agent"].ToString() ?? "Unknown";
+
+        // 2. SCRUM-109: Xác thực mật khẩu hiện tại
+        bool isCurrentPasswordValid = false;
+        try
+        {
+            isCurrentPasswordValid = BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash);
+        }
+        catch { /* Bỏ qua lỗi format */ }
+
+        if (!isCurrentPasswordValid)
+        {
+            // Trả lỗi rõ ràng nhưng không quá chi tiết để tránh dò rỉ thông tin
+            _dbContext.AuthAuditLogs.Add(new AuthAuditLog { Email = user.Email, UserId = user.Id, IsSuccess = false, EventType = "ChangePasswordFailed", Reason = "Sai mật khẩu hiện tại", IpAddress = ip, UserAgent = userAgent });
+            await _dbContext.SaveChangesAsync();
+            return BadRequest(new { isSuccess = false, message = "Mật khẩu hiện tại không chính xác." });
+        }
+
+        // 3. Đảm bảo mật khẩu mới không trùng mật khẩu cũ
+        if (request.CurrentPassword == request.NewPassword)
+        {
+            _dbContext.AuthAuditLogs.Add(new AuthAuditLog { Email = user.Email, UserId = user.Id, IsSuccess = false, EventType = "ChangePasswordFailed", Reason = "Mật khẩu mới trùng mật khẩu hiện tại", IpAddress = ip, UserAgent = userAgent });
+            await _dbContext.SaveChangesAsync();
+            return BadRequest(new { isSuccess = false, message = "Mật khẩu mới không được trùng với mật khẩu hiện tại." });
+        }
+
+        // 4. Lưu mật khẩu mới
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+
+        // 5. Huỷ tất cả các phiên đăng nhập khác (SCRUM-106 áp dụng tương tự)
+        var currentSessionId = HttpContext.Session.Id;
+        var otherSessions = await _dbContext.UserSessions
+            .Where(s => s.UserId == user.Id && s.SessionId != currentSessionId && !s.IsRevoked)
+            .ToListAsync();
+            
+        foreach (var session in otherSessions)
+        {
+            session.IsRevoked = true;
+            _dbContext.AuthAuditLogs.Add(new AuthAuditLog
+            {
+                Email = user.Email,
+                UserId = user.Id,
+                SessionId = session.SessionId,
+                IsSuccess = true,
+                EventType = "RemoteLogout",
+                Reason = "Hủy phiên do người dùng đổi mật khẩu",
+                IpAddress = ip,
+                UserAgent = "System",
+                Timestamp = DateTimeOffset.UtcNow
+            });
+        }
+
+        _dbContext.AuthAuditLogs.Add(new AuthAuditLog {
+            Email = user.Email,
+            UserId = user.Id,
+            IsSuccess = true,
+            EventType = "ChangePasswordSuccess",
+            Reason = "Đổi mật khẩu thành công",
+            IpAddress = ip,
+            UserAgent = userAgent
+        });
+
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(new { isSuccess = true, message = "Đổi mật khẩu thành công." });
+    }
 }
