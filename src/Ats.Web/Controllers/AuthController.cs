@@ -392,8 +392,32 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
         user.FailedLoginAttempts = 0;
         user.LockedUntil = null;
 
+        // 7. SCRUM-106: Huỷ tất cả phiên đăng nhập hiện tại trên mọi thiết bị
+        var activeSessions = await _dbContext.UserSessions
+            .Where(s => s.UserId == user.Id && !s.IsRevoked)
+            .ToListAsync();
+            
+        foreach (var session in activeSessions)
+        {
+            session.IsRevoked = true;
+            
+            // Có thể ghi thêm Log (tuỳ chọn)
+            _dbContext.AuthAuditLogs.Add(new AuthAuditLog
+            {
+                Email = user.Email,
+                UserId = user.Id,
+                SessionId = session.SessionId,
+                IsSuccess = true,
+                EventType = "RemoteLogout",
+                Reason = "Hệ thống tự động hủy phiên do người dùng đổi mật khẩu",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
+                UserAgent = "System",
+                Timestamp = DateTimeOffset.UtcNow
+            });
+        }
+
         await _dbContext.SaveChangesAsync();
 
-        return Ok(new { isSuccess = true, message = "Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại." });
+        return Ok(new { isSuccess = true, message = "Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại trên tất cả thiết bị." });
     }
 }
