@@ -1,6 +1,7 @@
 using Ats.Web.Data;
 using Ats.Web.Models.DTOs;
 using Ats.Web.Models.Entities;
+using Ats.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,10 +12,12 @@ namespace Ats.Web.Controllers;
 public class UserController : ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly IEmailService _emailService;
 
-    public UserController(ApplicationDbContext dbContext)
+    public UserController(ApplicationDbContext dbContext, IEmailService emailService)
     {
         _dbContext = dbContext;
+        _emailService = emailService;
     }
 
     /// <summary>
@@ -236,5 +239,125 @@ public class UserController : ControllerBase
         await _dbContext.SaveChangesAsync();
 
         return Ok(new { isSuccess = true, message = successMessage });
+    }
+
+    /// <summary>
+    /// API Gửi lại email kích hoạt (POST: /api/tai-khoan/{id}/gui-lai-email) - SCRUM-139
+    /// </summary>
+    [HttpPost("{id}/gui-lai-email")]
+    public async Task<IActionResult> ResendActivationEmail(Guid id)
+    {
+        var currentUserIdString = HttpContext.Session.GetString("UserId");
+        if (string.IsNullOrEmpty(currentUserIdString) || !Guid.TryParse(currentUserIdString, out var currentUserId))
+        {
+            return Unauthorized(new { isSuccess = false, message = "Vui lòng đăng nhập để thực hiện chức năng này." });
+        }
+
+        var currentUser = await _dbContext.Users.FindAsync(currentUserId);
+        if (currentUser == null || currentUser.Role != "Admin")
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { isSuccess = false, message = "Bạn không có quyền thực hiện chức năng này." });
+        }
+
+        var targetUser = await _dbContext.Users.FindAsync(id);
+        if (targetUser == null)
+        {
+            return NotFound(new { isSuccess = false, message = "Không tìm thấy tài khoản." });
+        }
+
+        if (targetUser.Status != "PENDING")
+        {
+            return BadRequest(new { isSuccess = false, message = "Tài khoản không ở trạng thái chờ kích hoạt." });
+        }
+
+        // Giới hạn số lần gửi (tối đa 3 lần/ngày)
+        if (targetUser.LastActivationEmailSentAt.HasValue && 
+            targetUser.LastActivationEmailSentAt.Value.Date == DateTimeOffset.UtcNow.Date &&
+            targetUser.ActivationEmailSentCount >= 3)
+        {
+            return BadRequest(new { isSuccess = false, message = "Đã vượt quá số lần gửi email kích hoạt trong ngày (tối đa 3 lần)." });
+        }
+
+        // Nếu qua ngày mới, reset counter
+        if (!targetUser.LastActivationEmailSentAt.HasValue || targetUser.LastActivationEmailSentAt.Value.Date != DateTimeOffset.UtcNow.Date)
+        {
+            targetUser.ActivationEmailSentCount = 0;
+        }
+
+        // Sinh mật khẩu tạm mới
+        string tempPassword = GenerateStrongPassword();
+        targetUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(tempPassword);
+        
+        targetUser.ActivationEmailSentCount++;
+        targetUser.LastActivationEmailSentAt = DateTimeOffset.UtcNow;
+        targetUser.UpdatedBy = currentUserId;
+        targetUser.UpdatedAt = DateTimeOffset.UtcNow;
+
+        // Audit Log
+        _dbContext.AuthAuditLogs.Add(new AuthAuditLog
+        {
+            UserId = targetUser.Id,
+            Email = targetUser.Email,
+            IsSuccess = true,
+            Reason = "Gửi lại email kích hoạt thành công",
+            EventType = "ActivationEmailResent",
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
+            UserAgent = Request.Headers["User-Agent"].ToString() ?? "Unknown",
+            Timestamp = DateTimeOffset.UtcNow,
+            PerformedBy = currentUserId
+        });
+
+        await _dbContext.SaveChangesAsync();
+
+        // Gửi email ngầm
+        var loginLink = "https://yourdomain.com/dang-nhap";
+        var emailBody = $@"
+            <h3>Chào mừng bạn đến với ATS</h3>
+            <p>Xin chào {targetUser.FullName},</p>
+            <p>Admin vừa gửi lại thông tin đăng nhập cho bạn.</p>
+            <p>Dưới đây là mật khẩu mới của bạn (mật khẩu cũ đã bị vô hiệu hóa):</p>
+            <ul>
+                <li><strong>Email:</strong> {targetUser.Email}</li>
+                <li><strong>Mật khẩu tạm:</strong> {tempPassword}</li>
+            </ul>
+            <p>Vui lòng đăng nhập tại <a href='{loginLink}'>{loginLink}</a> và đổi mật khẩu ngay lập tức.</p>";
+
+        _ = _emailService.SendEmailAsync(new SendEmailRequestDto(targetUser.Email, "Gửi lại thông tin tài khoản ATS", emailBody));
+
+        return Ok(new { isSuccess = true, message = "Đã gửi lại email kích hoạt thành công." });
+    }
+
+    private string GenerateStrongPassword()
+    {
+        const string uppers = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const string lowers = "abcdefghijklmnopqrstuvwxyz";
+        const string digits = "0123456789";
+        const string specials = "@$!%*?&";
+        const string allChars = uppers + lowers + digits + specials;
+
+        var charArr = new char[8];
+        using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
+        {
+            var bytes = new byte[8];
+            rng.GetBytes(bytes);
+
+            charArr[0] = uppers[bytes[0] % uppers.Length];
+            charArr[1] = lowers[bytes[1] % lowers.Length];
+            charArr[2] = digits[bytes[2] % digits.Length];
+            charArr[3] = specials[bytes[3] % specials.Length];
+
+            for (int i = 4; i < 8; i++)
+            {
+                charArr[i] = allChars[bytes[i] % allChars.Length];
+            }
+
+            for (int i = charArr.Length - 1; i > 0; i--)
+            {
+                int j = bytes[i] % (i + 1);
+                (charArr[i], charArr[j]) = (charArr[j], charArr[i]);
+            }
+        }
+
+        return new string(charArr);
     }
 }
