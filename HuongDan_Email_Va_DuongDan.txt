@@ -1,0 +1,26 @@
+# HƯỚNG DẪN CẤU HÌNH VÀ TÙY CHỈNH EMAIL VÀ ĐƯỜNG DẪN TRONG HỆ THỐNG ATS
+
+Hệ thống ATS đã được thiết kế lại để tối ưu hóa việc quản lý Email và các đường dẫn (URL) liên kết sang Frontend. Tài liệu này hướng dẫn cách thay đổi nội dung email và đường dẫn.
+
+## 1. Cách thay đổi Đường dẫn (URL) Frontend
+Thay vì hardcode các đường dẫn như `https://yourdomain.com/dang-nhap` ở nhiều file Controller khác nhau, hệ thống hiện tại đã gom nhóm chúng vào một file duy nhất:
+*   **File cấu hình:** `src/Ats.Web/Constants/AppConstants.cs`
+
+Trong file này, `FrontendUrl` sẽ được lấy từ biến môi trường `FRONTEND_URL`. 
+### Cách thay đổi:
+Bạn chỉ cần mở file `.env` (hoặc cấu hình Environment Variables trên server) và thêm cấu hình:
+```env
+FRONTEND_URL=https://hr.congtycuaban.com
+```
+Hệ thống sẽ tự động tự cập nhật tất cả các link trong ứng dụng (Đăng nhập, Đặt lại mật khẩu) thành link tương ứng (VD: `https://hr.congtycuaban.com/dang-nhap`).
+
+## 2. Cách thay đổi Giao diện/Nội dung Email
+Toàn bộ mã HTML của các mẫu email (Login, Reset Password, Welcome...) đã được chuyển từ các file Controller/Service ra một file Constants chuyên biệt.
+
+*   **File cấu hình:** `src/Ats.Web/Constants/EmailTemplates.cs`
+
+### Cách thay đổi:
+*   Mở file `EmailTemplates.cs`.
+*   Tìm hàm chứa loại email bạn muốn sửa (ví dụ: `AccountCreated`, `ForgotPassword`).
+*   Thay đổi mã HTML hoặc chữ tiếng Việt bên trong chuỗi string nội suy (`$@""`).
+*   Hệ thống ở mọi chỗ (Controller, Service) gọi đến email đó sẽ tự động được cập nhật giao diện mới mà không cần phải đi sửa từng API.

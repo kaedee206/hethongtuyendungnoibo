@@ -311,7 +311,7 @@ public class UserController : ControllerBase
         await _dbContext.SaveChangesAsync();
 
         // Gửi email ngầm
-        var loginLink = "https://yourdomain.com/dang-nhap";
+        var loginLink = AppConstants.LoginUrl;
         var emailBody = EmailTemplates.ActivationEmailResent(targetUser.FullName, targetUser.Email, tempPassword, loginLink);
 
         _ = _emailService.SendEmailAsync(new SendEmailRequestDto(targetUser.Email, "Gửi lại thông tin tài khoản ATS", emailBody));

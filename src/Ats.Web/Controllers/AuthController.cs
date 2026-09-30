@@ -280,7 +280,7 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
             user.PasswordResetTokenExpiresAt = DateTimeOffset.UtcNow.AddMinutes(30);
             await _dbContext.SaveChangesAsync();
 
-            var resetLink = $"https://yourdomain.com/dat-lai-mat-khau?token={Uri.EscapeDataString(rawToken)}&email={Uri.EscapeDataString(request.Email)}";
+            var resetLink = $"{AppConstants.ForgotPasswordUrl}?token={Uri.EscapeDataString(rawToken)}&email={Uri.EscapeDataString(request.Email)}";
             var emailBody = EmailTemplates.ForgotPassword(resetLink);
 
             var sendEmailRequest = new SendEmailRequestDto(
@@ -668,7 +668,7 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
         await _dbContext.SaveChangesAsync();
 
         // Gửi email kèm mật khẩu tạm (Fire-and-forget để hoàn thành gửi mail ngầm dưới 30s)
-        var loginLink = "https://yourdomain.com/dang-nhap";
+        var loginLink = AppConstants.LoginUrl;
         var emailBody = EmailTemplates.AccountCreated(newUser.FullName, newUser.Email, tempPassword, loginLink);
 
         var sendEmailRequest = new SendEmailRequestDto(
