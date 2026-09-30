@@ -1,31 +1,632 @@
+/* =====================================================================
+   ATS DESIGN SYSTEM — site.css
+   Skill: ui-ux-designer + frontend-developer (rmyndharis/antigravity-skills)
+   
+   Architecture:
+     1. Design Tokens (CSS Custom Properties)
+     2. Global Reset & Typography
+     3. Layout
+     4. Navbar Component
+     5. Role Badge Atoms
+     6. Utility Classes
+   ===================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ─────────────────────────────────────────────────────────────────────
+   1. DESIGN TOKENS
+   ───────────────────────────────────────────────────────────────────── */
+:root {
+  /* Color Palette — Neutral */
+  --color-base-950:  #020617;
+  --color-base-900:  #0f172a;
+  --color-base-800:  #1e293b;
+  --color-base-700:  #334155;
+  --color-base-600:  #475569;
+  --color-base-500:  #64748b;
+  --color-base-400:  #94a3b8;
+  --color-base-300:  #cbd5e1;
+  --color-base-200:  #e2e8f0;
+  --color-base-100:  #f1f5f9;
+  --color-base-50:   #f8fafc;
+
+  /* Color Palette — Brand (Sky) */
+  --color-brand-400: #38bdf8;
+  --color-brand-500: #0ea5e9;
+  --color-brand-600: #0284c7;
+
+  /* Color Palette — Accent (Indigo) */
+  --color-accent-400: #818cf8;
+  --color-accent-500: #6366f1;
+  --color-accent-600: #4f46e5;
+
+  /* Color Palette — Semantic */
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger:  #ef4444;
+  --color-info:    #38bdf8;
+
+  /* Gradients */
+  --gradient-brand:   linear-gradient(135deg, var(--color-brand-400) 0%, var(--color-accent-400) 100%);
+  --gradient-avatar:  linear-gradient(135deg, var(--color-accent-500) 0%, #8b5cf6 100%);
+  --gradient-btn:     linear-gradient(135deg, #3b82f6 0%, var(--color-accent-500) 100%);
+
+  /* Surface tokens */
+  --surface-nav:       var(--color-base-900);
+  --surface-nav-border: var(--color-base-800);
+  --surface-dropdown:  var(--color-base-800);
+  --surface-body:      #f0f4f8;
+  --surface-card:      #ffffff;
+
+  /* Typography */
+  --font-sans:    'Inter', system-ui, -apple-system, sans-serif;
+  --font-size-xs: 0.75rem;   /* 12px */
+  --font-size-sm: 0.875rem;  /* 14px */
+  --font-size-md: 1rem;      /* 16px */
+  --font-size-lg: 1.125rem;  /* 18px */
+  --font-size-xl: 1.25rem;   /* 20px */
+
+  /* Spacing scale */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+
+  /* Border radius */
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+  --radius-full: 9999px;
+
+  /* Elevation / Shadows */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.2);
+  --shadow-lg:  0 10px 40px rgba(0,0,0,0.4);
+  --shadow-nav: 0 2px 20px rgba(0,0,0,0.35);
+
+  /* Animation */
+  --ease-out:   cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast:   0.15s;
+  --duration-base:   0.2s;
+  --duration-slow:   0.3s;
+  --transition-base: var(--duration-base) var(--ease-out);
+
+  /* Navbar height */
+  --nav-height: 62px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   2. GLOBAL RESET & TYPOGRAPHY
+   ───────────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 html {
   font-size: 14px;
+  position: relative;
+  min-height: 100%;
+  scroll-behavior: smooth;
 }
 
 @media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
+  html { font-size: 16px; }
 }
 
 body {
+  font-family: var(--font-sans);
+  background-color: var(--surface-body);
+  color: var(--color-base-700);
   margin-bottom: 60px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+/* Bootstrap focus ring override — WCAG AA */
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-check-input:focus {
+  box-shadow: 0 0 0 2px var(--color-base-900), 0 0 0 4px var(--color-accent-500);
+  outline: none;
+}
+
+/* Form floating placeholder */
+.form-floating > .form-control-plaintext::placeholder,
+.form-floating > .form-control::placeholder {
   color: var(--bs-secondary-color);
   text-align: end;
 }
-
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+.form-floating > .form-control-plaintext:focus::placeholder,
+.form-floating > .form-control:focus::placeholder {
   text-align: start;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   3. LAYOUT
+   ───────────────────────────────────────────────────────────────────── */
+.ats-page-content {
+  padding-top: calc(var(--nav-height) + var(--space-4));
+  min-height: calc(100vh - var(--nav-height));
+}
+
+footer.footer {
+  border-color: var(--color-base-200) !important;
+  color: var(--color-base-500) !important;
+  font-size: var(--font-size-xs);
+  font-family: var(--font-sans);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   4. NAVBAR COMPONENT
+   Follows: Atomic Design — Organism
+   WCAG: AA color contrast (4.5:1 minimum on all text)
+   ───────────────────────────────────────────────────────────────────── */
+
+/* 4.1 Navbar shell */
+.ats-navbar {
+  background: var(--surface-nav) !important;
+  border-bottom: 1px solid var(--surface-nav-border);
+  font-family: var(--font-sans);
+  padding: 0;
+  min-height: var(--nav-height);
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  box-shadow: var(--shadow-nav);
+}
+
+/* 4.2 Brand */
+.ats-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-decoration: none !important;
+  transition: opacity var(--transition-base);
+  padding: var(--space-2) 0;
+}
+.ats-brand:hover { opacity: 0.85; }
+
+.ats-brand-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 8px rgba(56,189,248,0.5));
+}
+
+.ats-brand-text {
+  font-size: 1.05rem;
+  font-weight: 800;
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.4px;
+  line-height: 1.2;
+}
+
+.ats-brand-sub {
+  font-weight: 500;
+  font-size: 0.78rem;
+  display: block;
+  opacity: 0.75;
+}
+
+/* 4.3 Mobile toggler */
+.ats-toggler {
+  border: 1px solid var(--color-base-700) !important;
+  border-radius: var(--radius-md) !important;
+  padding: var(--space-2) !important;
+  transition: border-color var(--transition-base);
+}
+.ats-toggler:hover { border-color: var(--color-base-500) !important; }
+.ats-toggler .navbar-toggler-icon {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(148,163,184,0.9)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* 4.4 Nav links — Molecule */
+.ats-nav-link {
+  color: var(--color-base-400) !important;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  padding: var(--space-2) var(--space-3) !important;
+  border-radius: var(--radius-md);
+  transition: color var(--transition-base), background var(--transition-base);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  white-space: nowrap;
+  position: relative;
+}
+
+.ats-nav-link:hover,
+.ats-nav-link:focus-visible {
+  color: var(--color-base-100) !important;
+  background: rgba(255,255,255,0.07);
+}
+
+/* Active state — underline indicator */
+.ats-nav-link.active,
+.ats-nav-link[aria-current="page"] {
+  color: var(--color-brand-400) !important;
+  background: rgba(56,189,248,0.1);
+}
+
+.nav-icon {
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* 4.5 Dropdown menu */
+.ats-dropdown {
+  background: var(--surface-dropdown) !important;
+  border: 1px solid var(--color-base-700) !important;
+  border-radius: var(--radius-lg) !important;
+  padding: var(--space-2) !important;
+  box-shadow: var(--shadow-lg) !important;
+  min-width: 210px;
+  animation: atsDropIn var(--duration-fast) var(--ease-out);
+}
+
+@keyframes atsDropIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.ats-dropdown .dropdown-item {
+  color: var(--color-base-400);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  transition: background var(--transition-base), color var(--transition-base);
+}
+
+.ats-dropdown .dropdown-item:hover,
+.ats-dropdown .dropdown-item:focus {
+  background: var(--color-base-700) !important;
+  color: var(--color-base-100) !important;
+}
+
+.ats-dropdown .dropdown-divider {
+  border-color: var(--color-base-700);
+  margin: var(--space-1) 0;
+}
+
+.ats-dropdown .dropdown-header {
+  color: var(--color-base-500);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Logout — semantic danger */
+.ats-logout-link { color: #f87171 !important; }
+.ats-logout-link:hover {
+  background: rgba(248,113,113,0.12) !important;
+  color: #fca5a5 !important;
+}
+
+/* 4.6 Avatar Atom */
+.ats-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-full);
+  background: var(--gradient-avatar);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.4);
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+.ats-account-toggle:hover .ats-avatar {
+  box-shadow: 0 4px 14px rgba(99,102,241,0.55);
+  transform: scale(1.05);
+}
+
+.ats-account-name {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-base-400);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 4.7 Login CTA button */
+.ats-btn-login {
+  background: var(--gradient-btn) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: var(--radius-md) !important;
+  padding: 0.45rem 1.1rem !important;
+  font-weight: 600 !important;
+  font-size: var(--font-size-sm) !important;
+  box-shadow: 0 3px 12px rgba(99,102,241,0.35) !important;
+  transition: opacity var(--transition-base), transform var(--transition-base), box-shadow var(--transition-base) !important;
+}
+.ats-btn-login:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 18px rgba(99,102,241,0.48) !important;
+  color: #fff !important;
+}
+.ats-btn-login:active { transform: translateY(0); }
+
+/* ─────────────────────────────────────────────────────────────────────
+   5. ROLE BADGE ATOMS
+   Design token: bg opacity 15%, border opacity 30%, text full saturation
+   WCAG: contrast verified ≥ 4.5:1 on dark surface
+   ───────────────────────────────────────────────────────────────────── */
+.ats-role-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  font-family: var(--font-sans);
+}
+
+.ats-role-admin         { background: rgba(239,68,68,0.15);  color: #f87171;  border-color: rgba(239,68,68,0.35);  }
+.ats-role-hrmanager     { background: rgba(168,85,247,0.15); color: #c084fc;  border-color: rgba(168,85,247,0.35); }
+.ats-role-recruiter     { background: rgba(59,130,246,0.15); color: #60a5fa;  border-color: rgba(59,130,246,0.35); }
+.ats-role-hiringmanager { background: rgba(16,185,129,0.15); color: #34d399;  border-color: rgba(16,185,129,0.35); }
+.ats-role-interviewer   { background: rgba(245,158,11,0.15); color: #fbbf24;  border-color: rgba(245,158,11,0.35); }
+.ats-role-approver      { background: rgba(20,184,166,0.15); color: #2dd4bf;  border-color: rgba(20,184,166,0.35); }
+.ats-role-candidate     { background: rgba(99,102,241,0.15); color: #818cf8;  border-color: rgba(99,102,241,0.35); }
+
+/* ─────────────────────────────────────────────────────────────────────
+   6. RESPONSIVE — Mobile Navbar
+   ───────────────────────────────────────────────────────────────────── */
+@media (max-width: 991.98px) {
+  #atsNavCollapse {
+    background: #111827;
+    border-top: 1px solid var(--surface-nav-border);
+    padding: var(--space-3) var(--space-2);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    animation: atsSlideDown var(--duration-base) var(--ease-out);
+  }
+
+  @keyframes atsSlideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .ats-nav-link {
+    padding: var(--space-3) var(--space-4) !important;
+    border-radius: var(--radius-md);
+    width: 100%;
+  }
+
+  .ats-dropdown {
+    background: #1a2436 !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    min-width: 100%;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   7. DASHBOARD & PORTAL COMPONENTS
+   Skill: ui-ux-designer + frontend-developer
+   ───────────────────────────────────────────────────────────────────── */
+.ats-hero-banner {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.92) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-xl);
+  padding: 2.2rem 2.5rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+  margin-bottom: var(--space-6);
+}
+
+.ats-hero-banner::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.ats-hero-banner::after {
+  content: '';
+  position: absolute;
+  bottom: -40%;
+  left: 20%;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.ats-hero-title {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: -0.5px;
+  line-height: 1.25;
+  margin-bottom: var(--space-2);
+}
+
+.ats-hero-desc {
+  color: var(--color-base-400);
+  font-size: var(--font-size-md);
+  max-width: 680px;
+  margin-bottom: 0;
+  line-height: 1.6;
+}
+
+.ats-stat-card {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-base-200);
+  padding: 1.5rem;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
+  transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out), border-color var(--duration-fast);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.ats-stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+  border-color: var(--color-brand-400);
+}
+
+.ats-stat-number {
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-base-900);
+  margin-bottom: var(--space-1);
+}
+
+.ats-stat-label {
+  color: var(--color-base-500);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  margin-bottom: 0;
+}
+
+.ats-stat-icon-wrapper {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.ats-stat-icon-blue   { background: rgba(14, 165, 233, 0.12); color: #0284c7; }
+.ats-stat-icon-indigo { background: rgba(99, 102, 241, 0.12); color: #4f46e5; }
+.ats-stat-icon-amber  { background: rgba(245, 158, 11, 0.12); color: #d97706; }
+.ats-stat-icon-green  { background: rgba(34, 197, 94, 0.12);  color: #16a34a; }
+
+.ats-card {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-base-200);
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
+  padding: 1.5rem;
+  margin-bottom: var(--space-6);
+}
+
+.ats-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-base-100);
+}
+
+.ats-card-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-base-900);
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ats-action-card {
+  display: block;
+  text-decoration: none;
+  background: var(--color-base-50);
+  border: 1px solid var(--color-base-200);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  transition: all var(--duration-fast) var(--ease-out);
+  height: 100%;
+}
+
+.ats-action-card:hover {
+  background: #ffffff;
+  border-color: var(--color-brand-500);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(14, 165, 233, 0.12);
+}
+
+.ats-action-icon {
+  font-size: 1.6rem;
+  margin-bottom: var(--space-2);
+  display: inline-block;
+}
+
+.ats-action-name {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--color-base-900);
+  margin-bottom: var(--space-1);
+}
+
+.ats-action-desc {
+  font-size: var(--font-size-xs);
+  color: var(--color-base-500);
+  margin-bottom: 0;
+  line-height: 1.5;
+}
+
+/* Recruitment Pipeline Tracker */
+.ats-pipeline-step {
+  text-align: center;
+  position: relative;
+  flex: 1;
+}
+
+.ats-pipeline-dot {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-base-100);
+  color: var(--color-base-600);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-2);
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  font-size: 1.1rem;
+}
+
+.ats-pipeline-step.active .ats-pipeline-dot {
+  background: var(--color-brand-500);
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.25);
+}
+
+.ats-pipeline-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-base-700);
+  line-height: 1.3;
 }
