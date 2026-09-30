@@ -1,0 +1,85 @@
+@using System.Security.Claims
+@using Ats.Web.Constants
+@{
+    ViewData["Title"] = "Hồ Sơ Cá Nhân - ATS";
+    var fullName = User.FindFirstValue(ClaimTypes.Name) ?? "Người dùng";
+    var email = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
+    var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+
+    string roleDisplay = role switch
+    {
+        UserRoles.Admin         => "Quản trị viên (Admin)",
+        UserRoles.HRManager     => "Trưởng phòng Nhân sự (HR Manager)",
+        UserRoles.Recruiter     => "Chuyên viên Tuyển dụng (Recruiter)",
+        UserRoles.HiringManager => "Quản lý Tuyển dụng (Hiring Manager)",
+        UserRoles.Interviewer   => "Phỏng vấn viên (Interviewer)",
+        UserRoles.Approver      => "Người Phê duyệt (Approver)",
+        UserRoles.Candidate     => "Ứng viên Nội bộ (Candidate)",
+        _                       => "Khách"
+    };
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Hồ sơ cá nhân</li>
+        </ol>
+    </nav>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="ats-card text-center">
+                <div class="ats-avatar mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2rem;">
+                    @(fullName.Length > 0 ? fullName[0].ToString().ToUpper() : "U")
+                </div>
+                <h2 class="h5 fw-bold text-dark mb-1">@fullName</h2>
+                <p class="text-muted small mb-2">@email</p>
+                <div class="mb-3">
+                    <span class="ats-role-badge ats-role-@(role.ToLower())">@roleDisplay</span>
+                </div>
+                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 rounded-pill">
+                    <i class="bi bi-circle-fill me-1 small"></i> Đang hoạt động
+                </span>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="ats-card">
+                <div class="ats-card-header">
+                    <h1 class="ats-card-title h5">
+                        <i class="bi bi-person-lines-fill text-primary"></i> Chi Tiết Tài Khoản
+                    </h1>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <label class="form-label text-muted small fw-semibold">Họ và tên</label>
+                        <input type="text" class="form-control" value="@fullName" readonly />
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label text-muted small fw-semibold">Email công ty</label>
+                        <input type="email" class="form-control" value="@email" readonly />
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label text-muted small fw-semibold">Vai trò hệ thống</label>
+                        <input type="text" class="form-control" value="@roleDisplay" readonly />
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label text-muted small fw-semibold">Phòng ban</label>
+                        <input type="text" class="form-control" value="Nội bộ doanh nghiệp" readonly />
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-top d-flex gap-2">
+                    <a asp-controller="Account" asp-action="ChangePassword" class="btn btn-outline-primary rounded-pill px-4">
+                        <i class="bi bi-key me-1"></i> Đổi Mật Khẩu
+                    </a>
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-secondary rounded-pill px-4">
+                        Quay lại Trang Chủ
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

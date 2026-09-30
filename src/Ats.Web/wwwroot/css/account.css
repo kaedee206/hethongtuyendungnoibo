@@ -1,78 +1,408 @@
-﻿/* ============================================================
-   Trang xác thực (Đăng nhập / Quên mật khẩu)
-   NFR: Responsive từ 360px trở lên
-   ============================================================ */
+/* =====================================================================
+   ATS ACCOUNT CSS — account.css
+   Skill: ui-ux-designer + frontend-developer (rmyndharis/antigravity-skills)
+   
+   Shares design tokens via cascade from site.css (:root)
+   Design: Dark gradient background + Glassmorphism login card
+   WCAG: AA compliant (4.5:1 contrast on all text elements)
+   ===================================================================== */
 
+/* ── Skip link for keyboard accessibility (WCAG 2.4.1) ── */
+.skip-link {
+    position: absolute;
+    top: -100%;
+    left: var(--space-4);
+    z-index: 9999;
+    background: var(--color-accent-500);
+    color: #fff;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    text-decoration: none;
+    transition: top var(--duration-fast) var(--ease-out);
+}
+.skip-link:focus { top: var(--space-3); }
+
+/* ── Background — dark gradient with ambient blobs ── */
 .account-body {
-    background-color: #f4f6fb;
+    font-family: var(--font-sans);
     min-height: 100vh;
+    background:
+        radial-gradient(ellipse 80% 60% at 10% 0%, rgba(99,102,241,0.18) 0%, transparent 60%),
+        radial-gradient(ellipse 70% 50% at 90% 100%, rgba(56,189,248,0.15) 0%, transparent 60%),
+        linear-gradient(160deg, #0a0f1e 0%, #0f172a 40%, #1a1040 100%);
+    position: relative;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
 }
 
+/* Decorative blurred shapes */
+.account-body::before {
+    content: '';
+    position: fixed;
+    top: -120px; left: -120px;
+    width: 480px; height: 480px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(99,102,241,0.22), transparent 70%);
+    filter: blur(60px);
+    pointer-events: none;
+    z-index: 0;
+    animation: blobFloat 8s ease-in-out infinite;
+}
+
+.account-body::after {
+    content: '';
+    position: fixed;
+    bottom: -100px; right: -80px;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(56,189,248,0.18), transparent 70%);
+    filter: blur(60px);
+    pointer-events: none;
+    z-index: 0;
+    animation: blobFloat 10s ease-in-out infinite reverse;
+}
+
+@keyframes blobFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33%       { transform: translate(20px, -15px) scale(1.03); }
+    66%       { transform: translate(-10px, 20px) scale(0.97); }
+}
+
+/* ── Footer ── */
+.account-footer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    padding: var(--space-3);
+    color: var(--color-base-600) !important;
+    font-size: var(--font-size-xs);
+    font-family: var(--font-sans);
+    z-index: 1;
+    background: transparent;
+}
+
+/* ── Wrapper ── */
 .login-wrapper {
+    position: relative;
+    z-index: 1;
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1.5rem 1rem;
+    padding: var(--space-8) var(--space-4) calc(var(--space-8) + 2rem);
 }
 
+/* ── Glassmorphism Card ── */
 .login-card {
     width: 100%;
-    max-width: 380px;
-    background: #ffffff;
-    border-radius: 0.75rem;
-    padding: 2rem 1.75rem;
+    max-width: 420px;
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(24px) saturate(150%);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-xl);
+    padding: 2.5rem 2.25rem;
+    box-shadow:
+        0 30px 70px rgba(0, 0, 0, 0.55),
+        inset 0 1px 0 rgba(255,255,255,0.07),
+        inset 0 -1px 0 rgba(0,0,0,0.15);
+    animation: cardReveal 0.45s var(--ease-out) both;
 }
 
+@keyframes cardReveal {
+    from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.97);
+        filter: blur(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+/* ── Card Header ── */
+.login-card__header { margin-bottom: 2rem; }
+
 .login-card__logo {
-    height: 40px;
-    margin-bottom: 0.75rem;
+    height: 46px;
+    margin-bottom: var(--space-4);
+    filter: brightness(1.15) drop-shadow(0 0 12px rgba(56,189,248,0.4));
 }
 
 .login-card__title {
-    font-size: 1.35rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: var(--color-base-100);
+    margin-bottom: var(--space-1);
+    letter-spacing: -0.5px;
+    line-height: 1.2;
 }
 
 .login-card__subtitle {
-    font-size: 0.9rem;
-    color: #6c757d;
-    margin-bottom: 1.5rem;
+    font-size: var(--font-size-sm);
+    color: var(--color-base-500);
+    margin-bottom: 0;
+    line-height: 1.5;
 }
 
-/* Thông báo lỗi chung khi đăng nhập sai (AC S1-01).
-   ASP.NET tự gắn class validation-summary-valid khi ModelState hợp lệ
-   và validation-summary-errors khi có lỗi -> chỉ hiện khi thật sự có lỗi. */
-.login-card__alert.validation-summary-valid {
-    display: none;
-}
+/* ── Error Alert (AC S1-01) ── */
+.login-card__alert.validation-summary-valid { display: none; }
 
 .login-card__alert.validation-summary-errors {
-    display: block;
-    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.28);
+    color: #fca5a5;
+    border-radius: var(--radius-md);
+    padding: 0.7rem var(--space-3);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-4);
+    animation: alertShake 0.4s var(--ease-out);
+}
+
+@keyframes alertShake {
+    0%, 100% { transform: translateX(0); }
+    20%       { transform: translateX(-6px); }
+    40%       { transform: translateX(6px); }
+    60%       { transform: translateX(-4px); }
+    80%       { transform: translateX(4px); }
 }
 
 .login-card__alert ul {
     margin-bottom: 0;
     padding-left: 1.1rem;
+    list-style-type: disc;
+}
+
+/* ── Form Labels ── */
+.login-card__form .form-label {
+    color: var(--color-base-400);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    margin-bottom: var(--space-1);
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+/* ── Inputs ── */
+.login-card__form .form-control {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--color-base-100);
+    border-radius: var(--radius-md);
+    padding: 0.65rem var(--space-3);
+    font-size: var(--font-size-sm);
+    font-family: var(--font-sans);
+    transition: border-color var(--transition-base), box-shadow var(--transition-base), background var(--transition-base);
+}
+
+.login-card__form .form-control::placeholder {
+    color: var(--color-base-600);
+}
+
+.login-card__form .form-control:focus {
+    background: rgba(255,255,255,0.08);
+    border-color: var(--color-accent-500);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.22);
+    color: var(--color-base-100);
+    outline: none;
+}
+
+.login-card__form .form-control.input-validation-error {
+    border-color: rgba(239,68,68,0.55);
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.15);
+}
+
+/* Input group with password toggle */
+.login-card__form .input-group .form-control {
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+/* ── Toggle Password Button ── */
+.login-card__toggle-password {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-left: none;
+    color: var(--color-base-500);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    padding: 0 var(--space-3);
+    transition: color var(--transition-base), background var(--transition-base);
+    cursor: pointer;
+}
+
+.login-card__toggle-password:hover,
+.login-card__toggle-password:focus {
+    background: rgba(255,255,255,0.09);
+    color: var(--color-base-300);
+}
+
+/* ── Remember Me & Forgot Link ── */
+.login-card__form .form-check-input {
+    background-color: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.18);
+    cursor: pointer;
+    width: 1rem;
+    height: 1rem;
+    margin-top: 0.15rem;
+    transition: background var(--transition-base), border-color var(--transition-base);
+}
+
+.login-card__form .form-check-input:checked {
+    background-color: var(--color-accent-500);
+    border-color: var(--color-accent-500);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e");
+}
+
+.login-card__form .form-check-input:focus {
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.3);
+    border-color: var(--color-accent-500);
+    outline: none;
+}
+
+.login-card__form .form-check-label {
+    color: var(--color-base-400);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    user-select: none;
 }
 
 .login-card__forgot-link {
-    font-size: 0.85rem;
+    font-size: var(--font-size-sm);
+    color: var(--color-accent-400);
     text-decoration: none;
+    font-weight: 500;
+    transition: color var(--transition-base);
+}
+.login-card__forgot-link:hover {
+    color: #a5b4fc;
+    text-decoration: underline;
 }
 
-.login-card__submit {
-    padding: 0.6rem 0;
-    font-weight: 600;
-}   
+/* ── Validation error text ── */
+.login-card__form .text-danger {
+    font-size: var(--font-size-xs);
+    color: #f87171 !important;
+    margin-top: var(--space-1);
+    display: block;
+}
 
-/* Màn hình rất nhỏ (>= 360px) */
-@media (max-width: 400px) {
+/* ── Submit Button ── */
+.login-card__submit {
+    background: linear-gradient(135deg, var(--color-accent-500) 0%, #4338ca 100%);
+    border: none;
+    border-radius: var(--radius-md);
+    color: #fff;
+    font-weight: 700;
+    font-size: var(--font-size-sm);
+    font-family: var(--font-sans);
+    padding: 0.72rem;
+    letter-spacing: 0.2px;
+    width: 100%;
+    margin-top: var(--space-2);
+    transition:
+        opacity var(--transition-base),
+        transform var(--duration-fast) var(--ease-out),
+        box-shadow var(--transition-base);
+    box-shadow: 0 4px 18px rgba(99,102,241,0.4);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Shimmer on hover */
+.login-card__submit::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+    transform: translateX(-100%);
+    transition: transform 0.5s var(--ease-out);
+}
+.login-card__submit:hover::after { transform: translateX(100%); }
+
+.login-card__submit:hover {
+    opacity: 0.93;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(99,102,241,0.5);
+    color: #fff;
+}
+.login-card__submit:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(99,102,241,0.35);
+}
+.login-card__submit:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-base-900), 0 0 0 4px var(--color-accent-400);
+}
+
+/* ── Divider ── */
+.login-card__divider {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin: var(--space-4) 0;
+    color: var(--color-base-600);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.login-card__divider::before,
+.login-card__divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+}
+
+/* ── Quick Role Picker ── */
+.login-demo-roles {
+    animation: fadeIn var(--duration-slow) var(--ease-out);
+}
+.login-demo-title {
+    color: var(--color-base-400) !important;
+}
+.ats-role-btn {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--radius-full);
+    transition: all var(--duration-fast) var(--ease-out);
+    cursor: pointer;
+    border-width: 1px;
+}
+.ats-role-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.2);
+}
+.ats-role-btn.active-role-pick {
+    box-shadow: 0 0 0 2px #fff, 0 0 8px rgba(99,102,241,0.6);
+    transform: scale(1.05);
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
     .login-card {
-        padding: 1.5rem 1.25rem;
-        box-shadow: none;
-        border: 1px solid #e9ecef;
+        padding: 2rem var(--space-4);
+        border-radius: var(--radius-lg);
+        margin: var(--space-4);
+        max-width: 100%;
+    }
+
+    .login-card__title { font-size: 1.35rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .account-body::before,
+    .account-body::after,
+    .login-card,
+    .login-card__alert.validation-summary-errors {
+        animation: none;
     }
 }

@@ -1,0 +1,219 @@
+@using Ats.Web.Constants
+
+@{
+    string role = ViewBag.UserRole ?? string.Empty;
+    string fullName = ViewBag.FullName ?? string.Empty;
+    bool isAuthenticated = ViewBag.IsAuthenticated == true;
+}
+
+<nav id="ats-navbar" class="navbar navbar-expand-lg ats-navbar shadow-sm" aria-label="Điều hướng chính">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand ats-brand" asp-controller="Home" asp-action="Index">
+            <span class="ats-brand-icon">&#127919;</span>
+            <span class="ats-brand-text">ATS <span class="ats-brand-sub">Nội Bộ</span></span>
+        </a>
+
+        <button class="navbar-toggler ats-toggler" type="button"
+                data-bs-toggle="collapse" data-bs-target="#atsNavCollapse"
+                aria-controls="atsNavCollapse" aria-expanded="false" aria-label="Mở/đóng menu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="atsNavCollapse">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0" id="ats-nav-main">
+
+                @if (isAuthenticated)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link ats-nav-link" id="nav-dashboard"
+                           asp-controller="Home" asp-action="Index">
+                            <span class="nav-icon">&#127968;</span> Tổng Quan
+                        </a>
+                    </li>
+                }
+
+                @if (role == UserRoles.Candidate
+                     || role == UserRoles.Recruiter
+                     || role == UserRoles.HRManager
+                     || role == UserRoles.Admin)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link ats-nav-link" id="nav-job-postings"
+                           asp-controller="JobPostings" asp-action="Index">
+                            <span class="nav-icon">&#128203;</span> Tin Tuyển Dụng
+                        </a>
+                    </li>
+                }
+
+                @if (role == UserRoles.Recruiter
+                     || role == UserRoles.HiringManager
+                     || role == UserRoles.HRManager
+                     || role == UserRoles.Approver
+                     || role == UserRoles.Admin)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link ats-nav-link" id="nav-requisitions"
+                           asp-controller="Requisitions" asp-action="Index">
+                            <span class="nav-icon">&#128221;</span> Yêu Cầu Tuyển Dụng
+                        </a>
+                    </li>
+                }
+
+                @if (role == UserRoles.Recruiter
+                     || role == UserRoles.HiringManager
+                     || role == UserRoles.HRManager
+                     || role == UserRoles.Admin)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link ats-nav-link" id="nav-candidates"
+                           asp-controller="Candidates" asp-action="Index">
+                            <span class="nav-icon">&#128100;</span> Ứng Viên
+                        </a>
+                    </li>
+                }
+
+                @if (role == UserRoles.Interviewer
+                     || role == UserRoles.Recruiter
+                     || role == UserRoles.HiringManager
+                     || role == UserRoles.HRManager
+                     || role == UserRoles.Admin)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link ats-nav-link" id="nav-interviews"
+                           asp-controller="Interviews" asp-action="Index">
+                            <span class="nav-icon">&#128197;</span> Phỏng Vấn
+                        </a>
+                    </li>
+                }
+
+                @if (role == UserRoles.Recruiter
+                     || role == UserRoles.HRManager
+                     || role == UserRoles.Admin)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link ats-nav-link" id="nav-offers"
+                           asp-controller="Offers" asp-action="Index">
+                            <span class="nav-icon">&#128196;</span> Offer &amp; Onboarding
+                        </a>
+                    </li>
+                }
+
+                @if (role == UserRoles.HRManager || role == UserRoles.Admin)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link ats-nav-link" id="nav-analytics"
+                           asp-controller="Analytics" asp-action="Index">
+                            <span class="nav-icon">&#128202;</span> Báo Cáo
+                        </a>
+                    </li>
+                }
+
+                @if (role == UserRoles.Admin)
+                {
+                    <li class="nav-item dropdown">
+                        <a class="nav-link ats-nav-link dropdown-toggle" id="nav-admin-dropdown"
+                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="nav-icon">&#9881;&#65039;</span> Quản Trị
+                        </a>
+                        <ul class="dropdown-menu ats-dropdown" aria-labelledby="nav-admin-dropdown">
+                            <li>
+                                <a class="dropdown-item" id="nav-admin-users"
+                                   asp-controller="Users" asp-action="Index">
+                                    Quản lý Người Dùng
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" id="nav-admin-organization"
+                                   asp-controller="Organization" asp-action="Index">
+                                    Cơ Cấu Tổ Chức
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider" /></li>
+                            <li>
+                                <a class="dropdown-item" id="nav-admin-audit"
+                                   asp-controller="AuditLogs" asp-action="Index">
+                                    Nhật Ký Hệ Thống
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                }
+
+            </ul>
+
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center" id="ats-nav-account">
+
+                @if (isAuthenticated)
+                {
+                    <li class="nav-item d-none d-lg-flex align-items-center me-2">
+                        <span class="ats-role-badge ats-role-@(role.ToLower())" id="nav-role-badge">
+                            @GetRoleDisplayName(role)
+                        </span>
+                    </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link ats-nav-link ats-account-toggle dropdown-toggle"
+                           id="nav-account-dropdown"
+                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="ats-avatar" aria-hidden="true">
+                                @(fullName.Length > 0 ? fullName[0].ToString().ToUpper() : "U")
+                            </span>
+                            <span class="ats-account-name d-none d-lg-inline ms-1">@fullName</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end ats-dropdown" aria-labelledby="nav-account-dropdown">
+                            <li class="dropdown-header d-lg-none">
+                                <span class="ats-role-badge ats-role-@(role.ToLower())">
+                                    @GetRoleDisplayName(role)
+                                </span>
+                            </li>
+                            <li><hr class="dropdown-divider d-lg-none" /></li>
+                            <li>
+                                <a class="dropdown-item" id="nav-profile"
+                                   asp-controller="Account" asp-action="Profile">
+                                    Hồ Sơ Cá Nhân
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" id="nav-change-password"
+                                   asp-controller="Account" asp-action="ChangePassword">
+                                    Đổi Mật Khẩu
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider" /></li>
+                            <li>
+                                <a class="dropdown-item ats-logout-link" id="nav-logout"
+                                   asp-controller="Account" asp-action="Logout">
+                                    Đăng Xuất
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                }
+                else
+                {
+                    <li class="nav-item">
+                        <a class="nav-link ats-nav-link ats-btn-login" id="nav-login"
+                           asp-controller="Account" asp-action="Login">
+                            Đăng Nhập
+                        </a>
+                    </li>
+                }
+
+            </ul>
+        </div>
+    </div>
+</nav>
+
+@functions {
+    private static string GetRoleDisplayName(string role) => role switch
+    {
+        UserRoles.Admin         => "Quản trị viên",
+        UserRoles.HRManager     => "Trưởng phòng HR",
+        UserRoles.Recruiter     => "Chuyên viên Tuyển dụng",
+        UserRoles.HiringManager => "Quản lý Tuyển dụng",
+        UserRoles.Interviewer   => "Phỏng vấn viên",
+        UserRoles.Approver      => "Người Phê duyệt",
+        UserRoles.Candidate     => "Ứng viên Nội bộ",
+        _                       => "Khách"
+    };
+}
