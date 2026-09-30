@@ -10,6 +10,9 @@ public class User
     // Thuộc tính lưu Vai trò phân quyền (Mặc định: Candidate)
     public string Role { get; set; } = "Candidate";
 
+    // SCRUM-129: Phòng ban
+    public string? Department { get; set; }
+
     public int FailedLoginAttempts { get; set; } = 0;
     public DateTimeOffset? LockedUntil { get; set; }
     public string Status { get; set; } = "ACTIVE";
@@ -18,6 +21,20 @@ public class User
     // Bổ sung thuộc tính theo dõi thời gian hoạt động cuối
     public DateTimeOffset? LastActivityAt { get; set; }
 
+    // Bổ sung thuộc tính cho chức năng Đặt lại mật khẩu (SCRUM-97)
+    public string? PasswordResetToken { get; set; }
+    public DateTimeOffset? PasswordResetTokenExpiresAt { get; set; }
+
+    // SCRUM-115: Giới hạn số lần đổi mật khẩu thất bại
+    public int FailedChangePasswordAttempts { get; set; } = 0;
+    public DateTimeOffset? ChangePasswordLockedUntil { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    // SCRUM-131: Bổ sung theo thiết kế database schema
+    public Guid? RoleId { get; set; }
+    public Role? RoleEntity { get; set; }
+    public string? ActivationToken { get; set; }
+    public Guid? CreatedBy { get; set; }
 }
