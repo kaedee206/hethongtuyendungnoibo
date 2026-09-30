@@ -57,6 +57,9 @@ builder.Services.AddAuthentication("AtsCookieScheme")
 
 var app = builder.Build();
 
+// Tự động khởi tạo dữ liệu mặc định (Admin) nếu DB trống
+await DbInitializer.SeedAsync(app.Services);
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
