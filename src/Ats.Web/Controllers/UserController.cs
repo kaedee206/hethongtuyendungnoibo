@@ -83,4 +83,59 @@ public class UserController : ControllerBase
             data = users
         });
     }
+
+    /// <summary>
+    /// API Cập nhật thông tin tài khoản (PUT: /api/tai-khoan/{id})
+    /// </summary>
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserRequestDto request)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        // Kiểm tra quyền Admin (SCRUM-132)
+        var currentUserIdString = HttpContext.Session.GetString("UserId");
+        if (string.IsNullOrEmpty(currentUserIdString) || !Guid.TryParse(currentUserIdString, out var currentUserId))
+        {
+            return Unauthorized(new { isSuccess = false, message = "Vui lòng đăng nhập để thực hiện chức năng này." });
+        }
+
+        var currentUser = await _dbContext.Users.FindAsync(currentUserId);
+        if (currentUser == null || currentUser.Role != "Admin")
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { isSuccess = false, message = "Bạn không có quyền thực hiện chức năng này." });
+        }
+
+        // Validate dữ liệu đầu vào
+        var validRoles = new[] { "Admin", "HR", "Interviewer", "Candidate" };
+        if (!validRoles.Contains(request.Role))
+        {
+            return BadRequest(new { isSuccess = false, message = "Vai trò không hợp lệ." });
+        }
+
+        var validStatuses = new[] { "ACTIVE", "INACTIVE", "PENDING" };
+        if (!validStatuses.Contains(request.Status))
+        {
+            return BadRequest(new { isSuccess = false, message = "Trạng thái không hợp lệ." });
+        }
+
+        var targetUser = await _dbContext.Users.FindAsync(id);
+        if (targetUser == null)
+        {
+            return NotFound(new { isSuccess = false, message = "Không tìm thấy tài khoản." });
+        }
+
+        // Cập nhật thông tin
+        targetUser.FullName = request.FullName.Trim();
+        targetUser.Department = string.IsNullOrWhiteSpace(request.Department) ? null : request.Department.Trim();
+        targetUser.Role = request.Role;
+        targetUser.Status = request.Status;
+        
+        // Ghi nhận audit
+        targetUser.UpdatedAt = DateTimeOffset.UtcNow;
+        targetUser.UpdatedBy = currentUserId;
+
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(new { isSuccess = true, message = "Cập nhật thông tin tài khoản thành công." });
+    }
 }

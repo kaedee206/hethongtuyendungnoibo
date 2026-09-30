@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Ats.Web.Models.DTOs;
 
 public record UserSearchResponseDto(
@@ -8,4 +10,14 @@ public record UserSearchResponseDto(
     string? Department,
     string Status,
     DateTimeOffset CreatedAt
+);
+
+public record UpdateUserRequestDto(
+    [Required(ErrorMessage = "Họ tên không được để trống.")]
+    string FullName,
+    string? Department,
+    [Required(ErrorMessage = "Vai trò không được để trống.")]
+    string Role,
+    [Required(ErrorMessage = "Trạng thái không được để trống.")]
+    string Status
 );
