@@ -1,4 +1,4 @@
-﻿@model Ats.Web.Models.ViewModels.Account.AccountLoginViewModel
+@model Ats.Web.Models.ViewModels.Account.AccountLoginViewModel
 @{
     ViewData["Title"] = "Đăng nhập";
     Layout = "_LoginLayout";
@@ -65,6 +65,21 @@
                 Đăng nhập
             </button>
         </form>
+
+        <div class="login-demo-roles mt-4 pt-3 border-top border-secondary border-opacity-25">
+            <p class="login-demo-title small text-muted text-center mb-2">
+                <i class="bi bi-person-badge me-1"></i> Chọn nhanh vai trò để thử nghiệm phân quyền:
+            </p>
+            <div class="d-flex flex-wrap gap-1 justify-content-center">
+                <button type="button" class="btn btn-sm ats-role-btn ats-role-admin" data-email="admin@ats.com" data-pass="Admin@123" title="Quản trị viên">Admin</button>
+                <button type="button" class="btn btn-sm ats-role-btn ats-role-hrmanager" data-email="hrmanager@ats.com" data-pass="Hrm@123" title="Trưởng phòng HR">HR Manager</button>
+                <button type="button" class="btn btn-sm ats-role-btn ats-role-recruiter" data-email="recruiter@ats.com" data-pass="Recruiter@123" title="Chuyên viên Tuyển dụng">Recruiter</button>
+                <button type="button" class="btn btn-sm ats-role-btn ats-role-hiringmanager" data-email="hiringmanager@ats.com" data-pass="Manager@123" title="Quản lý Tuyển dụng">Hiring Manager</button>
+                <button type="button" class="btn btn-sm ats-role-btn ats-role-interviewer" data-email="interviewer@ats.com" data-pass="Interviewer@123" title="Phỏng vấn viên">Interviewer</button>
+                <button type="button" class="btn btn-sm ats-role-btn ats-role-approver" data-email="approver@ats.com" data-pass="Approver@123" title="Người Phê duyệt">Approver</button>
+                <button type="button" class="btn btn-sm ats-role-btn ats-role-candidate" data-email="candidate@ats.com" data-pass="Candidate@123" title="Ứng viên Nội bộ">Candidate</button>
+            </div>
+        </div>
     </div>
 </div>
 
