@@ -676,6 +676,8 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         var userAgent = Request.Headers["User-Agent"].ToString() ?? "Unknown";
 
+        var newValuesJson = System.Text.Json.JsonSerializer.Serialize(new { newUser.Email, newUser.FullName, newUser.Role, newUser.Status });
+
         _dbContext.AuthAuditLogs.Add(new AuthAuditLog {
             Email = newUser.Email,
             UserId = newUser.Id,
@@ -683,7 +685,8 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
             EventType = "AccountCreated",
             Reason = "Tạo tài khoản thành công",
             IpAddress = ip,
-            UserAgent = userAgent
+            UserAgent = userAgent,
+            NewValues = newValuesJson
         });
 
         await _dbContext.SaveChangesAsync();

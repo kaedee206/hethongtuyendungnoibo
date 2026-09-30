@@ -125,6 +125,8 @@ public class UserController : ControllerBase
             return NotFound(new { isSuccess = false, message = "Không tìm thấy tài khoản." });
         }
 
+        var oldValuesJson = System.Text.Json.JsonSerializer.Serialize(new { targetUser.FullName, targetUser.Department, targetUser.Role, targetUser.Status });
+
         // Cập nhật thông tin
         targetUser.FullName = request.FullName.Trim();
         targetUser.Department = string.IsNullOrWhiteSpace(request.Department) ? null : request.Department.Trim();
@@ -134,6 +136,23 @@ public class UserController : ControllerBase
         // Ghi nhận audit
         targetUser.UpdatedAt = DateTimeOffset.UtcNow;
         targetUser.UpdatedBy = currentUserId;
+
+        var newValuesJson = System.Text.Json.JsonSerializer.Serialize(new { targetUser.FullName, targetUser.Department, targetUser.Role, targetUser.Status });
+
+        _dbContext.AuthAuditLogs.Add(new AuthAuditLog
+        {
+            UserId = targetUser.Id,
+            Email = targetUser.Email,
+            IsSuccess = true,
+            Reason = "Cập nhật thông tin tài khoản thành công",
+            EventType = "AccountUpdated",
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
+            UserAgent = Request.Headers["User-Agent"].ToString() ?? "Unknown",
+            Timestamp = DateTimeOffset.UtcNow,
+            PerformedBy = currentUserId,
+            OldValues = oldValuesJson,
+            NewValues = newValuesJson
+        });
 
         await _dbContext.SaveChangesAsync();
 
@@ -178,9 +197,13 @@ public class UserController : ControllerBase
             return NotFound(new { isSuccess = false, message = "Không tìm thấy tài khoản." });
         }
 
+        var oldValuesJson = System.Text.Json.JsonSerializer.Serialize(new { targetUser.Status });
+
         targetUser.Status = newStatus;
         targetUser.UpdatedAt = DateTimeOffset.UtcNow;
         targetUser.UpdatedBy = currentUserId;
+
+        var newValuesJson = System.Text.Json.JsonSerializer.Serialize(new { targetUser.Status });
 
         // Ghi log Audit
         _dbContext.AuthAuditLogs.Add(new AuthAuditLog
@@ -192,7 +215,10 @@ public class UserController : ControllerBase
             EventType = newStatus == "INACTIVE" ? "AccountDeactivated" : "AccountReactivated",
             IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
             UserAgent = Request.Headers["User-Agent"].ToString() ?? "Unknown",
-            Timestamp = DateTimeOffset.UtcNow
+            Timestamp = DateTimeOffset.UtcNow,
+            PerformedBy = currentUserId,
+            OldValues = oldValuesJson,
+            NewValues = newValuesJson
         });
 
         // Xóa tất cả các phiên đăng nhập nếu vô hiệu hóa
