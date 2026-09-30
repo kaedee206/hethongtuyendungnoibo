@@ -40,4 +40,8 @@ public class User
 
     // SCRUM-132: Ghi nhận người cập nhật
     public Guid? UpdatedBy { get; set; }
+
+    // SCRUM-139: Giới hạn gửi lại email kích hoạt
+    public int ActivationEmailSentCount { get; set; } = 0;
+    public DateTimeOffset? LastActivationEmailSentAt { get; set; }
 }

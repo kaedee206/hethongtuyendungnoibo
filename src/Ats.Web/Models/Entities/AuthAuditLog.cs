@@ -16,4 +16,9 @@ public class AuthAuditLog
     public string UserAgent { get; set; } = string.Empty;
     
     public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.UtcNow;
+
+    // SCRUM-138: Bổ sung các trường để lưu chi tiết thay đổi
+    public Guid? PerformedBy { get; set; } // Người thực hiện thay đổi
+    public string? OldValues { get; set; } // Dữ liệu trước khi sửa (JSON)
+    public string? NewValues { get; set; } // Dữ liệu sau khi sửa (JSON)
 }
