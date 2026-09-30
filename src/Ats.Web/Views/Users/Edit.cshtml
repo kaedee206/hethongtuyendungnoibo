@@ -1,0 +1,137 @@
+@model Ats.Web.Models.ViewModels.Users.UserEditViewModel
+@{
+    ViewData["Title"] = "Chỉnh sửa tài khoản";
+}
+
+<div class="container py-4" style="max-width: 750px;">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-muted">Quản trị người dùng</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Chỉnh sửa & Phân quyền</li>
+        </ol>
+    </nav>
+
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white border-bottom py-3">
+            <div class="d-flex align-items-center">
+                <div class="bg-primary-subtle text-primary p-2 rounded-circle me-3">
+                    <i class="bi bi-shield-lock-fill fs-5"></i>
+                </div>
+                <div>
+                    <h5 class="card-title mb-0 fw-bold text-dark">Chỉnh sửa thông tin & Phân quyền</h5>
+                    <small class="text-muted">Cập nhật vai trò, phòng ban và trạng thái hoạt động của nhân sự</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body p-4">
+            <form asp-action="Edit" asp-route-id="@Model.Id" method="post" novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="IsSelf" />
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-4" role="alert"></div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6">
+                        <label asp-for="Email" class="form-label fw-semibold"></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-envelope-at text-muted"></i></span>
+                            <input asp-for="Email" class="form-control bg-light" readonly />
+                        </div>
+                        <div class="form-text small text-muted">Email định danh không thể thay đổi.</div>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label asp-for="FullName" class="form-label fw-semibold"></label>
+                        <input asp-for="FullName" class="form-control" autofocus />
+                        <span asp-validation-for="FullName" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-6">
+                        <label asp-for="Department" class="form-label fw-semibold"></label>
+                        <input asp-for="Department" class="form-control" />
+                        <span asp-validation-for="Department" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label asp-for="Status" class="form-label fw-semibold"></label>
+                        <select asp-for="Status" class="form-select">
+                            <option value="ACTIVE">Hoạt động (ACTIVE)</option>
+                            <option value="LOCKED">Bị khóa (LOCKED)</option>
+                            <option value="INACTIVE">Ngừng hoạt động (INACTIVE)</option>
+                            <option value="PENDING">Chờ kích hoạt (PENDING)</option>
+                        </select>
+                        <span asp-validation-for="Status" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <!-- Phân quyền đa vai trò (S1-08, S1-09) -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold d-block mb-1">
+                        Phân quyền vai trò hệ thống <span class="text-danger">*</span>
+                    </label>
+                    <p class="text-muted small mb-3">Tích chọn các vai trò người dùng được phép thực thi trong hệ thống tuyển dụng NoveraTech.</p>
+
+                    @if (Model.IsSelf)
+                    {
+                        <div class="alert alert-warning border-0 bg-warning-subtle text-warning-emphasis small py-2 px-3 mb-3 rounded-2">
+                            <i class="bi bi-shield-exclamation me-1"></i>
+                            <strong>Lưu ý:</strong> Bạn đang chỉnh sửa tài khoản của chính mình. Hệ thống không cho phép bạn tự gỡ bỏ vai trò Quản trị viên (Admin) để đảm bảo không bị mất quyền truy cập.
+                        </div>
+                    }
+
+                    <div class="row g-2">
+                        @for (int i = 0; i < Model.AvailableRoles.Count; i++)
+                        {
+                            var isRoleDisabled = Model.IsSelf && Model.AvailableRoles[i].RoleName.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+
+                            <div class="col-12 col-md-6">
+                                <div class="card h-100 border rounded-3 p-3 @(isRoleDisabled ? "bg-light border-dashed" : "")">
+                                    <div class="form-check">
+                                        <input type="hidden" asp-for="AvailableRoles[i].RoleId" />
+                                        <input type="hidden" asp-for="AvailableRoles[i].RoleName" />
+                                        <input type="hidden" asp-for="AvailableRoles[i].DisplayName" />
+
+                                        @if (isRoleDisabled)
+                                        {
+                                            <input class="form-check-input" type="checkbox" checked="checked" disabled="disabled" id="role_@i" />
+                                            <input type="hidden" asp-for="AvailableRoles[i].IsSelected" value="true" />
+                                        }
+                                        else
+                                        {
+                                            <input class="form-check-input" type="checkbox" asp-for="AvailableRoles[i].IsSelected" id="role_@i" />
+                                        }
+
+                                        <label class="form-check-label w-100 cursor-pointer" for="role_@i">
+                                            <span class="fw-bold text-dark d-block">@Model.AvailableRoles[i].DisplayName</span>
+                                            <span class="badge bg-light text-secondary border font-monospace mt-1">@Model.AvailableRoles[i].RoleName</span>
+                                            @if (isRoleDisabled)
+                                            {
+                                                <span class="badge bg-warning-subtle text-warning-emphasis ms-1">Bắt buộc</span>
+                                            }
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                    <a asp-action="Index" class="btn btn-light px-4">Hủy bỏ</a>
+                    <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                        <i class="bi bi-save me-1"></i> Lưu thay đổi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,8 +1,964 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@using System.Security.Claims
+@using Ats.Web.Constants
+@{
+    ViewData["Title"] = User.Identity?.IsAuthenticated == true ? "Không gian làm việc" : "Hệ thống Tuyển dụng NoveraTech";
+    var isCandidate = User.IsInRole(UserRoles.Candidate);
+    var isStaff = User.Identity?.IsAuthenticated == true && !isCandidate;
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container-fluid px-3 px-md-4 py-3">
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <!-- Mode Banner & Quick Toggle to Public Landing Page -->
+        <div class="alert alert-primary bg-primary bg-opacity-10 border-primary border-opacity-25 rounded-4 shadow-sm mb-4 p-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-primary text-white rounded-circle p-2 d-inline-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="bi bi-briefcase-fill fs-5"></i>
+                </div>
+                <div>
+                    <h6 class="mb-0 fw-bold text-dark">
+                        @(isCandidate ? "Không gian Ứng viên NoveraTech ATS" : "Không gian Quản trị Tuyển dụng Nội bộ NoveraTech ATS")
+                    </h6>
+                    <small class="text-muted">
+                        Bạn đang đăng nhập với tài khoản <b>@User.FindFirstValue(ClaimTypes.Email)</b>. Bạn có thể xem giao diện Cổng tuyển dụng công khai bất cứ lúc nào.
+                    </small>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="/landing" class="btn btn-sm btn-primary rounded-pill px-3 py-1.5 fw-semibold shadow-sm text-white text-nowrap">
+                    <i class="bi bi-globe2 me-1"></i> Xem Landing Page
+                </a>
+            </div>
+        </div>
+
+        <!-- User Welcome Header Card -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="@(isCandidate ? "bg-success" : "bg-primary") text-white rounded-circle d-flex align-items-center justify-content-center fw-bold fs-4 shadow-sm" style="width: 56px; height: 56px;">
+                        @(User.Identity.Name?.Substring(0, 1).ToUpper() ?? "U")
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <h2 class="h4 fw-bold text-dark mb-0">Xin chào, @User.Identity.Name!</h2>
+                            <span class="badge @(isCandidate ? "bg-success-subtle text-success border border-success border-opacity-25" : "bg-primary-subtle text-primary border border-primary border-opacity-25") rounded-pill px-2.5 py-1 small">
+                                <i class="bi @(isCandidate ? "bi-person-workspace" : "bi-shield-check") me-1"></i>
+                                @(isCandidate ? "Cổng Ứng Viên" : "Cổng Nội Bộ")
+                            </span>
+                        </div>
+                        <p class="text-muted small mb-0 mt-1">
+                            @(isCandidate 
+                                ? "Chào mừng bạn quay trở lại. Hãy theo dõi lộ trình hồ sơ và cập nhật thông tin ứng tuyển của bạn."
+                                : "Bảng điều khiển tác nghiệp quy trình tuyển dụng chuẩn 6 vai trò NoveraTech.")
+                        </p>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    @foreach (var roleClaim in User.FindAll(ClaimTypes.Role))
+                    {
+                        var rName = roleClaim.Value;
+                        var badgeStyle = rName switch
+                        {
+                            UserRoles.Admin => "badge-admin",
+                            UserRoles.HRManager => "badge-hrmanager",
+                            UserRoles.Recruiter => "badge-recruiter",
+                            UserRoles.HiringManager => "badge-hiringmanager",
+                            UserRoles.Interviewer => "badge-interviewer",
+                            UserRoles.Approver => "badge-approver",
+                            UserRoles.Candidate => "bg-success text-white",
+                            _ => "bg-light text-secondary border"
+                        };
+                        <span class="badge @badgeStyle rounded-pill px-3 py-2 fs-6 shadow-sm">
+                            <i class="bi bi-person-badge me-1"></i> @UserRoles.GetDisplayName(rName)
+                        </span>
+                    }
+
+                    <a asp-controller="Account" asp-action="ChangePassword" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 ms-md-2" title="Đổi mật khẩu">
+                        <i class="bi bi-key me-1"></i> Bảo mật
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        @if (isCandidate)
+        {
+            <!-- ========================================== -->
+            <!-- PHÂN HỆ 1: DASHBOARD DÀNH CHO ỨNG VIÊN -->
+            <!-- ========================================== -->
+            <div id="candidate-workspace">
+                <!-- Row 1: Candidate Status & Quick Actions -->
+                <div class="row g-4 mb-4">
+                    <!-- Profile & CV Overview Card -->
+                    <div class="col-12 col-lg-4">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    <h5 class="fw-bold text-dark mb-0">Hồ Sơ Của Bạn</h5>
+                                    <span class="badge bg-success-subtle text-success rounded-pill px-2.5 py-1 small">
+                                        <i class="bi bi-check-circle-fill me-1"></i> Đã kích hoạt
+                                    </span>
+                                </div>
+                                <div class="p-3 bg-light rounded-3 mb-3 border border-light-subtle">
+                                    <div class="small text-muted mb-1">Email đăng ký:</div>
+                                    <div class="fw-semibold text-dark text-truncate">@User.FindFirstValue(ClaimTypes.Email)</div>
+                                    <div class="small text-muted mt-2 mb-1">Tình trạng hồ sơ CV:</div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-file-earmark-pdf-fill text-danger fs-5"></i>
+                                        <span class="small fw-semibold text-dark" id="cvStatusText">CV_NguyenVanA_SeniorDotnet.pdf</span>
+                                    </div>
+                                    <div class="small text-muted mt-1">Cập nhật lần cuối: 28/09/2026</div>
+                                </div>
+                            </div>
+                            <div class="d-flex flex-column gap-2 mt-2">
+                                <button type="button" class="btn btn-success rounded-pill w-100 fw-semibold" data-bs-toggle="modal" data-bs-target="#updateCvModal">
+                                    <i class="bi bi-cloud-arrow-up me-1"></i> Cập nhật CV / Thông tin
+                                </button>
+                                <a href="#open-jobs" class="btn btn-outline-primary rounded-pill w-100 fw-semibold">
+                                    <i class="bi bi-briefcase me-1"></i> Tìm việc làm khác
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Application Tracker Stepper Card -->
+                    <div class="col-12 col-lg-8">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-2">
+                                <div>
+                                    <h5 class="fw-bold text-dark mb-0">Tiến Độ Tuyển Dụng Đang Ứng Tuyển</h5>
+                                    <small class="text-muted">Mã hồ sơ: <b class="text-primary">#NOV-2026-089</b> | Vị trí: <b>Senior Fullstack .NET / React Engineer</b></small>
+                                </div>
+                                <span class="badge bg-primary rounded-pill px-3 py-1.5 small">
+                                    Vòng 3: Phỏng vấn Kỹ thuật
+                                </span>
+                            </div>
+
+                            <!-- Visual Step Progress Bar -->
+                            <div class="position-relative mb-4 px-2">
+                                <div class="progress" style="height: 4px;">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: 66%;" aria-valuenow="66" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <div class="d-flex justify-content-between position-relative mt-n3" style="margin-top: -14px;">
+                                    <!-- Step 1 -->
+                                    <div class="text-center" style="width: 80px;">
+                                        <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
+                                            <i class="bi bi-check-lg small"></i>
+                                        </div>
+                                        <div class="small fw-bold text-dark mt-2">1. Nộp hồ sơ</div>
+                                        <div class="text-muted text-xs">25/09/2026</div>
+                                    </div>
+                                    <!-- Step 2 -->
+                                    <div class="text-center" style="width: 80px;">
+                                        <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
+                                            <i class="bi bi-check-lg small"></i>
+                                        </div>
+                                        <div class="small fw-bold text-dark mt-2">2. Sơ loại CV</div>
+                                        <div class="text-success text-xs fw-semibold">Đã đạt</div>
+                                    </div>
+                                    <!-- Step 3 -->
+                                    <div class="text-center" style="width: 90px;">
+                                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm animate-pulse" style="width: 28px; height: 28px;">
+                                            <i class="bi bi-camera-video-fill small"></i>
+                                        </div>
+                                        <div class="small fw-bold text-primary mt-2">3. Phỏng vấn</div>
+                                        <div class="text-primary text-xs fw-semibold">14:00 Thứ 6</div>
+                                    </div>
+                                    <!-- Step 4 -->
+                                    <div class="text-center" style="width: 80px;">
+                                        <div class="bg-light text-muted border rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
+                                            <i class="bi bi-award small"></i>
+                                        </div>
+                                        <div class="small fw-bold text-muted mt-2">4. Offer</div>
+                                        <div class="text-muted text-xs">Chờ duyệt</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Interview Invitation Notice Box -->
+                            <div class="p-3 bg-primary-subtle border border-primary border-opacity-25 rounded-3 mb-0">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-calendar2-event-fill text-primary fs-5"></i>
+                                        <span class="fw-bold text-dark">Thư mời Phỏng vấn Kỹ thuật vòng 1</span>
+                                    </div>
+                                    <span class="badge bg-primary text-white rounded-pill px-2.5 py-1">Trực tuyến</span>
+                                </div>
+                                <div class="small text-muted mb-3">
+                                    <div><i class="bi bi-clock me-1 text-primary"></i> <b>Thời gian:</b> 14:00 - 15:30, Thứ Sáu ngày 03/10/2026</div>
+                                    <div><i class="bi bi-people me-1 text-primary"></i> <b>Hội đồng:</b> Đặng Hải Nam (Technical Architect), Nguyễn Thùy Linh (HR Talent Acquisition)</div>
+                                    <div><i class="bi bi-link-45deg me-1 text-primary"></i> <b>Link Google Meet:</b> <code class="text-primary">meet.google.com/nov-interview-089</code></div>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <a href="https://meet.google.com" target="_blank" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold text-white">
+                                        <i class="bi bi-box-arrow-up-right me-1"></i> Vào phòng họp Google Meet
+                                    </a>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="alert('Yêu cầu đổi lịch phỏng vấn đã được ghi nhận. Chuyên viên nhân sự sẽ liên hệ lại với bạn trong 24 giờ.')">
+                                        <i class="bi bi-calendar-x me-1"></i> Yêu cầu đổi lịch hẹn
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 2: Open Jobs for Candidate Application -->
+                <div id="open-jobs" class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-2">
+                        <div>
+                            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 small fw-semibold">Cơ Hội Mới</span>
+                            <h4 class="fw-bold text-dark mt-2 mb-0">Các Vị Trí Đang Mở Tại NoveraTech</h4>
+                        </div>
+                        <div class="text-muted small">Cập nhật trực tiếp từ Ban Tuyển dụng</div>
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- Job 1 -->
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="card h-100 border rounded-3 p-3 hover-shadow transition-all d-flex flex-column">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1 text-xs">Toàn thời gian</span>
+                                    <span class="text-success fw-bold small">35 - 50 Triệu</span>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1">Senior Fullstack .NET / React</h6>
+                                <p class="text-muted text-xs mb-2"><i class="bi bi-geo-alt me-1"></i> Hà Nội (Hybrid)</p>
+                                <p class="text-muted text-xs flex-grow-1 mb-3">
+                                    Phát triển hệ thống microservices .NET 8, PostgreSQL, React, Clean Architecture.
+                                </p>
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill w-100" disabled>
+                                    <i class="bi bi-check-circle me-1"></i> Đang trong quy trình phỏng vấn
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Job 2 -->
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="card h-100 border rounded-3 p-3 hover-shadow transition-all d-flex flex-column">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-2.5 py-1 text-xs">Hot Job</span>
+                                    <span class="text-success fw-bold small">40 - 65 Triệu</span>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1">AI / LLM Application Engineer</h6>
+                                <p class="text-muted text-xs mb-2"><i class="bi bi-geo-alt me-1"></i> Hà Nội / TP.HCM</p>
+                                <p class="text-muted text-xs flex-grow-1 mb-3">
+                                    Xây dựng ứng dụng GenAI, RAG pipeline, Agentic Workflows cho các dự án nội bộ & đối tác.
+                                </p>
+                                <button type="button" class="btn btn-sm btn-success rounded-pill w-100 fw-semibold" onclick="openApplyJobModal('AI / LLM Application Engineer', 'Novera AI Lab')">
+                                    <i class="bi bi-send me-1"></i> Ứng tuyển nhanh
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Job 3 -->
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="card h-100 border rounded-3 p-3 hover-shadow transition-all d-flex flex-column">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <span class="badge bg-info-subtle text-info-emphasis rounded-pill px-2.5 py-1 text-xs">Tuyển gấp</span>
+                                    <span class="text-success fw-bold small">40 - 55 Triệu</span>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1">Product Owner (Fintech / ATS)</h6>
+                                <p class="text-muted text-xs mb-2"><i class="bi bi-geo-alt me-1"></i> Hà Nội</p>
+                                <p class="text-muted text-xs flex-grow-1 mb-3">
+                                    Quản trị Product Roadmap, Backlog, phối hợp Tech Team triển khai tính năng theo chuẩn Scrum.
+                                </p>
+                                <button type="button" class="btn btn-sm btn-success rounded-pill w-100 fw-semibold" onclick="openApplyJobModal('Product Owner (Fintech / ATS)', 'Khối Sản phẩm')">
+                                    <i class="bi bi-send me-1"></i> Ứng tuyển nhanh
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- ========================================== -->
+            <!-- PHÂN HỆ 2: DASHBOARD NHÂN SỰ & QUẢN TRỊ -->
+            <!-- ========================================== -->
+            <div id="staff-workspace">
+                <!-- 4 Live Operational KPI Cards -->
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-lg-3">
+                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 border-start border-4 border-primary">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="text-muted small fw-medium">Vị trí đang mở</div>
+                                    <div class="h3 fw-bold text-dark mb-0 mt-1">12</div>
+                                    <div class="text-success text-xs mt-1"><i class="bi bi-arrow-up-right me-1"></i>+3 vị trí mới tuần này</div>
+                                </div>
+                                <div class="bg-primary-subtle text-primary p-3 rounded-circle">
+                                    <i class="bi bi-briefcase-fill fs-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-lg-3">
+                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 border-start border-4 border-success">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="text-muted small fw-medium">Hồ sơ tiếp nhận</div>
+                                    <div class="h3 fw-bold text-dark mb-0 mt-1">148</div>
+                                    <div class="text-success text-xs mt-1"><i class="bi bi-arrow-up-right me-1"></i>+24 hồ sơ 48h qua</div>
+                                </div>
+                                <div class="bg-success-subtle text-success p-3 rounded-circle">
+                                    <i class="bi bi-file-earmark-person-fill fs-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-lg-3">
+                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 border-start border-4 border-warning">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="text-muted small fw-medium">Phỏng vấn tuần này</div>
+                                    <div class="h3 fw-bold text-dark mb-0 mt-1">18</div>
+                                    <div class="text-warning-emphasis text-xs mt-1"><i class="bi bi-calendar-event me-1"></i>4 buổi diễn ra hôm nay</div>
+                                </div>
+                                <div class="bg-warning-subtle text-warning-emphasis p-3 rounded-circle">
+                                    <i class="bi bi-camera-video-fill fs-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-lg-3">
+                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 border-start border-4 border-danger">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="text-muted small fw-medium">Đề xuất & Offer chờ duyệt</div>
+                                    <div class="h3 fw-bold text-dark mb-0 mt-1">4</div>
+                                    <div class="text-danger text-xs mt-1"><i class="bi bi-hourglass-split me-1"></i>2 hồ sơ cần duyệt gấp</div>
+                                </div>
+                                <div class="bg-danger-subtle text-danger p-3 rounded-circle">
+                                    <i class="bi bi-patch-check-fill fs-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visual Recruitment Funnel / Pipeline -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 gap-2">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0">Phễu Tuyển Dụng Tổng Thể (Recruitment Pipeline)</h5>
+                            <small class="text-muted">Theo dõi lưu lượng hồ sơ ứng viên qua từng chặng trong tháng</small>
+                        </div>
+                        <span class="badge bg-light text-dark border px-3 py-1.5 small">Tháng @DateTime.UtcNow.Month/@DateTime.UtcNow.Year</span>
+                    </div>
+
+                    <div class="row g-2 text-center">
+                        <div class="col-4 col-md-2">
+                            <div class="p-3 bg-light rounded-3 border">
+                                <div class="text-muted text-xs text-uppercase fw-semibold">1. Ứng tuyển mới</div>
+                                <div class="h4 fw-bold text-dark mb-0 mt-1">42</div>
+                                <div class="progress mt-2" style="height: 4px;">
+                                    <div class="progress-bar bg-primary" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4 col-md-2">
+                            <div class="p-3 bg-light rounded-3 border">
+                                <div class="text-muted text-xs text-uppercase fw-semibold">2. Sơ loại CV</div>
+                                <div class="h4 fw-bold text-dark mb-0 mt-1">38</div>
+                                <div class="progress mt-2" style="height: 4px;">
+                                    <div class="progress-bar bg-info" style="width: 85%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4 col-md-2">
+                            <div class="p-3 bg-light rounded-3 border">
+                                <div class="text-muted text-xs text-uppercase fw-semibold">3. Phỏng vấn KT</div>
+                                <div class="h4 fw-bold text-dark mb-0 mt-1">18</div>
+                                <div class="progress mt-2" style="height: 4px;">
+                                    <div class="progress-bar bg-warning" style="width: 48%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4 col-md-2">
+                            <div class="p-3 bg-light rounded-3 border">
+                                <div class="text-muted text-xs text-uppercase fw-semibold">4. Phỏng vấn VH</div>
+                                <div class="h4 fw-bold text-dark mb-0 mt-1">9</div>
+                                <div class="progress mt-2" style="height: 4px;">
+                                    <div class="progress-bar bg-secondary" style="width: 24%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4 col-md-2">
+                            <div class="p-3 bg-light rounded-3 border">
+                                <div class="text-muted text-xs text-uppercase fw-semibold">5. Đề xuất Offer</div>
+                                <div class="h4 fw-bold text-primary mb-0 mt-1">4</div>
+                                <div class="progress mt-2" style="height: 4px;">
+                                    <div class="progress-bar bg-danger" style="width: 12%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4 col-md-2">
+                            <div class="p-3 bg-light rounded-3 border border-success border-opacity-50">
+                                <div class="text-success text-xs text-uppercase fw-bold">6. Đã Onboard</div>
+                                <div class="h4 fw-bold text-success mb-0 mt-1">6</div>
+                                <div class="progress mt-2" style="height: 4px;">
+                                    <div class="progress-bar bg-success" style="width: 16%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Role-Based Interactive Action Modules -->
+                <div class="row g-4 mb-4">
+                    <!-- Module 1: Admin Management -->
+                    @if (User.IsInRole(UserRoles.Admin))
+                    {
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="card border-0 shadow-sm rounded-4 h-100 p-4 bg-white d-flex flex-column">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-danger-subtle text-danger p-3 rounded-4 me-3">
+                                        <i class="bi bi-people-fill fs-3"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="fw-bold text-dark mb-0">Quản trị Người Dùng</h5>
+                                        <small class="text-muted">Phân quyền, cấp & khóa tài khoản</small>
+                                    </div>
+                                </div>
+                                <p class="small text-muted flex-grow-1">
+                                    Kiểm soát toàn bộ tài khoản nội bộ NoveraTech, gán đa vai trò chuẩn 6 nhóm quyền và quản lý trạng thái bảo mật của hệ thống.
+                                </p>
+                                <div class="d-flex gap-2 mt-auto">
+                                    <a asp-controller="Users" asp-action="Index" class="btn btn-outline-danger rounded-pill fw-semibold flex-grow-1">
+                                        <i class="bi bi-list-check me-1"></i> Danh sách User
+                                    </a>
+                                    <a asp-controller="Users" asp-action="Create" class="btn btn-danger rounded-pill fw-semibold">
+                                        <i class="bi bi-person-plus-fill me-1"></i> Tạo mới
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Module 2: HR Manager & Recruiter -->
+                    @if (User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter) || User.IsInRole(UserRoles.Admin))
+                    {
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="card border-0 shadow-sm rounded-4 h-100 p-4 bg-white d-flex flex-column">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-primary-subtle text-primary p-3 rounded-4 me-3">
+                                        <i class="bi bi-megaphone-fill fs-3"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="fw-bold text-dark mb-0">Tin Tuyển Dụng</h5>
+                                        <small class="text-muted">Đăng tin & chiến dịch tuyển dụng</small>
+                                    </div>
+                                </div>
+                                <p class="small text-muted flex-grow-1">
+                                    Khởi tạo vị trí tuyển dụng mới, quản lý thời hạn nộp hồ sơ và điều phối chiến dịch tuyển chọn nhân sự trên toàn hệ thống.
+                                </p>
+                                <div class="d-flex gap-2 mt-auto">
+                                    <button type="button" class="btn btn-primary rounded-pill fw-semibold flex-grow-1" data-bs-toggle="modal" data-bs-target="#createJobModal">
+                                        <i class="bi bi-plus-circle me-1"></i> Tạo tin tuyển dụng
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary rounded-pill fw-semibold" onclick="filterCandidates('ALL')">
+                                        <i class="bi bi-funnel me-1"></i> Lọc hồ sơ
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Module 3: Hiring Manager -->
+                    @if (User.IsInRole(UserRoles.HiringManager) || User.IsInRole(UserRoles.Admin))
+                    {
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="card border-0 shadow-sm rounded-4 h-100 p-4 bg-white d-flex flex-column">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-warning-subtle text-warning-emphasis p-3 rounded-4 me-3">
+                                        <i class="bi bi-file-earmark-plus-fill fs-3"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="fw-bold text-dark mb-0">Đề Xuất Tuyển Dụng</h5>
+                                        <small class="text-muted">Nhu cầu nhân sự phòng ban</small>
+                                    </div>
+                                </div>
+                                <p class="small text-muted flex-grow-1">
+                                    Khởi tạo yêu cầu bổ sung nhân lực cho bộ phận, thiết lập tiêu chí kinh nghiệm và gửi phê duyệt lên Ban Giám đốc & HR.
+                                </p>
+                                <button type="button" class="btn btn-warning rounded-pill fw-semibold text-dark mt-auto" data-bs-toggle="modal" data-bs-target="#createRequisitionModal">
+                                    <i class="bi bi-send-plus me-1"></i> Khởi tạo đề xuất nhân sự
+                                </button>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Module 4: Interviewer -->
+                    @if (User.IsInRole(UserRoles.Interviewer) || User.IsInRole(UserRoles.Admin))
+                    {
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="card border-0 shadow-sm rounded-4 h-100 p-4 bg-white d-flex flex-column">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-success-subtle text-success p-3 rounded-4 me-3">
+                                        <i class="bi bi-clipboard2-check-fill fs-3"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="fw-bold text-dark mb-0">Phiếu Đánh Giá Phỏng Vấn</h5>
+                                        <small class="text-muted">Vòng chuyên môn & văn hóa</small>
+                                    </div>
+                                </div>
+                                <p class="small text-muted flex-grow-1">
+                                    Nhập kết quả chấm điểm chuyên môn, phản hồi chi tiết về ứng viên và đề xuất hướng xử lý (Đạt / Không đạt / Xem xét).
+                                </p>
+                                <button type="button" class="btn btn-success rounded-pill fw-semibold mt-auto" data-bs-toggle="modal" data-bs-target="#interviewEvaluationModal">
+                                    <i class="bi bi-pencil-square me-1"></i> Nhập phiếu đánh giá
+                                </button>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Module 5: Approver -->
+                    @if (User.IsInRole(UserRoles.Approver) || User.IsInRole(UserRoles.Admin))
+                    {
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="card border-0 shadow-sm rounded-4 h-100 p-4 bg-white d-flex flex-column">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-info-subtle text-info-emphasis p-3 rounded-4 me-3">
+                                        <i class="bi bi-check2-circle fs-3"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="fw-bold text-dark mb-0">Hàng Đợi Phê Duyệt</h5>
+                                        <small class="text-muted">Đề xuất nhân sự & Thư mời Offer</small>
+                                    </div>
+                                </div>
+                                <p class="small text-muted flex-grow-1">
+                                    Xem xét và ký duyệt mức lương đề xuất, package quyền lợi và quyết định tiếp nhận ứng viên từ hội đồng phỏng vấn.
+                                </p>
+                                <div class="d-flex gap-2 mt-auto">
+                                    <button type="button" class="btn btn-info rounded-pill fw-semibold text-white flex-grow-1" onclick="approveSelectedOffer('Bùi Anh Tuấn', 'Senior .NET Developer', '45.000.000 VNĐ')">
+                                        <i class="bi bi-check2-all me-1"></i> Duyệt Offer Bùi Anh Tuấn
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Upcoming Interview Schedule Table -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 gap-2">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0">Lịch Phỏng Vấn Tuần Này</h5>
+                            <small class="text-muted">Danh sách các phiên phỏng vấn đã được xác nhận</small>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1.5 small fw-semibold">
+                            4 buổi hôm nay
+                        </span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="border-0">Ứng viên</th>
+                                    <th class="border-0">Vị trí ứng tuyển</th>
+                                    <th class="border-0">Thời gian</th>
+                                    <th class="border-0">Người phỏng vấn</th>
+                                    <th class="border-0">Trạng thái</th>
+                                    <th class="border-0 text-end">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 13px;">
+                                                T
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark">Bùi Anh Tuấn</div>
+                                                <small class="text-muted">tuan.bui@gmail.com</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="fw-semibold">Senior Fullstack .NET / React</span></td>
+                                    <td>
+                                        <div><i class="bi bi-clock text-primary me-1"></i> 14:00 - 15:30</div>
+                                        <small class="text-muted">Thứ 6, 03/10/2026</small>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border">Đặng Hải Nam</span></td>
+                                    <td><span class="badge bg-warning-subtle text-warning-emphasis">Chờ phỏng vấn</span></td>
+                                    <td class="text-end">
+                                        <a href="https://meet.google.com" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-2.5">
+                                            <i class="bi bi-camera-video me-1"></i> Meet
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2.5 ms-1" data-bs-toggle="modal" data-bs-target="#interviewEvaluationModal">
+                                            <i class="bi bi-pencil me-1"></i> Đánh giá
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 13px;">
+                                                Đ
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark">Trần Minh Đức</div>
+                                                <small class="text-muted">duc.tran@gmail.com</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="fw-semibold">AI / LLM Application Engineer</span></td>
+                                    <td>
+                                        <div><i class="bi bi-clock text-primary me-1"></i> 10:00 - 11:30</div>
+                                        <small class="text-muted">Thứ 5, 02/10/2026</small>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border">Vũ Hoàng Long</span></td>
+                                    <td><span class="badge bg-info-subtle text-info-emphasis">Đã xác nhận</span></td>
+                                    <td class="text-end">
+                                        <a href="https://meet.google.com" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-2.5">
+                                            <i class="bi bi-camera-video me-1"></i> Meet
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2.5 ms-1" data-bs-toggle="modal" data-bs-target="#interviewEvaluationModal">
+                                            <i class="bi bi-pencil me-1"></i> Đánh giá
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 13px;">
+                                                H
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark">Lê Thu Hà</div>
+                                                <small class="text-muted">ha.le@gmail.com</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="fw-semibold">Talent Acquisition Specialist</span></td>
+                                    <td>
+                                        <div><i class="bi bi-clock text-primary me-1"></i> 16:00 - 17:00</div>
+                                        <small class="text-muted">Thứ 4, 01/10/2026</small>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border">Nguyễn Thùy Linh</span></td>
+                                    <td><span class="badge bg-success-subtle text-success">Đã hoàn thành</span></td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5" onclick="alert('Kết quả: ĐẠT vòng phỏng vấn chuyên môn. Đang chuẩn bị thủ tục ký duyệt Offer.')">
+                                            <i class="bi bi-eye me-1"></i> Xem kết quả
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <!-- Khi chưa đăng nhập -> Hiển thị Public Landing Page chuẩn mực -->
+        @await Html.PartialAsync("~/Views/Home/Landing.cshtml")
+    }
 </div>
+
+<!-- ======================================================== -->
+<!-- MODALS DÀNH CHO CẢ ỨNG VIÊN VÀ NHÂN SỰ -->
+<!-- ======================================================== -->
+
+<!-- Modal 1: Cập nhật CV Ứng Viên -->
+<div class="modal fade" id="updateCvModal" tabindex="-1" aria-labelledby="updateCvModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="updateCvModalLabel">
+                    <i class="bi bi-file-earmark-arrow-up text-success me-2"></i>Cập nhật CV & Thông tin ứng tuyển
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <form id="cvUpdateForm" onsubmit="handleCvSubmit(event)">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Họ và tên</label>
+                        <input type="text" class="form-control" value="@User.Identity?.Name" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Số điện thoại liên hệ</label>
+                        <input type="tel" class="form-control" placeholder="0901234567" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Chọn file CV mới (PDF, DOCX, tối đa 10MB)</label>
+                        <input type="file" class="form-control" id="cvFileInput" accept=".pdf,.doc,.docx" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Link Portfolio / LinkedIn / GitHub (nếu có)</label>
+                        <input type="url" class="form-control" placeholder="https://linkedin.com/in/..." />
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-success rounded-pill px-4 fw-semibold text-white">Lưu & Tải lên</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: Ứng tuyển nhanh vào vị trí -->
+<div class="modal fade" id="applyJobModal" tabindex="-1" aria-labelledby="applyJobModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="applyJobModalLabel">
+                    <i class="bi bi-send-check text-primary me-2"></i>Xác nhận Ứng tuyển
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="text-muted small">
+                    Bạn đang ứng tuyển vào vị trí: <b class="text-dark" id="modalJobTitle"></b> thuộc phòng ban <b class="text-dark" id="modalJobDept"></b>.
+                </p>
+                <div class="alert alert-light border small text-muted mb-3">
+                    <i class="bi bi-info-circle me-1 text-primary"></i> Hệ thống sẽ tự động sử dụng CV mặc định trong hồ sơ của bạn để gửi đến bộ phận tuyển dụng.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-dark">Lời nhắn gửi kèm đến bộ phận HR (tùy chọn)</label>
+                    <textarea class="form-control" rows="3" placeholder="Giới thiệu ngắn gọn kinh nghiệm và lý do muốn gia nhập NoveraTech..."></textarea>
+                </div>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold text-white" onclick="submitQuickApply()">Xác nhận nộp đơn</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 3: Đăng tin tuyển dụng mới (HR / Recruiter) -->
+<div class="modal fade" id="createJobModal" tabindex="-1" aria-labelledby="createJobModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="createJobModalLabel">
+                    <i class="bi bi-megaphone text-primary me-2"></i>Tạo tin tuyển dụng mới
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <form id="jobCreateForm" onsubmit="handleJobCreateSubmit(event)">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-8">
+                            <label class="form-label small fw-semibold text-dark">Tiêu đề vị trí tuyển dụng</label>
+                            <input type="text" class="form-control" placeholder="VD: Senior DevOps Engineer" required id="newJobTitle" />
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label small fw-semibold text-dark">Phòng ban</label>
+                            <select class="form-select" id="newJobDept">
+                                <option>Ban Công nghệ</option>
+                                <option>Novera AI Lab</option>
+                                <option>Khối Sản phẩm</option>
+                                <option>Phòng Nhân sự</option>
+                                <option>Khối Vận hành</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label small fw-semibold text-dark">Số lượng cần tuyển</label>
+                            <input type="number" class="form-control" value="2" min="1" required />
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label small fw-semibold text-dark">Dải lương dự kiến</label>
+                            <input type="text" class="form-control" placeholder="VD: 30 - 45 Triệu" required />
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label small fw-semibold text-dark">Hạn nộp hồ sơ</label>
+                            <input type="date" class="form-control" value="@DateTime.UtcNow.AddDays(30).ToString("yyyy-MM-dd")" required />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold text-dark">Mô tả công việc & Yêu cầu kỹ năng</label>
+                            <textarea class="form-control" rows="4" placeholder="Nhập các yêu cầu chính, trách nhiệm và quyền lợi của vị trí..." required></textarea>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold text-white">Xuất bản tin</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 4: Khởi tạo đề xuất nhân sự (Hiring Manager) -->
+<div class="modal fade" id="createRequisitionModal" tabindex="-1" aria-labelledby="createRequisitionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="createRequisitionModalLabel">
+                    <i class="bi bi-file-earmark-plus text-warning me-2"></i>Khởi tạo đề xuất tuyển dụng nhân sự
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <form id="reqForm" onsubmit="handleReqSubmit(event)">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Chức danh cần bổ sung</label>
+                        <input type="text" class="form-control" placeholder="VD: Backend Engineer (Golang/C#)" required />
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-dark">Số lượng</label>
+                            <input type="number" class="form-control" value="1" min="1" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-dark">Ngày cần có mặt</label>
+                            <input type="date" class="form-control" value="@DateTime.UtcNow.AddDays(45).ToString("yyyy-MM-dd")" required />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Lý do tuyển dụng</label>
+                        <select class="form-select">
+                            <option>Mở rộng quy mô dự án mới</option>
+                            <option>Thay thế nhân sự nghỉ việc</option>
+                            <option>Bổ sung nhân sự chuyên gia cho dự án trọng điểm</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Mô tả mục tiêu & Yêu cầu trọng tâm</label>
+                        <textarea class="form-control" rows="3" placeholder="Mục tiêu công việc chính cần giải quyết..." required></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-warning rounded-pill px-4 fw-semibold text-dark">Gửi duyệt đề xuất</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 5: Nhập phiếu đánh giá phỏng vấn (Interviewer) -->
+<div class="modal fade" id="interviewEvaluationModal" tabindex="-1" aria-labelledby="interviewEvaluationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="interviewEvaluationModalLabel">
+                    <i class="bi bi-clipboard2-check text-success me-2"></i>Phiếu Đánh Giá Phỏng Vấn
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <form id="evaluationForm" onsubmit="handleEvalSubmit(event)">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Ứng viên được đánh giá</label>
+                        <select class="form-select">
+                            <option>Bùi Anh Tuấn — Senior Fullstack .NET / React</option>
+                            <option>Trần Minh Đức — AI / LLM Application Engineer</option>
+                            <option>Lê Thu Hà — Talent Acquisition Specialist</option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-dark">Điểm chuyên môn (1-5 sao)</label>
+                            <select class="form-select">
+                                <option>5/5 - Xuất sắc</option>
+                                <option selected>4/5 - Tốt, đáp ứng tốt</option>
+                                <option>3/5 - Trung bình khá</option>
+                                <option>2/5 - Dưới yêu cầu</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-dark">Độ phù hợp văn hóa</label>
+                            <select class="form-select">
+                                <option selected>Rất phù hợp</option>
+                                <option>Phù hợp</option>
+                                <option>Cần xem xét thêm</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Kết luận đề xuất của Interviewer</label>
+                        <select class="form-select text-success fw-semibold">
+                            <option value="PASS" class="text-success">ĐẠT — Đề xuất tiến hành gửi Thư mời Offer</option>
+                            <option value="CONSIDER" class="text-warning">XEM XÉT — Cần phỏng vấn thêm vòng 2</option>
+                            <option value="REJECT" class="text-danger">KHÔNG ĐẠT — Lưu trữ hồ sơ</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Nhận xét chi tiết</label>
+                        <textarea class="form-control" rows="3" placeholder="Điểm mạnh kỹ thuật, phong cách tư duy giải quyết bài toán và thái độ ứng viên..." required></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-success rounded-pill px-4 fw-semibold text-white">Nộp phiếu đánh giá</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Modal handlers & Client Actions
+        function openApplyJobModal(title, dept) {
+            document.getElementById('modalJobTitle').textContent = title;
+            document.getElementById('modalJobDept').textContent = dept;
+            var modal = new bootstrap.Modal(document.getElementById('applyJobModal'));
+            modal.show();
+        }
+
+        function submitQuickApply() {
+            var modalEl = document.getElementById('applyJobModal');
+            var modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
+            alert('🎉 Chúc mừng! Hồ sơ ứng tuyển của bạn đã được chuyển thẳng tới bộ phận Tuyển dụng NoveraTech. Vui lòng theo dõi email và lộ trình tại đây.');
+        }
+
+        function handleCvSubmit(e) {
+            e.preventDefault();
+            var modalEl = document.getElementById('updateCvModal');
+            var modal = bootstrap.Modal.getInstance(modalEl);
+            var file = document.getElementById('cvFileInput').files[0];
+            if (file) {
+                document.getElementById('cvStatusText').textContent = file.name;
+            }
+            modal.hide();
+            alert('✅ Cập nhật hồ sơ và file CV thành công! Hồ sơ đã được đồng bộ với hệ thống ATS.');
+        }
+
+        function handleJobCreateSubmit(e) {
+            e.preventDefault();
+            var title = document.getElementById('newJobTitle').value;
+            var modalEl = document.getElementById('createJobModal');
+            var modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
+            alert('🚀 Đã xuất bản tin tuyển dụng mới: "' + title + '" thành công! Ứng viên bên ngoài đã có thể nộp hồ sơ.');
+        }
+
+        function handleReqSubmit(e) {
+            e.preventDefault();
+            var modalEl = document.getElementById('createRequisitionModal');
+            var modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
+            alert('📝 Đề xuất bổ sung nhân sự đã được gửi tới Ban Giám đốc và Trưởng phòng Nhân sự phê duyệt.');
+        }
+
+        function handleEvalSubmit(e) {
+            e.preventDefault();
+            var modalEl = document.getElementById('interviewEvaluationModal');
+            var modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
+            alert('📋 Phiếu đánh giá phỏng vấn đã được lưu vào hồ sơ ứng viên thành công.');
+        }
+
+        function approveSelectedOffer(name, pos, salary) {
+            if (confirm('Xác nhận PHÊ DUYỆT thư mời nhận việc (Offer Letter) cho ứng viên ' + name + ' với vị trí ' + pos + ' (Mức lương: ' + salary + ')?')) {
+                alert('✅ Đã phê duyệt Thư mời Offer thành công! Hệ thống đã gửi thông báo tự động tới ứng viên ' + name + '.');
+            }
+        }
+
+        function filterCandidates(type) {
+            alert('Đang lọc danh sách hồ sơ ứng viên theo tiêu chí: ' + type + '. Hệ thống đang hiển thị 148 hồ sơ.');
+        }
+    </script>
+}

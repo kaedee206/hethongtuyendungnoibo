@@ -1,0 +1,28 @@
+@{
+    ViewData["Title"] = "Không tìm thấy trang - 404";
+}
+
+<div class="container py-5 text-center" style="max-width: 600px;">
+    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+        <div class="mb-4">
+            <span class="display-3 fw-bold text-secondary d-block">404</span>
+            <div class="badge bg-secondary-subtle text-secondary px-3 py-2 rounded-pill mt-2">
+                <i class="bi bi-question-circle me-1"></i> Trang không tồn tại
+            </div>
+        </div>
+
+        <h3 class="fw-bold text-dark mb-2">Không tìm thấy trang yêu cầu</h3>
+        <p class="text-muted mb-4">
+            Đường dẫn bạn vừa truy cập có thể đã bị di chuyển, xóa bỏ hoặc không tồn tại trên hệ thống ATS NoveraTech.
+        </p>
+
+        <div class="d-flex justify-content-center gap-2">
+            <a asp-controller="Home" asp-action="Index" class="btn btn-primary px-4 py-2">
+                <i class="bi bi-house-door me-1"></i> Về trang chủ
+            </a>
+            <button onclick="window.history.back()" class="btn btn-outline-secondary px-4 py-2">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại
+            </button>
+        </div>
+    </div>
+</div>

@@ -9,6 +9,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<AuthAuditLog> AuthAuditLogs { get; set; }
     public DbSet<UserSession> UserSessions { get; set; }
     public DbSet<Role> Roles { get; set; }
+    public DbSet<UserRole> UserRoles { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -16,8 +17,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<User>(entity =>
         {
-            // Tối ưu hóa Database (SCRUM-131)
-            
             // Email có constraint unique
             entity.HasIndex(e => e.Email).IsUnique();
 
@@ -25,11 +24,27 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasIndex(e => e.FullName);
             entity.HasIndex(e => e.Department);
 
-            // Foreign key đến bảng roles
+            // Foreign key đến bảng roles (cho RoleId cũ nếu có)
             entity.HasOne(e => e.RoleEntity)
                   .WithMany()
                   .HasForeignKey(e => e.RoleId)
                   .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // S1-09: Cấu hình quan hệ N-N giữa User và Role qua UserRole
+        modelBuilder.Entity<UserRole>(entity =>
+        {
+            entity.HasKey(ur => new { ur.UserId, ur.RoleId });
+
+            entity.HasOne(ur => ur.User)
+                  .WithMany(u => u.UserRoles)
+                  .HasForeignKey(ur => ur.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(ur => ur.Role)
+                  .WithMany(r => r.UserRoles)
+                  .HasForeignKey(ur => ur.RoleId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="vi" class="">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>@ViewData["Title"] - Novera Tech ATS</title>
+
+    @* FOUC Prevention: Inline blocking script phải nằm trước mọi style/link *@
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem('ats_theme');
+                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (saved === 'dark' || (!saved && prefersDark)) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            } catch (e) { /* localStorage blocked in some contexts */ }
+        })();
+    </script>
+
+    @* Tailwind CSS Play CDN (darkMode: class) *@
+    <script>
+        (function () {
+            var origWarn = console.warn;
+            console.warn = function () {
+                if (arguments[0] && typeof arguments[0] === 'string' && arguments[0].indexOf('cdn.tailwindcss.com') !== -1) {
+                    return;
+                }
+                origWarn.apply(console, arguments);
+            };
+        })();
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+                    },
+                    colors: {
+                        mint: {
+                            900: '#0D5C4D',
+                            700: '#047857',
+                            500: '#10B981',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    @* Google Fonts: Inter + JetBrains Mono *@
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    @* Favicon từ logoweb *@
+    <link rel="icon" type="image/png" href="~/img/favicon.png" asp-append-version="true" />
+
+    @await RenderSectionAsync("HeadStyles", required: false)
+</head>
+<body class="bg-[#F8FAFC] dark:bg-[#0B0F17] font-sans antialiased transition-colors duration-200">
+
+    @* Theme Switcher Button - Pinned Top-Right *@
+    <button
+        id="btnThemeToggle"
+        type="button"
+        title="Chuyển đổi giao diện Sáng/Tối"
+        aria-label="Chuyển đổi giao diện Sáng/Tối"
+        class="fixed top-4 right-4 z-50 w-9 h-9 flex items-center justify-center border border-[#E2E8F0] dark:border-[#1E293B] bg-white dark:bg-[#111827] text-[#0F172A] dark:text-[#F8FAFC] rounded-none hover:border-[#0D5C4D] dark:hover:border-[#10B981] transition-colors duration-150">
+        @* Sun icon - visible in dark mode to switch to light *@
+        <svg id="iconLight" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 hidden dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path stroke-linecap="square" stroke-linejoin="miter" d="M12 3v2m0 14v2M3 12H1m22 0h-2M4.929 4.929l1.414 1.414m11.314 11.314 1.414 1.414M4.929 19.071l1.414-1.414M17.657 6.343l1.414-1.414M12 7a5 5 0 1 0 0 10A5 5 0 0 0 12 7z"/>
+        </svg>
+        @* Moon icon - visible in light mode to switch to dark *@
+        <svg id="iconDark" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 block dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path stroke-linecap="square" stroke-linejoin="miter" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+    </button>
+
+    <main role="main">
+        @RenderBody()
+    </main>
+
+    @* Theme Toggle Script *@
+    <script>
+        (function () {
+            var btn = document.getElementById('btnThemeToggle');
+            if (!btn) return;
+            btn.addEventListener('click', function () {
+                var html = document.documentElement;
+                if (html.classList.contains('dark')) {
+                    html.classList.remove('dark');
+                    try { localStorage.setItem('ats_theme', 'light'); } catch (e) { }
+                } else {
+                    html.classList.add('dark');
+                    try { localStorage.setItem('ats_theme', 'dark'); } catch (e) { }
+                }
+            });
+        })();
+    </script>
+
+    @* jQuery required by jquery.validate *@
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

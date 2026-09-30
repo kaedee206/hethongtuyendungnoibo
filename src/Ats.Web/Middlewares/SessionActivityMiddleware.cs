@@ -43,9 +43,16 @@ public class SessionActivityMiddleware(RequestDelegate next)
                     context.Response.Cookies.Delete("Ats.AuthCookie");
                     context.Response.Cookies.Delete(".AspNetCore.Session");
 
-                    context.Response.StatusCode = 401; // Unauthorized
-                    context.Response.ContentType = "application/json";
-                    await context.Response.WriteAsync("{\"isSuccess\": false, \"message\": \"Phiên làm việc đã vượt quá thời gian tối đa cho phép. Vui lòng đăng nhập lại.\"}");
+                    if (context.Request.Path.StartsWithSegments("/api"))
+                    {
+                        context.Response.StatusCode = 401; // Unauthorized
+                        context.Response.ContentType = "application/json";
+                        await context.Response.WriteAsync("{\"isSuccess\": false, \"message\": \"Phiên làm việc đã vượt quá thời gian tối đa cho phép. Vui lòng đăng nhập lại.\"}");
+                    }
+                    else
+                    {
+                        context.Response.Redirect("/Account/StaffLogin?expired=true");
+                    }
                     return;
                 }
             }
@@ -81,9 +88,16 @@ public class SessionActivityMiddleware(RequestDelegate next)
                     context.Response.Cookies.Delete("Ats.AuthCookie");
                     context.Response.Cookies.Delete(".AspNetCore.Session");
 
-                    context.Response.StatusCode = 401; // Unauthorized
-                    context.Response.ContentType = "application/json";
-                    await context.Response.WriteAsync("{\"isSuccess\": false, \"message\": \"Phiên làm việc này đã bị đăng xuất từ thiết bị khác.\"}");
+                    if (context.Request.Path.StartsWithSegments("/api"))
+                    {
+                        context.Response.StatusCode = 401; // Unauthorized
+                        context.Response.ContentType = "application/json";
+                        await context.Response.WriteAsync("{\"isSuccess\": false, \"message\": \"Phiên làm việc này đã bị đăng xuất từ thiết bị khác.\"}");
+                    }
+                    else
+                    {
+                        context.Response.Redirect("/Account/StaffLogin?revoked=true");
+                    }
                     return;
                 }
 

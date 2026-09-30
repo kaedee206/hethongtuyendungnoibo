@@ -7,7 +7,7 @@ public class User
     public string PasswordHash { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
 
-    // Thuộc tính lưu Vai trò phân quyền (Mặc định: Candidate)
+    // Thuộc tính lưu Vai trò phân quyền chính (Mặc định: Candidate)
     public string Role { get; set; } = "Candidate";
 
     // SCRUM-129: Phòng ban
@@ -15,7 +15,7 @@ public class User
 
     public int FailedLoginAttempts { get; set; } = 0;
     public DateTimeOffset? LockedUntil { get; set; }
-    public string Status { get; set; } = "ACTIVE";
+    public string Status { get; set; } = "ACTIVE"; // ACTIVE, LOCKED, INACTIVE, PENDING
     public DateTimeOffset? LastLoginAt { get; set; }
 
     // Bổ sung thuộc tính theo dõi thời gian hoạt động cuối
@@ -40,4 +40,12 @@ public class User
 
     // SCRUM-132: Ghi nhận người cập nhật
     public Guid? UpdatedBy { get; set; }
+
+    // S1-10: Lý do khóa và thời điểm khóa
+    public string? LockReason { get; set; }
+    public DateTimeOffset? LockedAt { get; set; }
+    public Guid? LockedBy { get; set; }
+
+    // S1-09: Hỗ trợ nhiều vai trò cùng lúc
+    public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 }

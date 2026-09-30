@@ -27,6 +27,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Đăng ký Services
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Cấu hình thời gian Session (Idle timeout)
@@ -49,6 +50,9 @@ builder.Services.AddAuthentication("AtsCookieScheme")
     .AddCookie("AtsCookieScheme", options =>
     {
         options.Cookie.Name = "Ats.AuthCookie";
+        options.LoginPath = "/Account/StaffLogin";
+        options.AccessDeniedPath = "/errors/403";
+        options.LogoutPath = "/Account/Logout";
         options.ExpireTimeSpan = TimeSpan.FromMinutes(idleTimeoutMinutes);
         options.SlidingExpiration = true; // Tự động gia hạn phiên khi user hoạt động > 50% thời hạn
         options.Cookie.HttpOnly = true;
@@ -60,13 +64,16 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
+    app.UseExceptionHandler("/errors/500");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 // SCRUM-124: Đăng ký Global Exception Middleware cho API
 app.UseMiddleware<Ats.Web.Middlewares.GlobalExceptionMiddleware>();
+
+// Xử lý status code (401, 403, 404, 500)
+app.UseStatusCodePagesWithReExecute("/errors/{0}");
 
 app.UseHttpsRedirection();
 app.UseRouting();

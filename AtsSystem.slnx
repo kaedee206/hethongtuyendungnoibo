@@ -2,4 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Ats.Web/Ats.Web.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Ats.Web.Tests/Ats.Web.Tests.csproj" />
+  </Folder>
 </Solution>

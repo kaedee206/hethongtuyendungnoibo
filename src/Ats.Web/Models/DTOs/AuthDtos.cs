@@ -22,6 +22,7 @@ public record UserInfoDto(
     string Email,
     string FullName,
     string Role,
+    List<string> Roles,
     string RedirectUrl
 );
 
@@ -63,5 +64,7 @@ public record CreateAccountRequestDto(
     [Required(ErrorMessage = "Họ tên không được để trống.")]
     string FullName,
 
-    string? Role
+    string? Role,
+    List<string>? Roles = null,
+    string? Department = null
 );
