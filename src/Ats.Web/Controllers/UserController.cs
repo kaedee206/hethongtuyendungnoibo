@@ -1,5 +1,6 @@
 using Ats.Web.Data;
 using Ats.Web.Models.DTOs;
+using Ats.Web.Models.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -137,5 +138,77 @@ public class UserController : ControllerBase
         await _dbContext.SaveChangesAsync();
 
         return Ok(new { isSuccess = true, message = "Cập nhật thông tin tài khoản thành công." });
+    }
+
+    /// <summary>
+    /// API Vô hiệu hoá tài khoản (PUT: /api/tai-khoan/{id}/vo-hieu-hoa) - SCRUM-137
+    /// </summary>
+    [HttpPut("{id}/vo-hieu-hoa")]
+    public async Task<IActionResult> DeactivateUser(Guid id)
+    {
+        return await ToggleUserStatus(id, "INACTIVE", "Vô hiệu hoá tài khoản thành công.");
+    }
+
+    /// <summary>
+    /// API Kích hoạt lại tài khoản (PUT: /api/tai-khoan/{id}/kich-hoat) - SCRUM-137
+    /// </summary>
+    [HttpPut("{id}/kich-hoat")]
+    public async Task<IActionResult> ReactivateUser(Guid id)
+    {
+        return await ToggleUserStatus(id, "ACTIVE", "Kích hoạt tài khoản thành công.");
+    }
+
+    private async Task<IActionResult> ToggleUserStatus(Guid id, string newStatus, string successMessage)
+    {
+        var currentUserIdString = HttpContext.Session.GetString("UserId");
+        if (string.IsNullOrEmpty(currentUserIdString) || !Guid.TryParse(currentUserIdString, out var currentUserId))
+        {
+            return Unauthorized(new { isSuccess = false, message = "Vui lòng đăng nhập để thực hiện chức năng này." });
+        }
+
+        var currentUser = await _dbContext.Users.FindAsync(currentUserId);
+        if (currentUser == null || currentUser.Role != "Admin")
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { isSuccess = false, message = "Bạn không có quyền thực hiện chức năng này." });
+        }
+
+        var targetUser = await _dbContext.Users.FindAsync(id);
+        if (targetUser == null)
+        {
+            return NotFound(new { isSuccess = false, message = "Không tìm thấy tài khoản." });
+        }
+
+        targetUser.Status = newStatus;
+        targetUser.UpdatedAt = DateTimeOffset.UtcNow;
+        targetUser.UpdatedBy = currentUserId;
+
+        // Ghi log Audit
+        _dbContext.AuthAuditLogs.Add(new AuthAuditLog
+        {
+            UserId = targetUser.Id,
+            Email = targetUser.Email,
+            IsSuccess = true,
+            Reason = successMessage,
+            EventType = newStatus == "INACTIVE" ? "AccountDeactivated" : "AccountReactivated",
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
+            UserAgent = Request.Headers["User-Agent"].ToString() ?? "Unknown",
+            Timestamp = DateTimeOffset.UtcNow
+        });
+
+        // Xóa tất cả các phiên đăng nhập nếu vô hiệu hóa
+        if (newStatus == "INACTIVE")
+        {
+            var activeSessions = await _dbContext.UserSessions
+                                                 .Where(s => s.UserId == targetUser.Id && !s.IsRevoked)
+                                                 .ToListAsync();
+            foreach (var session in activeSessions)
+            {
+                session.IsRevoked = true;
+            }
+        }
+
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(new { isSuccess = true, message = successMessage });
     }
 }
