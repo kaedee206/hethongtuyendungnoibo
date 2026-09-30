@@ -31,4 +31,10 @@ public class User
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    // SCRUM-131: Bổ sung theo thiết kế database schema
+    public Guid? RoleId { get; set; }
+    public Role? RoleEntity { get; set; }
+    public string? ActivationToken { get; set; }
+    public Guid? CreatedBy { get; set; }
 }
