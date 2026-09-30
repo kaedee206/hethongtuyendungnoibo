@@ -1,8 +1,311 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@using Ats.Web.Constants
+@using System.Security.Claims
+@{
+    ViewData["Title"] = "Trang Chủ - Hệ Thống Tuyển Dụng Nội Bộ";
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var fullName = User.FindFirstValue(ClaimTypes.Name) ?? "Đồng nghiệp";
+    var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+
+    string roleDisplay = role switch
+    {
+        UserRoles.Admin         => "Quản trị viên",
+        UserRoles.HRManager     => "Trưởng phòng HR",
+        UserRoles.Recruiter     => "Chuyên viên Tuyển dụng",
+        UserRoles.HiringManager => "Quản lý Tuyển dụng",
+        UserRoles.Interviewer   => "Phỏng vấn viên",
+        UserRoles.Approver      => "Người Phê duyệt",
+        UserRoles.Candidate     => "Ứng viên Nội bộ",
+        _                       => "Khách vãng lai"
+    };
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="ats-dashboard-container py-3">
+
+    @* ─────────────────────────────────────────────────────────────────
+       1. HERO BANNER SECTION
+       ───────────────────────────────────────────────────────────────── *@
+    <div class="ats-hero-banner">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-primary bg-opacity-25 text-info border border-info border-opacity-25 px-3 py-1 rounded-pill">
+                        <i class="bi bi-shield-check me-1"></i> ATS Recruitment Platform
+                    </span>
+                    @if (isAuthenticated)
+                    {
+                        <span class="ats-role-badge ats-role-@(role.ToLower())">@roleDisplay</span>
+                    }
+                </div>
+                <h1 class="ats-hero-title">
+                    @if (isAuthenticated)
+                    {
+                        <span>Xin chào, <span class="text-info">@fullName</span>! 👋</span>
+                    }
+                    else
+                    {
+                        <span>Hệ Thống Tuyển Dụng Nội Bộ</span>
+                    }
+                </h1>
+                <p class="ats-hero-desc">
+                    @if (isAuthenticated)
+                    {
+                        <span>Chào mừng bạn quay lại hệ thống ATS. Dưới đây là tổng hợp nhanh về tình trạng tuyển dụng và các tính năng được phân quyền cho vai trò <strong>@roleDisplay</strong>.</span>
+                    }
+                    else
+                    {
+                        <span>Nền tảng kết nối nhân tài nội bộ, số hóa quy trình tuyển dụng từ duyệt yêu cầu, phỏng vấn, thẩm định đến phát hành thư mời nhận việc (Offer & Onboarding).</span>
+                    }
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
+                @if (isAuthenticated)
+                {
+                    <div class="d-inline-flex flex-column align-items-lg-end text-light">
+                        <div class="small text-secondary mb-1">
+                            <i class="bi bi-clock me-1"></i> @DateTime.Now.ToString("dddd, dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"))
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a asp-controller="Account" asp-action="Profile" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                                <i class="bi bi-person me-1"></i> Hồ sơ cá nhân
+                            </a>
+                            <a asp-controller="Account" asp-action="Logout" class="btn btn-danger btn-sm rounded-pill px-3">
+                                <i class="bi bi-box-arrow-right me-1"></i> Đăng xuất
+                            </a>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-column flex-sm-row justify-content-lg-end gap-2">
+                        <a asp-controller="Account" asp-action="Login" class="btn btn-primary btn-lg rounded-pill px-4 shadow">
+                            <i class="bi bi-box-arrow-in-right me-2"></i> Đăng Nhập Hệ Thống
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ─────────────────────────────────────────────────────────────────
+       2. STATS KPI OVERVIEW CARDS
+       ───────────────────────────────────────────────────────────────── *@
+    <div class="row g-4 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="ats-stat-card">
+                <div>
+                    <div class="ats-stat-number text-primary">12</div>
+                    <p class="ats-stat-label">Vị trí đang mở tuyển</p>
+                    <small class="text-success"><i class="bi bi-arrow-up"></i> +2 trong tuần này</small>
+                </div>
+                <div class="ats-stat-icon-wrapper ats-stat-icon-blue">
+                    <i class="bi bi-briefcase"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="ats-stat-card">
+                <div>
+                    <div class="ats-stat-number text-indigo" style="color: #6366f1;">48</div>
+                    <p class="ats-stat-label">Hồ sơ ứng viên active</p>
+                    <small class="text-primary"><i class="bi bi-people"></i> Pipeline tuyển dụng</small>
+                </div>
+                <div class="ats-stat-icon-wrapper ats-stat-icon-indigo">
+                    <i class="bi bi-person-lines-fill"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="ats-stat-card">
+                <div>
+                    <div class="ats-stat-number text-warning">8</div>
+                    <p class="ats-stat-label">Lịch phỏng vấn tuần này</p>
+                    <small class="text-warning"><i class="bi bi-calendar-event"></i> 3 lịch hôm nay</small>
+                </div>
+                <div class="ats-stat-icon-wrapper ats-stat-icon-amber">
+                    <i class="bi bi-calendar3"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="ats-stat-card">
+                <div>
+                    <div class="ats-stat-number text-success">3</div>
+                    <p class="ats-stat-label">Yêu cầu chờ phê duyệt</p>
+                    <small class="text-danger"><i class="bi bi-exclamation-circle"></i> Cần xử lý sớm</small>
+                </div>
+                <div class="ats-stat-icon-wrapper ats-stat-icon-green">
+                    <i class="bi bi-check2-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ─────────────────────────────────────────────────────────────────
+       3. RECRUITMENT PIPELINE TRACKER
+       ───────────────────────────────────────────────────────────────── *@
+    <div class="ats-card mb-4">
+        <div class="ats-card-header">
+            <h2 class="ats-card-title">
+                <i class="bi bi-diagram-3 text-primary"></i> Quy Trình Tuyển Dụng Nội Bộ Chuẩn
+            </h2>
+            <span class="badge bg-light text-secondary border">Quy trình 5 giai đoạn</span>
+        </div>
+        <div class="row text-center g-3 py-2">
+            <div class="col ats-pipeline-step active">
+                <div class="ats-pipeline-dot bg-primary text-white">
+                    <i class="bi bi-file-earmark-plus"></i>
+                </div>
+                <div class="ats-pipeline-label">1. Tiếp nhận hồ sơ</div>
+                <small class="text-muted">18 ứng viên</small>
+            </div>
+            <div class="col ats-pipeline-step active">
+                <div class="ats-pipeline-dot bg-info text-white">
+                    <i class="bi bi-filter"></i>
+                </div>
+                <div class="ats-pipeline-label">2. Sàng lọc hồ sơ</div>
+                <small class="text-muted">14 ứng viên</small>
+            </div>
+            <div class="col ats-pipeline-step active">
+                <div class="ats-pipeline-dot bg-warning text-white">
+                    <i class="bi bi-camera-video"></i>
+                </div>
+                <div class="ats-pipeline-label">3. Phỏng vấn</div>
+                <small class="text-muted">9 ứng viên</small>
+            </div>
+            <div class="col ats-pipeline-step">
+                <div class="ats-pipeline-dot">
+                    <i class="bi bi-envelope-paper"></i>
+                </div>
+                <div class="ats-pipeline-label">4. Thỏa thuận Offer</div>
+                <small class="text-muted">4 ứng viên</small>
+            </div>
+            <div class="col ats-pipeline-step">
+                <div class="ats-pipeline-dot">
+                    <i class="bi bi-award"></i>
+                </div>
+                <div class="ats-pipeline-label">5. Onboarding</div>
+                <small class="text-muted">3 nhân sự</small>
+            </div>
+        </div>
+    </div>
+
+    @* ─────────────────────────────────────────────────────────────────
+       4. ROLE-BASED QUICK ACTIONS & FEATURE MODULES
+       ───────────────────────────────────────────────────────────────── *@
+    <div class="ats-card">
+        <div class="ats-card-header">
+            <h2 class="ats-card-title">
+                <i class="bi bi-grid-fill text-primary"></i> Phân Hệ Chức Năng Theo Phân Quyền
+            </h2>
+            <span class="badge bg-primary bg-opacity-10 text-primary">Vai trò: @roleDisplay</span>
+        </div>
+
+        <div class="row g-3">
+            @* EP-04: Tin tuyển dụng (Candidate, Recruiter, HRManager, Admin) *@
+            @if (role == UserRoles.Candidate || role == UserRoles.Recruiter || role == UserRoles.HRManager || role == UserRoles.Admin || !isAuthenticated)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <a asp-controller="JobPostings" asp-action="Index" class="ats-action-card">
+                        <span class="ats-action-icon text-primary"><i class="bi bi-file-earmark-text"></i></span>
+                        <div class="ats-action-name">Tin Tuyển Dụng Nội Bộ</div>
+                        <p class="ats-action-desc">Tra cứu, xem thông tin và ứng tuyển vào các vị trí tuyển dụng đang mở trong tổ chức.</p>
+                    </a>
+                </div>
+            }
+
+            @* EP-03: Yêu cầu tuyển dụng (Recruiter, HiringManager, HRManager, Approver, Admin) *@
+            @if (role == UserRoles.Recruiter || role == UserRoles.HiringManager || role == UserRoles.HRManager || role == UserRoles.Approver || role == UserRoles.Admin)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <a asp-controller="Requisitions" asp-action="Index" class="ats-action-card">
+                        <span class="ats-action-icon text-warning"><i class="bi bi-clipboard2-check"></i></span>
+                        <div class="ats-action-name">Yêu Cầu Tuyển Dụng</div>
+                        <p class="ats-action-desc">Khởi tạo phiếu đề xuất tuyển dụng, gửi duyệt đa cấp và theo dõi trạng thái phê duyệt.</p>
+                    </a>
+                </div>
+            }
+
+            @* EP-05: Quản lý ứng viên (Recruiter, HiringManager, HRManager, Admin) *@
+            @if (role == UserRoles.Recruiter || role == UserRoles.HiringManager || role == UserRoles.HRManager || role == UserRoles.Admin)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <a asp-controller="Candidates" asp-action="Index" class="ats-action-card">
+                        <span class="ats-action-icon text-info"><i class="bi bi-person-lines-fill"></i></span>
+                        <div class="ats-action-name">Quản Lý Ứng Viên</div>
+                        <p class="ats-action-desc">Theo dõi tiến trình hồ sơ theo Kanban board, cập nhật trạng thái pipeline và lịch sử ứng tuyển.</p>
+                    </a>
+                </div>
+            }
+
+            @* EP-06: Phỏng vấn & Đánh giá (Interviewer, Recruiter, HiringManager, HRManager, Admin) *@
+            @if (role == UserRoles.Interviewer || role == UserRoles.Recruiter || role == UserRoles.HiringManager || role == UserRoles.HRManager || role == UserRoles.Admin)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <a asp-controller="Interviews" asp-action="Index" class="ats-action-card">
+                        <span class="ats-action-icon text-danger"><i class="bi bi-calendar2-check"></i></span>
+                        <div class="ats-action-name">Lịch Phỏng Vấn & Đánh Giá</div>
+                        <p class="ats-action-desc">Xem lịch phỏng vấn được phân công, thực hiện chấm điểm tiêu chí và gửi phiếu phản hồi.</p>
+                    </a>
+                </div>
+            }
+
+            @* EP-07: Thư mời Offer & Onboarding (Recruiter, HRManager, Admin) *@
+            @if (role == UserRoles.Recruiter || role == UserRoles.HRManager || role == UserRoles.Admin)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <a asp-controller="Offers" asp-action="Index" class="ats-action-card">
+                        <span class="ats-action-icon text-success"><i class="bi bi-file-earmark-diff"></i></span>
+                        <div class="ats-action-name">Offer &amp; Onboarding</div>
+                        <p class="ats-action-desc">Soạn thảo thư mời nhận việc, trình ký lãnh đạo và thiết lập quy trình tiếp nhận nhân sự mới.</p>
+                    </a>
+                </div>
+            }
+
+            @* EP-09: Báo cáo & Analytics (HRManager, Admin) *@
+            @if (role == UserRoles.HRManager || role == UserRoles.Admin)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <a asp-controller="Analytics" asp-action="Index" class="ats-action-card">
+                        <span class="ats-action-icon text-primary"><i class="bi bi-bar-chart-line"></i></span>
+                        <div class="ats-action-name">Báo Cáo &amp; Analytics</div>
+                        <p class="ats-action-desc">Biểu đồ tỷ lệ tuyển dụng thành công, chi phí tuyển dụng, thời gian tuyển trung bình (Time-to-hire).</p>
+                    </a>
+                </div>
+            }
+
+            @* EP-01 & EP-02: Quản trị hệ thống (Admin) *@
+            @if (role == UserRoles.Admin)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <a asp-controller="Users" asp-action="Index" class="ats-action-card border-danger border-opacity-25">
+                        <span class="ats-action-icon text-danger"><i class="bi bi-gear-fill"></i></span>
+                        <div class="ats-action-name">Quản Trị Người Dùng &amp; Quyền</div>
+                        <p class="ats-action-desc">Thêm mới tài khoản, phân quyền 7 vai trò, kích hoạt/khóa tài khoản nhân sự nội bộ.</p>
+                    </a>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <a asp-controller="AuditLogs" asp-action="Index" class="ats-action-card">
+                        <span class="ats-action-icon text-secondary"><i class="bi bi-journal-text"></i></span>
+                        <div class="ats-action-name">Nhật Ký Hệ Thống (Audit Logs)</div>
+                        <p class="ats-action-desc">Theo dõi toàn bộ lịch sử đăng nhập, thay đổi dữ liệu, bảo mật và an toàn thông tin.</p>
+                    </a>
+                </div>
+            }
+
+            @* Candidate: Hồ sơ ứng tuyển của tôi *@
+            @if (role == UserRoles.Candidate)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <a asp-controller="Account" asp-action="Profile" class="ats-action-card">
+                        <span class="ats-action-icon text-primary"><i class="bi bi-person-badge"></i></span>
+                        <div class="ats-action-name">Hồ Sơ Ứng Tuyển Của Tôi</div>
+                        <p class="ats-action-desc">Cập nhật CV, thông tin kinh nghiệm làm việc và theo dõi các tin tuyển dụng đã ứng tuyển.</p>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
 </div>
