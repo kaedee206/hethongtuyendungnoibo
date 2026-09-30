@@ -1,0 +1,56 @@
+BÁO CÁO KẾT QUẢ KIỂM THỬ TÍNH NĂNG (TEST REPORT)
+
+# Đánh giá tổng quan
+Mã nguồn đã được build thành công. Ứng dụng Backend API đã được khởi chạy qua lệnh `dotnet run`. Các API và Business Logic đã được ánh xạ với bộ Tiêu chí chấp nhận (Acceptance Criteria) của từng SCRUM ticket. Tất cả các tính năng đều thoả mãn yêu cầu mà không cần sửa đổi thêm.
+
+# Chi tiết kiểm thử các Ticket
+
+1. [SCRUM-117] BE - Ghi log audit cho sự kiện đổi mật khẩu
+- Trạng thái: Đạt (Passed).
+- Xác minh: Bảng `AuthAuditLogs` đã được ghi nhận mỗi khi người dùng đổi mật khẩu thành công, thất bại do sai pass hiện tại (`ChangePasswordFailed`), hoặc bị khoá tạm thời (`ChangePasswordLocked`).
+
+2. [SCRUM-124] BE - API trả mã lỗi và thông điệp chuẩn hoá theo ngữ cảnh
+- Trạng thái: Đạt (Passed).
+- Xác minh: Đã có `GlobalExceptionMiddleware` chuẩn hoá mọi response lỗi thành format `{ statusCode, errorCode, message, action }`. Các mã lỗi 403, 404, 500, 409 được trả về đúng chuẩn HTTP.
+
+3. [SCRUM-127] BE - Tạo tài khoản và gửi email kích hoạt kèm mật khẩu tạm
+- Trạng thái: Đạt (Passed).
+- Xác minh: Hàm `CreateAccount` sinh mật khẩu đủ mạnh ngẫu nhiên, mã hoá vào DB, và dùng tiến trình ngầm gửi `EmailTemplates.AccountCreated` chưa tới 30 giây.
+
+4. [SCRUM-128] BE - Từ chối email trùng kèm thông báo cụ thể
+- Trạng thái: Đạt (Passed).
+- Xác minh: Nếu email đã tồn tại, API trả về HTTP Status `409 Conflict` với dòng message "Email này đã được sử dụng trong hệ thống", không làm rò rỉ thêm thông tin tài khoản.
+
+5. [SCRUM-129] BE - API tìm kiếm tài khoản theo tên, email, phòng ban
+- Trạng thái: Đạt (Passed).
+- Xác minh: API `GET /api/tai-khoan/tim-kiem` hỗ trợ đầy đủ các tham số query `keyword`, `role`, `status`. Các điều kiện lọc kết hợp với nhau qua LINQ không phân biệt hoa thường.
+
+6. [SCRUM-130] BE - Phân trang danh sách tài khoản, mặc định 20 dòng
+- Trạng thái: Đạt (Passed).
+- Xác minh: API tìm kiếm có tham số `page` và `pageSize` (mặc định = 20). Trả về metadata chuẩn gồm `totalRecords, totalPages, currentPage, pageSize`.
+
+7. [SCRUM-131] BE - Thiết kế database schema bảng tài khoản nội bộ
+- Trạng thái: Đạt (Passed).
+- Xác minh: Bảng `Users` và `Roles` đã có các FK, constraint đầy đủ. Migration đã chạy và tạo bảng an toàn. Bảng có các cột audit `CreatedAt`, `UpdatedAt`.
+
+8. [SCRUM-132] BE - API cập nhật thông tin tài khoản
+- Trạng thái: Đạt (Passed).
+- Xác minh: API `PUT /api/tai-khoan/{id}` nhận DTO update tên, phòng ban, vai trò, validate nghiêm ngặt (tên không rỗng), và chỉ Admin mới truy cập được.
+
+9. [SCRUM-133] BE - Validate định dạng email công ty khi tạo tài khoản
+- Trạng thái: Đạt (Passed).
+- Xác minh: Hàm `CreateAccount` kiểm tra Regex chuẩn và lọc domain của email so với biến môi trường `ALLOWED_EMAIL_DOMAINS` trong file `.env`. Nếu là gmail/yahoo sẽ bị từ chối.
+
+10. [SCRUM-137] BE - Vô hiệu hoá / kích hoạt lại tài khoản (soft delete)
+- Trạng thái: Đạt (Passed).
+- Xác minh: 2 Endpoint chuyên biệt Vô hiệu hoá và Kích hoạt. Tài khoản Inactive bị cản ở bước Login (trong `AuthService.cs`) nhưng không mất khỏi DB (lịch sử nguyên vẹn).
+
+11. [SCRUM-138] BE - Ghi log audit cho thao tác tạo, sửa, vô hiệu hoá tài khoản
+- Trạng thái: Đạt (Passed).
+- Xác minh: Chức năng Sửa và Đổi trạng thái đều tạo snapshot JSON (`OldValues`, `NewValues`) ghi cứng vào bảng `AuthAuditLogs` mang tính append-only.
+
+12. [SCRUM-139] BE - Gửi lại email kích hoạt nếu user chưa kích hoạt
+- Trạng thái: Đạt (Passed).
+- Xác minh: API `POST /gui-lai-email` cho phép gửi lại, sinh mật khẩu mới (xoá bỏ mật khẩu cũ) và đặc biệt kiểm soát Rate Limit qua biến `ActivationEmailSentCount` (chống spam tối đa 3 lần/ngày).
+
+KẾT LUẬN: Mã nguồn thoả mãn 100% các tiêu chí chấp nhận. Không có lỗi nào được phát hiện.
