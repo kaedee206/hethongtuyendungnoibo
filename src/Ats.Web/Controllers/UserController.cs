@@ -1,3 +1,4 @@
+using Ats.Web.Constants;
 using Ats.Web.Data;
 using Ats.Web.Models.DTOs;
 using Ats.Web.Models.Entities;
@@ -311,16 +312,7 @@ public class UserController : ControllerBase
 
         // Gửi email ngầm
         var loginLink = "https://yourdomain.com/dang-nhap";
-        var emailBody = $@"
-            <h3>Chào mừng bạn đến với ATS</h3>
-            <p>Xin chào {targetUser.FullName},</p>
-            <p>Admin vừa gửi lại thông tin đăng nhập cho bạn.</p>
-            <p>Dưới đây là mật khẩu mới của bạn (mật khẩu cũ đã bị vô hiệu hóa):</p>
-            <ul>
-                <li><strong>Email:</strong> {targetUser.Email}</li>
-                <li><strong>Mật khẩu tạm:</strong> {tempPassword}</li>
-            </ul>
-            <p>Vui lòng đăng nhập tại <a href='{loginLink}'>{loginLink}</a> và đổi mật khẩu ngay lập tức.</p>";
+        var emailBody = EmailTemplates.ActivationEmailResent(targetUser.FullName, targetUser.Email, tempPassword, loginLink);
 
         _ = _emailService.SendEmailAsync(new SendEmailRequestDto(targetUser.Email, "Gửi lại thông tin tài khoản ATS", emailBody));
 

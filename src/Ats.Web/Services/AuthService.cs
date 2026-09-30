@@ -84,8 +84,7 @@ public class AuthService(ApplicationDbContext dbContext, IEmailService emailServ
         _ = _emailService.SendEmailAsync(new SendEmailRequestDto(
             user.Email,
             "Thông báo đăng nhập hệ thống ATS",
-            $"<p>Xin chào <b>{user.FullName}</b>,</p><p>Tài khoản của bạn vừa đăng nhập thành công vào hệ thống ATS lúc {DateTime.Now:HH:mm dd/MM/yyyy}.</p>"
-
+            EmailTemplates.LoginSuccess(user.FullName, DateTime.Now.ToString("HH:mm dd/MM/yyyy"))
         ), cancellationToken);
 
         // LOGIC SCRUM-48: Ánh xạ 7 vai trò sang đường dẫn tương ứng
