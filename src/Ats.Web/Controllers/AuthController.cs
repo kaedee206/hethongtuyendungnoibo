@@ -634,6 +634,21 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
+        // SCRUM-133: Validate định dạng email công ty
+        var allowedDomainsStr = Environment.GetEnvironmentVariable("ALLOWED_EMAIL_DOMAINS");
+        if (!string.IsNullOrWhiteSpace(allowedDomainsStr))
+        {
+            var allowedDomains = allowedDomainsStr.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                                  .Select(d => d.Trim().ToLower())
+                                                  .ToList();
+            var emailDomain = request.Email.Split('@').LastOrDefault()?.ToLower();
+            
+            if (emailDomain == null || !allowedDomains.Contains(emailDomain))
+            {
+                return BadRequest(new { isSuccess = false, message = $"Chỉ chấp nhận email thuộc tên miền nội bộ của công ty ({string.Join(", ", allowedDomains)})." });
+            }
+        }
+
         var existingUser = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
         if (existingUser != null)
         {
