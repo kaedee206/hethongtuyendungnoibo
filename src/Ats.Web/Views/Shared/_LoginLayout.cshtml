@@ -1,8 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Đăng nhập vào Hệ thống Tuyển dụng Nội bộ ATS" />
     <title>@ViewData["Title"] - ATS | Hệ thống Tuyển dụng Nội bộ</title>
 
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -13,12 +14,14 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="account-body">
-    <main role="main">
+    <a href="#login-form" class="visually-hidden-focusable skip-link">Chuyển đến form đăng nhập</a>
+
+    <main role="main" id="main-content">
         @RenderBody()
     </main>
 
-    <footer class="account-footer text-center text-muted small">
-        &copy; @DateTime.Now.Year - ATS - Hệ thống Tuyển dụng Nội bộ
+    <footer class="account-footer text-center">
+        &copy; @DateTime.Now.Year &mdash; Hệ Thống Tuyển Dụng Nội Bộ (ATS)
     </footer>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
