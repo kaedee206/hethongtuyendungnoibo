@@ -37,4 +37,7 @@ public class User
     public Role? RoleEntity { get; set; }
     public string? ActivationToken { get; set; }
     public Guid? CreatedBy { get; set; }
+
+    // SCRUM-132: Ghi nhận người cập nhật
+    public Guid? UpdatedBy { get; set; }
 }
