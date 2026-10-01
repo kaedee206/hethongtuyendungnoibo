@@ -11,6 +11,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<UserRole> UserRoles { get; set; }
     public DbSet<RolePermission> RolePermissions { get; set; }
 
+    public DbSet<AuthAuditLog> AuthAuditLogs { get; set; }
+    public DbSet<UserSession> UserSessions { get; set; }
+
     public DbSet<Department> Departments { get; set; }
     public DbSet<JobPosition> JobPositions { get; set; }
     public DbSet<JobRequisition> JobRequisitions { get; set; }
@@ -126,8 +129,46 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(al => al.UserId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        // Indexes
-        modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
+        // User indexes & relationships
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasIndex(e => e.Email).IsUnique();
+            entity.HasIndex(e => e.FullName);
+            entity.HasIndex(e => e.Department);
+
+            entity.HasOne(e => e.RoleEntity)
+                  .WithMany()
+                  .HasForeignKey(e => e.RoleId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.DepartmentEntity)
+                  .WithMany()
+                  .HasForeignKey(e => e.DepartmentId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.JobPosition)
+                  .WithMany()
+                  .HasForeignKey(e => e.JobPositionId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // UserRole relationship
+        modelBuilder.Entity<UserRole>(entity =>
+        {
+            entity.HasKey(ur => new { ur.UserId, ur.RoleId });
+
+            entity.HasOne(ur => ur.User)
+                  .WithMany(u => u.UserRoles)
+                  .HasForeignKey(ur => ur.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(ur => ur.Role)
+                  .WithMany(r => r.UserRoles)
+                  .HasForeignKey(ur => ur.RoleId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Other Indexes
         modelBuilder.Entity<Candidate>().HasIndex(c => c.Email);
         modelBuilder.Entity<JobRequisition>().HasIndex(r => r.Code).IsUnique();
         modelBuilder.Entity<JobPosting>().HasIndex(p => p.Slug).IsUnique();

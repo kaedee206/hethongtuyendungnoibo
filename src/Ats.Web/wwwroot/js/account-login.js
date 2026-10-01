@@ -1,7 +1,7 @@
 // Logic hiển thị/ẩn mật khẩu trên form đăng nhập
 document.addEventListener('DOMContentLoaded', function () {
     const toggleButton = document.querySelector('.login-card__toggle-password');
-    const passwordInput = document.querySelector('input[type="password"], input[name="Password"]');
+    const passwordInput = document.querySelector('input[type="password"], input[name="Password"], input[name="LoginInput.Password"]');
 
     if (toggleButton && passwordInput) {
         toggleButton.addEventListener('click', function () {

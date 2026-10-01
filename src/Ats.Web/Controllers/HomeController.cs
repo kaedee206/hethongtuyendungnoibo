@@ -14,6 +14,13 @@ public class HomeController(ILogger<HomeController> logger) : Controller
         return View();
     }
 
+    [HttpGet("/landing")]
+    public IActionResult Landing()
+    {
+        return View("Landing");
+    }
+
+
     public IActionResult Privacy()
     {
         return View();

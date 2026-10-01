@@ -1,0 +1,519 @@
+@model StaffAuthCompositeViewModel
+@{
+    ViewData["Title"] = "Đăng nhập Nội bộ";
+    Layout = "_AuthLayout";
+    var activePanel = Model.ActivePanel ?? ViewData["ActivePanel"]?.ToString() ?? "login";
+}
+
+@*
+    S1-01: Cổng Nhân sự Nội bộ - Internal Staff Portal
+    Dành riêng cho nhân sự Novera Tech với domain @noveratech.digital
+    Sliding Panel: Login <-> Forgot Password, đồng bộ URL hash
+*@
+
+<section
+    class="min-h-screen flex flex-col lg:flex-row"
+    aria-label="Cổng Đăng nhập Nhân sự Nội bộ Novera Tech">
+
+    @* ─────────────────────────────────────────────────────────────
+       PANEL TRÁI: Ambient Media (Hidden on mobile, 50% on desktop)
+    ───────────────────────────────────────────────────────────── *@
+    <div class="hidden lg:flex lg:w-1/2 relative flex-col justify-between overflow-hidden bg-[#0D5C4D]"
+         aria-hidden="true">
+
+        @* Architectural Background - CSS Duotone Wash *@
+        <div class="absolute inset-0 z-0"
+             style="background: linear-gradient(135deg, #0D5C4D 0%, #0a4a3e 40%, #063d33 100%);">
+            @* Grid overlay lines - mechanical brutalist aesthetic *@
+            <svg class="absolute inset-0 w-full h-full opacity-[0.07]" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="staff-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#10B981" stroke-width="0.5"/>
+                    </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#staff-grid)"/>
+            </svg>
+            @* Diagonal accent lines *@
+            <svg class="absolute inset-0 w-full h-full opacity-[0.05]" xmlns="http://www.w3.org/2000/svg">
+                <line x1="0" y1="0" x2="100%" y2="100%" stroke="#10B981" stroke-width="1"/>
+                <line x1="20%" y1="0" x2="100%" y2="80%" stroke="#10B981" stroke-width="0.5"/>
+                <line x1="0" y1="30%" x2="70%" y2="100%" stroke="#10B981" stroke-width="0.5"/>
+            </svg>
+        </div>
+
+        @* Content z-above background *@
+        <div class="relative z-10 flex flex-col justify-between h-full p-10">
+            @* Header Brand *@
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 flex items-center justify-center border border-[#10B981]/40 bg-[#10B981]/10 rounded-none">
+                    <img src="~/img/logo-icon-dark-transparent.png"
+                         alt="Novera Tech Icon"
+                         class="w-5 h-5 object-contain brightness-0 invert" />
+                </div>
+                <div>
+                    <p class="font-mono text-[10px] tracking-[0.2em] uppercase text-[#10B981]/80 leading-none">
+                        NOVERA TECH
+                    </p>
+                    <p class="font-mono text-[8px] tracking-[0.15em] uppercase text-[#10B981]/50 leading-none mt-0.5">
+                        ENTERPRISE APPARATUS
+                    </p>
+                </div>
+            </div>
+
+            @* Center Headline *@
+            <div class="space-y-6">
+                <div>
+                    <span class="inline-flex items-center gap-2 border border-[#10B981]/30 px-2 py-1 rounded-none mb-4">
+                        <span class="w-1.5 h-1.5 bg-[#10B981] rounded-none animate-pulse"></span>
+                        <span class="font-mono text-[9px] tracking-[0.25em] uppercase text-[#10B981]/70">SYS-ACCESS // LEVEL-4</span>
+                    </span>
+                    <h1 class="text-4xl font-semibold text-white leading-tight tracking-tight">
+                        Internal<br/>
+                        <span class="text-[#10B981]">Staff</span><br/>
+                        Portal
+                    </h1>
+                </div>
+                <p class="text-sm text-white/50 leading-relaxed max-w-xs font-light">
+                    Hệ thống tuyển dụng nội bộ dành riêng cho nhân sự Novera Tech. Chỉ hỗ trợ tài khoản có đuôi <span class="font-mono text-[#10B981]/80">@@noveratech.digital</span>.
+                </p>
+
+                @* System Status Indicators *@
+                <div class="flex flex-col gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 bg-[#10B981] rounded-none"></span>
+                        <span class="font-mono text-[9px] tracking-widest uppercase text-[#10B981]/60">AUTH SYSTEM ONLINE</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 bg-[#10B981]/50 rounded-none"></span>
+                        <span class="font-mono text-[9px] tracking-widest uppercase text-[#10B981]/40">SSO ENDPOINT READY</span>
+                    </div>
+                </div>
+            </div>
+
+            @* Footer Watermark *@
+            <div class="border-t border-[#10B981]/20 pt-6">
+                <p class="font-mono text-[9px] tracking-[0.3em] uppercase text-[#10B981]/30">
+                    NOVERA TECH ECOSYSTEM · INTERNAL APPARATUS
+                </p>
+                <p class="font-mono text-[8px] tracking-widest uppercase text-[#10B981]/20 mt-1">
+                    &copy; @DateTime.Now.Year · RESTRICTED ACCESS · ATS v2.0
+                </p>
+            </div>
+        </div>
+    </div>
+
+    @* ─────────────────────────────────────────────────────────────
+       PANEL PHẢI: Auth Sliding Container (100% mobile, 50% desktop)
+    ───────────────────────────────────────────────────────────── *@
+    <div class="w-full lg:w-1/2 flex flex-col min-h-screen bg-white dark:bg-[#111827]">
+
+        @* Mobile Brand Header (visible only on mobile) *@
+        <div class="lg:hidden flex items-center gap-3 px-6 py-5 border-b border-[#E2E8F0] dark:border-[#1E293B]">
+            <img src="~/img/logo-dark-transparent.png"
+                 alt="Novera Tech ATS"
+                 class="h-7 object-contain dark:brightness-0 dark:invert" />
+        </div>
+
+        @* Sliding Panels Viewport *@
+        <div class="flex-1 flex flex-col overflow-hidden relative">
+            @* Sliding track wrapper *@
+            <div id="staffSliderTrack"
+                 class="flex w-[200%] transition-transform duration-[400ms]"
+                 style="transform: translateX(@(activePanel == "forgot" ? "-50%" : "0%")); transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);"
+                 data-active-panel="@activePanel">
+
+                @* ─── SLIDE 1: Login ─── *@
+                <div id="panelLogin"
+                     class="w-1/2 flex flex-col justify-center px-8 py-10 lg:px-12"
+                     role="region"
+                     aria-label="Đăng nhập nhân sự"
+                     aria-hidden="@(activePanel == "forgot" ? "true" : "false")">
+
+                    @* Panel Header *@
+                    <div class="mb-8">
+                        <img src="~/img/logo-dark-transparent.png"
+                             alt="Novera Tech ATS"
+                             class="h-8 object-contain mb-6 dark:brightness-0 dark:invert" />
+                        <h2 class="text-[#0F172A] dark:text-[#F8FAFC] text-2xl font-semibold leading-tight tracking-tight">
+                            Đăng nhập Hệ thống
+                        </h2>
+                        <p class="text-[#64748B] dark:text-[#94A3B8] text-sm mt-1">
+                            Sử dụng tài khoản email tổ chức của bạn.
+                        </p>
+                    </div>
+
+                    @* Portal Switch Bar *@
+                    <div class="mb-6 flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-[#1E293B]">
+                        <span class="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-wider uppercase text-[#0D5C4D] dark:text-[#10B981] font-semibold">
+                            <span class="w-1.5 h-1.5 bg-[#10B981] rounded-full"></span>
+                            Cổng Nhân sự Nội bộ
+                        </span>
+                        <a asp-controller="Account" asp-action="CandidateAuth"
+                           class="inline-flex items-center gap-1 text-xs font-semibold text-[#0D5C4D] dark:text-[#10B981] hover:underline underline-offset-4 transition-colors">
+                            <span>Dành cho Ứng viên</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                            </svg>
+                        </a>
+                    </div>
+
+                    @* Validation Summary (Model-level errors only when present) *@
+                    @if (!ViewData.ModelState.IsValid && ViewData.ModelState.TryGetValue(string.Empty, out var loginErrors) && loginErrors.Errors.Count > 0)
+                    {
+                        <div asp-validation-summary="ModelOnly"
+                             class="mb-4 px-3 py-2.5 border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-sm rounded-none"
+                             role="alert"
+                             aria-live="polite"></div>
+                    }
+
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="mb-4 px-3 py-2.5 border border-[#10B981]/40 bg-[#10B981]/5 text-[#047857] dark:text-[#10B981] text-sm rounded-none" role="status">
+                            @TempData["SuccessMessage"]
+                        </div>
+                    }
+
+                    @* Login Form *@
+                    <form asp-controller="Account"
+                          asp-action="StaffLogin"
+                          method="post"
+                          novalidate
+                          autocomplete="on"
+                          class="space-y-4">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="LoginInput.ReturnUrl" />
+                        <input type="hidden" name="ActivePanel" value="login" />
+
+                        @* Email Field *@
+                        <div>
+                            <label asp-for="LoginInput.Email"
+                                   class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1.5">
+                                Email Công Ty
+                            </label>
+                            <div class="relative">
+                                <input asp-for="LoginInput.Email"
+                                       type="email"
+                                       autocomplete="username"
+                                       autofocus
+                                       placeholder="user@noveratech.digital"
+                                       tabindex="@(activePanel == "forgot" ? "-1" : "0")"
+                                       class="w-full px-3 py-2.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm font-sans placeholder-[#94A3B8] dark:placeholder-[#475569] rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
+                            </div>
+                            <span asp-validation-for="LoginInput.Email"
+                                  class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                        </div>
+
+                        @* Password Field with Eye Toggle *@
+                        <div>
+                            <label asp-for="LoginInput.Password"
+                                   class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1.5">
+                                Mật Khẩu
+                            </label>
+                            <div class="relative">
+                                <input asp-for="LoginInput.Password"
+                                       type="password"
+                                       id="staffPasswordInput"
+                                       autocomplete="current-password"
+                                       tabindex="@(activePanel == "forgot" ? "-1" : "0")"
+                                       class="w-full px-3 py-2.5 pr-10 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm font-sans rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
+                                <button type="button"
+                                        id="staffEyeToggle"
+                                        aria-label="Hiện hoặc ẩn mật khẩu"
+                                        aria-pressed="false"
+                                        tabindex="@(activePanel == "forgot" ? "-1" : "0")"
+                                        class="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors p-0.5">
+                                    @* Eye icon (password visible) *@
+                                    <svg id="staffEyeOpen" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                        <path stroke-linecap="square" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                        <circle cx="12" cy="12" r="3" stroke-linecap="square"/>
+                                        <line x1="3" y1="3" x2="21" y2="21" stroke-linecap="square"/>
+                                    </svg>
+                                    @* Eye-off icon (password hidden) *@
+                                    <svg id="staffEyeClosed" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                        <path stroke-linecap="square" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                        <circle cx="12" cy="12" r="3" stroke-linecap="square"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <span asp-validation-for="LoginInput.Password"
+                                  class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                        </div>
+
+                        @* Remember Me + Forgot Password *@
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center gap-2 cursor-pointer select-none group">
+                                <div class="relative">
+                                    <input asp-for="LoginInput.RememberMe"
+                                           type="checkbox"
+                                           tabindex="@(activePanel == "forgot" ? "-1" : "0")"
+                                           class="peer sr-only" />
+                                    <div class="w-4 h-4 border border-[#CBD5E1] dark:border-[#334155] bg-[#F8FAFC] dark:bg-[#0B0F17] rounded-none peer-checked:bg-[#0D5C4D] peer-checked:border-[#0D5C4D] transition-colors flex items-center justify-center">
+                                        <svg class="w-2.5 h-2.5 text-white opacity-0 peer-checked:opacity-100 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true">
+                                            <path stroke-linecap="square" stroke-linejoin="miter" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-[#64748B] dark:text-[#94A3B8]">Ghi nhớ thiết bị này</span>
+                            </label>
+
+                            <button type="button"
+                                    id="btnGoToForgot"
+                                    class="font-mono text-[10px] tracking-wider uppercase text-[#0D5C4D] dark:text-[#10B981] hover:underline underline-offset-2 transition-colors">
+                                Quên mật khẩu?
+                            </button>
+                        </div>
+
+                        @* Submit Button *@
+                        <button type="submit"
+                                tabindex="@(activePanel == "forgot" ? "-1" : "0")"
+                                class="w-full py-2.5 px-4 bg-[#0D5C4D] hover:bg-[#047857] text-white text-sm font-medium tracking-wide rounded-none border border-[#0D5C4D] hover:border-[#047857] transition-colors active:translate-y-[1px] active:shadow-none duration-100 flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                <path stroke-linecap="square" d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
+                            </svg>
+                            Sign In to Portal
+                        </button>
+
+                        @* SSO Divider *@
+                        <div class="flex items-center gap-3">
+                            <div class="flex-1 h-px bg-[#E2E8F0] dark:bg-[#1E293B]"></div>
+                            <span class="font-mono text-[9px] tracking-[0.2em] uppercase text-[#94A3B8] dark:text-[#475569] whitespace-nowrap">
+                                OR CONTINUE WITH ENTERPRISE SSO
+                            </span>
+                            <div class="flex-1 h-px bg-[#E2E8F0] dark:bg-[#1E293B]"></div>
+                        </div>
+
+                        @* SSO Button: Microsoft Azure AD *@
+                        <a href="/Account/ExternalLogin?provider=AzureAD&returnUrl=@Model.LoginInput.ReturnUrl"
+                           tabindex="@(activePanel == "forgot" ? "-1" : "0")"
+                           class="flex items-center justify-center gap-3 w-full py-2.5 px-4 border border-[#E2E8F0] dark:border-[#1E293B] bg-white dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm font-medium rounded-none hover:border-[#0D5C4D] dark:hover:border-[#10B981] transition-colors">
+                            @* Microsoft Icon *@
+                            <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
+                                <rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
+                                <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/>
+                                <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
+                            </svg>
+                            <span>Đăng nhập với Microsoft Azure AD</span>
+                        </a>
+
+                        @* Switcher to Candidate Portal *@
+                        <div class="pt-2 text-center">
+                            <a asp-controller="Account" asp-action="CandidateAuth"
+                               tabindex="@(activePanel == "forgot" ? "-1" : "0")"
+                               class="text-xs text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors">
+                                Bạn là ứng viên? <span class="font-medium text-[#0D5C4D] dark:text-[#10B981] underline underline-offset-2">Đăng nhập hoặc Đăng ký tại Cổng Ứng viên &rarr;</span>
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                @* ─── SLIDE 2: Forgot Password ─── *@
+                <div id="panelForgot"
+                     class="w-1/2 flex flex-col justify-center px-8 py-10 lg:px-12"
+                     role="region"
+                     aria-label="Quên mật khẩu"
+                     aria-hidden="@(activePanel == "forgot" ? "false" : "true")">
+
+                    @* Panel Header *@
+                    <div class="mb-8">
+                        <img src="~/img/logo-dark-transparent.png"
+                             alt="Novera Tech ATS"
+                             class="h-8 object-contain mb-6 dark:brightness-0 dark:invert" />
+                        <h2 class="text-[#0F172A] dark:text-[#F8FAFC] text-2xl font-semibold leading-tight tracking-tight">
+                            Khôi phục Mật khẩu
+                        </h2>
+                        <p class="text-[#64748B] dark:text-[#94A3B8] text-sm mt-1">
+                            Nhập email tổ chức, chúng tôi sẽ gửi link đặt lại mật khẩu.
+                        </p>
+                    </div>
+
+                    @* Forgot Form Validation Summary *@
+                    @if (ViewData["ForgotError"] != null && !string.IsNullOrWhiteSpace(ViewData["ForgotError"]?.ToString()))
+                    {
+                        <div class="mb-4 px-3 py-2.5 border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-sm rounded-none"
+                             role="alert"
+                             aria-live="polite">
+                            @ViewData["ForgotError"]
+                        </div>
+                    }
+
+                    @if (Model.ActivePanel == "forgot" && Model.IsSuccess)
+                    {
+                        <div class="mb-4 px-3 py-2.5 border border-[#10B981]/40 bg-[#10B981]/5 text-[#047857] dark:text-[#10B981] text-sm rounded-none" role="status">
+                            @(Model.StatusMessage ?? "Nếu email tổ chức tồn tại trong hệ thống, liên kết đặt lại mật khẩu đã được gửi đến hộp thư của bạn.")
+                        </div>
+                    }
+
+                    <form asp-controller="Account"
+                          asp-action="StaffForgotPassword"
+                          method="post"
+                          novalidate
+                          class="space-y-4">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="ForgotPasswordInput.ReturnUrl" />
+                        <input type="hidden" name="ActivePanel" value="forgot" />
+
+                        @* Forgot Email Field *@
+                        <div>
+                            <label asp-for="ForgotPasswordInput.Email"
+                                   class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1.5">
+                                Email Công Ty
+                            </label>
+                            <input asp-for="ForgotPasswordInput.Email"
+                                   type="email"
+                                   autocomplete="email"
+                                   placeholder="user@noveratech.digital"
+                                   tabindex="@(activePanel == "forgot" ? "0" : "-1")"
+                                   class="w-full px-3 py-2.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm placeholder-[#94A3B8] dark:placeholder-[#475569] rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
+                            <span asp-validation-for="ForgotPasswordInput.Email"
+                                  class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                        </div>
+
+                        <button type="submit"
+                                tabindex="@(activePanel == "forgot" ? "0" : "-1")"
+                                class="w-full py-2.5 px-4 bg-[#0D5C4D] hover:bg-[#047857] text-white text-sm font-medium tracking-wide rounded-none border border-[#0D5C4D] transition-colors active:translate-y-[1px] duration-100">
+                            Gửi Liên Kết Khôi Phục
+                        </button>
+
+                        <button type="button"
+                                id="btnBackToLogin"
+                                tabindex="@(activePanel == "forgot" ? "0" : "-1")"
+                                class="w-full py-2.5 px-4 border border-[#E2E8F0] dark:border-[#1E293B] bg-transparent text-[#64748B] dark:text-[#94A3B8] text-sm font-medium rounded-none hover:border-[#0D5C4D] dark:hover:border-[#10B981] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors">
+                            ← Quay lại Đăng nhập
+                        </button>
+
+                        @* Switcher to Candidate Portal *@
+                        <div class="pt-2 text-center">
+                            <a asp-controller="Account" asp-action="CandidateAuth"
+                               tabindex="@(activePanel == "forgot" ? "0" : "-1")"
+                               class="text-xs text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors">
+                                Bạn là ứng viên? <span class="font-medium text-[#0D5C4D] dark:text-[#10B981] underline underline-offset-2">Chuyển sang Cổng Ứng viên &rarr;</span>
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>@* end sliderTrack *@
+        </div>
+
+        @* Footer *@
+        <div class="px-8 py-4 lg:px-12 border-t border-[#E2E8F0] dark:border-[#1E293B]">
+            <p class="font-mono text-[9px] tracking-widest uppercase text-[#94A3B8] dark:text-[#475569]">
+                &copy; @DateTime.Now.Year Novera Tech · Dành riêng cho nhân sự nội bộ
+            </p>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            'use strict';
+
+            // ─── State Machine ────────────────────────────────────────────────
+            var track = document.getElementById('staffSliderTrack');
+            var panelLogin = document.getElementById('panelLogin');
+            var panelForgot = document.getElementById('panelForgot');
+            var btnGoToForgot = document.getElementById('btnGoToForgot');
+            var btnBackToLogin = document.getElementById('btnBackToLogin');
+            var eyeToggle = document.getElementById('staffEyeToggle');
+            var passwordInput = document.getElementById('staffPasswordInput');
+            var eyeOpen = document.getElementById('staffEyeOpen');
+            var eyeClosed = document.getElementById('staffEyeClosed');
+
+            if (!track) return;
+
+            // ─── Slide Functions ──────────────────────────────────────────────
+            function setPanel(panel) {
+                if (panel === 'forgot') {
+                    track.style.transform = 'translateX(-50%)';
+                    panelLogin.setAttribute('aria-hidden', 'true');
+                    panelForgot.setAttribute('aria-hidden', 'false');
+                    setTabIndex(panelLogin, '-1');
+                    setTabIndex(panelForgot, '0');
+                    // Focus first input in forgot panel
+                    var firstInput = panelForgot.querySelector('input[type="email"]');
+                    if (firstInput) setTimeout(function () { firstInput.focus(); }, 420);
+                } else {
+                    track.style.transform = 'translateX(0%)';
+                    panelLogin.setAttribute('aria-hidden', 'false');
+                    panelForgot.setAttribute('aria-hidden', 'true');
+                    setTabIndex(panelForgot, '-1');
+                    setTabIndex(panelLogin, '0');
+                    var firstInput = panelLogin.querySelector('input[type="email"]');
+                    if (firstInput) setTimeout(function () { firstInput.focus(); }, 420);
+                }
+            }
+
+            function setTabIndex(panel, val) {
+                var focusables = panel.querySelectorAll('input, button, a, select, textarea');
+                for (var i = 0; i < focusables.length; i++) {
+                    focusables[i].setAttribute('tabindex', val);
+                }
+            }
+
+            // ─── Hash Sync ────────────────────────────────────────────────────
+            function readHash() {
+                return window.location.hash === '#forgot' ? 'forgot' : 'login';
+            }
+
+            function applyHash() {
+                var panel = readHash();
+                setPanel(panel);
+            }
+
+            window.addEventListener('hashchange', applyHash);
+
+            // ─── Button Events ────────────────────────────────────────────────
+            if (btnGoToForgot) {
+                btnGoToForgot.addEventListener('click', function () {
+                    window.location.hash = '#forgot';
+                    setPanel('forgot');
+                });
+            }
+
+            if (btnBackToLogin) {
+                btnBackToLogin.addEventListener('click', function () {
+                    window.location.hash = '#login';
+                    setPanel('login');
+                });
+            }
+
+            // ─── Eye Toggle ───────────────────────────────────────────────────
+            if (eyeToggle && passwordInput) {
+                eyeToggle.addEventListener('click', function () {
+                    var isPassword = passwordInput.type === 'password';
+                    passwordInput.type = isPassword ? 'text' : 'password';
+                    eyeToggle.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
+                    if (eyeOpen) eyeOpen.classList.toggle('hidden', !isPassword);
+                    if (eyeClosed) eyeClosed.classList.toggle('hidden', isPassword);
+                });
+            }
+
+            // ─── Checkbox Custom Styling ──────────────────────────────────────
+            var rememberCheckbox = document.querySelector('input[name="LoginInput.RememberMe"]');
+            if (rememberCheckbox) {
+                var checkIcon = rememberCheckbox.closest('label').querySelector('svg');
+                rememberCheckbox.addEventListener('change', function () {
+                    if (checkIcon) checkIcon.classList.toggle('hidden', !this.checked);
+                });
+            }
+
+            // ─── Server-side State Restore ────────────────────────────────────
+            // Đọc data-active-panel từ server để fallback khi POST có lỗi ModelState
+            var serverPanel = track.getAttribute('data-active-panel') || 'login';
+            var hashPanel = window.location.hash === '#forgot' ? 'forgot' : null;
+            var finalPanel = hashPanel || serverPanel;
+
+            // Set hash to match server state (for URL sync)
+            if (finalPanel === 'forgot' && window.location.hash !== '#forgot') {
+                window.location.hash = '#forgot';
+            } else if (finalPanel === 'login' && window.location.hash === '#forgot') {
+                // do nothing, let hash win
+            }
+
+            setPanel(finalPanel);
+
+        })();
+    </script>
+}

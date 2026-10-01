@@ -1,31 +1,92 @@
-html {
-  font-size: 14px;
-}
-
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
+:root {
+  --primary-color: #2563eb;
+  --primary-hover: #1d4ed8;
+  --brand-navy: #0f172a;
+  --sidebar-bg: #1e293b;
+  --bg-slate: #f8fafc;
+  --border-color: #e2e8f0;
 }
 
 body {
-  margin-bottom: 60px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--bg-slate);
+  color: #334155;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
+main {
+  flex: 1 0 auto;
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+footer {
+  flex-shrink: 0;
+}
+
+/* Navbar & Brand */
+.ats-navbar {
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.ats-brand-logo {
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--brand-navy);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ats-nav-link {
+  font-weight: 500;
+  color: #475569 !important;
+  padding: 0.5rem 0.85rem !important;
+  border-radius: 6px;
+  transition: all 0.15s ease-in-out;
+}
+
+.ats-nav-link:hover, .ats-nav-link.active {
+  color: var(--primary-color) !important;
+  background-color: #eff6ff;
+}
+
+/* User Profile Badge */
+.ats-user-badge {
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  padding: 0.35rem 0.75rem;
+}
+
+/* Role Badges */
+.badge-admin { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.badge-hrmanager { background-color: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.badge-recruiter { background-color: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; }
+.badge-hiringmanager { background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+.badge-interviewer { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.badge-approver { background-color: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+
+/* Tables */
+.table > :not(caption) > * > * {
+  padding: 0.85rem 0.75rem;
+  border-bottom-color: #f1f5f9;
+}
+
+/* Mobile responsive down to 360px */
+@media (max-width: 576px) {
+  .ats-navbar {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+
+  .container-fluid {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
 }

@@ -480,7 +480,137 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
-# Environment variables (chứa mật khẩu thật)
+*.swo
+
+# =====================================================================
+# PROJECT SPECIFIC & REDUNDANT FILES (NoveraTech ATS)
+# =====================================================================
+
+# 1. Environment variables, secrets & local configs
+.env
 *.env
+*.env.*
 !.env.example
-secrets.txt
+appsettings.Production.json
+appsettings.*.local.json
+appsettings.Development.local.json
+secrets.json
+user-secrets/
+*.pem
+*.key
+*.pfx
+*.p12
+*.cer
+*.crt
+
+# 2. Build outputs & compiler artifacts across all directories
+**/bin/
+**/obj/
+**/Debug/
+**/Release/
+**/TestResults/
+**/artifacts/
+**/publish/
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+
+# 3. IDE, Editor & Tool caches
+.vs/
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# 4. Logs, trace files & diagnostic dumps
+*.log
+*.log.*
+**/[Ll]og/
+**/[Ll]ogs/
+*.binlog
+*.svclog
+*.tlog
+*.stdout
+*.stderr
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 5. Scratch, notes, raw assets & AI agent temporary files
+scratch/
+temp/
+tmp/
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+*~
+~$*
+logoweb/
+note.txt
+notes.txt
+seed_data_info.txt
+Coding_Convention.md
+.agents/
+.gemini/
+
+# 6. Local database dumps, SQLite & cache stores
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+*.sql.bak
+*.sql.dump
+*.dump
+
+# 7. Frontend tooling, Node packages & web build caches
+node_modules/
+.pnpm-store/
+.turbo/
+.parcel-cache/
+.cache/
+dist/
+build/
+
+# 8. User uploads, media & runtime generated assets (CVs, resumes, avatars)
+**/wwwroot/uploads/*
+!**/wwwroot/uploads/.gitkeep
+**/wwwroot/resumes/*
+!**/wwwroot/resumes/.gitkeep
+**/wwwroot/files/*
+!**/wwwroot/files/.gitkeep
+**/wwwroot/avatars/*
+!**/wwwroot/avatars/.gitkeep
+storage/
+
+# 9. Test coverage & profiling reports
+coverage/
+Coverage/
+TestResults/
+*.coverage
+*.coveragexml
+.nyc_output/
+
+# 10. OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini

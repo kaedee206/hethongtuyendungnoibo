@@ -1,4 +1,4 @@
-@model Ats.Web.Models.ViewModels.Accounts.AccountLoginViewModel
+@model Ats.Web.Models.ViewModels.Account.AccountLoginViewModel
 @{
     ViewData["Title"] = "Đăng nhập";
     Layout = "_LoginLayout";
@@ -13,7 +13,7 @@
             <p class="login-card__subtitle">Sử dụng email công ty để truy cập ATS</p>
         </div>
 
-        <form asp-controller="Accounts" asp-action="Login" method="post" novalidate class="login-card__form">
+        <form asp-controller="Account" asp-action="Login" method="post" novalidate class="login-card__form">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="ReturnUrl" />
 
@@ -28,7 +28,7 @@
                        class="form-control"
                        autocomplete="username"
                        autofocus
-                       placeholder="[email protected]" />
+                       placeholder="user@noveratech.digital" />
                 <span asp-validation-for="Email" class="text-danger small"></span>
             </div>
 
@@ -51,7 +51,7 @@
                     <input asp-for="RememberMe" class="form-check-input" />
                     <label asp-for="RememberMe" class="form-check-label"></label>
                 </div>
-                <a asp-controller="Accounts" asp-action="ForgotPassword" class="login-card__forgot-link">
+                <a asp-controller="Account" asp-action="ForgotPassword" class="login-card__forgot-link">
                     Quên mật khẩu?
                 </a>
             </div>

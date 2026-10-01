@@ -27,22 +27,64 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Đăng ký Services
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+
+// Cấu hình thời gian Session (Idle timeout)
+var idleTimeoutMinutesStr = Environment.GetEnvironmentVariable("SESSION_IDLE_TIMEOUT_MINUTES") ?? "30";
+int idleTimeoutMinutes = int.TryParse(idleTimeoutMinutesStr, out var parsedIdle) ? parsedIdle : 30;
+
+// 1. Thêm cấu hình Session với thời gian hết hạn (Idle timeout)
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(idleTimeoutMinutes);
+    options.Cookie.Name = "Ats.Session";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+});
+
+// 2. Thêm cấu hình Authentication Cookie nếu ứng dụng dùng Cookie Auth
+builder.Services.AddAuthentication("AtsCookieScheme")
+    .AddCookie("AtsCookieScheme", options =>
+    {
+        options.Cookie.Name = "Ats.AuthCookie";
+        options.LoginPath = "/Account/StaffLogin";
+        options.AccessDeniedPath = "/errors/403";
+        options.LogoutPath = "/Account/Logout";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(idleTimeoutMinutes);
+        options.SlidingExpiration = true; // Tự động gia hạn phiên khi user hoạt động > 50% thời hạn
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+    });
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
+    app.UseExceptionHandler("/errors/500");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
+// SCRUM-124: Đăng ký Global Exception Middleware cho API
+app.UseMiddleware<Ats.Web.Middlewares.GlobalExceptionMiddleware>();
+
+// Xử lý status code (401, 403, 404, 500)
+app.UseStatusCodePagesWithReExecute("/errors/{0}");
+
 app.UseHttpsRedirection();
 app.UseRouting();
 
+// Kích hoạt Session & Auth đúng thứ tự pipeline
+app.UseSession();
+app.UseAuthentication();
 app.UseAuthorization();
+
+// Kích hoạt Middleware gia hạn phiên tự động
+app.UseMiddleware<Ats.Web.Middlewares.SessionActivityMiddleware>();
 
 app.MapStaticAssets();
 
