@@ -23,7 +23,7 @@ public class AccountController(
 
     #region S1-01: Đăng nhập
 
-    [HttpGet]
+    [HttpGet("/Account/Login")]
     [HttpGet("/accounts/login")]
     [HttpGet("/dang-nhap")]
     [AllowAnonymous]
@@ -38,7 +38,7 @@ public class AccountController(
         return RedirectToAction(nameof(StaffLogin), new { returnUrl, expired, revoked });
     }
 
-    [HttpPost]
+    [HttpPost("/Account/Login")]
     [HttpPost("/accounts/login")]
     [HttpPost("/dang-nhap")]
     [AllowAnonymous]
@@ -85,12 +85,22 @@ public class AccountController(
         foreach (var role in userInfo.Roles)
         {
             claims.Add(new Claim(ClaimTypes.Role, role));
+            var norm = UserRoles.NormalizeRole(role);
+            if (!string.Equals(norm, role, StringComparison.OrdinalIgnoreCase))
+            {
+                claims.Add(new Claim(ClaimTypes.Role, norm));
+            }
         }
 
         // Đảm bảo Primary Role cũng có mặt trong claim role
         if (!userInfo.Roles.Contains(userInfo.Role, StringComparer.OrdinalIgnoreCase))
         {
             claims.Add(new Claim(ClaimTypes.Role, userInfo.Role));
+        }
+        var normPrimary = UserRoles.NormalizeRole(userInfo.Role);
+        if (!claims.Any(c => c.Type == ClaimTypes.Role && string.Equals(c.Value, normPrimary, StringComparison.OrdinalIgnoreCase)))
+        {
+            claims.Add(new Claim(ClaimTypes.Role, normPrimary));
         }
 
         var claimsIdentity = new ClaimsIdentity(claims, "AtsCookieScheme");
@@ -336,11 +346,21 @@ public class AccountController(
         foreach (var role in userInfo.Roles)
         {
             claims.Add(new Claim(ClaimTypes.Role, role));
+            var norm = UserRoles.NormalizeRole(role);
+            if (!string.Equals(norm, role, StringComparison.OrdinalIgnoreCase))
+            {
+                claims.Add(new Claim(ClaimTypes.Role, norm));
+            }
         }
 
         if (!userInfo.Roles.Contains(userInfo.Role, StringComparer.OrdinalIgnoreCase))
         {
             claims.Add(new Claim(ClaimTypes.Role, userInfo.Role));
+        }
+        var normPrimary = UserRoles.NormalizeRole(userInfo.Role);
+        if (!claims.Any(c => c.Type == ClaimTypes.Role && string.Equals(c.Value, normPrimary, StringComparison.OrdinalIgnoreCase)))
+        {
+            claims.Add(new Claim(ClaimTypes.Role, normPrimary));
         }
 
         var claimsIdentity = new ClaimsIdentity(claims, "AtsCookieScheme");
@@ -426,7 +446,7 @@ public class AccountController(
     public async Task<IActionResult> CandidateLogin(CandidateAuthCompositeViewModel model)
     {
         // Chỉ validate LoginInput
-        foreach (var key in ModelState.Keys.Where(k => k.StartsWith("RegisterInput.") || k.StartsWith("ForgotPasswordInput.")).ToList())
+        foreach (var key in ModelState.Keys.Where(k => !k.StartsWith("LoginInput.")).ToList())
         {
             ModelState.Remove(key);
         }
@@ -468,11 +488,21 @@ public class AccountController(
         foreach (var role in userInfo.Roles)
         {
             claims.Add(new Claim(ClaimTypes.Role, role));
+            var norm = UserRoles.NormalizeRole(role);
+            if (!string.Equals(norm, role, StringComparison.OrdinalIgnoreCase))
+            {
+                claims.Add(new Claim(ClaimTypes.Role, norm));
+            }
         }
 
         if (!userInfo.Roles.Contains(userInfo.Role, StringComparer.OrdinalIgnoreCase))
         {
             claims.Add(new Claim(ClaimTypes.Role, userInfo.Role));
+        }
+        var normPrimary = UserRoles.NormalizeRole(userInfo.Role);
+        if (!claims.Any(c => c.Type == ClaimTypes.Role && string.Equals(c.Value, normPrimary, StringComparison.OrdinalIgnoreCase)))
+        {
+            claims.Add(new Claim(ClaimTypes.Role, normPrimary));
         }
 
         var claimsIdentity = new ClaimsIdentity(claims, "AtsCookieScheme");
@@ -495,8 +525,7 @@ public class AccountController(
     }
 
     /// <summary>
-    /// POST /Account/CandidateRegister — Đăng ký tài khoản ứng viên.
-    /// TODO: Implement khi IAuthService hỗ trợ self-registration. Hiện tại phản hồi placeholder.
+    /// POST /Account/CandidateRegister — Bước 1: Tiếp nhận đăng ký ứng viên và gửi mã OTP qua email.
     /// </summary>
     [HttpPost]
     [AllowAnonymous]
@@ -504,7 +533,7 @@ public class AccountController(
     public async Task<IActionResult> CandidateRegister(CandidateAuthCompositeViewModel model)
     {
         // Chỉ validate RegisterInput
-        foreach (var key in ModelState.Keys.Where(k => k.StartsWith("LoginInput.") || k.StartsWith("ForgotPasswordInput.")).ToList())
+        foreach (var key in ModelState.Keys.Where(k => !k.StartsWith("RegisterInput.")).ToList())
         {
             ModelState.Remove(key);
         }
@@ -517,23 +546,92 @@ public class AccountController(
 
         if (!ModelState.IsValid)
         {
+            if (IsAjaxRequest())
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return Json(new { success = false, message = errors.FirstOrDefault() ?? "Dữ liệu đăng ký không hợp lệ." });
+            }
             return View("CandidateAuth", model);
         }
 
-
-        var (isSuccess, message) = await _authService.RegisterCandidateAsync(
+        var (isSuccess, message) = await _authService.SendRegistrationOtpAsync(
             model.RegisterInput.FullName,
             model.RegisterInput.Email,
             model.RegisterInput.Password);
 
         if (!isSuccess)
         {
+            if (IsAjaxRequest())
+            {
+                return Json(new { success = false, message });
+            }
             model.IsSuccess = false;
             model.StatusMessage = message;
             return View("CandidateAuth", model);
         }
 
-        _logger.LogInformation("Ứng viên đăng ký thành công: {Email} - {FullName}", model.RegisterInput.Email, model.RegisterInput.FullName);
+        _logger.LogInformation("Đã gửi mã OTP đăng ký tới email ứng viên: {Email}", model.RegisterInput.Email);
+
+        if (IsAjaxRequest())
+        {
+            return Json(new { success = true, email = model.RegisterInput.Email, message });
+        }
+
+        model.OtpStep = "verify";
+        model.PendingEmail = model.RegisterInput.Email;
+        model.VerifyRegisterOtpInput.Email = model.RegisterInput.Email;
+        model.VerifyRegisterOtpInput.ReturnUrl = model.RegisterInput.ReturnUrl;
+        model.IsSuccess = true;
+        model.StatusMessage = message;
+
+        return View("CandidateAuth", model);
+    }
+
+    /// <summary>
+    /// POST /Account/CandidateVerifyRegisterOtp — Bước 2: Xác thực mã OTP và kích hoạt tài khoản ứng viên.
+    /// </summary>
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CandidateVerifyRegisterOtp(CandidateAuthCompositeViewModel model)
+    {
+        foreach (var key in ModelState.Keys.Where(k => !k.StartsWith("VerifyRegisterOtpInput.")).ToList())
+        {
+            ModelState.Remove(key);
+        }
+        model.ActivePanel = "signup";
+        model.OtpStep = "verify";
+
+        if (!ModelState.IsValid)
+        {
+            if (IsAjaxRequest())
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return Json(new { success = false, message = errors.FirstOrDefault() ?? "Vui lòng nhập đúng mã OTP 6 số." });
+            }
+            return View("CandidateAuth", model);
+        }
+
+        var (isSuccess, message) = await _authService.VerifyRegistrationOtpAsync(
+            model.VerifyRegisterOtpInput.Email,
+            model.VerifyRegisterOtpInput.OtpCode);
+
+        if (!isSuccess)
+        {
+            if (IsAjaxRequest())
+            {
+                return Json(new { success = false, message });
+            }
+            model.IsSuccess = false;
+            model.StatusMessage = message;
+            model.PendingEmail = model.VerifyRegisterOtpInput.Email;
+            return View("CandidateAuth", model);
+        }
+
+        if (IsAjaxRequest())
+        {
+            return Json(new { success = true, message, email = model.VerifyRegisterOtpInput.Email });
+        }
 
         // Chuyển sang form signin với email điền sẵn và thông báo thành công
         var successModel = new CandidateAuthCompositeViewModel
@@ -543,24 +641,23 @@ public class AccountController(
             StatusMessage = message,
             LoginInput = new CandidateLoginInputModel
             {
-                Email = model.RegisterInput.Email,
-                ReturnUrl = model.RegisterInput.ReturnUrl
+                Email = model.VerifyRegisterOtpInput.Email,
+                ReturnUrl = model.VerifyRegisterOtpInput.ReturnUrl
             }
         };
 
         return View("CandidateAuth", successModel);
     }
 
-
     /// <summary>
-    /// POST /Account/CandidateForgotPassword — Gửi link reset password cho ứng viên.
+    /// POST /Account/CandidateForgotPassword — Bước 1: Gửi mã OTP đặt lại mật khẩu qua email ứng viên.
     /// </summary>
     [HttpPost]
     [AllowAnonymous]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CandidateForgotPassword(CandidateAuthCompositeViewModel model)
     {
-        foreach (var key in ModelState.Keys.Where(k => k.StartsWith("LoginInput.") || k.StartsWith("RegisterInput.")).ToList())
+        foreach (var key in ModelState.Keys.Where(k => !k.StartsWith("ForgotPasswordInput.")).ToList())
         {
             ModelState.Remove(key);
         }
@@ -568,16 +665,374 @@ public class AccountController(
 
         if (!ModelState.IsValid)
         {
+            if (IsAjaxRequest())
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return Json(new { success = false, message = errors.FirstOrDefault() ?? "Vui lòng nhập địa chỉ email hợp lệ." });
+            }
             return View("CandidateAuth", model);
         }
 
-        var baseUrl = $"{Request.Scheme}://{Request.Host}";
-        await _authService.ForgotPasswordAsync(model.ForgotPasswordInput.Email.Trim().ToLower(), baseUrl);
+        var email = model.ForgotPasswordInput.Email.Trim().ToLower();
+        var (isSuccess, message) = await _authService.SendForgotPasswordOtpAsync(email);
 
-        // Anti Email Enumeration
+        if (IsAjaxRequest())
+        {
+            return Json(new { success = true, email, message });
+        }
+
+        model.OtpStep = "verify";
+        model.PendingEmail = email;
+        model.ResetPasswordOtpInput.Email = email;
+        model.ResetPasswordOtpInput.ReturnUrl = model.ForgotPasswordInput.ReturnUrl;
         model.IsSuccess = true;
-        model.StatusMessage = "Nếu email tồn tại trong hệ thống, liên kết đặt lại mật khẩu đã được gửi đến hộp thư của bạn.";
+        model.StatusMessage = message;
         return View("CandidateAuth", model);
+    }
+
+    /// <summary>
+    /// POST /Account/CandidateResetPasswordWithOtp — Bước 2: Xác thực OTP và lưu mật khẩu mới.
+    /// </summary>
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CandidateResetPasswordWithOtp(CandidateAuthCompositeViewModel model)
+    {
+        foreach (var key in ModelState.Keys.Where(k => !k.StartsWith("ResetPasswordOtpInput.")).ToList())
+        {
+            ModelState.Remove(key);
+        }
+        model.ActivePanel = "reset";
+        model.OtpStep = "verify";
+
+        if (!ModelState.IsValid)
+        {
+            if (IsAjaxRequest())
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return Json(new { success = false, message = errors.FirstOrDefault() ?? "Dữ liệu nhập vào chưa hợp lệ." });
+            }
+            return View("CandidateAuth", model);
+        }
+
+        var (isSuccess, message) = await _authService.ResetPasswordWithOtpAsync(
+            model.ResetPasswordOtpInput.Email,
+            model.ResetPasswordOtpInput.OtpCode,
+            model.ResetPasswordOtpInput.NewPassword);
+
+        if (!isSuccess)
+        {
+            if (IsAjaxRequest())
+            {
+                return Json(new { success = false, message });
+            }
+            model.IsSuccess = false;
+            model.StatusMessage = message;
+            model.PendingEmail = model.ResetPasswordOtpInput.Email;
+            return View("CandidateAuth", model);
+        }
+
+        if (IsAjaxRequest())
+        {
+            return Json(new { success = true, message, email = model.ResetPasswordOtpInput.Email });
+        }
+
+        var successModel = new CandidateAuthCompositeViewModel
+        {
+            ActivePanel = "signin",
+            IsSuccess = true,
+            StatusMessage = message,
+            LoginInput = new CandidateLoginInputModel
+            {
+                Email = model.ResetPasswordOtpInput.Email,
+                ReturnUrl = model.ResetPasswordOtpInput.ReturnUrl
+            }
+        };
+
+        return View("CandidateAuth", successModel);
+    }
+
+    /// <summary>
+    /// POST /Account/CandidateResendOtp — Gửi lại mã OTP qua email (type: register | forgot_password).
+    /// </summary>
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CandidateResendOtp(string email, string type)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return Json(new { success = false, message = "Vui lòng nhập địa chỉ email." });
+        }
+
+        var (isSuccess, message) = await _authService.ResendOtpAsync(email, type);
+        return Json(new { success = isSuccess, message });
+    }
+
+    private bool IsAjaxRequest()
+    {
+        return Request.Headers["X-Requested-With"] == "XMLHttpRequest"
+            || Request.Headers.Accept.Any(a => a?.Contains("application/json") == true);
+    }
+
+    #endregion
+
+    #region Google OAuth / External Login
+
+    /// <summary>
+    /// GET /Account/ExternalLogin — Khởi tạo quá trình xác thực với nhà cung cấp bên thứ 3 (Google).
+    /// </summary>
+    [HttpGet("/Account/ExternalLogin")]
+    [AllowAnonymous]
+    public IActionResult ExternalLogin(string provider = "Google", string? returnUrl = null, string userType = "candidate")
+    {
+        var googleClientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID")?.Trim();
+        var googleClientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET")?.Trim();
+        bool isConfigured = !string.IsNullOrWhiteSpace(googleClientId) && 
+                            !string.IsNullOrWhiteSpace(googleClientSecret) &&
+                            !googleClientId.Contains("YOUR_GOOGLE_CLIENT_ID", StringComparison.OrdinalIgnoreCase);
+
+        if (!isConfigured)
+        {
+            // Nếu chưa điền Google Client ID thực tế vào .env, chuyển tới trang hướng dẫn cấu hình chi tiết
+            return RedirectToAction(nameof(GoogleConfigGuide), new { returnUrl, userType });
+        }
+
+        var redirectUrl = Url.Action(nameof(ExternalCallback), "Account", new { returnUrl, userType });
+        var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
+        return Challenge(properties, provider);
+    }
+
+    /// <summary>
+    /// GET /Account/ExternalCallback — Nhận kết quả xác thực callback từ Google.
+    /// </summary>
+    [HttpGet("/Account/ExternalCallback")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ExternalCallback(string? returnUrl = null, string userType = "candidate", string? remoteError = null)
+    {
+        var redirectLoginAction = userType.Equals("staff", StringComparison.OrdinalIgnoreCase) 
+            ? nameof(StaffLogin) 
+            : nameof(CandidateAuth);
+
+        if (remoteError != null)
+        {
+            _logger.LogError("Lỗi xác thực từ nhà cung cấp liên kết ngoài: {Error}", remoteError);
+            TempData["ErrorMessage"] = $"Lỗi từ dịch vụ Google: {remoteError}";
+            return RedirectToAction(redirectLoginAction, new { returnUrl });
+        }
+
+        var authenticateResult = await HttpContext.AuthenticateAsync("ExternalCookieScheme");
+        if (!authenticateResult.Succeeded || authenticateResult.Principal == null)
+        {
+            _logger.LogWarning("Không tìm thấy thông tin xác thực từ ExternalCookieScheme.");
+            TempData["ErrorMessage"] = "Không thể lấy thông tin tài khoản từ Google. Vui lòng thử lại.";
+            return RedirectToAction(redirectLoginAction, new { returnUrl });
+        }
+
+        var claims = authenticateResult.Principal.Claims.ToList();
+        var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+        var fullName = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value 
+                    ?? claims.FirstOrDefault(c => c.Type == "name")?.Value 
+                    ?? email?.Split('@')[0] 
+                    ?? "Google User";
+        var providerKey = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? Guid.NewGuid().ToString("N");
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            TempData["ErrorMessage"] = "Không nhận được địa chỉ email từ tài khoản Google của bạn.";
+            return RedirectToAction(redirectLoginAction, new { returnUrl });
+        }
+
+        // Xử lý tạo/liên kết tài khoản trong cơ sở dữ liệu
+        var result = await _authService.ProcessExternalLoginAsync(email, fullName, "Google", providerKey);
+
+        if (!result.IsSuccess || result.Data == null)
+        {
+            TempData["ErrorMessage"] = result.Message ?? "Đăng nhập bằng Google không thành công.";
+            return RedirectToAction(redirectLoginAction, new { returnUrl });
+        }
+
+        var userInfo = result.Data;
+
+        // Thiết lập Session
+        HttpContext.Session.SetString("UserId", userInfo.Id.ToString());
+        HttpContext.Session.SetString("UserEmail", userInfo.Email);
+        HttpContext.Session.SetString("UserRole", userInfo.Role);
+        HttpContext.Session.SetString("FullName", userInfo.FullName);
+
+        var idleTimeoutMinutes = int.TryParse(Environment.GetEnvironmentVariable("SESSION_IDLE_TIMEOUT_MINUTES"), out var parsedTimeout) ? parsedTimeout : 30;
+        var maxSessionHours = int.TryParse(Environment.GetEnvironmentVariable("SESSION_MAX_LIFETIME_HOURS"), out var parsedMax) ? parsedMax : 8;
+        HttpContext.Session.SetString("AbsoluteExpiration", DateTimeOffset.UtcNow.AddHours(maxSessionHours).ToString("o"));
+
+        // Thiết lập Cookie phiên chính của hệ thống
+        var identityClaims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, userInfo.Id.ToString()),
+            new Claim(ClaimTypes.Email, userInfo.Email),
+            new Claim(ClaimTypes.Name, userInfo.FullName)
+        };
+
+        foreach (var role in userInfo.Roles)
+        {
+            identityClaims.Add(new Claim(ClaimTypes.Role, role));
+            var norm = UserRoles.NormalizeRole(role);
+            if (!string.Equals(norm, role, StringComparison.OrdinalIgnoreCase))
+            {
+                identityClaims.Add(new Claim(ClaimTypes.Role, norm));
+            }
+        }
+
+        if (!userInfo.Roles.Contains(userInfo.Role, StringComparer.OrdinalIgnoreCase))
+        {
+            identityClaims.Add(new Claim(ClaimTypes.Role, userInfo.Role));
+        }
+        var normPrimary = UserRoles.NormalizeRole(userInfo.Role);
+        if (!identityClaims.Any(c => c.Type == ClaimTypes.Role && string.Equals(c.Value, normPrimary, StringComparison.OrdinalIgnoreCase)))
+        {
+            identityClaims.Add(new Claim(ClaimTypes.Role, normPrimary));
+        }
+
+        var claimsIdentity = new ClaimsIdentity(identityClaims, "AtsCookieScheme");
+        var authProperties = new AuthenticationProperties
+        {
+            IsPersistent = true,
+            ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(idleTimeoutMinutes)
+        };
+
+        await HttpContext.SignInAsync("AtsCookieScheme", new ClaimsPrincipal(claimsIdentity), authProperties);
+        await HttpContext.SignOutAsync("ExternalCookieScheme");
+
+        _logger.LogInformation("Người dùng {Email} đăng nhập thành công qua Google OAuth.", email);
+
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+
+        if (!string.IsNullOrEmpty(userInfo.RedirectUrl))
+        {
+            return Redirect(userInfo.RedirectUrl);
+        }
+
+        return RedirectToRoleHome(userInfo.Roles);
+    }
+
+    /// <summary>
+    /// GET /Account/GoogleConfigGuide — Màn hình hướng dẫn chi tiết cách tạo và cấu hình Google Client ID trên Google Cloud Console,
+    /// kèm tính năng Dev Quick Test để kiểm thử luồng đăng nhập ngay lập tức.
+    /// </summary>
+    [HttpGet("/Account/GoogleConfigGuide")]
+    [AllowAnonymous]
+    public IActionResult GoogleConfigGuide(string? returnUrl = null, string userType = "candidate")
+    {
+        var googleClientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID")?.Trim();
+        var googleClientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET")?.Trim();
+        bool isConfigured = !string.IsNullOrWhiteSpace(googleClientId) && 
+                            !string.IsNullOrWhiteSpace(googleClientSecret) &&
+                            !googleClientId.Contains("YOUR_GOOGLE_CLIENT_ID", StringComparison.OrdinalIgnoreCase);
+
+        var callbackUrl = $"{Request.Scheme}://{Request.Host}/signin-google";
+
+        var model = new GoogleConfigGuideViewModel
+        {
+            ReturnUrl = returnUrl,
+            UserType = userType,
+            IsConfigured = isConfigured,
+            CallbackUrl = callbackUrl
+        };
+
+        return View(model);
+    }
+
+    /// <summary>
+    /// POST /Account/DevMockGoogleLogin — Giả lập đăng nhập Google nhanh chóng trong môi trường phát triển (Development / Demo).
+    /// </summary>
+    [HttpPost("/Account/DevMockGoogleLogin")]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DevMockGoogleLogin(string email, string fullName, string? returnUrl = null, string userType = "candidate")
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            email = "demo.candidate@gmail.com";
+        }
+
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            fullName = "Nguyễn Văn Demo (Google)";
+        }
+
+        var providerKey = "mock-google-" + Guid.NewGuid().ToString("N");
+        var result = await _authService.ProcessExternalLoginAsync(email, fullName, "GoogleMock", providerKey);
+
+        if (!result.IsSuccess || result.Data == null)
+        {
+            TempData["ErrorMessage"] = result.Message ?? "Đăng nhập giả lập không thành công.";
+            return RedirectToAction(nameof(GoogleConfigGuide), new { returnUrl, userType });
+        }
+
+        var userInfo = result.Data;
+
+        // Session setup
+        HttpContext.Session.SetString("UserId", userInfo.Id.ToString());
+        HttpContext.Session.SetString("UserEmail", userInfo.Email);
+        HttpContext.Session.SetString("UserRole", userInfo.Role);
+        HttpContext.Session.SetString("FullName", userInfo.FullName);
+
+        var idleTimeoutMinutes = int.TryParse(Environment.GetEnvironmentVariable("SESSION_IDLE_TIMEOUT_MINUTES"), out var parsedTimeout) ? parsedTimeout : 30;
+        var maxSessionHours = int.TryParse(Environment.GetEnvironmentVariable("SESSION_MAX_LIFETIME_HOURS"), out var parsedMax) ? parsedMax : 8;
+        HttpContext.Session.SetString("AbsoluteExpiration", DateTimeOffset.UtcNow.AddHours(maxSessionHours).ToString("o"));
+
+        var identityClaims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, userInfo.Id.ToString()),
+            new Claim(ClaimTypes.Email, userInfo.Email),
+            new Claim(ClaimTypes.Name, userInfo.FullName)
+        };
+
+        foreach (var role in userInfo.Roles)
+        {
+            identityClaims.Add(new Claim(ClaimTypes.Role, role));
+            var norm = UserRoles.NormalizeRole(role);
+            if (!string.Equals(norm, role, StringComparison.OrdinalIgnoreCase))
+            {
+                identityClaims.Add(new Claim(ClaimTypes.Role, norm));
+            }
+        }
+
+        if (!userInfo.Roles.Contains(userInfo.Role, StringComparer.OrdinalIgnoreCase))
+        {
+            identityClaims.Add(new Claim(ClaimTypes.Role, userInfo.Role));
+        }
+        var normPrimary = UserRoles.NormalizeRole(userInfo.Role);
+        if (!identityClaims.Any(c => c.Type == ClaimTypes.Role && string.Equals(c.Value, normPrimary, StringComparison.OrdinalIgnoreCase)))
+        {
+            identityClaims.Add(new Claim(ClaimTypes.Role, normPrimary));
+        }
+
+        var claimsIdentity = new ClaimsIdentity(identityClaims, "AtsCookieScheme");
+        var authProperties = new AuthenticationProperties
+        {
+            IsPersistent = true,
+            ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(idleTimeoutMinutes)
+        };
+
+        await HttpContext.SignInAsync("AtsCookieScheme", new ClaimsPrincipal(claimsIdentity), authProperties);
+
+        _logger.LogInformation("Đăng nhập thử nghiệm Google Mock thành công cho tài khoản {Email}.", email);
+        TempData["SuccessMessage"] = $"Đăng nhập thành công với tài khoản Google ({email})!";
+
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+
+        if (!string.IsNullOrEmpty(userInfo.RedirectUrl))
+        {
+            return Redirect(userInfo.RedirectUrl);
+        }
+
+        return RedirectToRoleHome(userInfo.Roles);
     }
 
     #endregion

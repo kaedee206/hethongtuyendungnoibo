@@ -614,3 +614,43 @@ TestResults/
 ehthumbs.db
 Thumbs.db
 [Dd]esktop.ini
+
+# ============================================================
+# Custom ignores - NoveraTech ATS Project
+# ============================================================
+
+# Environment & secrets (NEVER commit these)
+.env
+.env.local
+.env.*.local
+src/**/.env
+src/**/.env.local
+*.secrets
+appsettings.Secrets.json
+
+# Test & debug scripts (temporary files)
+*.txt
+*.ps
+*.ps1
+*.py
+capture_dashboard.py
+capture_candidate.py
+
+# Documentation (maintained locally)
+docs/
+/docs
+
+# Node.js (Playwright / tooling only)
+node_modules/
+package-lock.json
+
+# Scripts folder (UI capture scripts)
+scripts/
+
+# Duplicate solution file
+*.slnx
+
+# OS & editor
+.DS_Store
+Thumbs.db
+*.swp

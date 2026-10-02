@@ -662,9 +662,9 @@ INSERT INTO users (
 ) VALUES
     (
         '51d7c7ad-18e5-40c3-86c9-b31512113350',
-        'nam.dang@noveratech.digital',
+        'luong.hieu@noveratech.digital',
         '123456@@',
-        'Đặng Hoàng Nam',
+        'Lường Minh Hiếu',
         'Admin',
         'Phòng Công Nghệ Thông Tin',
         '800641ee-364f-4d96-805a-2e753cad672a',
@@ -675,9 +675,9 @@ INSERT INTO users (
     ),
     (
         '3dbde712-2654-4b7c-a5d3-da24272b4f77',
-        'minh.tran@noveratech.digital',
+        'duc.anh@noveratech.digital',
         '123456@@',
-        'Trần Đức Minh',
+        'Nguyễn Đức Anh',
         'Approver',
         'Ban Giám Đốc',
         'b16d87fb-a5de-48e1-ad07-989049e30c5a',

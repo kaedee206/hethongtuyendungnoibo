@@ -8,7 +8,9 @@
     <div class="login-card shadow-sm">
 
         <div class="login-card__header text-center">
-            <img src="~/img/logo.svg" alt="ATS - Hệ thống tuyển dụng nội bộ" class="login-card__logo" />
+            <a href="/landing" title="Quay lại Trang chủ NoveraTech">
+                <img src="~/img/logo.svg" alt="ATS - Hệ thống tuyển dụng nội bộ" class="login-card__logo" onerror="this.src='/img/logo-dark-transparent.png'" />
+            </a>
             <h1 class="login-card__title">Đăng nhập hệ thống</h1>
             <p class="login-card__subtitle">Sử dụng email công ty để truy cập ATS</p>
         </div>
@@ -56,9 +58,15 @@
                 </a>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100 login-card__submit">
+            <button type="submit" class="btn btn-primary w-100 login-card__submit mb-3">
                 Đăng nhập
             </button>
+
+            <div class="text-center mt-2">
+                <a href="/landing" class="text-decoration-none text-muted small">
+                    <i class="bi bi-arrow-left me-1"></i> Quay lại Trang chủ
+                </a>
+            </div>
         </form>
     </div>
 </div>

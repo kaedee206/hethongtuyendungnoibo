@@ -12,7 +12,10 @@
 
     @await RenderSectionAsync("Styles", required: false)
 </head>
-<body class="account-body">
+<body class="account-body position-relative">
+    <a href="/landing" class="btn btn-sm btn-outline-secondary position-fixed top-0 start-0 m-3 shadow-sm bg-white border-slate-200" style="z-index: 1050; border-radius: 9999px;">
+        <i class="bi bi-arrow-left me-1"></i> Về trang chủ
+    </a>
     <main role="main">
         @RenderBody()
     </main>

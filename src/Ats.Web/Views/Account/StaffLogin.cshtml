@@ -43,22 +43,22 @@
 
         @* Content z-above background *@
         <div class="relative z-10 flex flex-col justify-between h-full p-10">
-            @* Header Brand *@
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 flex items-center justify-center border border-[#10B981]/40 bg-[#10B981]/10 rounded-none">
+            @* Header Brand - Link về Landing Page *@
+            <a href="/landing" class="flex items-center gap-3 text-decoration-none group cursor-pointer" title="Quay lại Trang chủ NoveraTech">
+                <div class="w-8 h-8 flex items-center justify-center border border-[#10B981]/40 bg-[#10B981]/10 rounded-lg group-hover:border-[#10B981] transition-colors">
                     <img src="~/img/logo-icon-dark-transparent.png"
                          alt="Novera Tech Icon"
                          class="w-5 h-5 object-contain brightness-0 invert" />
                 </div>
                 <div>
-                    <p class="font-mono text-[10px] tracking-[0.2em] uppercase text-[#10B981]/80 leading-none">
+                    <p class="font-mono text-[10px] tracking-[0.2em] uppercase text-[#10B981]/80 leading-none group-hover:text-[#10B981] transition-colors">
                         NOVERA TECH
                     </p>
                     <p class="font-mono text-[8px] tracking-[0.15em] uppercase text-[#10B981]/50 leading-none mt-0.5">
                         ENTERPRISE APPARATUS
                     </p>
                 </div>
-            </div>
+            </a>
 
             @* Center Headline *@
             <div class="space-y-6">
@@ -108,10 +108,18 @@
     <div class="w-full lg:w-1/2 flex flex-col min-h-screen bg-white dark:bg-[#111827]">
 
         @* Mobile Brand Header (visible only on mobile) *@
-        <div class="lg:hidden flex items-center gap-3 px-6 py-5 border-b border-[#E2E8F0] dark:border-[#1E293B]">
-            <img src="~/img/logo-dark-transparent.png"
-                 alt="Novera Tech ATS"
-                 class="h-7 object-contain dark:brightness-0 dark:invert" />
+        <div class="lg:hidden flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0] dark:border-[#1E293B]">
+            <a href="/landing" title="Quay lại Trang chủ NoveraTech" class="inline-block">
+                <img src="~/img/logo-dark-transparent.png"
+                     alt="Novera Tech ATS"
+                     class="h-7 object-contain dark:brightness-0 dark:invert" />
+            </a>
+            <a href="/landing" class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0D5C4D] dark:text-[#10B981] hover:underline" title="Quay lại Trang chủ">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                <span>Trang chủ</span>
+            </a>
         </div>
 
         @* Sliding Panels Viewport *@
@@ -131,9 +139,11 @@
 
                     @* Panel Header *@
                     <div class="mb-8">
-                        <img src="~/img/logo-dark-transparent.png"
-                             alt="Novera Tech ATS"
-                             class="h-8 object-contain mb-6 dark:brightness-0 dark:invert" />
+                        <a href="/landing" class="inline-block mb-6 group cursor-pointer" title="Quay lại Trang chủ NoveraTech">
+                            <img src="~/img/logo-dark-transparent.png"
+                                 alt="Novera Tech ATS"
+                                 class="h-8 object-contain dark:brightness-0 dark:invert transition-opacity group-hover:opacity-80" />
+                        </a>
                         <h2 class="text-[#0F172A] dark:text-[#F8FAFC] text-2xl font-semibold leading-tight tracking-tight">
                             Đăng nhập Hệ thống
                         </h2>
@@ -144,10 +154,19 @@
 
                     @* Portal Switch Bar *@
                     <div class="mb-6 flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-[#1E293B]">
-                        <span class="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-wider uppercase text-[#0D5C4D] dark:text-[#10B981] font-semibold">
-                            <span class="w-1.5 h-1.5 bg-[#10B981] rounded-full"></span>
-                            Cổng Nhân sự Nội bộ
-                        </span>
+                        <div class="flex items-center gap-2.5">
+                            <a href="/landing" class="inline-flex items-center gap-1 text-xs font-semibold text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors" title="Quay lại Trang chủ">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                                </svg>
+                                <span>Trang chủ</span>
+                            </a>
+                            <span class="text-[#CBD5E1] dark:text-[#334155]">·</span>
+                            <span class="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-wider uppercase text-[#0D5C4D] dark:text-[#10B981] font-semibold">
+                                <span class="w-1.5 h-1.5 bg-[#10B981] rounded-full"></span>
+                                Cổng Nhân sự Nội bộ
+                            </span>
+                        </div>
                         <a asp-controller="Account" asp-action="CandidateAuth"
                            class="inline-flex items-center gap-1 text-xs font-semibold text-[#0D5C4D] dark:text-[#10B981] hover:underline underline-offset-4 transition-colors">
                             <span>Dành cho Ứng viên</span>
@@ -296,6 +315,19 @@
                             <span>Đăng nhập với Microsoft Azure AD</span>
                         </a>
 
+                        @* SSO Button: Google Workspace *@
+                        <a href="/Account/ExternalLogin?provider=Google&userType=staff&returnUrl=@Model.LoginInput.ReturnUrl"
+                           tabindex="@(activePanel == "forgot" ? "-1" : "0")"
+                           class="flex items-center justify-center gap-3 w-full py-2.5 px-4 border border-[#E2E8F0] dark:border-[#1E293B] bg-white dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm font-medium rounded-none hover:border-[#0D5C4D] dark:hover:border-[#10B981] transition-colors">
+                            <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                            </svg>
+                            <span>Đăng nhập với Google Workspace</span>
+                        </a>
+
                         @* Switcher to Candidate Portal *@
                         <div class="pt-2 text-center">
                             <a asp-controller="Account" asp-action="CandidateAuth"
@@ -316,9 +348,11 @@
 
                     @* Panel Header *@
                     <div class="mb-8">
-                        <img src="~/img/logo-dark-transparent.png"
-                             alt="Novera Tech ATS"
-                             class="h-8 object-contain mb-6 dark:brightness-0 dark:invert" />
+                        <a href="/landing" class="inline-block mb-6 group cursor-pointer" title="Quay lại Trang chủ NoveraTech">
+                            <img src="~/img/logo-dark-transparent.png"
+                                 alt="Novera Tech ATS"
+                                 class="h-8 object-contain dark:brightness-0 dark:invert transition-opacity group-hover:opacity-80" />
+                        </a>
                         <h2 class="text-[#0F172A] dark:text-[#F8FAFC] text-2xl font-semibold leading-tight tracking-tight">
                             Khôi phục Mật khẩu
                         </h2>

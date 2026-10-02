@@ -129,6 +129,24 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(al => al.UserId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        // AuthAuditLog relationship
+        modelBuilder.Entity<AuthAuditLog>(entity =>
+        {
+            entity.HasOne<User>()
+                  .WithMany()
+                  .HasForeignKey(a => a.UserId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // UserSession relationship
+        modelBuilder.Entity<UserSession>(entity =>
+        {
+            entity.HasOne<User>()
+                  .WithMany()
+                  .HasForeignKey(s => s.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
         // User indexes & relationships
         modelBuilder.Entity<User>(entity =>
         {
