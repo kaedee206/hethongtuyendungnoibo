@@ -27,7 +27,7 @@ public class HomeController : Controller
         _logger = logger;
     }
 
-    public async Task<IActionResult> Index()
+    public IActionResult Index()
     {
         if (User.Identity?.IsAuthenticated == true)
         {
@@ -47,7 +47,7 @@ public class HomeController : Controller
             return Redirect($"/Account/StaffLogin?returnUrl={Uri.EscapeDataString(returnUrl)}");
         }
 
-        var normalizedFeature = (feature ?? "").Trim().ToLowerInvariant();
+        var normalizedFeature = string.IsNullOrWhiteSpace(feature) ? "tong-quan" : feature.Trim().ToLowerInvariant();
         ViewBag.ActiveFeature = normalizedFeature;
 
         var model = await BuildWorkspaceDashboardViewModelAsync();
@@ -339,9 +339,11 @@ public class HomeController : Controller
                 .ToList();
         }
 
-        return View(model);
+        return model;
     }
 
+    [HttpGet("/gioi-thieu")]
+    [HttpHead("/gioi-thieu")]
     [HttpGet("/landing")]
     [HttpHead("/landing")]
     public IActionResult Landing()
