@@ -6,6 +6,7 @@ using Ats.Web.Models.ViewModels.Users;
 using Ats.Web.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
+using ClosedXML.Excel;
 
 namespace Ats.Web.Services;
 
@@ -435,5 +436,49 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
 
         // Trộn ngẫu nhiên
         return new string(chars.OrderBy(_ => RandomNumberGenerator.GetInt32(100)).ToArray());
+    }
+
+    public Task<byte[]> GenerateExcelTemplateAsync(CancellationToken cancellationToken = default)
+    {
+        using var workbook = new XLWorkbook();
+        
+        // Sheet 1: Hướng dẫn
+        var instructionSheet = workbook.Worksheets.Add("Hướng dẫn");
+        instructionSheet.Cell(1, 1).Value = "HƯỚNG DẪN NHẬP DỮ LIỆU NHÂN SỰ";
+        instructionSheet.Cell(1, 1).Style.Font.Bold = true;
+        instructionSheet.Cell(1, 1).Style.Font.FontSize = 14;
+        
+        instructionSheet.Cell(3, 1).Value = "1. Các cột có dấu (*) là bắt buộc nhập.";
+        instructionSheet.Cell(4, 1).Value = "2. Cột Email phải có định dạng hợp lệ (vd: @noveratech.digital) và chưa tồn tại trong hệ thống.";
+        instructionSheet.Cell(5, 1).Value = "3. Vai trò (*): Điền tên các vai trò (cách nhau bởi dấu phẩy, vd: Interviewer, Employee).";
+        instructionSheet.Cell(6, 1).Value = "4. Không thay đổi thứ tự hoặc xóa các cột ở sheet 'Dữ liệu'.";
+        instructionSheet.Columns().AdjustToContents();
+
+        // Sheet 2: Dữ liệu
+        var dataSheet = workbook.Worksheets.Add("Dữ liệu");
+        
+        // Header
+        var headers = new string[] { "Họ và tên (*)", "Email (*)", "Phòng ban", "Chức vụ", "Vai trò (*)" };
+        for (int i = 0; i < headers.Length; i++)
+        {
+            var cell = dataSheet.Cell(1, i + 1);
+            cell.Value = headers[i];
+            cell.Style.Font.Bold = true;
+            cell.Style.Fill.BackgroundColor = XLColor.LightGray;
+            cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        }
+
+        // Example data
+        dataSheet.Cell(2, 1).Value = "Nguyễn Văn A";
+        dataSheet.Cell(2, 2).Value = "nguyenvana@noveratech.digital";
+        dataSheet.Cell(2, 3).Value = "Phòng IT";
+        dataSheet.Cell(2, 4).Value = "Nhân viên phát triển phần mềm";
+        dataSheet.Cell(2, 5).Value = "Interviewer, Employee";
+        
+        dataSheet.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        return Task.FromResult(stream.ToArray());
     }
 }

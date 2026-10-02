@@ -198,4 +198,14 @@ public class UsersController(
 
         return RedirectToAction(nameof(Index));
     }
+
+    /// <summary>
+    /// SCRUM-176: Tải tệp mẫu Excel nhập nhân sự
+    /// </summary>
+    [HttpGet("import-template")]
+    public async Task<IActionResult> DownloadImportTemplate(CancellationToken cancellationToken)
+    {
+        var fileContents = await _userService.GenerateExcelTemplateAsync(cancellationToken);
+        return File(fileContents, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Mau_Nhap_Nhan_Su.xlsx");
+    }
 }

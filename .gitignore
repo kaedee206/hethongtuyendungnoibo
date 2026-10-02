@@ -614,3 +614,5 @@ TestResults/
 ehthumbs.db
 Thumbs.db
 [Dd]esktop.ini
+# Bỏ qua thư mục cấu hình AI Agent
+.agent/
