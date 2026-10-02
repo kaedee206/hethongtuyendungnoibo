@@ -935,7 +935,7 @@ public class AuthService(ApplicationDbContext dbContext, IEmailService emailServ
             UserRoles.Interviewer => "/interviewer/lich-phong-van",
             UserRoles.HRManager => "/hrm/dashboard",
             UserRoles.Approver => "/approver/danh-sach-duyet",
-            _ => "/landing" // Ứng viên điều hướng về landing tuyển dụng hoặc trang việc làm
+            _ => "/gioi-thieu" // Ứng viên điều hướng về giới thiệu tuyển dụng hoặc trang việc làm
         };
 
         return new AuthResponseDto(true, "Xác thực danh tính thành công.", new UserInfoDto(

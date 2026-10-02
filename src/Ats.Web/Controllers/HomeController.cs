@@ -342,6 +342,8 @@ public class HomeController : Controller
         return model;
     }
 
+    [HttpGet("/gioi-thieu")]
+    [HttpHead("/gioi-thieu")]
     [HttpGet("/landing")]
     [HttpHead("/landing")]
     public IActionResult Landing()
