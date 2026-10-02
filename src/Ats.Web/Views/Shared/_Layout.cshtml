@@ -79,6 +79,15 @@
                                 </li>
                             }
 
+                            @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" asp-controller="JobPositions" asp-action="Index">
+                                        <i class="bi bi-person-badge-fill me-1"></i> Chức danh
+                                    </a>
+                                </li>
+                            }
+
                             @* Menu dành cho HR Manager & Recruiter *@
                             @if (User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
                             {
