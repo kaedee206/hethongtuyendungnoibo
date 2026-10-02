@@ -140,6 +140,38 @@ public class UserController : ControllerBase
     }
 
     /// <summary>
+    /// SCRUM-193: API lấy thông tin hồ sơ cá nhân
+    /// GET: /api/tai-khoan/ho-so
+    /// </summary>
+    [HttpGet("ho-so")]
+    public async Task<IActionResult> GetProfile()
+    {
+        var currentUserIdString = HttpContext.Session.GetString("UserId");
+        if (string.IsNullOrEmpty(currentUserIdString) || !Guid.TryParse(currentUserIdString, out var currentUserId))
+        {
+            return Unauthorized(new { isSuccess = false, message = "Vui lòng đăng nhập để thực hiện chức năng này." });
+        }
+
+        var currentUser = await _dbContext.Users.FindAsync(currentUserId);
+        if (currentUser == null)
+        {
+            return NotFound(new { isSuccess = false, message = "Không tìm thấy tài khoản người dùng." });
+        }
+
+        var profile = new UserProfileResponseDto
+        {
+            FullName = currentUser.FullName,
+            Email = currentUser.Email,
+            PhoneNumber = currentUser.PhoneNumber,
+            JobTitle = currentUser.JobTitle,
+            Department = currentUser.Department,
+            Role = currentUser.Role
+        };
+
+        return Ok(new { isSuccess = true, data = profile });
+    }
+
+    /// <summary>
     /// SCRUM-187: API cập nhật thông tin cá nhân (hồ sơ) của người dùng đang đăng nhập
     /// PUT: /api/tai-khoan/ho-so
     /// </summary>

@@ -81,3 +81,17 @@ public class UpdateProfileRequestDto
     public string? Department { get; set; }
     public string? Role { get; set; }
 }
+
+public class UserProfileResponseDto
+{
+    public string FullName { get; set; } = default!;
+    public string Email { get; set; } = default!;
+    public string? PhoneNumber { get; set; }
+    public string? JobTitle { get; set; }
+    public string? Department { get; set; }
+    public string Role { get; set; } = default!;
+    
+    // Gợi ý: Phân biệt rõ editable vs read-only trong response (vd: metadata/flags) để FE render đúng
+    public List<string> ReadOnlyFields { get; set; } = new List<string> { "email", "department", "role" };
+    public List<string> EditableFields { get; set; } = new List<string> { "fullName", "phoneNumber", "jobTitle" };
+}
