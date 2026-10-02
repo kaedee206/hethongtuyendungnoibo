@@ -135,7 +135,8 @@ public class AuthService(ApplicationDbContext dbContext, IEmailService emailServ
             $"<p>Xin chào <b>{user.FullName}</b>,</p><p>Tài khoản của bạn vừa đăng nhập thành công vào hệ thống ATS lúc {DateTime.Now:HH:mm dd/MM/yyyy}.</p>"
         ), cancellationToken);
 
-        var userInfo = new UserInfoDto(user.Id, user.Email, user.FullName, primaryRole, roles, redirectUrl);
+        var normalizedRoles = roles.Select(UserRoles.NormalizeRole).Distinct().ToList();
+        var userInfo = new UserInfoDto(user.Id, user.Email, user.FullName, normalizedPrimaryRole, normalizedRoles, redirectUrl);
         return new AuthResponseDto(true, "Đăng nhập thành công.", userInfo);
     }
 
