@@ -535,6 +535,11 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
 
         var rows = worksheet.RowsUsed().Skip(1); // skip header
         
+        // SCRUM-184: Prepare for duplicate detection
+        var existingEmails = await _dbContext.Users.Select(u => u.Email.ToLower()).ToListAsync(cancellationToken);
+        var existingEmailsSet = new HashSet<string>(existingEmails, StringComparer.OrdinalIgnoreCase);
+        var emailsInFile = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var row in rows)
         {
             int rowIndex = row.RowNumber();
@@ -555,9 +560,10 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
             if (string.IsNullOrEmpty(roles))
                 errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Vai trò", ErrorMessage = "Không được để trống" });
                 
-            // Validate Email format
+            // Validate Email format and duplicates
             if (!string.IsNullOrEmpty(email))
             {
+                // Format check
                 if (!new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(email))
                 {
                     errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Email", ErrorMessage = "Không đúng định dạng" });
@@ -565,6 +571,22 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
                 else if (!email.EndsWith("@noveratech.digital", StringComparison.OrdinalIgnoreCase))
                 {
                     errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Email", ErrorMessage = "Phải là email nội bộ (@noveratech.digital)" });
+                }
+                
+                // SCRUM-184: Duplicate in file check
+                if (emailsInFile.TryGetValue(email, out int duplicateRowIndex))
+                {
+                    errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Email", ErrorMessage = $"Email bị trùng lặp với dòng số {duplicateRowIndex} trong tệp" });
+                }
+                else
+                {
+                    emailsInFile[email] = rowIndex;
+                }
+
+                // SCRUM-184: Duplicate in system check
+                if (existingEmailsSet.Contains(email))
+                {
+                    errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Email", ErrorMessage = "Email đã tồn tại trong hệ thống" });
                 }
             }
 
