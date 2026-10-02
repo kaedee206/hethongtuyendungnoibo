@@ -9,6 +9,8 @@ public class JobPositionListViewModel
     public string? LevelFilter { get; set; }
     public Guid? DepartmentFilter { get; set; }
     public int TotalRecords { get; set; }
+    public bool CanViewSalary { get; set; }
+    public bool CanManage { get; set; }
 }
 
 public class JobPositionItemViewModel
@@ -20,6 +22,8 @@ public class JobPositionItemViewModel
     public string JobLevel { get; set; } = string.Empty;
     public decimal? MinSalary { get; set; }
     public decimal? MaxSalary { get; set; }
+    public string MinSalaryFormatted => MinSalary.HasValue ? MinSalary.Value.ToString("N0") + " ₫" : "---";
+    public string MaxSalaryFormatted => MaxSalary.HasValue ? MaxSalary.Value.ToString("N0") + " ₫" : "---";
     public bool IsActive { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 }
