@@ -138,4 +138,48 @@ public class UserController : ControllerBase
 
         return Ok(new { isSuccess = true, message = "Cập nhật thông tin tài khoản thành công." });
     }
+
+    /// <summary>
+    /// SCRUM-187: API cập nhật thông tin cá nhân (hồ sơ) của người dùng đang đăng nhập
+    /// PUT: /api/tai-khoan/ho-so
+    /// </summary>
+    [HttpPut("ho-so")]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequestDto request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(new { isSuccess = false, message = "Dữ liệu đầu vào không hợp lệ.", errors = ModelState });
+        }
+
+        var currentUserIdString = HttpContext.Session.GetString("UserId");
+        if (string.IsNullOrEmpty(currentUserIdString) || !Guid.TryParse(currentUserIdString, out var currentUserId))
+        {
+            return Unauthorized(new { isSuccess = false, message = "Vui lòng đăng nhập để thực hiện chức năng này." });
+        }
+
+        var currentUser = await _dbContext.Users.FindAsync(currentUserId);
+        if (currentUser == null)
+        {
+            return NotFound(new { isSuccess = false, message = "Không tìm thấy tài khoản người dùng." });
+        }
+
+        // Cập nhật các trường được phép
+        currentUser.FullName = request.FullName.Trim();
+        currentUser.PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim();
+        currentUser.JobTitle = string.IsNullOrWhiteSpace(request.JobTitle) ? null : request.JobTitle.Trim();
+
+        // Ghi nhận audit
+        currentUser.UpdatedAt = DateTimeOffset.UtcNow;
+        currentUser.UpdatedBy = currentUserId;
+
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+            return Ok(new { isSuccess = true, message = "Cập nhật hồ sơ thành công." });
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, new { isSuccess = false, message = "Lỗi hệ thống khi cập nhật hồ sơ." });
+        }
+    }
 }

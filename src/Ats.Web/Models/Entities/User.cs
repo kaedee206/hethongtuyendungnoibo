@@ -12,6 +12,10 @@ public class User
 
     // SCRUM-129: Phòng ban
     public string? Department { get; set; }
+    
+    // SCRUM-187: Cập nhật hồ sơ
+    public string? PhoneNumber { get; set; }
+    public string? JobTitle { get; set; }
 
     public int FailedLoginAttempts { get; set; } = 0;
     public DateTimeOffset? LockedUntil { get; set; }
