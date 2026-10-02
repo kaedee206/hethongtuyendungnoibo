@@ -7,11 +7,55 @@
 
 @Html.AntiForgeryToken()
 
+@section Styles {
+    <style>
+        .dashboard-feature-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.45rem 0.95rem;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #475569;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.18s ease;
+            border: 1px solid transparent;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .dashboard-feature-tab:hover {
+            color: #0F172A;
+            background: #F8FAFC;
+            border-color: #E2E8F0;
+        }
+        .dashboard-feature-tab.active {
+            color: #047857;
+            background: #ECFDF5;
+            border-color: #A7F3D0;
+            box-shadow: 0 1px 2px rgba(5, 150, 105, 0.08);
+        }
+        .feature-highlight-pulse {
+            animation: featurePulse 1.8s ease;
+            border-color: #059669 !important;
+            box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.15) !important;
+        }
+        @@keyframes featurePulse {
+            0% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(5, 150, 105, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0); }
+        }
+        .scroll-margin-nav {
+            scroll-margin-top: 90px;
+        }
+    </style>
+}
+
 <div class="container-fluid px-3 px-xl-4 py-3" style="max-width: 1600px;">
     @if (Model.IsAuthenticated)
     {
         <!-- ── SINGLE OPERATIONAL HEADER (RULE.MD: Clean, No Stacked Banners) ── -->
-        <div class="mb-4 pb-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3"
+        <div class="mb-3 pb-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3"
              style="border-bottom: 1px solid #E2E8F0;">
             <div class="d-flex align-items-center gap-3">
                 <!-- User Avatar Badge -->
@@ -66,6 +110,69 @@
             </div>
         </div>
 
+        <!-- ── DASHBOARD FEATURE SUB-NAVIGATION BAR (URL SPECIFIC: /dashboard/{ten-tinh-nang}) ── -->
+        <div class="dashboard-feature-nav mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2 p-2 bg-white shadow-sm"
+             style="border: 1px solid #E2E8F0; border-radius: 12px; position: sticky; top: 68px; z-index: 99; backdrop-filter: blur(8px);">
+            <div class="d-flex align-items-center gap-1.5 flex-wrap" id="dashboardFeatureTabs">
+                @if (Model.IsCandidate)
+                {
+                    <a href="/dashboard/tong-quan" class="dashboard-feature-tab @((ViewBag.ActiveFeature == "tong-quan" || string.IsNullOrWhiteSpace(ViewBag.ActiveFeature)) ? "active" : "")"
+                       data-feature="tong-quan" onclick="switchDashboardFeature('tong-quan', event)">
+                        <i class="bi bi-grid-1x2"></i> Tổng quan
+                    </a>
+                    <a href="/dashboard/ho-so" class="dashboard-feature-tab @(ViewBag.ActiveFeature == "ho-so" ? "active" : "")"
+                       data-feature="ho-so" onclick="switchDashboardFeature('ho-so', event)">
+                        <i class="bi bi-person-vcard"></i> Hồ sơ & CV
+                    </a>
+                    <a href="/dashboard/tien-do" class="dashboard-feature-tab @(ViewBag.ActiveFeature == "tien-do" ? "active" : "")"
+                       data-feature="tien-do" onclick="switchDashboardFeature('tien-do', event)">
+                        <i class="bi bi-calendar2-check"></i> Tiến độ & Phỏng vấn
+                    </a>
+                    <a href="/dashboard/viec-lam" class="dashboard-feature-tab @(ViewBag.ActiveFeature == "viec-lam" ? "active" : "")"
+                       data-feature="viec-lam" onclick="switchDashboardFeature('viec-lam', event)">
+                        <i class="bi bi-briefcase"></i> Khám phá việc làm
+                        <span class="badge bg-light text-dark ms-1" style="border: 1px solid #E2E8F0;">@Model.CandidateOpenJobs.Count</span>
+                    </a>
+                }
+                else
+                {
+                    <a href="/dashboard/tong-quan" class="dashboard-feature-tab @((ViewBag.ActiveFeature == "tong-quan" || string.IsNullOrWhiteSpace(ViewBag.ActiveFeature)) ? "active" : "")"
+                       data-feature="tong-quan" onclick="switchDashboardFeature('tong-quan', event)">
+                        <i class="bi bi-speedometer2"></i> Tổng quan
+                    </a>
+                    <a href="/dashboard/tuyen-dung" class="dashboard-feature-tab @(ViewBag.ActiveFeature == "tuyen-dung" ? "active" : "")"
+                       data-feature="tuyen-dung" onclick="switchDashboardFeature('tuyen-dung', event)">
+                        <i class="bi bi-funnel"></i> Phễu tuyển dụng
+                    </a>
+                    <a href="/dashboard/lich-phong-van" class="dashboard-feature-tab @(ViewBag.ActiveFeature == "lich-phong-van" ? "active" : "")"
+                       data-feature="lich-phong-van" onclick="switchDashboardFeature('lich-phong-van', event)">
+                        <i class="bi bi-calendar3"></i> Lịch phỏng vấn
+                        @if (Model.UpcomingInterviews.Any())
+                        {
+                            <span class="badge ms-1" style="background:#ECFDF5; color:#047857; border:1px solid #A7F3D0;">@Model.UpcomingInterviews.Count</span>
+                        }
+                    </a>
+                    <a href="/dashboard/phe-duyet" class="dashboard-feature-tab @(ViewBag.ActiveFeature == "phe-duyet" ? "active" : "")"
+                       data-feature="phe-duyet" onclick="switchDashboardFeature('phe-duyet', event)">
+                        <i class="bi bi-patch-check"></i> Phê duyệt
+                        @if (Model.PendingOffers.Any())
+                        {
+                            <span class="badge ms-1" style="background:#FEF3C7; color:#92400E; border:1px solid #FDE68A;">@Model.PendingOffers.Count</span>
+                        }
+                    </a>
+                    <a href="/dashboard/tac-vu" class="dashboard-feature-tab @(ViewBag.ActiveFeature == "tac-vu" ? "active" : "")"
+                       data-feature="tac-vu" onclick="switchDashboardFeature('tac-vu', event)">
+                        <i class="bi bi-lightning-charge"></i> Tác vụ nhanh
+                    </a>
+                }
+            </div>
+            <div class="d-none d-md-flex align-items-center gap-2">
+                <span class="badge bg-light text-secondary border px-2.5 py-1.5" style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;" id="currentFeatureUrlBadge">
+                    <i class="bi bi-link-45deg me-1"></i>/dashboard/@(ViewBag.ActiveFeature ?? "tong-quan")
+                </span>
+            </div>
+        </div>
+
         @if (Model.IsCandidate)
         {
             <!-- ========================================== -->
@@ -77,7 +184,7 @@
                     <!-- CỘT TRÁI: Hồ sơ ứng viên + Kênh hỗ trợ HR (4 Cột) -->
                     <div class="col-12 col-lg-4 d-flex flex-column gap-4">
                         <!-- Card 1: Hồ Sơ Của Bạn -->
-                        <div class="card border-0 shadow-sm p-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                        <div id="feature-section-candidate-ho-so" class="card border-0 shadow-sm p-4 bg-white scroll-margin-nav" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                             <div class="d-flex align-items-center justify-content-between mb-3 pb-2" style="border-bottom: 1px solid #F1F5F9;">
                                 <h6 class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">
                                     <i class="bi bi-person-badge me-1.5" style="color: #059669;"></i>Hồ Sơ Ứng Tuyển
@@ -159,7 +266,7 @@
 
                     <!-- CỘT PHẢI: Tiến độ ứng tuyển & Lịch phỏng vấn trực tuyến (8 Cột) -->
                     <div class="col-12 col-lg-8">
-                        <div class="card border-0 shadow-sm p-4 bg-white h-100 d-flex flex-column" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                        <div id="feature-section-candidate-tien-do" class="card border-0 shadow-sm p-4 bg-white h-100 d-flex flex-column scroll-margin-nav" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                             @if (Model.ActiveApplication != null)
                             {
                                 <!-- Application Header -->
@@ -306,7 +413,7 @@
                 </div>
 
                 <!-- Row 2: Khám Phá Việc Làm NoveraTech (Lưới 3 cột đồng đều) -->
-                <div id="open-jobs" class="card border-0 shadow-sm p-4 bg-white mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <div id="feature-section-candidate-viec-lam" class="card border-0 shadow-sm p-4 bg-white mb-4 scroll-margin-nav" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-2 pb-3" style="border-bottom: 1px solid #F1F5F9;">
                         <div>
                             <h5 class="fw-bold text-dark mb-0" style="font-size: 1.1rem;">
@@ -370,7 +477,7 @@
             <!-- ========================================== -->
             <div id="staff-workspace">
                 <!-- 1. Hàng KPI Đo Lường (Phẳng, Tinh Tế, Đồng Bộ, Chuẩn Ashby/Linear) -->
-                <div class="row g-3 mb-4">
+                <div id="feature-section-staff-tong-quan" class="row g-3 mb-4 scroll-margin-nav">
                     <!-- KPI 1: Vị trí đang mở -->
                     <div class="col-6 col-lg-3">
                         <div class="bg-white p-3.5 h-100" style="border: 1px solid #E2E8F0; border-radius: 12px;">
@@ -451,7 +558,7 @@
                     <!-- ============================================== -->
                     <div class="col-12 col-xl-8 d-flex flex-column gap-4">
                         <!-- Khối 1: Phễu Tuyển Dụng Tổng Thể (Recruitment Pipeline Stream) -->
-                        <div class="card border-0 shadow-sm p-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                        <div id="feature-section-staff-tuyen-dung" class="card border-0 shadow-sm p-4 bg-white scroll-margin-nav" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 pb-2 gap-2" style="border-bottom: 1px solid #F1F5F9;">
                                 <div>
                                     <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">
@@ -503,7 +610,7 @@
                         </div>
 
                         <!-- Khối 2: Lịch Phỏng Vấn Tuần Này (Interview Schedule Table) -->
-                        <div class="card border-0 shadow-sm p-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                        <div id="feature-section-staff-lich-phong-van" class="card border-0 shadow-sm p-4 bg-white scroll-margin-nav" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 pb-2 gap-2" style="border-bottom: 1px solid #F1F5F9;">
                                 <div>
                                     <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">
@@ -614,7 +721,7 @@
                     <!-- ============================================== -->
                     <div class="col-12 col-xl-4 d-flex flex-column gap-4">
                         <!-- Khối 1: Hàng Đợi Phê Duyệt Offer (Pending Approvals) -->
-                        <div class="card border-0 shadow-sm p-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                        <div id="feature-section-staff-phe-duyet" class="card border-0 shadow-sm p-4 bg-white scroll-margin-nav" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                             <div class="d-flex align-items-center justify-content-between mb-3 pb-2" style="border-bottom: 1px solid #F1F5F9;">
                                 <div class="d-flex align-items-center gap-2">
                                     <i class="bi bi-patch-check" style="color: #059669; font-size: 1.15rem;"></i>
@@ -666,7 +773,7 @@
                         </div>
 
                         <!-- Khối 2: Trung Tâm Tác Vụ Nhanh (Role Actions Hub - Always Balanced) -->
-                        <div class="card border-0 shadow-sm p-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                        <div id="feature-section-staff-tac-vu" class="card border-0 shadow-sm p-4 bg-white scroll-margin-nav" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                             <div class="d-flex align-items-center justify-content-between mb-3 pb-2" style="border-bottom: 1px solid #F1F5F9;">
                                 <div class="d-flex align-items-center gap-2">
                                     <i class="bi bi-lightning-charge" style="color: #059669; font-size: 1.15rem;"></i>
@@ -1492,5 +1599,94 @@
                 tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-danger">Lỗi khi tải dữ liệu: ' + err.message + '</td></tr>';
             }
         }
+
+        // 9. Client-side Dashboard Feature Router (/dashboard/{ten-tinh-nang})
+        var activeFeature = '@(ViewBag.ActiveFeature ?? "tong-quan")';
+
+        function switchDashboardFeature(featureName, e) {
+            if (e) {
+                e.preventDefault();
+            }
+
+            var cleanFeature = (featureName || 'tong-quan').toLowerCase().trim();
+            var targetUrl = cleanFeature === 'tong-quan' ? '/dashboard' : '/dashboard/' + cleanFeature;
+
+            // Cập nhật URL trên browser history không cần reload trang
+            window.history.pushState({ feature: cleanFeature }, '', targetUrl);
+
+            // Cập nhật active tab
+            var tabs = document.querySelectorAll('.dashboard-feature-tab');
+            tabs.forEach(function (tab) {
+                if (tab.getAttribute('data-feature') === cleanFeature) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+
+            // Cập nhật badge URL
+            var badge = document.getElementById('currentFeatureUrlBadge');
+            if (badge) {
+                badge.innerHTML = '<i class="bi bi-link-45deg me-1"></i>' + targetUrl;
+            }
+
+            // Cuộn mượt tới phân hệ tính năng tương ứng
+            scrollToFeatureSection(cleanFeature);
+        }
+
+        function scrollToFeatureSection(feature) {
+            var targetId = null;
+            var isCandidate = @(Model.IsCandidate ? "true" : "false");
+
+            if (isCandidate) {
+                if (feature === 'ho-so' || feature === 'cv') {
+                    targetId = 'feature-section-candidate-ho-so';
+                } else if (feature === 'tien-do' || feature === 'lich-trinh' || feature === 'phong-van') {
+                    targetId = 'feature-section-candidate-tien-do';
+                } else if (feature === 'viec-lam' || feature === 'jobs') {
+                    targetId = 'feature-section-candidate-viec-lam';
+                }
+            } else {
+                if (feature === 'tuyen-dung' || feature === 'pipeline') {
+                    targetId = 'feature-section-staff-tuyen-dung';
+                } else if (feature === 'lich-phong-van' || feature === 'phong-van' || feature === 'interviews') {
+                    targetId = 'feature-section-staff-lich-phong-van';
+                } else if (feature === 'phe-duyet' || feature === 'approvals' || feature === 'offers') {
+                    targetId = 'feature-section-staff-phe-duyet';
+                } else if (feature === 'tac-vu' || feature === 'actions') {
+                    targetId = 'feature-section-staff-tac-vu';
+                } else if (feature === 'tong-quan' || feature === 'overview') {
+                    targetId = 'feature-section-staff-tong-quan';
+                }
+            }
+
+            if (targetId) {
+                var el = document.getElementById(targetId);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    el.classList.remove('feature-highlight-pulse');
+                    void el.offsetWidth;
+                    el.classList.add('feature-highlight-pulse');
+                    setTimeout(function () {
+                        el.classList.remove('feature-highlight-pulse');
+                    }, 2200);
+                }
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        window.addEventListener('popstate', function (e) {
+            var feature = (e.state && e.state.feature) ? e.state.feature : 'tong-quan';
+            switchDashboardFeature(feature);
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            if (activeFeature && activeFeature !== 'tong-quan') {
+                setTimeout(function () {
+                    scrollToFeatureSection(activeFeature);
+                }, 350);
+            }
+        });
     </script>
 }
