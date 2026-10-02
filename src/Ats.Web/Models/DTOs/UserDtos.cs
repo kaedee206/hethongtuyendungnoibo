@@ -75,4 +75,9 @@ public class UpdateProfileRequestDto
 
     [StringLength(100, ErrorMessage = "Chức danh không được vượt quá 100 ký tự.")]
     public string? JobTitle { get; set; }
+
+    // SCRUM-189: Các trường bị khóa không cho phép đổi
+    public string? Email { get; set; }
+    public string? Department { get; set; }
+    public string? Role { get; set; }
 }

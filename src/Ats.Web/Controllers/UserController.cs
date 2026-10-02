@@ -151,6 +151,12 @@ public class UserController : ControllerBase
             return BadRequest(new { isSuccess = false, message = "Dữ liệu đầu vào không hợp lệ.", errors = ModelState });
         }
 
+        // SCRUM-189: Từ chối thay đổi các trường bị khóa
+        if (!string.IsNullOrEmpty(request.Email) || !string.IsNullOrEmpty(request.Department) || !string.IsNullOrEmpty(request.Role))
+        {
+            return BadRequest(new { isSuccess = false, message = "Bạn không có quyền thay đổi Email, Phòng ban hoặc Vai trò. Vui lòng liên hệ Admin để được hỗ trợ." });
+        }
+
         var currentUserIdString = HttpContext.Session.GetString("UserId");
         if (string.IsNullOrEmpty(currentUserIdString) || !Guid.TryParse(currentUserIdString, out var currentUserId))
         {
