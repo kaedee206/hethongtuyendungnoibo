@@ -1,6 +1,8 @@
 @model Ats.Web.Models.ViewModels.JobPositions.JobPositionListViewModel
 @{
     ViewData["Title"] = "Danh mục Chức danh & Vị trí công việc";
+    var totalCols = 5 + (Model.CanViewSalary ? 2 : 0) + (Model.CanManage ? 1 : 0);
+    var isFiltered = !string.IsNullOrWhiteSpace(Model.Keyword) || !string.IsNullOrWhiteSpace(Model.LevelFilter) || Model.DepartmentFilter.HasValue;
 }
 
 <div class="container-fluid px-3 px-md-4 py-4">
@@ -19,15 +21,18 @@
                 </div>
                 <h1 class="h3 fw-bold text-dark mb-0">Danh mục Chức danh & Khung lương chuẩn</h1>
             </div>
-            <p class="text-muted small mb-0 ms-md-5">Quản lý định danh vị trí công việc, tiêu chuẩn cấp bậc và khung dải lương (Salary Band) trong tổ chức.</p>
+            <p class="text-muted small mb-0 ms-md-5">Quản lý định danh vị trí công việc, tiêu chuẩn cấp bậc và khung dải lương trong tổ chức.</p>
         </div>
 
-        <div class="d-flex align-items-center gap-2">
-            <a asp-action="Create" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" style="border-radius: 8px; background-color: #059669; border-color: #059669;">
-                <i class="bi bi-plus-circle-fill"></i>
-                <span class="fw-semibold">Thêm chức danh mới</span>
-            </a>
-        </div>
+        @if (Model.CanManage)
+        {
+            <div class="d-flex align-items-center gap-2">
+                <a asp-action="Create" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" style="border-radius: 8px; background-color: #059669; border-color: #059669;">
+                    <i class="bi bi-plus-circle-fill"></i>
+                    <span class="fw-semibold">Thêm chức danh mới</span>
+                </a>
+            </div>
+        }
     </div>
 
     @if (TempData["SuccessMessage"] != null)
@@ -47,7 +52,7 @@
 
     <div class="card border-0 shadow-sm rounded-3 mb-4">
         <div class="card-body p-3 p-md-4">
-            <form method="get" asp-action="Index" class="row g-3 align-items-end">
+            <form id="filterForm" method="get" asp-action="Index" class="row g-3 align-items-end">
                 <div class="col-12 col-md-5">
                     <label class="form-label small fw-semibold text-muted">Tìm kiếm chức danh</label>
                     <div class="input-group">
@@ -86,10 +91,10 @@
                 </div>
 
                 <div class="col-12 col-md-2 d-flex gap-2">
-                    <button type="submit" class="btn btn-dark w-100 fw-semibold" style="border-radius: 8px;">
+                    <button id="filterSubmitBtn" type="submit" class="btn btn-dark w-100 fw-semibold" style="border-radius: 8px;">
                         <i class="bi bi-funnel me-1"></i> Lọc
                     </button>
-                    <a asp-action="Index" class="btn btn-outline-secondary" style="border-radius: 8px;" title="Đặt lại bộ lọc">
+                    <a id="filterResetBtn" asp-action="Index" class="btn btn-outline-secondary" style="border-radius: 8px;" title="Đặt lại bộ lọc">
                         <i class="bi bi-arrow-counterclockwise"></i>
                     </a>
                 </div>
@@ -97,7 +102,13 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-3">
+    <div class="card border-0 shadow-sm rounded-3 position-relative overflow-hidden">
+        <div id="tableLoadingState" class="position-absolute top-0 start-0 w-100 h-100 d-none flex-column align-items-center justify-content-center" style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(2px); z-index: 15; min-height: 220px;" role="status" aria-live="polite">
+            <div class="spinner-border text-success mb-2" role="status" style="width: 2.2rem; height: 2.2rem; color: #059669 !important;"></div>
+            <div class="fw-semibold text-dark small">Đang tải dữ liệu danh sách...</div>
+            <div class="text-muted small" style="font-size: 0.75rem;">Vui lòng đợi trong giây lát</div>
+        </div>
+
         <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
             <span class="fw-semibold text-dark">
                 Danh sách chức danh vị trí 
@@ -112,27 +123,56 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th class="ps-4">Mã chức danh</th>
-                        <th>Tên chức danh vị trí</th>
-                        <th>Phòng ban</th>
-                        <th>Cấp bậc</th>
-                        <th>Khung dải lương (VNĐ)</th>
-                        <th>Trạng thái</th>
-                        <th class="text-end pe-4">Thao tác</th>
+                        <th class="ps-4" style="min-width: 130px;">Mã chức danh</th>
+                        <th style="min-width: 200px;">Tên chức danh vị trí</th>
+                        <th style="min-width: 150px;">Phòng ban</th>
+                        <th style="min-width: 120px;">Cấp bậc</th>
+                        @if (Model.CanViewSalary)
+                        {
+                            <th class="text-end" style="min-width: 160px;">Dải lương tối thiểu</th>
+                            <th class="text-end" style="min-width: 160px;">Dải lương tối đa</th>
+                        }
+                        <th style="min-width: 120px;">Trạng thái</th>
+                        @if (Model.CanManage)
+                        {
+                            <th class="text-end pe-4" style="min-width: 120px;">Thao tác</th>
+                        }
                     </tr>
                 </thead>
                 <tbody>
                     @if (Model.Positions == null || !Model.Positions.Any())
                     {
                         <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
-                                <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
-                                <span>Không tìm thấy chức danh công việc nào phù hợp với bộ lọc.</span>
-                                <div class="mt-3">
-                                    <a asp-action="Create" class="btn btn-sm btn-outline-primary" style="border-radius: 8px;">
-                                        <i class="bi bi-plus-lg me-1"></i> Tạo chức danh đầu tiên
-                                    </a>
-                                </div>
+                            <td colspan="@totalCols" class="text-center py-5 text-muted">
+                                @if (isFiltered)
+                                {
+                                    <div class="py-4 px-3 text-center">
+                                        <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-circle bg-light mb-3 text-muted" style="width: 60px; height: 60px;">
+                                            <i class="bi bi-search fs-4"></i>
+                                        </div>
+                                        <h6 class="fw-bold text-dark mb-1">Không tìm thấy kết quả phù hợp</h6>
+                                        <p class="text-muted small mb-3">Không có chức danh nào khớp với tiêu chí tìm kiếm hiện tại.</p>
+                                        <a asp-action="Index" class="btn btn-sm btn-outline-secondary px-3" style="border-radius: 8px;">
+                                            <i class="bi bi-arrow-counterclockwise me-1"></i> Đặt lại bộ lọc
+                                        </a>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="py-4 px-3 text-center">
+                                        <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-circle bg-light mb-3 text-muted" style="width: 60px; height: 60px;">
+                                            <i class="bi bi-briefcase fs-4"></i>
+                                        </div>
+                                        <h6 class="fw-bold text-dark mb-1">Chưa có chức danh công việc</h6>
+                                        <p class="text-muted small mb-3">Hệ thống chưa ghi nhận danh mục vị trí nào.</p>
+                                        @if (Model.CanManage)
+                                        {
+                                            <a asp-action="Create" class="btn btn-sm btn-primary px-3 shadow-sm" style="border-radius: 8px; background-color: #059669; border-color: #059669;">
+                                                <i class="bi bi-plus-circle-fill me-1"></i> Tạo chức danh đầu tiên
+                                            </a>
+                                        }
+                                    </div>
+                                }
                             </td>
                         </tr>
                     }
@@ -168,21 +208,19 @@
                                         @pos.JobLevel
                                     </span>
                                 </td>
-                                <td>
-                                    @if (pos.MinSalary.HasValue || pos.MaxSalary.HasValue)
-                                    {
-                                        <div class="font-monospace fw-semibold" style="color: #059669; font-size: 0.88rem;">
-                                            @(pos.MinSalary.HasValue ? pos.MinSalary.Value.ToString("N0") : "0")
-                                            - 
-                                            @(pos.MaxSalary.HasValue ? pos.MaxSalary.Value.ToString("N0") : "Thỏa thuận")
-                                            <span class="text-muted fw-normal" style="font-size: 0.75rem;">₫/tháng</span>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted font-monospace small">Chưa thiết lập</span>
-                                    }
-                                </td>
+                                @if (Model.CanViewSalary)
+                                {
+                                    <td class="text-end font-monospace">
+                                        <span class="fw-semibold" style="color: #059669; font-size: 0.88rem;">
+                                            @pos.MinSalaryFormatted
+                                        </span>
+                                    </td>
+                                    <td class="text-end font-monospace">
+                                        <span class="fw-semibold" style="color: #059669; font-size: 0.88rem;">
+                                            @pos.MaxSalaryFormatted
+                                        </span>
+                                    </td>
+                                }
                                 <td>
                                     @if (pos.IsActive)
                                     {
@@ -197,21 +235,24 @@
                                         </span>
                                     }
                                 </td>
-                                <td class="text-end pe-4">
-                                    <div class="d-inline-flex gap-1">
-                                        <a asp-action="Edit" asp-route-id="@pos.Id" class="btn btn-sm btn-outline-primary" style="border-radius: 6px;" title="Chỉnh sửa">
-                                            <i class="bi bi-pencil-square"></i>
-                                            <span class="d-none d-md-inline ms-1">Sửa</span>
-                                        </a>
+                                @if (Model.CanManage)
+                                {
+                                    <td class="text-end pe-4">
+                                        <div class="d-inline-flex gap-1">
+                                            <a asp-action="Edit" asp-route-id="@pos.Id" class="btn btn-sm btn-outline-primary" style="border-radius: 6px;" title="Chỉnh sửa">
+                                                <i class="bi bi-pencil-square"></i>
+                                                <span class="d-none d-md-inline ms-1">Sửa</span>
+                                            </a>
 
-                                        <form asp-action="Delete" asp-route-id="@pos.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa chức danh [@pos.Code] @pos.Title?');">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" style="border-radius: 6px;" title="Xóa chức danh">
-                                                <i class="bi bi-trash3"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
+                                            <form asp-action="Delete" asp-route-id="@pos.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa chức danh [@pos.Code] @pos.Title?');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" style="border-radius: 6px;" title="Xóa chức danh">
+                                                    <i class="bi bi-trash3"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                }
                             </tr>
                         }
                     }
@@ -220,3 +261,7 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="~/js/job-position-list.js" asp-append-version="true"></script>
+}
