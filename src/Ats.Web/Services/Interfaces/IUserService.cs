@@ -12,4 +12,5 @@ public interface IUserService
     Task<(bool IsSuccess, string Message, string? HandoverWarning)> LockUserAsync(Guid id, string lockReason, Guid currentAdminId, CancellationToken cancellationToken = default);
     Task<(bool IsSuccess, string Message)> UnlockUserAsync(Guid id, Guid currentAdminId, CancellationToken cancellationToken = default);
     Task<byte[]> GenerateExcelTemplateAsync(CancellationToken cancellationToken = default);
+    Task<Ats.Web.Models.DTOs.ImportExcelResultDto> ValidateExcelImportAsync(Stream excelStream, CancellationToken cancellationToken = default);
 }

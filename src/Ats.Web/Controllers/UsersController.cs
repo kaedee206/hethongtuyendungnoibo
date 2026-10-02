@@ -208,4 +208,34 @@ public class UsersController(
         var fileContents = await _userService.GenerateExcelTemplateAsync(cancellationToken);
         return File(fileContents, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Mau_Nhap_Nhan_Su.xlsx");
     }
+
+    /// <summary>
+    /// SCRUM-178: Xử lý đọc và validate dữ liệu từng dòng trong tệp Excel
+    /// </summary>
+    [HttpPost("import-excel")]
+    public async Task<IActionResult> ImportExcel(IFormFile file, CancellationToken cancellationToken)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest("Vui lòng tải lên một tệp Excel hợp lệ.");
+        }
+
+        var ext = Path.GetExtension(file.FileName).ToLower();
+        if (ext != ".xlsx" && ext != ".xls")
+        {
+            return BadRequest("Chỉ hỗ trợ định dạng tệp Excel (.xlsx, .xls).");
+        }
+
+        using var stream = file.OpenReadStream();
+        try
+        {
+            var result = await _userService.ValidateExcelImportAsync(stream, cancellationToken);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi xử lý tệp Excel nhập nhân sự");
+            return BadRequest("Tệp Excel không đúng định dạng hoặc bị lỗi.");
+        }
+    }
 }

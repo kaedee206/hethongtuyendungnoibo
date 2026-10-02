@@ -458,7 +458,7 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
         var dataSheet = workbook.Worksheets.Add("Dữ liệu");
         
         // Header
-        var headers = new string[] { "Họ và tên (*)", "Email (*)", "Phòng ban", "Chức vụ", "Vai trò (*)" };
+        var headers = new string[] { "Họ và tên (*)", "Email (*)", "Số điện thoại", "Phòng ban", "Chức vụ", "Vai trò (*)" };
         for (int i = 0; i < headers.Length; i++)
         {
             var cell = dataSheet.Cell(1, i + 1);
@@ -471,14 +471,127 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
         // Example data
         dataSheet.Cell(2, 1).Value = "Nguyễn Văn A";
         dataSheet.Cell(2, 2).Value = "nguyenvana@noveratech.digital";
-        dataSheet.Cell(2, 3).Value = "Phòng IT";
-        dataSheet.Cell(2, 4).Value = "Nhân viên phát triển phần mềm";
-        dataSheet.Cell(2, 5).Value = "Interviewer, Employee";
+        dataSheet.Cell(2, 3).Value = "0901234567";
+        dataSheet.Cell(2, 4).Value = "Phòng IT";
+        dataSheet.Cell(2, 5).Value = "Nhân viên phát triển phần mềm";
+        dataSheet.Cell(2, 6).Value = "Interviewer, Employee";
         
         dataSheet.Columns().AdjustToContents();
 
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
         return Task.FromResult(stream.ToArray());
+    }
+
+    public async Task<ImportExcelResultDto> ValidateExcelImportAsync(Stream excelStream, CancellationToken cancellationToken = default)
+    {
+        var result = new ImportExcelResultDto();
+
+        var validDepartments = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var validJobPositions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        
+        var conn = _dbContext.Database.GetDbConnection();
+        bool wasClosed = conn.State == System.Data.ConnectionState.Closed;
+        if (wasClosed) await conn.OpenAsync(cancellationToken);
+        try
+        {
+            using var cmd1 = conn.CreateCommand();
+            cmd1.CommandText = "SELECT name FROM departments";
+            using var reader1 = await cmd1.ExecuteReaderAsync(cancellationToken);
+            while (await reader1.ReadAsync(cancellationToken))
+            {
+                validDepartments.Add(reader1.GetString(0));
+            }
+        }
+        catch { /* ignore if table not exists */ }
+
+        try
+        {
+            using var cmd2 = conn.CreateCommand();
+            cmd2.CommandText = "SELECT name FROM job_positions";
+            using var reader2 = await cmd2.ExecuteReaderAsync(cancellationToken);
+            while (await reader2.ReadAsync(cancellationToken))
+            {
+                validJobPositions.Add(reader2.GetString(0));
+            }
+        }
+        catch { /* ignore if table not exists */ }
+        
+        if (wasClosed) await conn.CloseAsync();
+
+        using var workbook = new XLWorkbook(excelStream);
+        var worksheet = workbook.Worksheets.FirstOrDefault(ws => ws.Name == "Dữ liệu") ?? workbook.Worksheet(1);
+        
+        var rows = worksheet.RowsUsed().Skip(1); // skip header
+        
+        foreach (var row in rows)
+        {
+            int rowIndex = row.RowNumber();
+            var errors = new List<ImportExcelErrorDetailDto>();
+            
+            string fullName = row.Cell(1).GetString().Trim();
+            string email = row.Cell(2).GetString().Trim();
+            string phoneNumber = row.Cell(3).GetString().Trim();
+            string department = row.Cell(4).GetString().Trim();
+            string jobPosition = row.Cell(5).GetString().Trim();
+            string roles = row.Cell(6).GetString().Trim();
+            
+            // Validate required
+            if (string.IsNullOrEmpty(fullName))
+                errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Họ và tên", ErrorMessage = "Không được để trống" });
+            if (string.IsNullOrEmpty(email))
+                errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Email", ErrorMessage = "Không được để trống" });
+            if (string.IsNullOrEmpty(roles))
+                errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Vai trò", ErrorMessage = "Không được để trống" });
+                
+            // Validate Email format
+            if (!string.IsNullOrEmpty(email))
+            {
+                if (!new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(email))
+                {
+                    errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Email", ErrorMessage = "Không đúng định dạng" });
+                }
+                else if (!email.EndsWith("@noveratech.digital", StringComparison.OrdinalIgnoreCase))
+                {
+                    errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Email", ErrorMessage = "Phải là email nội bộ (@noveratech.digital)" });
+                }
+            }
+
+            // Validate Phone Number
+            if (!string.IsNullOrEmpty(phoneNumber) && !System.Text.RegularExpressions.Regex.IsMatch(phoneNumber, @"^(0|\+84)[3|5|7|8|9][0-9]{8}$"))
+            {
+                errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Số điện thoại", ErrorMessage = "Không đúng định dạng" });
+            }
+
+            // Validate Department and Job Position
+            if (!string.IsNullOrEmpty(department) && validDepartments.Count > 0 && !validDepartments.Contains(department))
+            {
+                errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Phòng ban", ErrorMessage = "Không tồn tại trong hệ thống" });
+            }
+            if (!string.IsNullOrEmpty(jobPosition) && validJobPositions.Count > 0 && !validJobPositions.Contains(jobPosition))
+            {
+                errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Chức vụ", ErrorMessage = "Không tồn tại trong hệ thống" });
+            }
+
+            if (errors.Count > 0)
+            {
+                result.InvalidRows.Add(new ImportExcelErrorRowDto { RowIndex = rowIndex, Errors = errors });
+            }
+            else
+            {
+                result.ValidRows.Add(new ImportExcelRowDto 
+                { 
+                    RowIndex = rowIndex, 
+                    FullName = fullName, 
+                    Email = email, 
+                    PhoneNumber = phoneNumber,
+                    Department = department, 
+                    JobPosition = jobPosition, 
+                    Roles = roles 
+                });
+            }
+        }
+
+        return result;
     }
 }
