@@ -27,7 +27,7 @@ public class HomeController : Controller
         _logger = logger;
     }
 
-    public async Task<IActionResult> Index()
+    public IActionResult Index()
     {
         if (User.Identity?.IsAuthenticated == true)
         {
@@ -339,7 +339,7 @@ public class HomeController : Controller
                 .ToList();
         }
 
-        return View(model);
+        return model;
     }
 
     [HttpGet("/landing")]
