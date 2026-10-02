@@ -1,3 +1,4 @@
+using Ats.Web.Constants;
 using Ats.Web.Data;
 using Ats.Web.Models.Entities;
 using Ats.Web.Models.ViewModels.JobPositions;
@@ -5,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace Ats.Web.Controllers;
 
@@ -17,6 +19,54 @@ public class JobPositionsController(
     private readonly ApplicationDbContext _dbContext = dbContext;
     private readonly ILogger<JobPositionsController> _logger = logger;
 
+    public static bool CanUserViewSalary(ClaimsPrincipal? user)
+    {
+        if (user?.Identity?.IsAuthenticated != true)
+        {
+            return false;
+        }
+
+        if (user.IsInRole(UserRoles.HRManager) ||
+            user.IsInRole("Trưởng phòng nhân sự") ||
+            user.IsInRole("Trưởng phòng Nhân sự") ||
+            user.IsInRole("HRManager"))
+        {
+            return true;
+        }
+
+        var roles = user.Claims
+            .Where(c => c.Type == ClaimTypes.Role)
+            .Select(c => c.Value)
+            .ToList();
+
+        return Permissions.HasPermission(roles, Permissions.SalaryView);
+    }
+
+    public static bool CanUserManage(ClaimsPrincipal? user)
+    {
+        if (user?.Identity?.IsAuthenticated != true)
+        {
+            return false;
+        }
+
+        if (user.IsInRole(UserRoles.Admin) ||
+            user.IsInRole(UserRoles.HRManager) ||
+            user.IsInRole("Trưởng phòng nhân sự") ||
+            user.IsInRole("Trưởng phòng Nhân sự"))
+        {
+            return true;
+        }
+
+        var roles = user.Claims
+            .Where(c => c.Type == ClaimTypes.Role)
+            .Select(c => c.Value)
+            .ToList();
+
+        var normalizedRoles = roles.Select(UserRoles.NormalizeRole).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return normalizedRoles.Contains(UserRoles.Admin) || normalizedRoles.Contains(UserRoles.HRManager);
+    }
+
     [HttpGet("")]
     public async Task<IActionResult> Index(
         [FromQuery] string? keyword,
@@ -24,6 +74,9 @@ public class JobPositionsController(
         [FromQuery] Guid? departmentId,
         CancellationToken cancellationToken = default)
     {
+        var canViewSalary = CanUserViewSalary(User);
+        var canManage = CanUserManage(User);
+
         var query = _dbContext.JobPositions
             .Include(p => p.Department)
             .AsNoTracking()
@@ -54,8 +107,8 @@ public class JobPositionsController(
                 Title = p.Title,
                 DepartmentName = p.Department.Name,
                 JobLevel = p.JobLevel,
-                MinSalary = p.MinSalary,
-                MaxSalary = p.MaxSalary,
+                MinSalary = canViewSalary ? p.MinSalary : null,
+                MaxSalary = canViewSalary ? p.MaxSalary : null,
                 IsActive = p.IsActive,
                 CreatedAt = p.CreatedAt
             })
@@ -76,7 +129,9 @@ public class JobPositionsController(
             Keyword = keyword,
             LevelFilter = level,
             DepartmentFilter = departmentId,
-            TotalRecords = positions.Count
+            TotalRecords = positions.Count,
+            CanViewSalary = canViewSalary,
+            CanManage = canManage
         };
 
         return View(model);
@@ -85,6 +140,11 @@ public class JobPositionsController(
     [HttpGet("create")]
     public async Task<IActionResult> Create(CancellationToken cancellationToken = default)
     {
+        if (!CanUserManage(User))
+        {
+            return Forbid();
+        }
+
         var model = new JobPositionFormViewModel
         {
             IsActive = true
@@ -98,6 +158,10 @@ public class JobPositionsController(
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(JobPositionFormViewModel model, CancellationToken cancellationToken = default)
     {
+        if (!CanUserManage(User))
+        {
+            return Forbid();
+        }
         if (!string.IsNullOrWhiteSpace(model.Code))
         {
             var codeUpper = model.Code.Trim().ToUpperInvariant();
@@ -162,6 +226,11 @@ public class JobPositionsController(
     [HttpGet("edit/{id:guid}")]
     public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken = default)
     {
+        if (!CanUserManage(User))
+        {
+            return Forbid();
+        }
+
         var position = await _dbContext.JobPositions
             .Include(p => p.Department)
             .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted, cancellationToken);
@@ -193,6 +262,11 @@ public class JobPositionsController(
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(Guid id, JobPositionFormViewModel model, CancellationToken cancellationToken = default)
     {
+        if (!CanUserManage(User))
+        {
+            return Forbid();
+        }
+
         if (id != model.Id)
         {
             return BadRequest("Dữ liệu định danh chức danh không hợp lệ.");
@@ -257,6 +331,11 @@ public class JobPositionsController(
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
     {
+        if (!CanUserManage(User))
+        {
+            return Forbid();
+        }
+
         var position = await _dbContext.JobPositions
             .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted, cancellationToken);
 
