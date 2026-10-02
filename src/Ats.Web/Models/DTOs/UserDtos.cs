@@ -50,3 +50,16 @@ public class ImportExcelErrorDetailDto
     public string ColumnName { get; set; } = default!;
     public string ErrorMessage { get; set; } = default!;
 }
+
+public class ExecuteImportRequestDto
+{
+    [Required]
+    public List<ImportExcelRowDto> ValidRows { get; set; } = new();
+}
+
+public class ExecuteImportResultDto
+{
+    public int TotalSuccess { get; set; }
+    public int TotalFailed { get; set; }
+    public List<ImportExcelErrorRowDto> Errors { get; set; } = new();
+}

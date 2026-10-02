@@ -4,6 +4,7 @@ using Ats.Web.Models.ViewModels.Users;
 using Ats.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Ats.Web.Models.DTOs;
 
 namespace Ats.Web.Controllers;
 
@@ -236,6 +237,34 @@ public class UsersController(
         {
             _logger.LogError(ex, "Lỗi khi xử lý tệp Excel nhập nhân sự");
             return BadRequest("Tệp Excel không đúng định dạng hoặc bị lỗi.");
+        }
+    }
+
+    /// <summary>
+    /// SCRUM-180: Thực thi nhập dữ liệu hàng loạt từ danh sách dòng hợp lệ
+    /// </summary>
+    [HttpPost("execute-import")]
+    public async Task<IActionResult> ExecuteImport([FromBody] ExecuteImportRequestDto request, CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        if (request.ValidRows == null || request.ValidRows.Count == 0)
+        {
+            return BadRequest("Danh sách nhập dữ liệu trống.");
+        }
+
+        try
+        {
+            var result = await _userService.ExecuteImportAsync(request, cancellationToken);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi thực thi nhập dữ liệu nhân sự hàng loạt");
+            return StatusCode(500, "Đã xảy ra lỗi hệ thống trong quá trình nhập dữ liệu.");
         }
     }
 }

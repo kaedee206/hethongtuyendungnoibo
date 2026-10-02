@@ -594,4 +594,86 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
 
         return result;
     }
+
+    public async Task<ExecuteImportResultDto> ExecuteImportAsync(ExecuteImportRequestDto request, CancellationToken cancellationToken = default)
+    {
+        var result = new ExecuteImportResultDto();
+
+        // SCRUM-180: Use transaction
+        using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var allRoles = await _dbContext.Roles.ToListAsync(cancellationToken);
+            string defaultPassword = "AtsUser@123456"; 
+            
+            foreach (var row in request.ValidRows)
+            {
+                // Check if email exists
+                bool emailExists = await _dbContext.Users.AnyAsync(u => u.Email.ToLower() == row.Email.ToLower(), cancellationToken);
+                if (emailExists)
+                {
+                    result.Errors.Add(new ImportExcelErrorRowDto
+                    {
+                        RowIndex = row.RowIndex,
+                        Errors = new List<ImportExcelErrorDetailDto>
+                        {
+                            new() { ColumnName = "Email", ErrorMessage = "Email đã tồn tại trong hệ thống." }
+                        }
+                    });
+                    result.TotalFailed++;
+                    continue;
+                }
+
+                var newUser = new User
+                {
+                    Id = Guid.NewGuid(),
+                    FullName = row.FullName,
+                    Email = row.Email.ToLower(),
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(defaultPassword),
+                    Department = row.Department,
+                    Status = "ACTIVE",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
+
+                var roleNames = row.Roles.Split(',').Select(r => r.Trim()).Where(r => !string.IsNullOrEmpty(r)).ToList();
+                if (roleNames.Any())
+                {
+                    newUser.Role = Ats.Web.Constants.UserRoles.NormalizeRole(roleNames.First()); 
+                }
+
+                foreach (var roleName in roleNames)
+                {
+                    var normalizedName = Ats.Web.Constants.UserRoles.NormalizeRole(roleName);
+                    var matchedRole = allRoles.FirstOrDefault(r => r.Name == normalizedName);
+                    if (matchedRole != null)
+                    {
+                        newUser.UserRoles.Add(new UserRole
+                        {
+                            UserId = newUser.Id,
+                            RoleId = matchedRole.Id
+                        });
+                        
+                        if (newUser.RoleId == null)
+                        {
+                            newUser.RoleId = matchedRole.Id;
+                        }
+                    }
+                }
+
+                _dbContext.Users.Add(newUser);
+                result.TotalSuccess++;
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw; 
+        }
+
+        return result;
+    }
 }
