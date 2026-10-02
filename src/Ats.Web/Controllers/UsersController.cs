@@ -227,11 +227,26 @@ public class UsersController(
             return BadRequest("Chỉ hỗ trợ định dạng tệp Excel (.xlsx, .xls).");
         }
 
+        // SCRUM-183: Validate file size (max 5MB)
+        const long maxFileSize = 5 * 1024 * 1024;
+        if (file.Length > maxFileSize)
+        {
+            return BadRequest("Dung lượng tệp vượt quá giới hạn cho phép (tối đa 5MB).");
+        }
+
         using var stream = file.OpenReadStream();
         try
         {
             var result = await _userService.ValidateExcelImportAsync(stream, cancellationToken);
             return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {

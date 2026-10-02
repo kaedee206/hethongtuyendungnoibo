@@ -522,6 +522,17 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
         using var workbook = new XLWorkbook(excelStream);
         var worksheet = workbook.Worksheets.FirstOrDefault(ws => ws.Name == "Dữ liệu") ?? workbook.Worksheet(1);
         
+        // SCRUM-183: Validate headers
+        var expectedHeaders = new string[] { "Họ và tên (*)", "Email (*)", "Số điện thoại", "Phòng ban", "Chức vụ", "Vai trò (*)" };
+        var headerRow = worksheet.Row(1);
+        for (int i = 0; i < expectedHeaders.Length; i++)
+        {
+            if (!string.Equals(headerRow.Cell(i + 1).GetString().Trim(), expectedHeaders[i], StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Cấu trúc tệp không hợp lệ. Vui lòng sử dụng tệp mẫu được cung cấp (sai hoặc thiếu tên cột).");
+            }
+        }
+
         var rows = worksheet.RowsUsed().Skip(1); // skip header
         
         foreach (var row in rows)
