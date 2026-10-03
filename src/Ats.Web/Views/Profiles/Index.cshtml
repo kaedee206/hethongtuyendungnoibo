@@ -2,126 +2,88 @@
 
 <div class="card shadow-sm profile-component">
     <div class="card-body">
-        <h5 class="card-title mb-4">Chỉnh sửa hồ sơ cá nhân</h5>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="card-title mb-0">Hồ sơ cá nhân</h5>
+            <a href="/ho-so/chinh-sua" class="btn btn-outline-primary">
+                <i class="bi bi-pencil me-1"></i> Chỉnh sửa
+            </a>
+        </div>
 
-        <!-- id="profileForm" để JS hook vào xử lý sự kiện submit -->
-        <form id="profileForm" novalidate>
-            @Html.AntiForgeryToken()
-            
-            <h6 class="text-muted mb-1">Thông tin tài khoản (Chỉ đọc)</h6>
-            <div class="alert alert-secondary py-2 mb-4 d-flex align-items-center" role="alert" style="font-size: 0.85rem;">
-                <i class="bi bi-info-circle-fill text-secondary me-2"></i>
-                <span>Bạn không được tự thay đổi các thông tin này. Vui lòng liên hệ <strong>Admin</strong> nếu cần cập nhật.</span>
-            </div>
-            
-            <div class="row mb-4">
-                <div class="col-md-4 mb-3">
-                    <label asp-for="Email" class="form-label">Email</label>
-                    <input asp-for="Email" class="form-control bg-light" disabled readonly data-bs-toggle="tooltip" title="Liên hệ Admin để thay đổi Email" />
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label asp-for="RoleName" class="form-label">Vai trò</label>
-                    <input asp-for="RoleName" class="form-control bg-light" disabled readonly data-bs-toggle="tooltip" title="Liên hệ Admin để thay đổi Vai trò" />
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label asp-for="DepartmentName" class="form-label">Phòng ban</label>
-                    <input asp-for="DepartmentName" class="form-control bg-light" disabled readonly data-bs-toggle="tooltip" title="Liên hệ Admin để thay đổi Phòng ban" />
-                </div>
+        <div class="row mb-4">
+            <!-- Họ tên -->
+            <div class="col-md-12 mb-3">
+                <h6 class="text-muted mb-1">Họ tên hiển thị</h6>
+                <p class="fw-bold mb-0" id="display-FullName">@(Model?.FullName ?? "Đang tải...")</p>
             </div>
 
-            <h6 class="text-muted">Thông tin cá nhân</h6>
-            <div class="row mb-4">
-                <div class="col-md-12 mb-3">
-                    <label asp-for="FullName" class="form-label">Họ tên hiển thị <span class="text-danger">*</span></label>
-                    <input asp-for="FullName" class="form-control" required />
-                    <span class="text-danger" id="error-FullName"></span>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label asp-for="PhoneNumber" class="form-label">Số điện thoại</label>
-                    <input asp-for="PhoneNumber" class="form-control" />
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label asp-for="JobTitle" class="form-label">Chức danh / Vị trí</label>
-                    <input asp-for="JobTitle" class="form-control" />
-                </div>
+            <!-- Email -->
+            <div class="col-md-6 mb-3">
+                <h6 class="text-muted mb-1">Email</h6>
+                <p class="fw-bold mb-0" id="display-Email">@(Model?.Email ?? "Đang tải...")</p>
             </div>
 
-            <div class="d-flex justify-content-end">
-                <button type="submit" id="btnSubmitProfile" class="btn btn-primary">
-                    <span id="submitSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                    <span id="submitText">Lưu thay đổi</span>
-                </button>
+            <!-- Số điện thoại -->
+            <div class="col-md-6 mb-3">
+                <h6 class="text-muted mb-1">Số điện thoại</h6>
+                <p class="fw-bold mb-0" id="display-PhoneNumber">@(Model?.PhoneNumber ?? "Chưa cập nhật")</p>
             </div>
-        </form>
+
+            <!-- Chức danh -->
+            <div class="col-md-6 mb-3">
+                <h6 class="text-muted mb-1">Chức danh / Vị trí</h6>
+                <p class="fw-bold mb-0" id="display-JobTitle">@(Model?.JobTitle ?? "Chưa cập nhật")</p>
+            </div>
+
+            <!-- Phòng ban -->
+            <div class="col-md-6 mb-3">
+                <h6 class="text-muted mb-1">Phòng ban</h6>
+                <p class="fw-bold mb-0" id="display-DepartmentName">@(Model?.DepartmentName ?? "Chưa cập nhật")</p>
+            </div>
+
+            <!-- Vai trò -->
+            <div class="col-md-6 mb-3">
+                <h6 class="text-muted mb-1">Vai trò</h6>
+                <p class="fw-bold mb-0">
+                    <span class="badge bg-info text-dark" id="display-RoleName">@(Model?.RoleName ?? "Chưa phân quyền")</span>
+                </p>
+            </div>
+        </div>
     </div>
 </div>
 
 @section Scripts {
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const profileForm = document.getElementById('profileForm');
-            const btnSubmit = document.getElementById('btnSubmitProfile');
-            const submitSpinner = document.getElementById('submitSpinner');
-            const submitText = document.getElementById('submitText');
-
-            profileForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-
-                // 1. Quản lý trạng thái UI (Loading state & Disable Form)
-                btnSubmit.disabled = true;
-                submitSpinner.classList.remove('d-none');
-                submitText.textContent = 'Đang cập nhật...';
-                
-                // Disable toàn bộ input có thể edit trong lúc chờ API
-                const editableInputs = profileForm.querySelectorAll('input:not([readonly])');
-                editableInputs.forEach(input => input.disabled = true);
-
-                // 2. Gom dữ liệu Editable từ Form
-                const formData = new FormData(profileForm);
-                const payload = {
-                    fullName: formData.get('FullName'),
-                    phoneNumber: formData.get('PhoneNumber'),
-                    jobTitle: formData.get('JobTitle')
-                };
-
-                // Lấy Token chống CSRF bắt buộc của ASP.NET Core
-                const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
-
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Giả lập Frontend call API để lấy dữ liệu profile nếu dữ liệu chưa có sẵn từ Model (SSR)
+            const hasModelData = '@(Model != null ? "true" : "false")' === 'true';
+            
+            if (!hasModelData) {
                 try {
-                    // 3. Gọi API cập nhật (Đã trỏ đúng endpoint backend SCRUM-187)
+                    // Gọi API lấy dữ liệu profile (Endpoint giả định /api/tai-khoan/ho-so)
                     const response = await fetch('/api/tai-khoan/ho-so', {
-                        method: 'PUT',
+                        method: 'GET',
                         headers: {
-                            'Content-Type': 'application/json',
-                            'RequestVerificationToken': csrfToken // Truyền token bảo mật
-                        },
-                        body: JSON.stringify(payload)
+                            'Content-Type': 'application/json'
+                        }
                     });
 
                     if (response.ok) {
-                        // Tích hợp Toast/Notification component dùng chung của dự án ở đây
-                        alert('Cập nhật hồ sơ thành công!');
+                        const data = await response.json();
+                        
+                        // Cập nhật UI
+                        document.getElementById('display-FullName').textContent = data.fullName || 'Chưa cập nhật';
+                        document.getElementById('display-Email').textContent = data.email || 'Chưa cập nhật';
+                        document.getElementById('display-PhoneNumber').textContent = data.phoneNumber || 'Chưa cập nhật';
+                        document.getElementById('display-JobTitle').textContent = data.jobTitle || 'Chưa cập nhật';
+                        document.getElementById('display-DepartmentName').textContent = data.departmentName || 'Chưa cập nhật';
+                        document.getElementById('display-RoleName').textContent = data.roleName || 'Chưa phân quyền';
                     } else {
-                        const errorData = await response.json();
-                        console.error('Validation Errors:', errorData);
-                        alert('Có lỗi xảy ra, vui lòng kiểm tra lại thông tin.');
+                        console.error('Không thể tải dữ liệu hồ sơ.');
                     }
                 } catch (error) {
-                    console.error('Lỗi mạng:', error);
-                    alert('Không thể kết nối đến máy chủ.');
-                } finally {
-                    // 4. Hoàn tất - Khôi phục trạng thái UI
-                    btnSubmit.disabled = false;
-                    submitSpinner.classList.add('d-none');
-                    submitText.textContent = 'Lưu thay đổi';
-                    
-                    editableInputs.forEach(input => input.disabled = false);
+                    console.error('Lỗi mạng khi tải hồ sơ:', error);
                 }
-            });
-
-            // Khởi tạo tooltips của Bootstrap
-            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-            const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+            }
         });
     </script>
 }
