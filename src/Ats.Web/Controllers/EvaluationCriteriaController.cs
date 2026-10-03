@@ -23,6 +23,7 @@ public class EvaluationCriteriaController(
 
     [HttpGet("{id:guid}/rubric")]
     [HttpGet("api/{id:guid}/rubric")]
+    [HttpGet("/api/evaluation-criteria/{id:guid}/rubric")]
     public async Task<IActionResult> GetRubric(Guid id, CancellationToken cancellationToken = default)
     {
         var rubric = await _criteriaService.GetRubricAsync(id, cancellationToken);
@@ -39,6 +40,7 @@ public class EvaluationCriteriaController(
     }
 
     [HttpGet("api/interview-sheet")]
+    [HttpGet("/api/evaluation-criteria/interview-sheet")]
     public async Task<IActionResult> GetInterviewSheetApi(CancellationToken cancellationToken = default)
     {
         var sheet = await _criteriaService.GetInterviewSheetRubricsAsync(cancellationToken);
@@ -50,6 +52,7 @@ public class EvaluationCriteriaController(
     }
 
     [HttpPost("save-rubric")]
+    [HttpPost("/api/evaluation-criteria/save-rubric")]
     public async Task<IActionResult> SaveRubric(
         [FromBody] CriteriaRubricSaveInputModel model,
         CancellationToken cancellationToken = default)
