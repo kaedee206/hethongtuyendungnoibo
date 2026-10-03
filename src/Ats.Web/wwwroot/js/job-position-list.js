@@ -26,4 +26,14 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    const paginationLinks = document.querySelectorAll('.pagination-ats .page-item:not(.disabled):not(.active) .page-link');
+    paginationLinks.forEach(function (link) {
+        link.addEventListener('click', function () {
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove('d-none');
+                loadingOverlay.classList.add('d-flex');
+            }
+        });
+    });
 });
