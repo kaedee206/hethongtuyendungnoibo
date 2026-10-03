@@ -9,6 +9,11 @@ public class JobPositionListViewModel
     public string? LevelFilter { get; set; }
     public Guid? DepartmentFilter { get; set; }
     public int TotalRecords { get; set; }
+    public int CurrentPage { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+    public int TotalPages => PageSize > 0 ? (int)Math.Ceiling(TotalRecords / (double)PageSize) : 0;
+    public bool HasPreviousPage => CurrentPage > 1;
+    public bool HasNextPage => CurrentPage < TotalPages;
     public bool CanViewSalary { get; set; }
     public bool CanManage { get; set; }
 }
