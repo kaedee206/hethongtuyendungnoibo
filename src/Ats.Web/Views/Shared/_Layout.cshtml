@@ -96,6 +96,11 @@
                                         <i class="bi bi-ui-checks-grid me-1"></i> Tiêu chí & Thang điểm
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" asp-controller="Requisitions" asp-action="Create">
+                                        <i class="bi bi-file-earmark-plus me-1"></i> Yêu cầu tuyển dụng
+                                    </a>
+                                </li>
                             }
 
                             @* Menu dành cho HR Manager & Recruiter *@
@@ -112,7 +117,7 @@
                             @if (User.IsInRole(UserRoles.HiringManager))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#createRequisitionModal">
+                                    <a class="nav-link ats-nav-link" asp-controller="Requisitions" asp-action="Create">
                                         <i class="bi bi-file-earmark-plus me-1"></i> + Đề xuất nhân sự
                                     </a>
                                 </li>
