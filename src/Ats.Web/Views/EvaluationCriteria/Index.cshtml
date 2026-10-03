@@ -1,0 +1,407 @@
+@model Ats.Web.Models.ViewModels.EvaluationCriteria.EvaluationCriteriaListViewModel
+@{
+    ViewData["Title"] = "Tiêu chí Đánh giá & Chuẩn hóa Thang điểm";
+}
+
+<div class="container-fluid px-3 px-md-4 py-4" style="background-color: #F8FAFC; min-height: calc(100vh - 70px);">
+    <div class="bg-white border rounded-3 p-3 p-md-4 mb-4 shadow-sm" style="border-radius: 12px !important; border-color: #E2E8F0 !important;">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1 text-muted small">
+                        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-decoration-none text-muted">Trang chủ</a></li>
+                        <li class="breadcrumb-item active text-dark fw-medium" aria-current="page">Tiêu chí đánh giá & Rubric</li>
+                    </ol>
+                </nav>
+                <h4 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                    <i class="bi bi-ui-checks-grid text-success"></i>
+                    <span>Định nghĩa Thang điểm & Mô tả Mức độ Tiêu chí</span>
+                </h4>
+                <p class="text-secondary small mb-0">
+                    Chuẩn hóa thang điểm đo lường và mô tả hành vi chi tiết theo từng mức để hội đồng phỏng vấn chấm điểm thống nhất, khách quan.
+                </p>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#interviewSheetModal" style="border-radius: 8px;">
+                    <i class="bi bi-file-earmark-medical"></i>
+                    <span>Xem mẫu Phiếu phỏng vấn</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm p-3 h-100" style="border-radius: 12px; background: #FFFFFF; border-left: 4px solid #059669 !important;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-secondary small text-uppercase fw-semibold">Tổng tiêu chí</span>
+                        <h3 class="fw-bold text-dark mb-0 font-monospace mt-1">@Model.TotalCriteria</h3>
+                    </div>
+                    <div class="p-2 rounded bg-success-subtle text-success" style="border-radius: 8px !important;">
+                        <i class="bi bi-clipboard-check fs-4"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-muted small">
+                    <span class="text-success fw-medium font-monospace">@Model.FullyDefinedCount/@Model.TotalCriteria</span> tiêu chí đã chuẩn hóa đủ mức
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm p-3 h-100" style="border-radius: 12px; background: #FFFFFF; border-left: 4px solid #2563EB !important;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-secondary small text-uppercase fw-semibold">Chuyên môn kỹ thuật</span>
+                        <h3 class="fw-bold text-dark mb-0 font-monospace mt-1">@Model.HardSkillsCount</h3>
+                    </div>
+                    <div class="p-2 rounded bg-primary-subtle text-primary" style="border-radius: 8px !important;">
+                        <i class="bi bi-code-slash fs-4"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-muted small">
+                    Trọng số chuyên môn hệ số <span class="font-monospace fw-medium text-dark">1.2x – 1.5x</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm p-3 h-100" style="border-radius: 12px; background: #FFFFFF; border-left: 4px solid #D97706 !important;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-secondary small text-uppercase fw-semibold">Kỹ năng mềm & Tư duy</span>
+                        <h3 class="fw-bold text-dark mb-0 font-monospace mt-1">@Model.SoftSkillsCount</h3>
+                    </div>
+                    <div class="p-2 rounded bg-warning-subtle text-warning" style="border-radius: 8px !important;">
+                        <i class="bi bi-lightbulb fs-4"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-muted small">
+                    Giao tiếp, phản biện & giải quyết vấn đề
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm p-3 h-100" style="border-radius: 12px; background: #FFFFFF; border-left: 4px solid #7C3AED !important;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-secondary small text-uppercase fw-semibold">Văn hóa NoveraTech</span>
+                        <h3 class="fw-bold text-dark mb-0 font-monospace mt-1">@Model.CultureFitCount</h3>
+                    </div>
+                    <div class="p-2 rounded bg-purple-subtle text-purple" style="border-radius: 8px !important; background-color: #F3E8FF; color: #7C3AED;">
+                        <i class="bi bi-heart-pulse fs-4"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-muted small">
+                    Engineering-First & Tinh thần trách nhiệm
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+        <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="fw-bold text-dark mb-0">Danh sách Tiêu chí Đánh giá & Thang điểm Chuẩn</h6>
+                <span class="text-muted small">Mỗi tiêu chí hỗ trợ thang điểm cấu hình (1–3, 1–4 hoặc 1–5) kèm mô tả hành vi chi tiết</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-light text-secondary border font-monospace px-2 py-1" style="border-radius: 6px;">
+                    Tổng: @Model.TotalCriteria tiêu chí
+                </span>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="criteriaTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4" style="min-width: 260px;">Tên tiêu chí & Mục tiêu</th>
+                        <th style="min-width: 160px;">Phân loại</th>
+                        <th class="text-center" style="min-width: 100px;">Trọng số</th>
+                        <th class="text-center" style="min-width: 130px;">Thang điểm</th>
+                        <th style="min-width: 180px;">Trạng thái mô tả mức</th>
+                        <th class="text-end pe-4" style="min-width: 170px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.CriteriaList == null || !Model.CriteriaList.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <div class="py-4 px-3 text-center">
+                                    <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-circle bg-light mb-3 text-muted" style="width: 60px; height: 60px;">
+                                        <i class="bi bi-ui-checks-grid fs-4"></i>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">Chưa có tiêu chí đánh giá</h6>
+                                    <p class="text-muted small mb-0">Hệ thống chưa ghi nhận dữ liệu tiêu chí đánh giá nào.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var crit in Model.CriteriaList)
+                        {
+                            var badgeClass = crit.CriteriaType switch
+                            {
+                                "HARD_SKILL" => "bg-primary-subtle text-primary border-primary-subtle",
+                                "SOFT_SKILL" => "bg-warning-subtle text-warning-emphasis border-warning-subtle",
+                                "CULTURE" => "bg-purple-subtle text-purple border-purple-subtle",
+                                _ => "bg-secondary-subtle text-secondary border-secondary-subtle"
+                            };
+
+                            var typeIcon = crit.CriteriaType switch
+                            {
+                                "HARD_SKILL" => "bi-code-square text-primary",
+                                "SOFT_SKILL" => "bi-chat-heart text-warning",
+                                "CULTURE" => "bi-shield-check text-purple",
+                                _ => "bi-check-circle text-secondary"
+                            };
+
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <div class="mt-1">
+                                            <i class="bi @typeIcon fs-5"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold text-dark">@crit.Name</div>
+                                            @if (!string.IsNullOrWhiteSpace(crit.Description))
+                                            {
+                                                <div class="text-muted small text-truncate" style="max-width: 420px;" title="@crit.Description">
+                                                    @crit.Description
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge @badgeClass border px-2 py-1" style="border-radius: 6px; font-weight: 500;">
+                                        @crit.CriteriaTypeDisplayName
+                                    </span>
+                                </td>
+                                <td class="text-center font-monospace">
+                                    <span class="badge bg-light text-dark border px-2 py-1" style="border-radius: 6px; font-size: 0.85rem;">
+                                        @(crit.Weight.ToString("0.0"))x
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 font-monospace" style="border-radius: 6px;">
+                                        Thang @(crit.ScaleMin)–@(crit.ScaleMax)
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (crit.IsFullyDefined)
+                                    {
+                                        <div class="d-flex align-items-center gap-1 text-success small fw-medium">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                            <span>Đã định nghĩa đủ @crit.DefinedLevelsCount/@crit.ScaleMax mức</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="d-flex align-items-center gap-1 text-warning small fw-medium">
+                                            <i class="bi bi-exclamation-triangle-fill"></i>
+                                            <span>Mới có @crit.DefinedLevelsCount/@crit.ScaleMax mức mô tả</span>
+                                        </div>
+                                    }
+                                </td>
+                                <td class="text-end pe-4">
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1 configure-rubric-btn px-2 py-1" 
+                                            style="border-radius: 6px; font-size: 0.82rem;"
+                                            data-criteria-id="@crit.Id"
+                                            data-criteria-name="@crit.Name">
+                                        <i class="bi bi-sliders"></i>
+                                        <span>Cấu hình thang & mô tả</span>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="configureRubricModal" tabindex="-1" aria-labelledby="configureRubricModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header border-bottom py-3 px-4" style="background-color: #F8FAFC;">
+                <div>
+                    <span class="badge bg-light text-dark border font-monospace px-2 py-1 mb-1" id="rubricModalBadge" style="border-radius: 6px; font-size: 0.82rem;">RUBRIC CẤU HÌNH</span>
+                    <h5 class="modal-title fw-bold text-dark" id="rubricModalTitle">Cấu hình thang điểm & mô tả mức độ tiêu chí</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <div id="rubricModalLoading" class="text-center py-5 d-none">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                    <div class="mt-2 text-muted small">Đang tải cấu hình thang điểm tiêu chí...</div>
+                </div>
+
+                <div id="rubricModalContent">
+                    <input type="hidden" id="rubricCriteriaId" />
+
+                    <div class="bg-light p-3 rounded-3 border mb-4" style="border-radius: 10px !important;">
+                        <div class="row align-items-center g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold text-dark mb-1">Chọn thang điểm đánh giá:</label>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <div class="form-check form-check-inline m-0">
+                                        <input class="form-check-input" type="radio" name="scaleMaxRadio" id="scaleRadio5" value="5" checked>
+                                        <label class="form-check-label fw-semibold text-dark" for="scaleRadio5">
+                                            Thang 1–5 <span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="border-radius: 4px; font-size: 0.75rem;">Chuẩn Enterprise</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline m-0">
+                                        <input class="form-check-input" type="radio" name="scaleMaxRadio" id="scaleRadio4" value="4">
+                                        <label class="form-check-label fw-semibold text-dark" for="scaleRadio4">
+                                            Thang 1–4
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline m-0">
+                                        <input class="form-check-input" type="radio" name="scaleMaxRadio" id="scaleRadio3" value="3">
+                                        <label class="form-check-label fw-semibold text-dark" for="scaleRadio3">
+                                            Thang 1–3 <span class="text-muted small">(Rút gọn)</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="form-text text-muted small mt-1">Mặc định thang 1–5 gồm các mức: Kém, Dưới kỳ vọng, Đạt chuẩn, Tốt, Xuất sắc.</div>
+                            </div>
+                            <div class="col-12 col-md-6 text-md-end">
+                                <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" id="btnFillSmartTemplate" style="border-radius: 8px;">
+                                    <i class="bi bi-magic"></i>
+                                    <span>Nạp mô tả gợi ý chuẩn NoveraTech</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-card-text text-success"></i>
+                            <span>Bảng mô tả hành vi chi tiết theo từng mức điểm</span>
+                        </h6>
+                        <span class="badge bg-light text-muted border font-monospace" id="rubricLevelsCountBadge">5 mức điểm</span>
+                    </div>
+
+                    <div id="rubricValidationSummary" class="alert alert-danger d-none py-2 px-3 mb-3 small" style="border-radius: 8px;">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        <span id="rubricValidationSummaryText"></span>
+                    </div>
+
+                    <div class="table-responsive border rounded-3 mb-3" style="border-radius: 8px !important;">
+                        <table class="table table-hover align-top mb-0" id="rubricLevelsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3 text-center" style="width: 80px;">Điểm</th>
+                                    <th style="width: 220px;">Tên mức độ</th>
+                                    <th style="min-width: 380px;">Mô tả hành vi / Tiêu chuẩn quan sát (Bắt buộc)</th>
+                                    <th class="text-center" style="width: 100px;">Bắt buộc</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rubricLevelsBody">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 border d-flex align-items-center gap-2 text-muted small" style="border-radius: 8px !important;">
+                        <i class="bi bi-info-circle text-primary fs-5"></i>
+                        <span>
+                            <strong>Quy tắc nghiệp vụ:</strong> Tất cả các mức điểm trong thang đo được chọn bắt buộc phải có mô tả hành vi tối thiểu 10 ký tự. Hệ thống sẽ chặn lưu nếu người dùng để trống bất kỳ mức bắt buộc nào.
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light py-3 px-4 border-top d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy bỏ</button>
+                <button type="button" class="btn btn-success px-4 d-inline-flex align-items-center gap-2" id="btnSaveRubric" style="border-radius: 8px;">
+                    <span class="spinner-border spinner-border-sm d-none" id="saveRubricSpinner" role="status" aria-hidden="true"></span>
+                    <i class="bi bi-check2-circle" id="saveRubricIcon"></i>
+                    <span>Lưu cấu hình Rubric</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="interviewSheetModal" tabindex="-1" aria-labelledby="interviewSheetModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header border-bottom py-3 px-4" style="background-color: #F8FAFC;">
+                <div>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle font-monospace px-2 py-1 mb-1" style="border-radius: 6px; font-size: 0.82rem;">MẪU PHIẾU PHỎNG VẤN THỰC CHIẾN</span>
+                    <h5 class="modal-title fw-bold text-dark">Phiếu Đánh giá Phỏng vấn & Thang điểm Tham chiếu</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <div class="alert alert-info py-2 px-3 mb-4 small d-flex align-items-center gap-2" style="border-radius: 8px;">
+                    <i class="bi bi-info-circle-fill fs-5"></i>
+                    <div>
+                        <strong>Giao diện người phỏng vấn:</strong> Bấm chọn mức điểm trên thang đo (1–5). Mô tả hành vi chuẩn của mức điểm tương ứng sẽ xuất hiện để đối chiếu ngay lập tức, đảm bảo chấm điểm thống nhất và minh bạch.
+                    </div>
+                </div>
+
+                <div id="interviewSheetContent" class="d-flex flex-column gap-3">
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light py-2 px-4 border-top d-flex justify-content-between align-items-center">
+                <div class="small text-muted">
+                    Hội đồng đánh giá: <span class="fw-semibold text-dark">NoveraTech Interview Panel</span>
+                </div>
+                <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal" style="border-radius: 8px;">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .rubric-score-badge {
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-family: var(--bs-font-monospace);
+        border-radius: 8px;
+        font-size: 1rem;
+    }
+    .score-badge-1 { background-color: #FEE2E2; color: #DC2626; border: 1px solid #FCA5A5; }
+    .score-badge-2 { background-color: #FFEDD5; color: #EA580C; border: 1px solid #FDBA74; }
+    .score-badge-3 { background-color: #FEF3C7; color: #D97706; border: 1px solid #FCD34D; }
+    .score-badge-4 { background-color: #E0E7FF; color: #4F46E5; border: 1px solid #C7D2FE; }
+    .score-badge-5 { background-color: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
+    
+    .score-btn-selector {
+        min-width: 44px;
+        height: 40px;
+        font-weight: 600;
+        border-radius: 8px !important;
+        font-family: var(--bs-font-monospace);
+    }
+    .score-btn-selector.active {
+        background-color: #059669 !important;
+        border-color: #059669 !important;
+        color: #FFFFFF !important;
+    }
+    .behavioral-card-active {
+        background-color: #F8FAFC;
+        border-left: 4px solid #059669 !important;
+    }
+</style>
+
+@section Scripts {
+    <script src="~/js/criteria-rubric.js" asp-append-version="true"></script>
+}
