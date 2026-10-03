@@ -33,6 +33,7 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IJobService, JobService>();
 builder.Services.AddScoped<ICompetencyFrameworkService, CompetencyFrameworkService>();
 builder.Services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
+builder.Services.AddScoped<IRequisitionService, RequisitionService>();
 
 
 // Cấu hình thời gian Session (Idle timeout)
