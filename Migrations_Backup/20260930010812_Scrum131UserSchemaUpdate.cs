@@ -29,29 +29,12 @@ namespace Ats.Web.Migrations
                 type: "uuid",
                 nullable: true);
 
-            migrationBuilder.CreateTable(
-                name: "roles",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    name = table.Column<string>(type: "text", nullable: false),
-                    description = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_roles", x => x.id);
-                });
+
 
             migrationBuilder.CreateIndex(
                 name: "ix_users_department",
                 table: "users",
                 column: "department");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_users_email",
-                table: "users",
-                column: "email",
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_users_full_name",
@@ -79,15 +62,10 @@ namespace Ats.Web.Migrations
                 name: "fk_users_roles_role_id",
                 table: "users");
 
-            migrationBuilder.DropTable(
-                name: "roles");
+
 
             migrationBuilder.DropIndex(
                 name: "ix_users_department",
-                table: "users");
-
-            migrationBuilder.DropIndex(
-                name: "ix_users_email",
                 table: "users");
 
             migrationBuilder.DropIndex(
