@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function () {
             configureModalInstance.show();
         }
 
-        fetch(`/api/evaluation-criteria/${criteriaId}/rubric`)
+        fetch(`/evaluation-criteria/api/${criteriaId}/rubric`)
             .then(function (res) {
                 if (!res.ok) throw new Error('Không thể tải dữ liệu tiêu chí.');
                 return res.json();
@@ -352,11 +352,17 @@ document.addEventListener('DOMContentLoaded', function () {
         if (saveRubricSpinner) saveRubricSpinner.classList.remove('d-none');
         if (saveRubricIcon) saveRubricIcon.classList.add('d-none');
 
+        const requestHeaders = {
+            'Content-Type': 'application/json'
+        };
+        const antiForgeryInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        if (antiForgeryInput && antiForgeryInput.value) {
+            requestHeaders['RequestVerificationToken'] = antiForgeryInput.value;
+        }
+
         fetch('/evaluation-criteria/save-rubric', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: requestHeaders,
             body: JSON.stringify(payload)
         })
             .then(function (res) {
