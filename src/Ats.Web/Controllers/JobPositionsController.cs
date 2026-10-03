@@ -72,8 +72,20 @@ public class JobPositionsController(
         [FromQuery] string? keyword,
         [FromQuery] string? level,
         [FromQuery] Guid? departmentId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
         CancellationToken cancellationToken = default)
     {
+        if (page < 1)
+        {
+            page = 1;
+        }
+
+        if (pageSize <= 0 || pageSize > 100)
+        {
+            pageSize = 10;
+        }
+
         var canViewSalary = CanUserViewSalary(User);
         var canManage = CanUserManage(User);
 
@@ -90,7 +102,8 @@ public class JobPositionsController(
 
         if (!string.IsNullOrWhiteSpace(level))
         {
-            query = query.Where(p => p.JobLevel == level);
+            var levelNormalized = level.Trim().ToUpperInvariant();
+            query = query.Where(p => p.JobLevel.ToUpper() == levelNormalized);
         }
 
         if (departmentId.HasValue && departmentId.Value != Guid.Empty)
@@ -98,8 +111,13 @@ public class JobPositionsController(
             query = query.Where(p => p.DepartmentId == departmentId.Value);
         }
 
+        var totalRecords = await query.CountAsync(cancellationToken);
+
         var positions = await query
             .OrderByDescending(p => p.CreatedAt)
+            .ThenBy(p => p.Code)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(p => new JobPositionItemViewModel
             {
                 Id = p.Id,
@@ -129,7 +147,9 @@ public class JobPositionsController(
             Keyword = keyword,
             LevelFilter = level,
             DepartmentFilter = departmentId,
-            TotalRecords = positions.Count,
+            TotalRecords = totalRecords,
+            CurrentPage = page,
+            PageSize = pageSize,
             CanViewSalary = canViewSalary,
             CanManage = canManage
         };
