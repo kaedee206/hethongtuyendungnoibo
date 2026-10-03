@@ -349,3 +349,31 @@ footer {
   animation: none !important;
   box-shadow: none !important;
 }
+
+.form-control.is-invalid,
+.form-select.is-invalid {
+  border-color: var(--status-error) !important;
+  background-image: none !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
+.form-control.is-valid,
+.form-select.is-valid {
+  border-color: var(--status-success) !important;
+  background-image: none !important;
+}
+
+.invalid-feedback {
+  color: var(--status-error);
+  font-size: 0.8125rem;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}

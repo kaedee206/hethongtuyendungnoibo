@@ -1,0 +1,280 @@
+@model Ats.Web.Models.ViewModels.Requisitions.RequisitionCreateViewModel
+@using Ats.Web.Models.Enums
+
+<form asp-controller="Requisitions" asp-action="Create" method="post" class="requisition-entry-form" novalidate id="requisitionMainForm">
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 mb-3 small" style="border-radius: 8px;">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+        <span>Vui lòng kiểm tra lại các thông tin khai báo bên dưới.</span>
+    </div>
+
+    <!-- 1. Chức danh cần tuyển dụng -->
+    <div class="mb-3">
+        <label asp-for="JobPositionId" class="form-label fw-bold text-dark small mb-1">
+            Chức danh tuyển dụng <span class="text-danger">*</span>
+        </label>
+        <div class="input-group">
+            <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 8px 0 0 8px;">
+                <i class="bi bi-briefcase"></i>
+            </span>
+            <select asp-for="JobPositionId" class="form-select req-position-select border-start-0" style="border-radius: 0 8px 8px 0;">
+                <option value="">-- Chọn chức danh từ danh mục chuẩn hóa --</option>
+                @if (Model.JobPositionOptions != null)
+                {
+                    foreach (var pos in Model.JobPositionOptions)
+                    {
+                        var salaryRangeText = (pos.MinSalary.HasValue && pos.MaxSalary.HasValue)
+                            ? $"({pos.MinSalary.Value:N0} - {pos.MaxSalary.Value:N0} đ)"
+                            : "";
+                        <option value="@pos.Id" 
+                                data-min-salary="@(pos.MinSalary ?? 0)" 
+                                data-max-salary="@(pos.MaxSalary ?? 0)"
+                                data-dept-id="@pos.DepartmentId"
+                                data-level="@pos.JobLevel"
+                                selected="@(Model.JobPositionId == pos.Id)">
+                            @pos.Title (@pos.Code) · @pos.JobLevel @salaryRangeText
+                        </option>
+                    }
+                }
+            </select>
+        </div>
+        <span asp-validation-for="JobPositionId" class="text-danger small mt-1 d-block"></span>
+
+        <!-- Khung gợi ý dải lương theo chức danh -->
+        <div class="req-benchmark-container d-none mt-2 p-2 px-3 bg-success-subtle border border-success-subtle rounded-3 small d-flex justify-content-between align-items-center" style="border-radius: 8px !important;">
+            <div class="text-success-emphasis">
+                <i class="bi bi-info-circle-fill me-1"></i>
+                <span>Dải lương chuẩn chức danh: <strong class="font-monospace req-benchmark-text"></strong></span>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 btn-apply-benchmark" style="font-size: 0.75rem; border-radius: 6px;">
+                Áp dụng dải chuẩn
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. Phòng ban phụ trách tuyển dụng -->
+    <div class="mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <label asp-for="DepartmentId" class="form-label fw-bold text-dark small mb-0">
+                Phòng ban phụ trách <span class="text-danger">*</span>
+            </label>
+            @if (!string.IsNullOrWhiteSpace(Model.CurrentUserDepartmentName))
+            {
+                <span class="badge bg-light text-secondary border font-monospace" style="font-size: 0.75rem; border-radius: 6px;">
+                    Phòng ban của bạn: @Model.CurrentUserDepartmentName
+                </span>
+            }
+        </div>
+        <div class="input-group">
+            <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 8px 0 0 8px;">
+                <i class="bi bi-building"></i>
+            </span>
+            <select asp-for="DepartmentId" class="form-select req-dept-select border-start-0" style="border-radius: 0 8px 8px 0;">
+                <option value="">-- Chọn phòng ban tiếp nhận --</option>
+                @if (Model.DepartmentOptions != null)
+                {
+                    foreach (var dept in Model.DepartmentOptions)
+                    {
+                        <option value="@dept.Id" selected="@(Model.DepartmentId == dept.Id)">
+                            @dept.Name (@dept.Code) @(dept.IsUserDepartment ? "★ (Phòng ban của bạn)" : "")
+                        </option>
+                    }
+                }
+            </select>
+        </div>
+        <span asp-validation-for="DepartmentId" class="text-danger small mt-1 d-block"></span>
+        @if (!Model.CanChangeDepartment)
+        {
+            <div class="form-text text-muted small mt-1">
+                <i class="bi bi-shield-check text-success me-1"></i>Tự động gán phòng ban trực thuộc mà bạn đang phụ trách.
+            </div>
+        }
+        else
+        {
+            <div class="form-text text-muted small mt-1">
+                Bạn đang quản lý nhiều bộ phận hoặc có quyền quản trị, có thể linh hoạt chọn phòng ban cần bổ sung nhân sự.
+            </div>
+        }
+    </div>
+
+    <!-- 3. Số lượng cần tuyển & Ngày cần người -->
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-md-5">
+            <label asp-for="Quantity" class="form-label fw-bold text-dark small mb-1">
+                Số lượng tuyển <span class="text-danger">*</span>
+            </label>
+            <div class="input-group">
+                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 8px 0 0 8px;">
+                    <i class="bi bi-people"></i>
+                </span>
+                <input asp-for="Quantity" 
+                       type="number" 
+                       class="form-control font-monospace fw-bold text-dark req-quantity-input border-start-0" 
+                       min="1" 
+                       max="100" 
+                       placeholder="VD: 1" 
+                       style="border-radius: 0 8px 8px 0;" />
+            </div>
+            <span asp-validation-for="Quantity" class="text-danger small mt-1 d-block"></span>
+            <div class="form-text text-muted small mt-1">Số nguyên dương (1 - 100 người)</div>
+        </div>
+
+        <div class="col-12 col-md-7">
+            <label asp-for="TargetHireDate" class="form-label fw-bold text-dark small mb-1">
+                Ngày cần nhân sự có mặt <span class="text-danger">*</span>
+            </label>
+            <div class="input-group">
+                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 8px 0 0 8px;">
+                    <i class="bi bi-calendar3"></i>
+                </span>
+                <input asp-for="TargetHireDate" 
+                       type="date" 
+                       class="form-control font-monospace req-date-input border-start-0" 
+                       style="border-radius: 0 8px 8px 0;" />
+            </div>
+            <span asp-validation-for="TargetHireDate" class="text-danger small mt-1 d-block req-date-error"></span>
+            <div class="form-text text-muted small mt-1">Thời gian dự kiến để HR chuẩn bị nguồn và tổ chức phỏng vấn</div>
+        </div>
+    </div>
+
+    <!-- 4. Lý do tuyển dụng (Segmented Radio) -->
+    <div class="mb-3">
+        <label class="form-label fw-bold text-dark small mb-2">
+            Lý do tuyển dụng <span class="text-danger">*</span>
+        </label>
+        <div class="row g-2">
+            <div class="col-12 col-sm-6">
+                <label class="card h-100 p-3 border cursor-pointer headcount-radio-card" style="border-radius: 8px; cursor: pointer;">
+                    <div class="d-flex align-items-start gap-2">
+                        <input type="radio" 
+                               asp-for="HeadcountType" 
+                               value="@HeadcountType.NEW_HEADCOUNT" 
+                               class="form-check-input mt-1" 
+                               checked="@(Model.HeadcountType == HeadcountType.NEW_HEADCOUNT)" />
+                        <div>
+                            <strong class="d-flex align-items-center gap-1 text-dark fs-6">
+                                <i class="bi bi-person-plus text-success"></i>
+                                <span>Tăng mới headcount</span>
+                            </strong>
+                            <p class="text-secondary small mb-0 mt-1">
+                                Mở rộng quy mô đội ngũ, dự án mới hoặc khối lượng công việc phát sinh thêm.
+                            </p>
+                        </div>
+                    </div>
+                </label>
+            </div>
+            <div class="col-12 col-sm-6">
+                <label class="card h-100 p-3 border cursor-pointer headcount-radio-card" style="border-radius: 8px; cursor: pointer;">
+                    <div class="d-flex align-items-start gap-2">
+                        <input type="radio" 
+                               asp-for="HeadcountType" 
+                               value="@HeadcountType.REPLACEMENT" 
+                               class="form-check-input mt-1" 
+                               checked="@(Model.HeadcountType == HeadcountType.REPLACEMENT)" />
+                        <div>
+                            <strong class="d-flex align-items-center gap-1 text-dark fs-6">
+                                <i class="bi bi-arrow-repeat text-warning"></i>
+                                <span>Thay thế nhân sự nghỉ việc</span>
+                            </strong>
+                            <p class="text-secondary small mb-0 mt-1">
+                                Bổ sung nhân sự thay thế cho vị trí nhân viên đã xin nghỉ hoặc chuyển bộ phận.
+                            </p>
+                        </div>
+                    </div>
+                </label>
+            </div>
+        </div>
+        <span asp-validation-for="HeadcountType" class="text-danger small mt-1 d-block"></span>
+    </div>
+
+    <!-- Chi tiết lý do tuyển dụng -->
+    <div class="mb-3">
+        <label asp-for="ReasonDetail" class="form-label fw-bold text-dark small mb-1">
+            Ghi chú chi tiết mục tiêu tuyển dụng
+        </label>
+        <textarea asp-for="ReasonDetail" 
+                  class="form-control" 
+                  rows="2" 
+                  placeholder="Ghi rõ tên nhân sự cần thay thế, tên dự án phát sinh hoặc yêu cầu trọng tâm..." 
+                  style="border-radius: 8px;"></textarea>
+        <span asp-validation-for="ReasonDetail" class="text-danger small mt-1 d-block"></span>
+    </div>
+
+    <!-- 5. Dải lương đề xuất (Lương tối thiểu & Lương tối đa) -->
+    <div class="p-3 bg-light rounded-3 border mb-4" style="border-radius: 10px !important;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label fw-bold text-dark small mb-0">
+                Dải lương đề xuất (VND) <span class="text-danger">*</span>
+            </label>
+            <span class="badge bg-white text-secondary border font-monospace" style="border-radius: 6px; font-size: 0.75rem;">
+                Đơn vị: VNĐ / tháng
+            </span>
+        </div>
+
+        <div class="row g-2">
+            <div class="col-12 col-sm-6">
+                <label asp-for="MinSalary" class="form-label text-secondary small mb-1">Lương tối thiểu (Min)</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white text-muted border-end-0" style="border-radius: 8px 0 0 8px;">
+                        <i class="bi bi-cash-stack text-success"></i>
+                    </span>
+                    <input asp-for="MinSalary" 
+                           type="number" 
+                           step="1000000"
+                           class="form-control font-monospace req-min-salary border-start-0" 
+                           placeholder="VD: 20000000" 
+                           style="border-radius: 0 8px 8px 0;" />
+                </div>
+                <span class="text-success small fw-medium mt-1 d-block req-min-salary-hint d-none font-monospace"></span>
+                <span asp-validation-for="MinSalary" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <div class="col-12 col-sm-6">
+                <label asp-for="MaxSalary" class="form-label text-secondary small mb-1">Lương tối đa (Max)</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white text-muted border-end-0" style="border-radius: 8px 0 0 8px;">
+                        <i class="bi bi-cash-stack text-success"></i>
+                    </span>
+                    <input asp-for="MaxSalary" 
+                           type="number" 
+                           step="1000000"
+                           class="form-control font-monospace req-max-salary border-start-0" 
+                           placeholder="VD: 35000000" 
+                           style="border-radius: 0 8px 8px 0;" />
+                </div>
+                <span class="text-success small fw-medium mt-1 d-block req-max-salary-hint d-none font-monospace"></span>
+                <span asp-validation-for="MaxSalary" class="text-danger small mt-1 d-block"></span>
+            </div>
+        </div>
+
+        <span class="text-danger small mt-2 d-none d-block req-salary-error"></span>
+
+        <div class="form-text text-muted small mt-2">
+            <i class="bi bi-info-circle text-primary me-1"></i>
+            Dải lương đề xuất là căn cứ để Ban Giám đốc & Phòng Nhân sự phê duyệt ngân sách tuyển dụng cho quý/năm.
+        </div>
+    </div>
+
+    <!-- Nút Thao tác -->
+    <div class="d-flex justify-content-end align-items-center gap-2 pt-2 border-top">
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary px-3" style="border-radius: 8px;">
+            Quay lại
+        </a>
+        <button type="submit" class="btn btn-success px-4 d-inline-flex align-items-center gap-2 fw-semibold" style="border-radius: 8px;" id="btnSubmitRequisition">
+            <span class="spinner-border spinner-border-sm d-none btn-spinner" role="status" aria-hidden="true"></span>
+            <i class="bi bi-send-check"></i>
+            <span>Gửi đề xuất tuyển dụng</span>
+        </button>
+    </div>
+</form>
+
+<style>
+    .headcount-radio-card:has(input[type="radio"]:checked) {
+        border-color: #059669 !important;
+        background-color: #ECFDF5 !important;
+    }
+    .headcount-radio-card:hover {
+        background-color: #F8FAFC;
+    }
+</style>

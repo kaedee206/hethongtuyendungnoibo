@@ -79,6 +79,30 @@
                                 </li>
                             }
 
+                            @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" asp-controller="JobPositions" asp-action="Index">
+                                        <i class="bi bi-person-badge-fill me-1"></i> Chức danh
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" asp-controller="CompetencyFrameworks" asp-action="Index">
+                                        <i class="bi bi-diagram-3-fill me-1"></i> Khung năng lực
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" asp-controller="EvaluationCriteria" asp-action="Index">
+                                        <i class="bi bi-ui-checks-grid me-1"></i> Tiêu chí & Thang điểm
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" asp-controller="Requisitions" asp-action="Create">
+                                        <i class="bi bi-file-earmark-plus me-1"></i> Yêu cầu tuyển dụng
+                                    </a>
+                                </li>
+                            }
+
                             @* Menu dành cho HR Manager & Recruiter *@
                             @if (User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
                             {
@@ -93,7 +117,7 @@
                             @if (User.IsInRole(UserRoles.HiringManager))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#createRequisitionModal">
+                                    <a class="nav-link ats-nav-link" asp-controller="Requisitions" asp-action="Create">
                                         <i class="bi bi-file-earmark-plus me-1"></i> + Đề xuất nhân sự
                                     </a>
                                 </li>
@@ -102,6 +126,11 @@
                             @* Menu dành cho Interviewer *@
                             @if (User.IsInRole(UserRoles.Interviewer))
                             {
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" asp-controller="EvaluationCriteria" asp-action="Index">
+                                        <i class="bi bi-ui-checks-grid me-1"></i> Tiêu chí & Thang điểm
+                                    </a>
+                                </li>
                                 <li class="nav-item">
                                     <a class="nav-link ats-nav-link" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#interviewEvaluationModal">
                                         <i class="bi bi-clipboard2-check me-1"></i> Đánh giá phỏng vấn
