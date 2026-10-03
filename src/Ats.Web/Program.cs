@@ -32,6 +32,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IJobService, JobService>();
 builder.Services.AddScoped<ICompetencyFrameworkService, CompetencyFrameworkService>();
+builder.Services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
 
 
 // Cấu hình thời gian Session (Idle timeout)
