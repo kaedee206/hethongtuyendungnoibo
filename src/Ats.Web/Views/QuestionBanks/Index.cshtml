@@ -1,0 +1,359 @@
+@{
+    ViewData["Title"] = "Quản lý ngân hàng câu hỏi";
+}
+
+<div class="container-fluid px-3 px-md-4 py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1" style="color: #0F172A;">Quản lý ngân hàng câu hỏi phỏng vấn</h1>
+            <p class="text-muted mb-0" style="font-size: 0.95rem;">Theo khung năng lực - Hỗ trợ người phỏng vấn đánh giá ứng viên đúng trọng tâm</p>
+        </div>
+        <div class="mt-3 mt-md-0">
+            <button class="btn text-white fw-semibold shadow-sm" style="background-color: #059669; border-radius: 8px;" onclick="openAddModal()">
+                <i class="bi bi-plus-lg me-1"></i> Thêm câu hỏi mới
+            </button>
+        </div>
+    </div>
+
+    <!-- Bộ lọc -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+        <div class="card-body p-4">
+            <form id="filterForm" class="row g-3" onsubmit="event.preventDefault(); applyFilter();">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-secondary small">Tìm kiếm</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 bg-light" id="filterKeyword" placeholder="Nhập từ khóa câu hỏi...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold text-secondary small">Khung năng lực</label>
+                    <select class="form-select bg-light" id="filterCompetency" onchange="applyFilter()">
+                        <option value="">Tất cả khung năng lực</option>
+                        <option value="Kỹ năng chuyên môn">Kỹ năng chuyên môn</option>
+                        <option value="Giải quyết vấn đề">Giải quyết vấn đề</option>
+                        <option value="Làm việc nhóm">Làm việc nhóm</option>
+                        <option value="Giao tiếp">Giao tiếp</option>
+                        <option value="Lãnh đạo">Lãnh đạo</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold text-secondary small">Mức độ khó</label>
+                    <select class="form-select bg-light" id="filterDifficulty" onchange="applyFilter()">
+                        <option value="">Tất cả mức độ</option>
+                        <option value="Cơ bản">Cơ bản</option>
+                        <option value="Trung bình">Trung bình</option>
+                        <option value="Nâng cao">Nâng cao</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" class="btn btn-light border w-100 fw-medium" onclick="resetFilter()">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Đặt lại
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Danh sách câu hỏi -->
+    <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead style="background-color: #F8FAFC;">
+                        <tr>
+                            <th class="py-3 px-4 text-secondary fw-semibold" style="width: 50px;">STT</th>
+                            <th class="py-3 px-4 text-secondary fw-semibold" style="width: 40%;">Nội dung câu hỏi</th>
+                            <th class="py-3 px-4 text-secondary fw-semibold">Khung năng lực</th>
+                            <th class="py-3 px-4 text-secondary fw-semibold text-center">Mức độ khó</th>
+                            <th class="py-3 px-4 text-secondary fw-semibold text-end">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="questionTableBody">
+                        <!-- Render via JS -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="emptyState" class="text-center py-5 d-none">
+                <div class="mb-3">
+                    <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                </div>
+                <h5 class="fw-semibold text-secondary">Không tìm thấy câu hỏi nào</h5>
+                <p class="text-muted">Thử thay đổi điều kiện lọc hoặc thêm mới câu hỏi.</p>
+            </div>
+        </div>
+        <div class="card-footer bg-white py-3 px-4 border-top">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="text-muted small" id="totalCount">Hiển thị 0 câu hỏi</span>
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item disabled"><a class="page-link" href="#">Trước</a></li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item disabled"><a class="page-link" href="#">Sau</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm/Sửa Câu Hỏi -->
+<div class="modal fade" id="questionModal" tabindex="-1" aria-labelledby="questionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="questionModalLabel" style="color: #0F172A;">Thêm câu hỏi mới</h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="questionForm" onsubmit="event.preventDefault(); saveQuestion();">
+                    <input type="hidden" id="questionId" />
+                    
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Khung năng lực <span class="text-danger">*</span></label>
+                            <select class="form-select bg-light" id="qCompetency" required>
+                                <option value="" disabled selected>-- Chọn khung năng lực --</option>
+                                <option value="Kỹ năng chuyên môn">Kỹ năng chuyên môn</option>
+                                <option value="Giải quyết vấn đề">Giải quyết vấn đề</option>
+                                <option value="Làm việc nhóm">Làm việc nhóm</option>
+                                <option value="Giao tiếp">Giao tiếp</option>
+                                <option value="Lãnh đạo">Lãnh đạo</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Mức độ khó <span class="text-danger">*</span></label>
+                            <select class="form-select bg-light" id="qDifficulty" required>
+                                <option value="" disabled selected>-- Chọn mức độ khó --</option>
+                                <option value="Cơ bản">Cơ bản</option>
+                                <option value="Trung bình">Trung bình</option>
+                                <option value="Nâng cao">Nâng cao</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-secondary">Nội dung câu hỏi <span class="text-danger">*</span></label>
+                        <textarea class="form-control bg-light" id="qContent" rows="3" placeholder="Nhập câu hỏi để đánh giá năng lực ứng viên..." required></textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-secondary">Gợi ý trả lời / Tiêu chí đánh giá</label>
+                        <textarea class="form-control bg-light" id="qSuggestion" rows="3" placeholder="Hướng dẫn người phỏng vấn các điểm cần lưu ý khi ứng viên trả lời..."></textarea>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <button type="button" class="btn btn-light fw-medium px-4" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn text-white fw-semibold px-4" style="background-color: #059669;">Lưu câu hỏi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xác nhận xóa -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-body text-center p-4">
+                <div class="mb-3">
+                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                </div>
+                <h5 class="fw-bold mb-3">Xác nhận xóa</h5>
+                <p class="text-muted mb-4">Bạn có chắc chắn muốn xóa câu hỏi này không? Hành động này không thể hoàn tác.</p>
+                <input type="hidden" id="deleteQuestionId" />
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-danger fw-semibold" onclick="confirmDelete()">Xóa câu hỏi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
+    <div id="actionToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="toastMessage">
+                Thành công!
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Mock dữ liệu ban đầu
+        let mockQuestions = [
+            { id: 1, content: "Bạn hãy mô tả một dự án gần đây nhất bạn tham gia. Vai trò của bạn là gì và bạn đã sử dụng công nghệ nào?", competency: "Kỹ năng chuyên môn", difficulty: "Cơ bản", suggestion: "Đánh giá khả năng nắm bắt dự án, hiểu biết về stack công nghệ." },
+            { id: 2, content: "Hãy kể về một lần bạn gặp phải một bug khó trên production. Bạn đã phân tích và giải quyết nó như thế nào?", competency: "Giải quyết vấn đề", difficulty: "Trung bình", suggestion: "Ứng viên cần nêu rõ các bước debug, tìm root cause, cách fix tạm thời và fix triệt để." },
+            { id: 3, content: "Làm thế nào để bạn đảm bảo hệ thống có thể scale khi lượng truy cập tăng gấp 10 lần trong tương lai gần?", competency: "Kỹ năng chuyên môn", difficulty: "Nâng cao", suggestion: "Kiến thức về caching, load balancing, database indexing, microservices..." },
+            { id: 4, content: "Bạn thường làm gì khi có bất đồng quan điểm với thành viên khác trong team về cách thiết kế hệ thống?", competency: "Làm việc nhóm", difficulty: "Trung bình", suggestion: "Đánh giá thái độ lắng nghe, cách đưa ra lập luận dựa trên data/fact thay vì cảm xúc." },
+            { id: 5, content: "Hãy trình bày cách bạn giải thích một khái niệm kỹ thuật phức tạp (như API) cho một người không có chuyên môn (ví dụ: khách hàng)?", competency: "Giao tiếp", difficulty: "Cơ bản", suggestion: "Đánh giá khả năng sử dụng ngôn từ dễ hiểu, dùng ví dụ ẩn dụ thực tế." }
+        ];
+
+        let currentIdCounter = 6;
+        let questionModal = null;
+        let deleteModal = null;
+        let toastObj = null;
+
+        $(document).ready(function () {
+            questionModal = new bootstrap.Modal(document.getElementById('questionModal'));
+            deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            toastObj = new bootstrap.Toast(document.getElementById('actionToast'));
+            
+            renderTable(mockQuestions);
+        });
+
+        function showToast(message) {
+            document.getElementById('toastMessage').innerText = message;
+            toastObj.show();
+        }
+
+        function getDifficultyBadge(level) {
+            switch(level) {
+                case 'Cơ bản': return '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1" style="border-radius: 6px;">Cơ bản</span>';
+                case 'Trung bình': return '<span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1" style="border-radius: 6px;">Trung bình</span>';
+                case 'Nâng cao': return '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1" style="border-radius: 6px;">Nâng cao</span>';
+                default: return '<span class="badge bg-secondary">' + level + '</span>';
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('questionTableBody');
+            const emptyState = document.getElementById('emptyState');
+            const totalCount = document.getElementById('totalCount');
+            
+            tbody.innerHTML = '';
+            
+            if (data.length === 0) {
+                emptyState.classList.remove('d-none');
+                totalCount.innerText = 'Hiển thị 0 câu hỏi';
+                return;
+            }
+            
+            emptyState.classList.add('d-none');
+            totalCount.innerText = `Hiển thị ${data.length} câu hỏi`;
+            
+            data.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-4 fw-medium text-secondary">${index + 1}</td>
+                    <td class="px-4">
+                        <div class="fw-semibold text-dark mb-1" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${item.content}</div>
+                        <div class="text-muted small text-truncate" style="max-width: 400px;" title="${item.suggestion || 'Không có gợi ý'}">
+                            <i class="bi bi-lightbulb text-warning me-1"></i> ${item.suggestion || 'Không có gợi ý'}
+                        </div>
+                    </td>
+                    <td class="px-4">
+                        <span class="badge bg-light text-dark border px-2 py-1" style="border-radius: 6px;">
+                            ${item.competency}
+                        </span>
+                    </td>
+                    <td class="px-4 text-center">
+                        ${getDifficultyBadge(item.difficulty)}
+                    </td>
+                    <td class="px-4 text-end">
+                        <button class="btn btn-sm btn-light border shadow-sm me-1" onclick="openEditModal(${item.id})" title="Chỉnh sửa">
+                            <i class="bi bi-pencil-square text-primary"></i>
+                        </button>
+                        <button class="btn btn-sm btn-light border shadow-sm" onclick="promptDelete(${item.id})" title="Xóa">
+                            <i class="bi bi-trash text-danger"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function applyFilter() {
+            const keyword = document.getElementById('filterKeyword').value.toLowerCase();
+            const competency = document.getElementById('filterCompetency').value;
+            const difficulty = document.getElementById('filterDifficulty').value;
+
+            const filtered = mockQuestions.filter(q => {
+                const matchKeyword = q.content.toLowerCase().includes(keyword) || (q.suggestion && q.suggestion.toLowerCase().includes(keyword));
+                const matchCompetency = competency === '' || q.competency === competency;
+                const matchDifficulty = difficulty === '' || q.difficulty === difficulty;
+                
+                return matchKeyword && matchCompetency && matchDifficulty;
+            });
+
+            renderTable(filtered);
+        }
+
+        function resetFilter() {
+            document.getElementById('filterForm').reset();
+            renderTable(mockQuestions);
+        }
+
+        function openAddModal() {
+            document.getElementById('questionForm').reset();
+            document.getElementById('questionId').value = '';
+            document.getElementById('questionModalLabel').innerText = 'Thêm câu hỏi mới';
+            questionModal.show();
+        }
+
+        function openEditModal(id) {
+            const question = mockQuestions.find(q => q.id === id);
+            if (!question) return;
+
+            document.getElementById('questionId').value = question.id;
+            document.getElementById('qCompetency').value = question.competency;
+            document.getElementById('qDifficulty').value = question.difficulty;
+            document.getElementById('qContent').value = question.content;
+            document.getElementById('qSuggestion').value = question.suggestion || '';
+            
+            document.getElementById('questionModalLabel').innerText = 'Sửa câu hỏi phỏng vấn';
+            questionModal.show();
+        }
+
+        function saveQuestion() {
+            const id = document.getElementById('questionId').value;
+            const competency = document.getElementById('qCompetency').value;
+            const difficulty = document.getElementById('qDifficulty').value;
+            const content = document.getElementById('qContent').value;
+            const suggestion = document.getElementById('qSuggestion').value;
+
+            if (id) {
+                // Edit
+                const index = mockQuestions.findIndex(q => q.id === parseInt(id));
+                if (index !== -1) {
+                    mockQuestions[index] = { ...mockQuestions[index], competency, difficulty, content, suggestion };
+                }
+            } else {
+                // Add
+                mockQuestions.unshift({
+                    id: currentIdCounter++,
+                    competency,
+                    difficulty,
+                    content,
+                    suggestion
+                });
+            }
+
+            questionModal.hide();
+            applyFilter();
+            
+            showToast(id ? 'Cập nhật câu hỏi thành công!' : 'Thêm câu hỏi thành công!');
+        }
+
+        function promptDelete(id) {
+            document.getElementById('deleteQuestionId').value = id;
+            deleteModal.show();
+        }
+
+        function confirmDelete() {
+            const id = parseInt(document.getElementById('deleteQuestionId').value);
+            mockQuestions = mockQuestions.filter(q => q.id !== id);
+            
+            deleteModal.hide();
+            applyFilter();
+            showToast('Đã xóa câu hỏi thành công!');
+        }
+    </script>
+}
