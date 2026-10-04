@@ -1,4 +1,4 @@
-﻿using Ats.Web.Models.Enums;
+using Ats.Web.Models.Enums;
 
 namespace Ats.Web.Models.Entities;
 
@@ -21,6 +21,16 @@ public class JobRequisition : BaseEntity
     
     public DateOnly? TargetHireDate { get; set; }
     public RequisitionStatus Status { get; set; } = RequisitionStatus.DRAFT;
+
+    /// <summary>
+    /// Mô tả công việc chi tiết (trách nhiệm, nhiệm vụ chính, KPIs) định dạng HTML phong phú.
+    /// </summary>
+    public string? JobDescription { get; set; }
+
+    /// <summary>
+    /// Yêu cầu ứng viên chi tiết (học vấn, kinh nghiệm, kỹ năng, chứng chỉ) định dạng HTML phong phú.
+    /// </summary>
+    public string? Requirements { get; set; }
 
     public JobPosition JobPosition { get; set; } = null!;
     public Department Department { get; set; } = null!;

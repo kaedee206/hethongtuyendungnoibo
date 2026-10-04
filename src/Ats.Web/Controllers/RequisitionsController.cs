@@ -114,7 +114,8 @@ public class RequisitionsController(
         {
             success = true,
             message,
-            requisitionId
+            requisitionId,
+            isDraft = model.IsDraft
         });
     }
 

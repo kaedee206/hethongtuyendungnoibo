@@ -184,7 +184,21 @@ public class RequisitionService(
             return (false, "Ngày cần nhân sự có mặt phải từ ngày hôm nay trở đi.", null);
         }
 
-        // 6. Sinh mã yêu cầu tuyển dụng chuẩn REQ-yyyyMMdd-XXXX
+        // 6. Kiểm tra bắt buộc mô tả công việc và yêu cầu ứng viên khi gửi duyệt
+        if (!model.IsDraft)
+        {
+            if (string.IsNullOrWhiteSpace(StripHtml(model.JobDescription)))
+            {
+                return (false, "Vui lòng nhập mô tả công việc (trách nhiệm, nhiệm vụ chính, KPI...) khi gửi duyệt.", null);
+            }
+
+            if (string.IsNullOrWhiteSpace(StripHtml(model.Requirements)))
+            {
+                return (false, "Vui lòng nhập yêu cầu ứng viên (trình độ học vấn, kinh nghiệm, kỹ năng, chứng chỉ...) khi gửi duyệt.", null);
+            }
+        }
+
+        // 7. Sinh mã yêu cầu tuyển dụng chuẩn REQ-yyyyMMdd-XXXX
         var datePrefix = DateTime.UtcNow.ToString("yyyyMMdd");
         var randomSuffix = Guid.NewGuid().ToString("N")[..4].ToUpperInvariant();
         var requisitionCode = $"REQ-{datePrefix}-{randomSuffix}";
@@ -193,6 +207,8 @@ public class RequisitionService(
         var reasonText = string.IsNullOrWhiteSpace(model.ReasonDetail)
             ? (model.HeadcountType == HeadcountType.REPLACEMENT ? "Thay thế nhân sự nghỉ việc" : "Tăng mới headcount mở rộng dự án")
             : model.ReasonDetail.Trim();
+
+        var initialStatus = model.IsDraft ? RequisitionStatus.DRAFT : RequisitionStatus.PENDING_APPROVAL;
 
         var requisition = new JobRequisition
         {
@@ -208,7 +224,9 @@ public class RequisitionService(
             MaxSalary = model.MaxSalary.Value,
             Currency = "VND",
             TargetHireDate = model.TargetHireDate,
-            Status = RequisitionStatus.PENDING_APPROVAL,
+            JobDescription = string.IsNullOrWhiteSpace(model.JobDescription) ? null : model.JobDescription.Trim(),
+            Requirements = string.IsNullOrWhiteSpace(model.Requirements) ? null : model.Requirements.Trim(),
+            Status = initialStatus,
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         };
@@ -216,9 +234,26 @@ public class RequisitionService(
         await _dbContext.JobRequisitions.AddAsync(requisition, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Người dùng {UserId} đã tạo thành công yêu cầu tuyển dụng {Code} cho vị trí {Position} tại phòng {Department}",
-            currentUserId, requisitionCode, position.Title, department.Name);
+        _logger.LogInformation("Người dùng {UserId} đã tạo thành công yêu cầu tuyển dụng {Code} (Trạng thái: {Status}) cho vị trí {Position} tại phòng {Department}",
+            currentUserId, requisitionCode, initialStatus, position.Title, department.Name);
 
-        return (true, $"Yêu cầu tuyển dụng '{requisitionCode}' đã được khởi tạo thành công và chuyển sang trạng thái Chờ duyệt.", requisition.Id);
+        var responseMessage = model.IsDraft
+            ? $"Bản nháp yêu cầu tuyển dụng '{requisitionCode}' đã được lưu thành công."
+            : $"Yêu cầu tuyển dụng '{requisitionCode}' đã được khởi tạo thành công và chuyển sang trạng thái Chờ duyệt.";
+
+        return (true, responseMessage, requisition.Id);
+    }
+
+    private static string StripHtml(string? html)
+    {
+        if (string.IsNullOrWhiteSpace(html)) return string.Empty;
+
+        var decoded = System.Net.WebUtility.HtmlDecode(html)
+            .Replace("&nbsp;", " ", StringComparison.OrdinalIgnoreCase)
+            .Replace("<br>", " ", StringComparison.OrdinalIgnoreCase)
+            .Replace("<br/>", " ", StringComparison.OrdinalIgnoreCase)
+            .Replace("<br />", " ", StringComparison.OrdinalIgnoreCase);
+
+        return System.Text.RegularExpressions.Regex.Replace(decoded, "<.*?>", string.Empty).Trim();
     }
 }

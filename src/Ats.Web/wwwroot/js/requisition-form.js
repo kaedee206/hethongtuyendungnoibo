@@ -217,8 +217,101 @@ function setupRequisitionForm(form) {
         }
     }
 
-    // 5. Kiểm tra toàn bộ form trước khi Submit
-    form.addEventListener('submit', function (e) {
+    // 5. Khởi tạo và xử lý nút Lưu nháp & Gửi duyệt
+    const isDraftInput = form.querySelector('#reqIsDraft');
+    const btnSaveDraft = form.querySelector('#btnSaveDraft');
+    const btnSubmitRequisition = form.querySelector('#btnSubmitRequisition');
+    const spinnerSubmit = form.querySelector('.btn-spinner');
+    const spinnerDraft = form.querySelector('.btn-spinner-draft');
+
+    const jobDescWrapper = form.querySelector('#jobDescEditorWrapper');
+    const jobDescContent = form.querySelector('#jobDescEditorContent');
+    const jobDescHidden = form.querySelector('#reqJobDescription');
+    const jobDescError = form.querySelector('#jobDescError');
+
+    const reqWrapper = form.querySelector('#requirementsEditorWrapper');
+    const reqContent = form.querySelector('#requirementsEditorContent');
+    const reqHidden = form.querySelector('#reqRequirements');
+    const reqError = form.querySelector('#requirementsError');
+
+    function stripHtmlToText(html) {
+        if (!html) return '';
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        return (temp.textContent || temp.innerText || '').trim();
+    }
+
+    function syncEditorsBeforeSubmit() {
+        if (jobDescContent && jobDescHidden) {
+            jobDescHidden.value = jobDescContent.innerHTML;
+        }
+        if (reqContent && reqHidden) {
+            reqHidden.value = reqContent.innerHTML;
+        }
+    }
+
+    function validateEditors(isDraft) {
+        syncEditorsBeforeSubmit();
+        let valid = true;
+
+        if (isDraft) {
+            // Khi lưu nháp: Cho phép để trống cả Mô tả công việc và Yêu cầu ứng viên
+            if (jobDescWrapper) jobDescWrapper.classList.remove('is-invalid');
+            if (jobDescError) jobDescError.textContent = '';
+            if (reqWrapper) reqWrapper.classList.remove('is-invalid');
+            if (reqError) reqError.textContent = '';
+            return true;
+        }
+
+        // Khi gửi duyệt: Bắt buộc cả 2 editor phải có nội dung thực tế
+        if (jobDescContent) {
+            const descText = stripHtmlToText(jobDescContent.innerHTML);
+            if (!descText) {
+                if (jobDescWrapper) jobDescWrapper.classList.add('is-invalid');
+                if (jobDescError) {
+                    jobDescError.textContent = 'Vui lòng nhập mô tả công việc (trách nhiệm, nhiệm vụ chính, KPI...) khi gửi duyệt.';
+                    jobDescError.classList.remove('d-none');
+                }
+                valid = false;
+            } else {
+                if (jobDescWrapper) jobDescWrapper.classList.remove('is-invalid');
+                if (jobDescError) jobDescError.textContent = '';
+            }
+        }
+
+        if (reqContent) {
+            const reqText = stripHtmlToText(reqContent.innerHTML);
+            if (!reqText) {
+                if (reqWrapper) reqWrapper.classList.add('is-invalid');
+                if (reqError) {
+                    reqError.textContent = 'Vui lòng nhập yêu cầu ứng viên (trình độ học vấn, kinh nghiệm, kỹ năng, chứng chỉ...) khi gửi duyệt.';
+                    reqError.classList.remove('d-none');
+                }
+                valid = false;
+            } else {
+                if (reqWrapper) reqWrapper.classList.remove('is-invalid');
+                if (reqError) reqError.textContent = '';
+            }
+        }
+
+        return valid;
+    }
+
+    if (btnSaveDraft) {
+        btnSaveDraft.addEventListener('click', function () {
+            if (isDraftInput) isDraftInput.value = 'true';
+            executeFormSubmit(true);
+        });
+    }
+
+    if (btnSubmitRequisition) {
+        btnSubmitRequisition.addEventListener('click', function () {
+            if (isDraftInput) isDraftInput.value = 'false';
+            executeFormSubmit(false);
+        });
+    }
+
+    function executeFormSubmit(isDraft) {
         let isFormValid = true;
 
         if (positionSelect && (!positionSelect.value || positionSelect.value === '')) {
@@ -251,27 +344,43 @@ function setupRequisitionForm(form) {
             }
         }
 
-        if (!isFormValid) {
-            e.preventDefault();
-            e.stopPropagation();
+        const editorsValid = validateEditors(isDraft);
+        if (!editorsValid) {
+            isFormValid = false;
+        }
 
+        if (!isFormValid) {
             const firstInvalid = form.querySelector('.is-invalid');
             if (firstInvalid) {
-                firstInvalid.focus();
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const editorArea = firstInvalid.querySelector('.rich-editor-content');
+                if (editorArea) {
+                    editorArea.focus();
+                } else {
+                    firstInvalid.focus();
+                }
             }
             return false;
         }
 
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const spinner = form.querySelector('.btn-spinner');
-        if (submitBtn) {
-            submitBtn.disabled = true;
-        }
-        if (spinner) {
-            spinner.classList.remove('d-none');
+        if (btnSaveDraft) btnSaveDraft.disabled = true;
+        if (btnSubmitRequisition) btnSubmitRequisition.disabled = true;
+
+        if (isDraft && spinnerDraft) {
+            spinnerDraft.classList.remove('d-none');
+        } else if (!isDraft && spinnerSubmit) {
+            spinnerSubmit.classList.remove('d-none');
         }
 
+        form.submit();
         return true;
+    }
+
+    // Xử lý submit gốc dự phòng
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const isDraft = isDraftInput && isDraftInput.value === 'true';
+        executeFormSubmit(isDraft);
     });
 }
 

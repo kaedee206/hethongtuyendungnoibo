@@ -35,7 +35,7 @@ public class RequisitionValidationTests
     }
 
     [Fact]
-    public void ValidModel_ShouldPassValidation()
+    public void ValidModel_WhenSubmittingApproval_WithRichText_ShouldPassValidation()
     {
         var model = new RequisitionCreateViewModel
         {
@@ -46,12 +46,109 @@ public class RequisitionValidationTests
             ReasonDetail = "Mở rộng team Backend cho dự án Core Banking",
             MinSalary = 25_000_000,
             MaxSalary = 40_000_000,
-            TargetHireDate = DateOnly.FromDateTime(DateTime.Today.AddDays(30))
+            TargetHireDate = DateOnly.FromDateTime(DateTime.Today.AddDays(30)),
+            JobDescription = "<h3>Mô tả công việc</h3><ul><li>Phát triển các module nghiệp vụ</li></ul>",
+            Requirements = "<h3>Yêu cầu ứng viên</h3><p>Tối thiểu 3 năm kinh nghiệm .NET Core / C#</p>",
+            IsDraft = false
         };
 
         var results = ValidateModel(model);
 
         results.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void DraftModel_WithEmptyJobDescriptionAndRequirements_ShouldPassValidation()
+    {
+        var model = new RequisitionCreateViewModel
+        {
+            JobPositionId = Guid.NewGuid(),
+            DepartmentId = Guid.NewGuid(),
+            Quantity = 1,
+            HeadcountType = HeadcountType.NEW_HEADCOUNT,
+            MinSalary = 20_000_000,
+            MaxSalary = 30_000_000,
+            TargetHireDate = DateOnly.FromDateTime(DateTime.Today.AddDays(20)),
+            JobDescription = null,
+            Requirements = string.Empty,
+            IsDraft = true
+        };
+
+        var results = ValidateModel(model);
+
+        results.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void SubmitApproval_WithMissingJobDescription_ShouldFailValidation()
+    {
+        var model = new RequisitionCreateViewModel
+        {
+            JobPositionId = Guid.NewGuid(),
+            DepartmentId = Guid.NewGuid(),
+            Quantity = 1,
+            HeadcountType = HeadcountType.NEW_HEADCOUNT,
+            MinSalary = 20_000_000,
+            MaxSalary = 30_000_000,
+            TargetHireDate = DateOnly.FromDateTime(DateTime.Today.AddDays(20)),
+            JobDescription = null,
+            Requirements = "<p>Có kinh nghiệm lập trình C#</p>",
+            IsDraft = false
+        };
+
+        var results = ValidateModel(model);
+
+        results.Should().Contain(r => r.MemberNames.Contains(nameof(model.JobDescription)) &&
+                                      r.ErrorMessage!.Contains("Vui lòng nhập mô tả công việc"));
+    }
+
+    [Fact]
+    public void SubmitApproval_WithMissingRequirements_ShouldFailValidation()
+    {
+        var model = new RequisitionCreateViewModel
+        {
+            JobPositionId = Guid.NewGuid(),
+            DepartmentId = Guid.NewGuid(),
+            Quantity = 1,
+            HeadcountType = HeadcountType.NEW_HEADCOUNT,
+            MinSalary = 20_000_000,
+            MaxSalary = 30_000_000,
+            TargetHireDate = DateOnly.FromDateTime(DateTime.Today.AddDays(20)),
+            JobDescription = "<p>Phát triển hệ thống microservices</p>",
+            Requirements = null,
+            IsDraft = false
+        };
+
+        var results = ValidateModel(model);
+
+        results.Should().Contain(r => r.MemberNames.Contains(nameof(model.Requirements)) &&
+                                      r.ErrorMessage!.Contains("Vui lòng nhập yêu cầu ứng viên"));
+    }
+
+    [Theory]
+    [InlineData("<p><br></p>")]
+    [InlineData("   <div><br /></div>   ")]
+    [InlineData("&nbsp;&nbsp;   <br>")]
+    [InlineData("<p><span> </span></p>")]
+    public void SubmitApproval_WithHtmlTagsOnly_ShouldFailValidation(string emptyHtml)
+    {
+        var model = new RequisitionCreateViewModel
+        {
+            JobPositionId = Guid.NewGuid(),
+            DepartmentId = Guid.NewGuid(),
+            Quantity = 1,
+            HeadcountType = HeadcountType.NEW_HEADCOUNT,
+            MinSalary = 20_000_000,
+            MaxSalary = 30_000_000,
+            TargetHireDate = DateOnly.FromDateTime(DateTime.Today.AddDays(20)),
+            JobDescription = emptyHtml,
+            Requirements = "<p>Yêu cầu hợp lệ</p>",
+            IsDraft = false
+        };
+
+        var results = ValidateModel(model);
+
+        results.Should().Contain(r => r.MemberNames.Contains(nameof(model.JobDescription)));
     }
 
     [Fact]
@@ -229,7 +326,10 @@ public class RequisitionValidationTests
             ReasonDetail = "Tuyển gấp cho dự án hạ tầng Microservices",
             MinSalary = 30_000_000,
             MaxSalary = 50_000_000,
-            TargetHireDate = DateOnly.FromDateTime(DateTime.Today.AddDays(40))
+            TargetHireDate = DateOnly.FromDateTime(DateTime.Today.AddDays(40)),
+            JobDescription = "<h3>Mô tả công việc</h3><p>Thiết kế kiến trúc Go</p>",
+            Requirements = "<h3>Yêu cầu</h3><p>3 năm kinh nghiệm Go</p>",
+            IsDraft = false
         };
 
         var (success, message, requisitionId) = await service.CreateRequisitionAsync(inputModel, managerId);
@@ -247,6 +347,115 @@ public class RequisitionValidationTests
         created.MaxSalary.Should().Be(50_000_000);
         created.JobPositionId.Should().Be(position.Id);
         created.DepartmentId.Should().Be(department.Id);
+        created.JobDescription.Should().Be("<h3>Mô tả công việc</h3><p>Thiết kế kiến trúc Go</p>");
+        created.Requirements.Should().Be("<h3>Yêu cầu</h3><p>3 năm kinh nghiệm Go</p>");
+    }
+
+    [Fact]
+    public async Task Service_CreateRequisitionAsync_WhenDraft_AllowsEmptyContentAndSetsStatusDraft()
+    {
+        using var context = TestDbContextFactory.CreateInMemoryDbContext();
+
+        var department = new Department
+        {
+            Id = Guid.NewGuid(),
+            Code = "DEPT-IT",
+            Name = "Khối Công nghệ & Dữ liệu",
+            IsActive = true
+        };
+        var position = new JobPosition
+        {
+            Id = Guid.NewGuid(),
+            Code = "DEV-GOLANG-02",
+            Title = "Junior Golang Engineer",
+            DepartmentId = department.Id,
+            JobLevel = "JUNIOR",
+            IsActive = true
+        };
+        var managerId = Guid.NewGuid();
+
+        context.Departments.Add(department);
+        context.JobPositions.Add(position);
+        await context.SaveChangesAsync();
+
+        var service = new RequisitionService(context, _serviceLoggerMock.Object);
+
+        var inputModel = new RequisitionCreateViewModel
+        {
+            JobPositionId = position.Id,
+            DepartmentId = department.Id,
+            Quantity = 1,
+            HeadcountType = HeadcountType.NEW_HEADCOUNT,
+            ReasonDetail = "Lưu nháp để chỉnh sửa sau",
+            MinSalary = 15_000_000,
+            MaxSalary = 20_000_000,
+            TargetHireDate = DateOnly.FromDateTime(DateTime.Today.AddDays(30)),
+            JobDescription = null,
+            Requirements = string.Empty,
+            IsDraft = true
+        };
+
+        var (success, message, requisitionId) = await service.CreateRequisitionAsync(inputModel, managerId);
+
+        success.Should().BeTrue();
+        requisitionId.Should().NotBeNull();
+        message.Should().Contain("Bản nháp").And.Contain("thành công");
+
+        var created = context.JobRequisitions.FirstOrDefault(r => r.Id == requisitionId);
+        created.Should().NotBeNull();
+        created!.Status.Should().Be(RequisitionStatus.DRAFT);
+        created.JobDescription.Should().BeNull();
+        created.Requirements.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Service_CreateRequisitionAsync_WhenSubmitApprovalWithoutContent_ReturnsError()
+    {
+        using var context = TestDbContextFactory.CreateInMemoryDbContext();
+
+        var department = new Department
+        {
+            Id = Guid.NewGuid(),
+            Code = "DEPT-IT",
+            Name = "Khối Công nghệ & Dữ liệu",
+            IsActive = true
+        };
+        var position = new JobPosition
+        {
+            Id = Guid.NewGuid(),
+            Code = "DEV-GOLANG-03",
+            Title = "Mid Golang Engineer",
+            DepartmentId = department.Id,
+            JobLevel = "MID",
+            IsActive = true
+        };
+        var managerId = Guid.NewGuid();
+
+        context.Departments.Add(department);
+        context.JobPositions.Add(position);
+        await context.SaveChangesAsync();
+
+        var service = new RequisitionService(context, _serviceLoggerMock.Object);
+
+        var inputModel = new RequisitionCreateViewModel
+        {
+            JobPositionId = position.Id,
+            DepartmentId = department.Id,
+            Quantity = 1,
+            HeadcountType = HeadcountType.NEW_HEADCOUNT,
+            MinSalary = 20_000_000,
+            MaxSalary = 30_000_000,
+            TargetHireDate = DateOnly.FromDateTime(DateTime.Today.AddDays(30)),
+            JobDescription = "<p><br></p>", // Empty HTML
+            Requirements = "<p>Có kinh nghiệm</p>",
+            IsDraft = false
+        };
+
+        var (success, message, requisitionId) = await service.CreateRequisitionAsync(inputModel, managerId);
+
+        success.Should().BeFalse();
+        requisitionId.Should().BeNull();
+        message.Should().Contain("mô tả công việc");
     }
 
     [Fact]

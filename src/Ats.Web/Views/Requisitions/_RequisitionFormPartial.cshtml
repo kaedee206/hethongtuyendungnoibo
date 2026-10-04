@@ -256,16 +256,156 @@
         </div>
     </div>
 
+    <!-- 6. Mô tả công việc (Rich Text Editor) -->
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="form-label fw-bold text-dark small mb-0">
+                Mô tả công việc <span class="text-danger req-submit-required">*</span>
+            </label>
+            <span class="text-muted small" style="font-size: 0.75rem;">
+                Trách nhiệm, nhiệm vụ chính và các chỉ số đo lường hiệu quả (KPIs)
+            </span>
+        </div>
+
+        <div class="rich-editor-wrapper" id="jobDescEditorWrapper" data-template-type="description">
+            <input type="hidden" asp-for="JobDescription" id="reqJobDescription" class="rich-editor-target" />
+            <div class="rich-editor-toolbar">
+                <div class="rich-editor-group">
+                    <select class="rich-editor-select rich-editor-heading-select" title="Định dạng tiêu đề">
+                        <option value="p">Đoạn văn (Normal)</option>
+                        <option value="h2">Tiêu đề lớn (H2)</option>
+                        <option value="h3">Tiêu đề phụ (H3)</option>
+                    </select>
+                </div>
+                <div class="rich-editor-divider"></div>
+                <div class="rich-editor-group">
+                    <button type="button" class="rich-editor-btn" data-command="bold" title="In đậm (Ctrl+B)">
+                        <i class="bi bi-type-bold"></i>
+                    </button>
+                    <button type="button" class="rich-editor-btn" data-command="italic" title="In nghiêng (Ctrl+I)">
+                        <i class="bi bi-type-italic"></i>
+                    </button>
+                </div>
+                <div class="rich-editor-divider"></div>
+                <div class="rich-editor-group">
+                    <button type="button" class="rich-editor-btn" data-command="insertUnorderedList" title="Danh sách dấu đầu dòng (Bullet list)">
+                        <i class="bi bi-list-ul"></i>
+                    </button>
+                    <button type="button" class="rich-editor-btn" data-command="insertOrderedList" title="Danh sách số thứ tự (Numbered list)">
+                        <i class="bi bi-list-ol"></i>
+                    </button>
+                </div>
+                <div class="rich-editor-divider"></div>
+                <div class="rich-editor-group">
+                    <button type="button" class="rich-editor-btn" data-command="removeFormat" title="Xóa định dạng">
+                        <i class="bi bi-eraser"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="rich-editor-content" 
+                 contenteditable="true" 
+                 data-placeholder="Nhập trách nhiệm, nhiệm vụ chính, phạm vi quyền hạn và KPI mục tiêu công việc..."
+                 id="jobDescEditorContent">@Html.Raw(Model.JobDescription)</div>
+
+            <div class="rich-editor-footer">
+                <span class="rich-editor-stats">0 từ | 0 ký tự</span>
+                <button type="button" class="rich-editor-template-btn" title="Chèn khung trách nhiệm và KPI mẫu">
+                    <i class="bi bi-magic"></i>
+                    <span>Chèn mẫu gợi ý</span>
+                </button>
+            </div>
+        </div>
+        <span asp-validation-for="JobDescription" class="text-danger small mt-1 d-block" id="jobDescError"></span>
+    </div>
+
+    <!-- 7. Yêu cầu ứng viên (Rich Text Editor) -->
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="form-label fw-bold text-dark small mb-0">
+                Yêu cầu ứng viên <span class="text-danger req-submit-required">*</span>
+            </label>
+            <span class="text-muted small" style="font-size: 0.75rem;">
+                Trình độ học vấn, kinh nghiệm thực chiến, kỹ năng chuyên môn và chứng chỉ
+            </span>
+        </div>
+
+        <div class="rich-editor-wrapper" id="requirementsEditorWrapper" data-template-type="requirements">
+            <input type="hidden" asp-for="Requirements" id="reqRequirements" class="rich-editor-target" />
+            <div class="rich-editor-toolbar">
+                <div class="rich-editor-group">
+                    <select class="rich-editor-select rich-editor-heading-select" title="Định dạng tiêu đề">
+                        <option value="p">Đoạn văn (Normal)</option>
+                        <option value="h2">Tiêu đề lớn (H2)</option>
+                        <option value="h3">Tiêu đề phụ (H3)</option>
+                    </select>
+                </div>
+                <div class="rich-editor-divider"></div>
+                <div class="rich-editor-group">
+                    <button type="button" class="rich-editor-btn" data-command="bold" title="In đậm (Ctrl+B)">
+                        <i class="bi bi-type-bold"></i>
+                    </button>
+                    <button type="button" class="rich-editor-btn" data-command="italic" title="In nghiêng (Ctrl+I)">
+                        <i class="bi bi-type-italic"></i>
+                    </button>
+                </div>
+                <div class="rich-editor-divider"></div>
+                <div class="rich-editor-group">
+                    <button type="button" class="rich-editor-btn" data-command="insertUnorderedList" title="Danh sách dấu đầu dòng (Bullet list)">
+                        <i class="bi bi-list-ul"></i>
+                    </button>
+                    <button type="button" class="rich-editor-btn" data-command="insertOrderedList" title="Danh sách số thứ tự (Numbered list)">
+                        <i class="bi bi-list-ol"></i>
+                    </button>
+                </div>
+                <div class="rich-editor-divider"></div>
+                <div class="rich-editor-group">
+                    <button type="button" class="rich-editor-btn" data-command="removeFormat" title="Xóa định dạng">
+                        <i class="bi bi-eraser"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="rich-editor-content" 
+                 contenteditable="true" 
+                 data-placeholder="Nhập trình độ học vấn, số năm kinh nghiệm, kỹ năng cốt lõi và chứng chỉ ưu tiên..."
+                 id="requirementsEditorContent">@Html.Raw(Model.Requirements)</div>
+
+            <div class="rich-editor-footer">
+                <span class="rich-editor-stats">0 từ | 0 ký tự</span>
+                <button type="button" class="rich-editor-template-btn" title="Chèn khung tiêu chuẩn ứng viên mẫu">
+                    <i class="bi bi-magic"></i>
+                    <span>Chèn mẫu gợi ý</span>
+                </button>
+            </div>
+        </div>
+        <span asp-validation-for="Requirements" class="text-danger small mt-1 d-block" id="requirementsError"></span>
+    </div>
+
+    <!-- Cờ phân định Lưu nháp hay Gửi duyệt -->
+    <input type="hidden" asp-for="IsDraft" id="reqIsDraft" value="false" />
+
     <!-- Nút Thao tác -->
-    <div class="d-flex justify-content-end align-items-center gap-2 pt-2 border-top">
-        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary px-3" style="border-radius: 8px;">
-            Quay lại
-        </a>
-        <button type="submit" class="btn btn-success px-4 d-inline-flex align-items-center gap-2 fw-semibold" style="border-radius: 8px;" id="btnSubmitRequisition">
-            <span class="spinner-border spinner-border-sm d-none btn-spinner" role="status" aria-hidden="true"></span>
-            <i class="bi bi-send-check"></i>
-            <span>Gửi đề xuất tuyển dụng</span>
-        </button>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-3 border-top">
+        <div class="text-muted small">
+            <i class="bi bi-info-circle me-1 text-primary"></i>
+            <span>Có thể để trống Mô tả & Yêu cầu khi <strong>Lưu nháp</strong>, bắt buộc khi <strong>Gửi duyệt</strong>.</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary px-3" style="border-radius: 8px;">
+                Quay lại
+            </a>
+            <button type="button" class="btn btn-outline-secondary px-3 d-inline-flex align-items-center gap-2 fw-semibold" style="border-radius: 8px;" id="btnSaveDraft">
+                <span class="spinner-border spinner-border-sm d-none btn-spinner-draft" role="status" aria-hidden="true"></span>
+                <i class="bi bi-floppy"></i>
+                <span>Lưu bản nháp</span>
+            </button>
+            <button type="button" class="btn btn-success px-4 d-inline-flex align-items-center gap-2 fw-semibold" style="border-radius: 8px;" id="btnSubmitRequisition">
+                <span class="spinner-border spinner-border-sm d-none btn-spinner" role="status" aria-hidden="true"></span>
+                <i class="bi bi-send-check"></i>
+                <span>Gửi đề xuất tuyển dụng</span>
+            </button>
+        </div>
     </div>
 </form>
 
