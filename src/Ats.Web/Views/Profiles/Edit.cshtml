@@ -56,6 +56,19 @@
     </div>
 </div>
 
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+    <div id="profileToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body d-flex align-items-center">
+                <i id="toastIcon" class="bi me-2 fs-5"></i>
+                <span id="toastMessage"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -63,6 +76,28 @@
             const btnSubmit = document.getElementById('btnSubmitProfile');
             const submitSpinner = document.getElementById('submitSpinner');
             const submitText = document.getElementById('submitText');
+
+            // Khởi tạo Toast
+            const toastEl = document.getElementById('profileToast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+            const profileToast = new bootstrap.Toast(toastEl, { delay: 5000 });
+
+            function showToast(message, type) {
+                toastEl.className = 'toast align-items-center text-white border-0'; // reset
+                toastIcon.className = 'bi me-2 fs-5'; // reset
+                
+                if (type === 'success') {
+                    toastEl.classList.add('bg-success');
+                    toastIcon.classList.add('bi-check-circle-fill');
+                } else if (type === 'error') {
+                    toastEl.classList.add('bg-danger');
+                    toastIcon.classList.add('bi-x-circle-fill');
+                }
+                
+                toastMessage.textContent = message;
+                profileToast.show();
+            }
 
             profileForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -88,7 +123,7 @@
                 const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
 
                 try {
-                    // 3. Gọi API cập nhật (Đã trỏ đúng endpoint backend SCRUM-187)
+                    // 3. Gọi API cập nhật
                     const response = await fetch('/api/tai-khoan/ho-so', {
                         method: 'PUT',
                         headers: {
@@ -99,16 +134,29 @@
                     });
 
                     if (response.ok) {
-                        // Tích hợp Toast/Notification component dùng chung của dự án ở đây
-                        alert('Cập nhật hồ sơ thành công!');
+                        showToast('Cập nhật hồ sơ thành công!', 'success');
                     } else {
                         const errorData = await response.json();
                         console.error('Validation Errors:', errorData);
-                        alert('Có lỗi xảy ra, vui lòng kiểm tra lại thông tin.');
+                        
+                        let errorMessage = 'Có lỗi xảy ra, vui lòng kiểm tra lại thông tin.';
+                        
+                        // Parse lỗi validation từ backend (VD: ASP.NET Core model binding errors)
+                        if (errorData.errors) {
+                            const messages = [];
+                            for (const field in errorData.errors) {
+                                messages.push(errorData.errors[field].join(', '));
+                            }
+                            errorMessage = 'Lỗi nhập liệu: ' + messages.join(' | ');
+                        } else if (errorData.message) {
+                            errorMessage = errorData.message;
+                        }
+                        
+                        showToast(errorMessage, 'error');
                     }
                 } catch (error) {
                     console.error('Lỗi mạng:', error);
-                    alert('Không thể kết nối đến máy chủ.');
+                    showToast('Lỗi hệ thống: Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng hoặc thử lại sau.', 'error');
                 } finally {
                     // 4. Hoàn tất - Khôi phục trạng thái UI
                     btnSubmit.disabled = false;
