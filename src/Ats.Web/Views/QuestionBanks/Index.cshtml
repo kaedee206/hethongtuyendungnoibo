@@ -66,6 +66,7 @@
                             <th class="py-3 px-4 text-secondary fw-semibold" style="width: 40%;">Nội dung câu hỏi</th>
                             <th class="py-3 px-4 text-secondary fw-semibold">Khung năng lực</th>
                             <th class="py-3 px-4 text-secondary fw-semibold text-center">Mức độ khó</th>
+                            <th class="py-3 px-4 text-secondary fw-semibold text-center">Trạng thái</th>
                             <th class="py-3 px-4 text-secondary fw-semibold text-end">Thao tác</th>
                         </tr>
                     </thead>
@@ -107,7 +108,7 @@
                 <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <form id="questionForm" onsubmit="event.preventDefault(); saveQuestion();">
+                <form id="questionForm" class="needs-validation" novalidate onsubmit="event.preventDefault(); saveQuestion();">
                     <input type="hidden" id="questionId" />
                     
                     <div class="row g-4 mb-4">
@@ -121,6 +122,7 @@
                                 <option value="Giao tiếp">Giao tiếp</option>
                                 <option value="Lãnh đạo">Lãnh đạo</option>
                             </select>
+                            <div class="invalid-feedback">Vui lòng chọn khung năng lực.</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold text-secondary">Mức độ khó <span class="text-danger">*</span></label>
@@ -130,17 +132,24 @@
                                 <option value="Trung bình">Trung bình</option>
                                 <option value="Nâng cao">Nâng cao</option>
                             </select>
+                            <div class="invalid-feedback">Vui lòng chọn mức độ khó.</div>
                         </div>
                     </div>
                     
                     <div class="mb-4">
                         <label class="form-label fw-semibold text-secondary">Nội dung câu hỏi <span class="text-danger">*</span></label>
                         <textarea class="form-control bg-light" id="qContent" rows="3" placeholder="Nhập câu hỏi để đánh giá năng lực ứng viên..." required></textarea>
+                        <div class="invalid-feedback">Vui lòng nhập nội dung câu hỏi.</div>
                     </div>
                     
                     <div class="mb-4">
                         <label class="form-label fw-semibold text-secondary">Gợi ý trả lời / Tiêu chí đánh giá</label>
                         <textarea class="form-control bg-light" id="qSuggestion" rows="3" placeholder="Hướng dẫn người phỏng vấn các điểm cần lưu ý khi ứng viên trả lời..."></textarea>
+                    </div>
+
+                    <div class="mb-4 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="qIsActive" checked>
+                        <label class="form-check-label fw-semibold text-secondary" for="qIsActive">Trạng thái hoạt động</label>
                     </div>
                     
                     <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
@@ -189,11 +198,11 @@
     <script>
         // Mock dữ liệu ban đầu
         let mockQuestions = [
-            { id: 1, content: "Bạn hãy mô tả một dự án gần đây nhất bạn tham gia. Vai trò của bạn là gì và bạn đã sử dụng công nghệ nào?", competency: "Kỹ năng chuyên môn", difficulty: "Cơ bản", suggestion: "Đánh giá khả năng nắm bắt dự án, hiểu biết về stack công nghệ." },
-            { id: 2, content: "Hãy kể về một lần bạn gặp phải một bug khó trên production. Bạn đã phân tích và giải quyết nó như thế nào?", competency: "Giải quyết vấn đề", difficulty: "Trung bình", suggestion: "Ứng viên cần nêu rõ các bước debug, tìm root cause, cách fix tạm thời và fix triệt để." },
-            { id: 3, content: "Làm thế nào để bạn đảm bảo hệ thống có thể scale khi lượng truy cập tăng gấp 10 lần trong tương lai gần?", competency: "Kỹ năng chuyên môn", difficulty: "Nâng cao", suggestion: "Kiến thức về caching, load balancing, database indexing, microservices..." },
-            { id: 4, content: "Bạn thường làm gì khi có bất đồng quan điểm với thành viên khác trong team về cách thiết kế hệ thống?", competency: "Làm việc nhóm", difficulty: "Trung bình", suggestion: "Đánh giá thái độ lắng nghe, cách đưa ra lập luận dựa trên data/fact thay vì cảm xúc." },
-            { id: 5, content: "Hãy trình bày cách bạn giải thích một khái niệm kỹ thuật phức tạp (như API) cho một người không có chuyên môn (ví dụ: khách hàng)?", competency: "Giao tiếp", difficulty: "Cơ bản", suggestion: "Đánh giá khả năng sử dụng ngôn từ dễ hiểu, dùng ví dụ ẩn dụ thực tế." }
+            { id: 1, content: "Bạn hãy mô tả một dự án gần đây nhất bạn tham gia. Vai trò của bạn là gì và bạn đã sử dụng công nghệ nào?", competency: "Kỹ năng chuyên môn", difficulty: "Cơ bản", suggestion: "Đánh giá khả năng nắm bắt dự án, hiểu biết về stack công nghệ.", isActive: true, isDeleted: false },
+            { id: 2, content: "Hãy kể về một lần bạn gặp phải một bug khó trên production. Bạn đã phân tích và giải quyết nó như thế nào?", competency: "Giải quyết vấn đề", difficulty: "Trung bình", suggestion: "Ứng viên cần nêu rõ các bước debug, tìm root cause, cách fix tạm thời và fix triệt để.", isActive: true, isDeleted: false },
+            { id: 3, content: "Làm thế nào để bạn đảm bảo hệ thống có thể scale khi lượng truy cập tăng gấp 10 lần trong tương lai gần?", competency: "Kỹ năng chuyên môn", difficulty: "Nâng cao", suggestion: "Kiến thức về caching, load balancing, database indexing, microservices...", isActive: true, isDeleted: false },
+            { id: 4, content: "Bạn thường làm gì khi có bất đồng quan điểm với thành viên khác trong team về cách thiết kế hệ thống?", competency: "Làm việc nhóm", difficulty: "Trung bình", suggestion: "Đánh giá thái độ lắng nghe, cách đưa ra lập luận dựa trên data/fact thay vì cảm xúc.", isActive: true, isDeleted: false },
+            { id: 5, content: "Hãy trình bày cách bạn giải thích một khái niệm kỹ thuật phức tạp (như API) cho một người không có chuyên môn (ví dụ: khách hàng)?", competency: "Giao tiếp", difficulty: "Cơ bản", suggestion: "Đánh giá khả năng sử dụng ngôn từ dễ hiểu, dùng ví dụ ẩn dụ thực tế.", isActive: true, isDeleted: false }
         ];
 
         let currentIdCounter = 6;
@@ -257,6 +266,11 @@
                     <td class="px-4 text-center">
                         ${getDifficultyBadge(item.difficulty)}
                     </td>
+                    <td class="px-4 text-center">
+                        ${item.isActive 
+                            ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1" style="border-radius: 6px;">Hoạt động</span>' 
+                            : '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1" style="border-radius: 6px;">Tạm ẩn</span>'}
+                    </td>
                     <td class="px-4 text-end">
                         <button class="btn btn-sm btn-light border shadow-sm me-1" onclick="openEditModal(${item.id})" title="Chỉnh sửa">
                             <i class="bi bi-pencil-square text-primary"></i>
@@ -276,6 +290,8 @@
             const difficulty = document.getElementById('filterDifficulty').value;
 
             const filtered = mockQuestions.filter(q => {
+                if (q.isDeleted) return false;
+                
                 const matchKeyword = q.content.toLowerCase().includes(keyword) || (q.suggestion && q.suggestion.toLowerCase().includes(keyword));
                 const matchCompetency = competency === '' || q.competency === competency;
                 const matchDifficulty = difficulty === '' || q.difficulty === difficulty;
@@ -293,7 +309,9 @@
 
         function openAddModal() {
             document.getElementById('questionForm').reset();
+            document.getElementById('questionForm').classList.remove('was-validated');
             document.getElementById('questionId').value = '';
+            document.getElementById('qIsActive').checked = true;
             document.getElementById('questionModalLabel').innerText = 'Thêm câu hỏi mới';
             questionModal.show();
         }
@@ -302,28 +320,37 @@
             const question = mockQuestions.find(q => q.id === id);
             if (!question) return;
 
+            document.getElementById('questionForm').classList.remove('was-validated');
             document.getElementById('questionId').value = question.id;
             document.getElementById('qCompetency').value = question.competency;
             document.getElementById('qDifficulty').value = question.difficulty;
             document.getElementById('qContent').value = question.content;
             document.getElementById('qSuggestion').value = question.suggestion || '';
+            document.getElementById('qIsActive').checked = question.isActive;
             
             document.getElementById('questionModalLabel').innerText = 'Sửa câu hỏi phỏng vấn';
             questionModal.show();
         }
 
         function saveQuestion() {
+            const form = document.getElementById('questionForm');
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+
             const id = document.getElementById('questionId').value;
             const competency = document.getElementById('qCompetency').value;
             const difficulty = document.getElementById('qDifficulty').value;
             const content = document.getElementById('qContent').value;
             const suggestion = document.getElementById('qSuggestion').value;
+            const isActive = document.getElementById('qIsActive').checked;
 
             if (id) {
                 // Edit
                 const index = mockQuestions.findIndex(q => q.id === parseInt(id));
                 if (index !== -1) {
-                    mockQuestions[index] = { ...mockQuestions[index], competency, difficulty, content, suggestion };
+                    mockQuestions[index] = { ...mockQuestions[index], competency, difficulty, content, suggestion, isActive };
                 }
             } else {
                 // Add
@@ -332,7 +359,9 @@
                     competency,
                     difficulty,
                     content,
-                    suggestion
+                    suggestion,
+                    isActive,
+                    isDeleted: false
                 });
             }
 
@@ -349,7 +378,10 @@
 
         function confirmDelete() {
             const id = parseInt(document.getElementById('deleteQuestionId').value);
-            mockQuestions = mockQuestions.filter(q => q.id !== id);
+            const index = mockQuestions.findIndex(q => q.id === id);
+            if (index !== -1) {
+                mockQuestions[index].isDeleted = true; // Soft delete
+            }
             
             deleteModal.hide();
             applyFilter();
