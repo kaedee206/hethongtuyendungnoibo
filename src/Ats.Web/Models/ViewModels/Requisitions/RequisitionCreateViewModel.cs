@@ -25,31 +25,31 @@ public class DepartmentOptionViewModel
 
 public class RequisitionCreateViewModel : IValidatableObject
 {
-    [Required(ErrorMessage = "Vui lòng chọn chức danh cần tuyển dụng.")]
+    /// <summary>
+    /// Định danh yêu cầu tuyển dụng (nếu đang chỉnh sửa hoặc auto-save bản nháp hiện có).
+    /// </summary>
+    public Guid? Id { get; set; }
+
+    /// <summary>
+    /// Mã yêu cầu tuyển dụng (ví dụ: REQ-20261005-A1B2).
+    /// </summary>
+    public string? Code { get; set; }
+
     public Guid? JobPositionId { get; set; }
 
-    [Required(ErrorMessage = "Vui lòng chọn phòng ban phụ trách yêu cầu tuyển dụng.")]
     public Guid? DepartmentId { get; set; }
 
-    [Required(ErrorMessage = "Vui lòng nhập số lượng cần tuyển.")]
-    [Range(1, 100, ErrorMessage = "Số lượng cần tuyển phải là số nguyên dương từ 1 đến 100 người.")]
     public int Quantity { get; set; } = 1;
 
-    [Required(ErrorMessage = "Vui lòng chọn lý do tuyển dụng.")]
     public HeadcountType HeadcountType { get; set; } = HeadcountType.NEW_HEADCOUNT;
 
     [MaxLength(500, ErrorMessage = "Mô tả chi tiết lý do tuyển dụng không được vượt quá 500 ký tự.")]
     public string? ReasonDetail { get; set; }
 
-    [Required(ErrorMessage = "Vui lòng nhập mức lương tối thiểu đề xuất.")]
-    [Range(1_000_000, 1_000_000_000, ErrorMessage = "Mức lương tối thiểu phải từ 1.000.000 VNĐ đến 1.000.000.000 VNĐ.")]
     public decimal? MinSalary { get; set; }
 
-    [Required(ErrorMessage = "Vui lòng nhập mức lương tối đa đề xuất.")]
-    [Range(1_000_000, 1_000_000_000, ErrorMessage = "Mức lương tối đa phải từ 1.000.000 VNĐ đến 1.000.000.000 VNĐ.")]
     public decimal? MaxSalary { get; set; }
 
-    [Required(ErrorMessage = "Vui lòng chọn ngày cần nhân sự có mặt.")]
     public DateOnly? TargetHireDate { get; set; } = DateOnly.FromDateTime(DateTime.Today.AddDays(30));
 
     /// <summary>
@@ -80,6 +80,21 @@ public class RequisitionCreateViewModel : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        // 1. Kiểm tra dải lương nếu người dùng đã nhập
+        if (MinSalary.HasValue && (MinSalary.Value < 1_000_000 || MinSalary.Value > 1_000_000_000))
+        {
+            yield return new ValidationResult(
+                "Mức lương tối thiểu phải từ 1.000.000 VNĐ đến 1.000.000.000 VNĐ.",
+                [nameof(MinSalary)]);
+        }
+
+        if (MaxSalary.HasValue && (MaxSalary.Value < 1_000_000 || MaxSalary.Value > 1_000_000_000))
+        {
+            yield return new ValidationResult(
+                "Mức lương tối đa phải từ 1.000.000 VNĐ đến 1.000.000.000 VNĐ.",
+                [nameof(MaxSalary)]);
+        }
+
         if (MinSalary.HasValue && MaxSalary.HasValue && MaxSalary.Value < MinSalary.Value)
         {
             yield return new ValidationResult(
@@ -87,6 +102,7 @@ public class RequisitionCreateViewModel : IValidatableObject
                 [nameof(MaxSalary)]);
         }
 
+        // 2. Kiểm tra ngày nếu đã nhập
         if (TargetHireDate.HasValue && TargetHireDate.Value < DateOnly.FromDateTime(DateTime.Today))
         {
             yield return new ValidationResult(
@@ -94,10 +110,51 @@ public class RequisitionCreateViewModel : IValidatableObject
                 [nameof(TargetHireDate)]);
         }
 
-        // Quy chuẩn nghiệp vụ: Khi gửi duyệt bắt buộc phải có nội dung mô tả công việc và yêu cầu ứng viên.
-        // Khi lưu nháp (IsDraft == true), cho phép để trống linh hoạt.
+        // 3. Quy chuẩn nghiệp vụ: Khi gửi duyệt (!IsDraft) bắt buộc phải có đầy đủ toàn bộ thông tin
         if (!IsDraft)
         {
+            if (!JobPositionId.HasValue || JobPositionId.Value == Guid.Empty)
+            {
+                yield return new ValidationResult(
+                    "Vui lòng chọn chức danh cần tuyển dụng.",
+                    [nameof(JobPositionId)]);
+            }
+
+            if (!DepartmentId.HasValue || DepartmentId.Value == Guid.Empty)
+            {
+                yield return new ValidationResult(
+                    "Vui lòng chọn phòng ban phụ trách yêu cầu tuyển dụng.",
+                    [nameof(DepartmentId)]);
+            }
+
+            if (Quantity < 1 || Quantity > 100)
+            {
+                yield return new ValidationResult(
+                    "Số lượng cần tuyển phải là số nguyên dương từ 1 đến 100 người.",
+                    [nameof(Quantity)]);
+            }
+
+            if (!MinSalary.HasValue)
+            {
+                yield return new ValidationResult(
+                    "Vui lòng nhập mức lương tối thiểu đề xuất.",
+                    [nameof(MinSalary)]);
+            }
+
+            if (!MaxSalary.HasValue)
+            {
+                yield return new ValidationResult(
+                    "Vui lòng nhập mức lương tối đa đề xuất.",
+                    [nameof(MaxSalary)]);
+            }
+
+            if (!TargetHireDate.HasValue)
+            {
+                yield return new ValidationResult(
+                    "Vui lòng chọn ngày cần nhân sự có mặt.",
+                    [nameof(TargetHireDate)]);
+            }
+
             if (string.IsNullOrWhiteSpace(StripHtml(JobDescription)))
             {
                 yield return new ValidationResult(
