@@ -1,4 +1,5 @@
 using Ats.Web.Constants;
+using Ats.Web.Models.DTOs;
 using Ats.Web.Models.Entities;
 using Ats.Web.Models.ViewModels.Users;
 using Ats.Web.Services;
@@ -25,7 +26,7 @@ public class UserManagementTests
         {
             Id = adminId,
             Email = "nam.dang@noveratech.digital",
-            FullName = "Đặng Hoàng Nam",
+            FullName = "Lường Minh Hiếu",
             Role = UserRoles.Admin,
             Status = "ACTIVE",
             PasswordHash = "dummy",

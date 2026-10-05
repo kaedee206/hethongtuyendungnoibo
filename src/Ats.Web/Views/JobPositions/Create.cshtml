@@ -1,0 +1,38 @@
+@model Ats.Web.Models.ViewModels.JobPositions.JobPositionFormViewModel
+@{
+    ViewData["Title"] = "Thêm chức danh mới";
+}
+
+<div class="container-fluid px-3 px-md-4 py-4" style="max-width: 960px;">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none text-muted">Bàn làm việc</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-muted">Danh mục chức danh</a></li>
+            <li class="breadcrumb-item active fw-medium text-dark" aria-current="page">Thêm mới chức danh</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <div class="p-2 bg-white rounded-3 shadow-xs border d-inline-flex align-items-center justify-content-center text-primary" style="border-radius: 8px !important; width: 40px; height: 40px;">
+                    <i class="bi bi-person-badge-fill fs-5"></i>
+                </div>
+                <h1 class="h3 fw-bold text-dark mb-0">Thêm mới chức danh nghề nghiệp</h1>
+            </div>
+            <p class="text-muted small mb-0 ms-md-5">Thiết lập chức danh, mã định danh, cấp bậc và khung dải lương chuẩn cho tập đoàn NoveraTech.</p>
+        </div>
+
+        <a asp-action="Index" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 px-3 py-2" style="border-radius: 8px;">
+            <i class="bi bi-arrow-left"></i>
+            <span>Quay lại danh sách</span>
+        </a>
+    </div>
+
+    <partial name="_JobPositionForm" model="Model" />
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/job-position-form.js" asp-append-version="true"></script>
+}

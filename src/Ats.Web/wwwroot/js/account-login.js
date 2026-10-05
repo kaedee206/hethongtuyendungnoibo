@@ -1,22 +1,20 @@
-// Logic xử lý trang đăng nhập
-document.addEventListener("DOMContentLoaded", function () {
-    const togglePasswordBtn = document.querySelector(".login-card__toggle-password");
-    if (togglePasswordBtn) {
-        const passwordInput = document.querySelector("input[name='Password']");
-        const icon = togglePasswordBtn.querySelector("i");
+// Logic hiển thị/ẩn mật khẩu trên form đăng nhập
+document.addEventListener('DOMContentLoaded', function () {
+    const toggleButton = document.querySelector('.login-card__toggle-password');
+    const passwordInput = document.querySelector('input[type="password"], input[name="Password"], input[name="LoginInput.Password"]');
 
-        togglePasswordBtn.addEventListener("click", function () {
-            if (!passwordInput) return;
+    if (toggleButton && passwordInput) {
+        toggleButton.addEventListener('click', function () {
+            const isPassword = passwordInput.getAttribute('type') === 'password';
+            passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
 
-            const isPassword = passwordInput.getAttribute("type") === "password";
-            passwordInput.setAttribute("type", isPassword ? "text" : "password");
-
+            const icon = toggleButton.querySelector('i');
             if (icon) {
-                icon.classList.toggle("bi-eye", !isPassword);
-                icon.classList.toggle("bi-eye-slash", isPassword);
+                icon.classList.toggle('bi-eye', !isPassword);
+                icon.classList.toggle('bi-eye-slash', isPassword);
             }
 
-            togglePasswordBtn.setAttribute("aria-pressed", isPassword ? "true" : "false");
+            toggleButton.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
         });
     }
 });

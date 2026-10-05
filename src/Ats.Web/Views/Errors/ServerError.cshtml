@@ -3,10 +3,10 @@
 }
 
 <div class="container py-5 text-center" style="max-width: 600px;">
-    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+    <div class="card border-0 shadow-sm p-4 p-md-5" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
         <div class="mb-4">
             <span class="display-3 fw-bold text-danger d-block">500</span>
-            <div class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill mt-2">
+            <div class="badge bg-danger-subtle text-danger px-3 py-1.5 mt-2" style="border-radius: 6px;">
                 <i class="bi bi-exclamation-octagon me-1"></i> Sự cố máy chủ
             </div>
         </div>
@@ -17,10 +17,10 @@
         </p>
 
         <div class="d-flex justify-content-center gap-2">
-            <a asp-controller="Home" asp-action="Index" class="btn btn-primary px-4 py-2">
+            <a asp-controller="Home" asp-action="Index" class="btn btn-primary px-4 py-2" style="border-radius: 8px;">
                 <i class="bi bi-house-door me-1"></i> Về trang chủ
             </a>
-            <button onclick="location.reload()" class="btn btn-outline-secondary px-4 py-2">
+            <button onclick="location.reload()" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 8px;">
                 <i class="bi bi-arrow-clockwise me-1"></i> Tải lại trang
             </button>
         </div>
