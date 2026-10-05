@@ -28,6 +28,25 @@ public class WorkspaceDashboardViewModel
     public List<UpcomingInterviewDto> UpcomingInterviews { get; set; } = new();
     public List<PendingOfferDto> PendingOffers { get; set; } = new();
     public List<InterviewEvaluationCandidateDto> EvaluationCandidates { get; set; } = new();
+    public List<CandidatePipelineItemDto> CandidatePipelineItems { get; set; } = new();
+}
+
+public class CandidatePipelineItemDto
+{
+    public Guid ApplicationId { get; set; }
+    public Guid CandidateId { get; set; }
+    public string CandidateName { get; set; } = string.Empty;
+    public string CandidateEmail { get; set; } = string.Empty;
+    public string CandidatePhone { get; set; } = string.Empty;
+    public string JobTitle { get; set; } = string.Empty;
+    public Guid CurrentStageId { get; set; }
+    public string CurrentStageName { get; set; } = string.Empty;
+    public int CurrentStageOrder { get; set; }
+    public string StageColor { get; set; } = "#059669";
+    public string AppliedDateDisplay { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string ResumeFileName { get; set; } = string.Empty;
+    public string ResumeFilePath { get; set; } = string.Empty;
 }
 
 public class CandidateProfileDto

@@ -33,15 +33,15 @@ public static class UserRoles
         _ => role ?? string.Empty
     };
 
-    public static string NormalizeRole(string? role) => role switch
+    public static string NormalizeRole(string? role) => role?.Trim().ToUpperInvariant() switch
     {
-        "Quản trị viên hệ thống" or "Admin" => Admin,
-        "Trưởng phòng nhân sự" or "Trưởng phòng Nhân sự" or "HRManager" or "HR" => HRManager,
-        "Quản lý chuyên môn" or "HiringManager" => HiringManager,
-        "Người phỏng vấn" or "Interviewer" => Interviewer,
-        "Chuyên viên tuyển dụng" or "Recruiter" => Recruiter,
-        "Người phê duyệt" or "Approver" => Approver,
-        "Ứng viên nội bộ" or "Candidate" => Candidate,
+        "QUẢN TRỊ VIÊN HỆ THỐNG" or "ADMIN" => Admin,
+        "TRƯỞNG PHÒNG NHÂN SỰ" or "HRMANAGER" or "HR_MANAGER" or "HR" => HRManager,
+        "QUẢN LÝ CHUYÊN MÔN" or "HIRINGMANAGER" or "HIRING_MANAGER" => HiringManager,
+        "NGƯỜI PHỎNG VẤN" or "INTERVIEWER" => Interviewer,
+        "CHUYÊN VIÊN TUYỂN DỤNG" or "RECRUITER" => Recruiter,
+        "NGƯỜI PHÊ DUYỆT" or "APPROVER" => Approver,
+        "ỨNG VIÊN NỘI BỘ" or "CANDIDATE" => Candidate,
         _ => role ?? Candidate
     };
 }

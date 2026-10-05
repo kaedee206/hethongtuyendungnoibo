@@ -32,8 +32,8 @@ public class UserController : ControllerBase
 
         var query = _dbContext.Users.AsQueryable();
 
-        // Lọc theo keyword (tìm trong Email, FullName, Department - case insensitive, partial match)
-        if (!string.IsNullOrWhiteSpace(keyword))
+        // Lọc theo keyword (chỉ lọc khi từ khóa có từ 3 ký tự trở lên)
+        if (!string.IsNullOrWhiteSpace(keyword) && keyword.Trim().Length >= 3)
         {
             var keywordLower = keyword.Trim().ToLower();
             query = query.Where(u => 

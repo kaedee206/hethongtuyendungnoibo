@@ -1,0 +1,513 @@
+@model IEnumerable<Ats.Web.Models.Entities.RecruitmentCatalog>
+@{
+    ViewData["Title"] = "Danh mục tuyển dụng";
+}
+
+<div class="container-fluid px-3 px-md-4 py-4">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">Danh mục tuyển dụng chuẩn hóa</h1>
+            <p class="text-muted small mb-0">Quản lý các danh mục hệ thống: nguồn ứng viên, lý do từ chối, địa điểm làm việc và hình thức công việc.</p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" id="btnOpenCreateCatalogModal" style="border-radius: 8px;">
+                <i class="bi bi-plus-circle-fill"></i>
+                <span class="fw-semibold">Thêm mục danh mục</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Card & Type Navigation Tabs -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: #FFFFFF; border: 1px solid #E2E8F0;">
+        <div class="card-body p-3">
+            <div class="d-flex flex-wrap gap-2" id="catalogTypeTabs">
+                <button type="button" class="btn btn-dark active px-3 py-2 catalog-tab-btn" data-type="ALL" style="border-radius: 8px;">
+                    <i class="bi bi-grid-fill me-1"></i> Tất cả (<span id="countAll">@Model.Count()</span>)
+                </button>
+                <button type="button" class="btn btn-outline-secondary px-3 py-2 catalog-tab-btn" data-type="SOURCE" style="border-radius: 8px;">
+                    <i class="bi bi-funnel-fill me-1"></i> Nguồn ứng viên (<span id="countSource">@Model.Count(m => m.CatalogType == "SOURCE")</span>)
+                </button>
+                <button type="button" class="btn btn-outline-secondary px-3 py-2 catalog-tab-btn" data-type="REJECTION_REASON" style="border-radius: 8px;">
+                    <i class="bi bi-x-octagon-fill me-1"></i> Lý do từ chối (<span id="countReason">@Model.Count(m => m.CatalogType == "REJECTION_REASON")</span>)
+                </button>
+                <button type="button" class="btn btn-outline-secondary px-3 py-2 catalog-tab-btn" data-type="LOCATION" style="border-radius: 8px;">
+                    <i class="bi bi-geo-alt-fill me-1"></i> Địa điểm làm việc (<span id="countLocation">@Model.Count(m => m.CatalogType == "LOCATION")</span>)
+                </button>
+                <button type="button" class="btn btn-outline-secondary px-3 py-2 catalog-tab-btn" data-type="WORK_TYPE" style="border-radius: 8px;">
+                    <i class="bi bi-briefcase-fill me-1"></i> Hình thức làm việc (<span id="countWorkType">@Model.Count(m => m.CatalogType == "WORK_TYPE")</span>)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; background: #FFFFFF; border: 1px solid #E2E8F0; overflow: hidden;">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="catalogTable">
+                <thead style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0;">
+                    <tr>
+                        <th class="ps-4 py-3 text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.05em;">Loại danh mục</th>
+                        <th class="py-3 text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.05em;">Mã code</th>
+                        <th class="py-3 text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.05em;">Tên danh mục</th>
+                        <th class="py-3 text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.05em;">Mô tả chi tiết</th>
+                        <th class="py-3 text-secondary text-uppercase text-center" style="font-size: 0.75rem; letter-spacing: 0.05em;">Thứ tự</th>
+                        <th class="py-3 text-secondary text-uppercase text-center" style="font-size: 0.75rem; letter-spacing: 0.05em;">Trạng thái</th>
+                        <th class="pe-4 py-3 text-secondary text-uppercase text-end" style="font-size: 0.75rem; letter-spacing: 0.05em;">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody id="catalogTableBody">
+                    @foreach (var item in Model)
+                    {
+                        var typeLabel = item.CatalogType switch
+                        {
+                            "SOURCE" => "Nguồn tuyển dụng",
+                            "REJECTION_REASON" => "Lý do từ chối",
+                            "LOCATION" => "Địa điểm",
+                            "WORK_TYPE" => "Hình thức việc làm",
+                            _ => item.CatalogType
+                        };
+                        var typeBadgeClass = item.CatalogType switch
+                        {
+                            "SOURCE" => "bg-primary-subtle text-primary border border-primary-subtle",
+                            "REJECTION_REASON" => "bg-danger-subtle text-danger border border-danger-subtle",
+                            "LOCATION" => "bg-success-subtle text-success border border-success-subtle",
+                            "WORK_TYPE" => "bg-warning-subtle text-warning-emphasis border border-warning-subtle",
+                            _ => "bg-secondary-subtle text-secondary"
+                        };
+
+                        <tr class="catalog-row" data-type="@item.CatalogType" data-id="@item.Id" id="row-@item.Id">
+                            <td class="ps-4">
+                                <span class="badge @typeBadgeClass" style="border-radius: 6px; font-weight: 500;">@typeLabel</span>
+                                @if (item.IsSystem)
+                                {
+                                    <span class="badge bg-light text-muted border ms-1" style="border-radius: 6px;" title="Mục hệ thống mặc định">
+                                        <i class="bi bi-shield-lock-fill"></i> Hệ thống
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                <code class="fw-semibold text-dark" style="font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;">@item.Code</code>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-dark item-name">@item.Name</span>
+                            </td>
+                            <td>
+                                <span class="text-muted small item-desc">@(string.IsNullOrEmpty(item.Description) ? "—" : item.Description)</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-secondary border font-monospace item-order" style="border-radius: 6px;">@item.DisplayOrder</span>
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none btn-toggle-status" data-id="@item.Id" title="Bấm để đổi trạng thái">
+                                    @if (item.IsActive)
+                                    {
+                                        <span class="badge bg-success" style="border-radius: 6px;">Hoạt động</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary" style="border-radius: 6px;">Ngừng</span>
+                                    }
+                                </button>
+                            </td>
+                            <td class="pe-4 text-end">
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary btn-edit-catalog" 
+                                            data-id="@item.Id" 
+                                            data-type="@item.CatalogType" 
+                                            data-code="@item.Code" 
+                                            data-name="@item.Name" 
+                                            data-desc="@item.Description" 
+                                            data-order="@item.DisplayOrder" 
+                                            data-active="@item.IsActive.ToString().ToLower()" 
+                                            data-system="@item.IsSystem.ToString().ToLower()"
+                                            style="border-radius: 6px 0 0 6px;">
+                                        <i class="bi bi-pencil-fill"></i>
+                                    </button>
+                                    @if (!item.IsSystem)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-catalog" data-id="@item.Id" data-name="@item.Name" style="border-radius: 0 6px 6px 0;">
+                                            <i class="bi bi-trash-fill"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-secondary disabled" title="Không thể xóa mục mặc định của hệ thống" style="border-radius: 0 6px 6px 0; opacity: 0.5;">
+                                            <i class="bi bi-lock-fill"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <!-- Pagination Footer -->
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 p-3 border-top" id="catalogPaginationContainer" style="background: #FAFAFA; border-color: #E2E8F0 !important;">
+            <div class="d-flex align-items-center gap-2 text-muted" style="font-size: 0.8rem;">
+                <span>Hiển thị từ <strong id="catalogPageStart" class="text-dark">0</strong> đến <strong id="catalogPageEnd" class="text-dark">0</strong> trong tổng số <strong id="catalogTotalRecords" class="text-dark">0</strong> mục</span>
+                <span class="mx-1">•</span>
+                <label for="catalogPageSizeSelect" class="me-1">Mỗi trang:</label>
+                <select id="catalogPageSizeSelect" class="form-select form-select-sm" style="width: auto; font-size: 0.8rem; border-color: #E2E8F0; border-radius: 6px;">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+            <nav aria-label="Catalog Navigation">
+                <ul class="pagination pagination-sm mb-0 gap-1" id="catalogPaginationUl">
+                    <!-- Rendered dynamically -->
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm / Chỉnh sửa Mục Danh mục -->
+<div class="modal fade" id="catalogModal" tabindex="-1" aria-labelledby="catalogModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="catalogModalLabel">
+                    <i class="bi bi-folder-plus me-2"></i> Thêm mục danh mục mới
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="catalogForm">
+                    <input type="hidden" id="catalogItemId" value="" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-dark">Loại danh mục (*)</label>
+                        <select id="modalCatalogType" class="form-select" style="border-radius: 8px;" required>
+                            <option value="SOURCE">Nguồn ứng viên (SOURCE)</option>
+                            <option value="REJECTION_REASON">Lý do từ chối (REJECTION_REASON)</option>
+                            <option value="LOCATION">Địa điểm làm việc (LOCATION)</option>
+                            <option value="WORK_TYPE">Hình thức việc làm (WORK_TYPE)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-dark">Mã danh mục (*)</label>
+                        <input type="text" id="modalCatalogCode" class="form-control font-monospace" placeholder="VD: LINKEDIN, HN_HQ..." style="border-radius: 8px; text-transform: uppercase;" required />
+                        <div class="form-text small">Viết hoa không dấu, duy nhất trong nhóm danh mục.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-dark">Tên hiển thị (*)</label>
+                        <input type="text" id="modalCatalogName" class="form-control" placeholder="VD: LinkedIn Recruiter, Hà Nội - Trụ sở..." style="border-radius: 8px;" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-dark">Mô tả chi tiết</label>
+                        <textarea id="modalCatalogDesc" class="form-control" rows="2" placeholder="Giải thích chi tiết hoặc ghi chú..." style="border-radius: 8px;"></textarea>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold text-dark">Thứ tự hiển thị</label>
+                            <input type="number" id="modalCatalogOrder" class="form-control" value="0" min="0" style="border-radius: 8px;" />
+                        </div>
+                        <div class="col-6 d-flex align-items-end">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" role="switch" id="modalCatalogIsActive" checked>
+                                <label class="form-check-label fw-semibold" for="modalCatalogIsActive">Kích hoạt</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy</button>
+                <button type="button" id="btnSaveCatalog" class="btn btn-primary px-4" style="border-radius: 8px;">
+                    <i class="bi bi-save-fill me-1"></i> Lưu danh mục
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const catalogModal = new bootstrap.Modal(document.getElementById('catalogModal'));
+            const catalogForm = document.getElementById('catalogForm');
+            const itemIdInput = document.getElementById('catalogItemId');
+            const typeSelect = document.getElementById('modalCatalogType');
+            const codeInput = document.getElementById('modalCatalogCode');
+            const nameInput = document.getElementById('modalCatalogName');
+            const descInput = document.getElementById('modalCatalogDesc');
+            const orderInput = document.getElementById('modalCatalogOrder');
+            const activeInput = document.getElementById('modalCatalogIsActive');
+            const btnSave = document.getElementById('btnSaveCatalog');
+            const modalLabel = document.getElementById('catalogModalLabel');
+
+            // Tab filtering & Pagination
+            let currentCatalogType = 'ALL';
+            let currentCatalogPage = 1;
+            let currentCatalogPageSize = 10;
+
+            function applyCatalogPagination() {
+                const rows = Array.from(document.querySelectorAll('.catalog-row'));
+                const matched = rows.filter(r => currentCatalogType === 'ALL' || r.getAttribute('data-type') === currentCatalogType);
+                const total = matched.length;
+                const totalPages = Math.max(1, Math.ceil(total / currentCatalogPageSize));
+                if (currentCatalogPage > totalPages) currentCatalogPage = totalPages;
+                if (currentCatalogPage < 1) currentCatalogPage = 1;
+
+                const start = (currentCatalogPage - 1) * currentCatalogPageSize;
+                const end = Math.min(start + currentCatalogPageSize, total);
+
+                rows.forEach(r => {
+                    const idx = matched.indexOf(r);
+                    if (idx >= start && idx < end) {
+                        r.style.display = '';
+                    } else {
+                        r.style.display = 'none';
+                    }
+                });
+
+                const startEl = document.getElementById('catalogPageStart');
+                const endEl = document.getElementById('catalogPageEnd');
+                const totalEl = document.getElementById('catalogTotalRecords');
+                const pContainer = document.getElementById('catalogPaginationContainer');
+
+                if (startEl) startEl.innerText = total > 0 ? (start + 1) : 0;
+                if (endEl) endEl.innerText = end;
+                if (totalEl) totalEl.innerText = total;
+                if (pContainer) pContainer.style.display = total > 0 ? 'flex' : 'none';
+
+                renderCatalogPagination(totalPages, currentCatalogPage);
+            }
+
+            function renderCatalogPagination(totalPages, currentPage) {
+                const ul = document.getElementById('catalogPaginationUl');
+                if (!ul) return;
+                ul.innerHTML = '';
+                if (totalPages <= 1) return;
+
+                const prevLi = document.createElement('li');
+                prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+                prevLi.innerHTML = `<button class="page-link text-dark" type="button" onclick="goToCatalogPage(${currentPage - 1})" style="border-radius: 6px; padding: 0.25rem 0.55rem; font-size: 0.8rem; border-color: #E2E8F0;"><i class="bi bi-chevron-left"></i></button>`;
+                ul.appendChild(prevLi);
+
+                for (let p = 1; p <= totalPages; p++) {
+                    const li = document.createElement('li');
+                    const isActive = p === currentPage;
+                    li.className = `page-item ${isActive ? 'active' : ''}`;
+                    li.innerHTML = `<button class="page-link ${isActive ? 'text-white' : 'text-dark'}" type="button" onclick="goToCatalogPage(${p})" style="border-radius: 6px; padding: 0.25rem 0.6rem; font-size: 0.8rem; ${isActive ? 'background-color:#059669; border-color:#059669;' : 'border-color:#E2E8F0;'}">${p}</button>`;
+                    ul.appendChild(li);
+                }
+
+                const nextLi = document.createElement('li');
+                nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+                nextLi.innerHTML = `<button class="page-link text-dark" type="button" onclick="goToCatalogPage(${currentPage + 1})" style="border-radius: 6px; padding: 0.25rem 0.55rem; font-size: 0.8rem; border-color: #E2E8F0;"><i class="bi bi-chevron-right"></i></button>`;
+                ul.appendChild(nextLi);
+            }
+
+            window.goToCatalogPage = function(page) {
+                currentCatalogPage = page;
+                applyCatalogPagination();
+            };
+
+            const pageSizeSelect = document.getElementById('catalogPageSizeSelect');
+            if (pageSizeSelect) {
+                pageSizeSelect.addEventListener('change', function () {
+                    currentCatalogPageSize = parseInt(this.value, 10) || 10;
+                    currentCatalogPage = 1;
+                    applyCatalogPagination();
+                });
+            }
+
+            const tabButtons = document.querySelectorAll('.catalog-tab-btn');
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    tabButtons.forEach(b => {
+                        b.classList.remove('btn-dark', 'active');
+                        b.classList.add('btn-outline-secondary');
+                    });
+                    this.classList.remove('btn-outline-secondary');
+                    this.classList.add('btn-dark', 'active');
+
+                    currentCatalogType = this.getAttribute('data-type');
+                    currentCatalogPage = 1;
+                    applyCatalogPagination();
+                });
+            });
+
+            applyCatalogPagination();
+
+            // Open Create Modal
+            document.getElementById('btnOpenCreateCatalogModal').addEventListener('click', function () {
+                itemIdInput.value = '';
+                catalogForm.reset();
+                typeSelect.disabled = false;
+                codeInput.disabled = false;
+                activeInput.checked = true;
+                modalLabel.innerHTML = '<i class="bi bi-folder-plus me-2"></i> Thêm mục danh mục mới';
+                catalogModal.show();
+            });
+
+            // Edit button handler
+            document.getElementById('catalogTableBody').addEventListener('click', function (e) {
+                const editBtn = e.target.closest('.btn-edit-catalog');
+                if (editBtn) {
+                    const id = editBtn.getAttribute('data-id');
+                    const type = editBtn.getAttribute('data-type');
+                    const code = editBtn.getAttribute('data-code');
+                    const name = editBtn.getAttribute('data-name');
+                    const desc = editBtn.getAttribute('data-desc');
+                    const order = editBtn.getAttribute('data-order');
+                    const isActive = editBtn.getAttribute('data-active') === 'true';
+                    const isSystem = editBtn.getAttribute('data-system') === 'true';
+
+                    itemIdInput.value = id;
+                    typeSelect.value = type;
+                    typeSelect.disabled = true; // Cannot change type on edit
+                    codeInput.value = code;
+                    codeInput.disabled = isSystem; // Protected system items code is read-only
+                    nameInput.value = name;
+                    descInput.value = desc || '';
+                    orderInput.value = order || '0';
+                    activeInput.checked = isActive;
+
+                    modalLabel.innerHTML = `<i class="bi bi-pencil-square me-2"></i> Chỉnh sửa: ${name}`;
+                    catalogModal.show();
+                    return;
+                }
+
+                // Delete button handler
+                const deleteBtn = e.target.closest('.btn-delete-catalog');
+                if (deleteBtn) {
+                    const id = deleteBtn.getAttribute('data-id');
+                    const name = deleteBtn.getAttribute('data-name');
+                    if (confirm(`Bạn có chắc chắn muốn xóa mục danh mục "${name}"?`)) {
+                        deleteCatalogItem(id);
+                    }
+                    return;
+                }
+
+                // Toggle status handler
+                const toggleBtn = e.target.closest('.btn-toggle-status');
+                if (toggleBtn) {
+                    const id = toggleBtn.getAttribute('data-id');
+                    toggleCatalogStatus(id, toggleBtn);
+                    return;
+                }
+            });
+
+            // Save Catalog Item (Create / Update)
+            btnSave.addEventListener('click', async function () {
+                if (!nameInput.value.trim() || (!codeInput.disabled && !codeInput.value.trim())) {
+                    if (window.NoveraToast) window.NoveraToast.show('Vui lòng điền đầy đủ các trường bắt buộc (*).', 'warning');
+                    else alert('Vui lòng điền đầy đủ các trường bắt buộc.');
+                    return;
+                }
+
+                const id = itemIdInput.value;
+                const isEdit = !!id;
+                const payload = {
+                    catalogType: typeSelect.value,
+                    code: codeInput.value.trim(),
+                    name: nameInput.value.trim(),
+                    description: descInput.value.trim(),
+                    displayOrder: parseInt(orderInput.value, 10) || 0,
+                    isActive: activeInput.checked
+                };
+
+                btnSave.disabled = true;
+                btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang lưu...';
+
+                try {
+                    const url = isEdit ? `/recruitment-catalogs/api/items/${id}` : '/recruitment-catalogs/api/items';
+                    const method = isEdit ? 'PUT' : 'POST';
+
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': token
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.message || 'Không thể lưu mục danh mục.');
+                    }
+
+                    catalogModal.hide();
+                    if (window.NoveraToast) {
+                        window.NoveraToast.show(isEdit ? 'Cập nhật danh mục thành công!' : 'Tạo mới danh mục thành công!', 'success');
+                    }
+                    setTimeout(() => window.location.reload(), 1000);
+                } catch (err) {
+                    if (window.NoveraToast) window.NoveraToast.show(err.message, 'error');
+                    else alert(err.message);
+                } finally {
+                    btnSave.disabled = false;
+                    btnSave.innerHTML = '<i class="bi bi-save-fill me-1"></i> Lưu danh mục';
+                }
+            });
+
+            // Delete item
+            async function deleteCatalogItem(id) {
+                try {
+                    const response = await fetch(`/recruitment-catalogs/api/items/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'RequestVerificationToken': token
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.message || 'Lỗi khi xóa mục danh mục.');
+                    }
+
+                    const row = document.getElementById(`row-${id}`);
+                    if (row) row.remove();
+
+                    if (window.NoveraToast) window.NoveraToast.show('Đã xóa mục danh mục thành công!', 'success');
+                } catch (err) {
+                    if (window.NoveraToast) window.NoveraToast.show(err.message, 'error');
+                    else alert(err.message);
+                }
+            }
+
+            // Toggle item status
+            async function toggleCatalogStatus(id, btnElement) {
+                try {
+                    const response = await fetch(`/recruitment-catalogs/api/items/${id}/toggle-status`, {
+                        method: 'POST',
+                        headers: {
+                            'RequestVerificationToken': token
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.message || 'Lỗi khi thay đổi trạng thái.');
+                    }
+
+                    const res = await response.json();
+                    if (res.isActive) {
+                        btnElement.innerHTML = '<span class="badge bg-success" style="border-radius: 6px;">Hoạt động</span>';
+                    } else {
+                        btnElement.innerHTML = '<span class="badge bg-secondary" style="border-radius: 6px;">Ngừng</span>';
+                    }
+
+                    if (window.NoveraToast) window.NoveraToast.show('Đã cập nhật trạng thái danh mục!', 'success');
+                } catch (err) {
+                    if (window.NoveraToast) window.NoveraToast.show(err.message, 'error');
+                    else alert(err.message);
+                }
+            }
+        });
+    </script>
+}

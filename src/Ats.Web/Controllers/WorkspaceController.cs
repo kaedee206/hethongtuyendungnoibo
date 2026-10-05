@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+using Ats.Web.Services.Interfaces;
+
 namespace Ats.Web.Controllers;
 
 [Authorize]
@@ -15,15 +17,18 @@ public class WorkspaceController : Controller
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly IWebHostEnvironment _env;
+    private readonly IEmailService _emailService;
     private readonly ILogger<WorkspaceController> _logger;
 
     public WorkspaceController(
         ApplicationDbContext dbContext,
         IWebHostEnvironment env,
+        IEmailService emailService,
         ILogger<WorkspaceController> logger)
     {
         _dbContext = dbContext;
         _env = env;
+        _emailService = emailService;
         _logger = logger;
     }
 
@@ -874,6 +879,575 @@ public class WorkspaceController : Controller
         {
             _logger.LogError(ex, "Lỗi khi lọc hồ sơ");
             return Json(new { success = false, message = "Lỗi: " + ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Chuyển giai đoạn ứng tuyển (VD: Sơ loại -> Phỏng vấn, Phỏng vấn -> Offer, v.v.).
+    /// </summary>
+    [HttpPost("AdvanceStage")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager}")]
+    public async Task<IActionResult> AdvanceStage(
+        [FromForm] Guid applicationId,
+        [FromForm] Guid? toStageId,
+        [FromForm] string? comment)
+    {
+        try
+        {
+            var application = await _dbContext.Applications
+                .Include(a => a.Candidate)
+                .Include(a => a.JobPosting)
+                .Include(a => a.CurrentStage)
+                .FirstOrDefaultAsync(a => a.Id == applicationId);
+
+            if (application == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy hồ sơ ứng viên yêu cầu." });
+            }
+
+            var currentStage = application.CurrentStage;
+            PipelineStage? targetStage = null;
+
+            if (toStageId.HasValue && toStageId.Value != Guid.Empty)
+            {
+                targetStage = await _dbContext.PipelineStages.FirstOrDefaultAsync(s => s.Id == toStageId.Value);
+            }
+            else
+            {
+                // Mặc định chuyển sang stage có StageOrder kế tiếp
+                targetStage = await _dbContext.PipelineStages
+                    .Where(s => s.StageOrder > currentStage.StageOrder)
+                    .OrderBy(s => s.StageOrder)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (targetStage == null)
+            {
+                return Json(new { success = false, message = "Hồ sơ hiện đã ở giai đoạn cao nhất trong quy trình tuyển dụng." });
+            }
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+            var effectiveUserId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync());
+
+            var prevStageId = application.CurrentStageId;
+            application.CurrentStageId = targetStage.Id;
+            application.UpdatedAt = DateTimeOffset.UtcNow;
+
+            var history = new ApplicationStageHistory
+            {
+                Id = Guid.NewGuid(),
+                ApplicationId = application.Id,
+                FromStageId = prevStageId,
+                ToStageId = targetStage.Id,
+                ChangedByUserId = effectiveUserId,
+                Comment = string.IsNullOrWhiteSpace(comment)
+                    ? $"Chuyển giai đoạn từ '{currentStage.Name}' sang '{targetStage.Name}' bởi {User.Identity?.Name}."
+                    : comment.Trim(),
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            await _dbContext.ApplicationStageHistories.AddAsync(history);
+            await _dbContext.SaveChangesAsync();
+
+            // Nếu vượt qua sơ loại (Screening Passed), gửi email chúc mừng cho ứng viên
+            if (targetStage.StageOrder == 2 || targetStage.Name.Contains("Phỏng vấn", StringComparison.OrdinalIgnoreCase) || targetStage.Name.Contains("Sơ loại", StringComparison.OrdinalIgnoreCase))
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var candName = $"{application.Candidate.FirstName} {application.Candidate.LastName}".Trim();
+                        await _emailService.SendScreeningPassedAsync(
+                            application.Candidate.Email,
+                            candName,
+                            application.JobPosting.Title);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning("Không thể gửi email thông báo qua sơ loại: {Msg}", ex.Message);
+                    }
+                });
+            }
+
+            var candidateFullName = $"{application.Candidate.FirstName} {application.Candidate.LastName}".Trim();
+            return Json(new
+            {
+                success = true,
+                message = $"🎉 Đã chuyển hồ sơ ứng viên {candidateFullName} sang giai đoạn: '{targetStage.Name}' thành công!",
+                stageId = targetStage.Id,
+                stageName = targetStage.Name,
+                stageOrder = targetStage.StageOrder,
+                stageColor = targetStage.ColorCode
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi chuyển giai đoạn ứng tuyển");
+            return Json(new { success = false, message = "Lỗi khi chuyển giai đoạn: " + ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Lên lịch phỏng vấn, phân công hội đồng phỏng vấn và gửi thư mời email cho ứng viên.
+    /// </summary>
+    [HttpPost("ScheduleInterview")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager}")]
+    public async Task<IActionResult> ScheduleInterview(
+        [FromForm] Guid applicationId,
+        [FromForm] string? roundTitle,
+        [FromForm] DateTime? startTime,
+        [FromForm] DateTime? endTime,
+        [FromForm] string? locationOrLink,
+        [FromForm] List<Guid>? interviewerIds,
+        [FromForm] string? note)
+    {
+        try
+        {
+            var application = await _dbContext.Applications
+                .Include(a => a.Candidate)
+                .Include(a => a.JobPosting)
+                .Include(a => a.CurrentStage)
+                .FirstOrDefaultAsync(a => a.Id == applicationId);
+
+            if (application == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy hồ sơ ứng viên." });
+            }
+
+            var startDto = startTime.HasValue
+                ? new DateTimeOffset(DateTime.SpecifyKind(startTime.Value, DateTimeKind.Utc))
+                : DateTimeOffset.UtcNow.AddDays(2).Date.AddHours(9); // Mặc định 9h sáng ngày kia
+            var endDto = endTime.HasValue
+                ? new DateTimeOffset(DateTime.SpecifyKind(endTime.Value, DateTimeKind.Utc))
+                : startDto.AddHours(1);
+
+            var title = string.IsNullOrWhiteSpace(roundTitle) ? "Phỏng vấn Chuyên môn & Văn hóa NoveraTech" : roundTitle.Trim();
+            var meetLocation = string.IsNullOrWhiteSpace(locationOrLink) ? "Google Meet (Link phòng họp gửi qua lịch hẹn)" : locationOrLink.Trim();
+
+            var interview = new Interview
+            {
+                Id = Guid.NewGuid(),
+                ApplicationId = application.Id,
+                RoundNumber = 1,
+                Title = title,
+                InterviewType = meetLocation.Contains("http", StringComparison.OrdinalIgnoreCase) ? InterviewType.ONLINE_MEET : InterviewType.OFFLINE_OFFICE,
+                LocationOrLink = meetLocation,
+                StartTime = startDto,
+                EndTime = endDto,
+                Status = InterviewStatus.SCHEDULED,
+                CandidateConfirmed = CandidateConfirmStatus.PENDING,
+                CandidateNotes = note,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await _dbContext.Interviews.AddAsync(interview);
+
+            // Gán Panelists (Người phỏng vấn)
+            var panelistNames = new List<string>();
+            if (interviewerIds != null && interviewerIds.Any())
+            {
+                var interviewers = await _dbContext.Users.Where(u => interviewerIds.Contains(u.Id)).ToListAsync();
+                foreach (var inv in interviewers)
+                {
+                    await _dbContext.InterviewPanelists.AddAsync(new InterviewPanelist
+                    {
+                        Id = Guid.NewGuid(),
+                        InterviewId = interview.Id,
+                        InterviewerId = inv.Id,
+                        IsLead = panelistNames.Count == 0,
+                        CreatedAt = DateTimeOffset.UtcNow,
+                        UpdatedAt = DateTimeOffset.UtcNow
+                    });
+                    panelistNames.Add($"{inv.FullName} ({inv.Role})");
+                }
+            }
+            if (!panelistNames.Any())
+            {
+                panelistNames.Add("Ban Tuyển Dụng NoveraTech");
+            }
+
+            // Chuyển giai đoạn sang Stage Phỏng vấn nếu chưa ở đó
+            var interviewStage = await _dbContext.PipelineStages.FirstOrDefaultAsync(s => s.StageOrder == 3 || s.Name.Contains("Phỏng vấn"))
+                ?? await _dbContext.PipelineStages.FirstOrDefaultAsync(s => s.StageOrder == 2);
+
+            if (interviewStage != null && application.CurrentStageId != interviewStage.Id)
+            {
+                var prev = application.CurrentStageId;
+                application.CurrentStageId = interviewStage.Id;
+                application.UpdatedAt = DateTimeOffset.UtcNow;
+
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                _ = Guid.TryParse(userIdStr, out var currentUserId);
+                var effectiveUserId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync());
+
+                await _dbContext.ApplicationStageHistories.AddAsync(new ApplicationStageHistory
+                {
+                    Id = Guid.NewGuid(),
+                    ApplicationId = application.Id,
+                    FromStageId = prev,
+                    ToStageId = interviewStage.Id,
+                    ChangedByUserId = effectiveUserId,
+                    Comment = $"Đã lên lịch phỏng vấn: {title} ({startDto:dd/MM/yyyy HH:mm}).",
+                    CreatedAt = DateTimeOffset.UtcNow
+                });
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            // Gửi email thư mời phỏng vấn cho ứng viên
+            var candFullName = $"{application.Candidate.FirstName} {application.Candidate.LastName}".Trim();
+            var panelistStr = string.Join(", ", panelistNames);
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _emailService.SendInterviewInvitationAsync(
+                        application.Candidate.Email,
+                        candFullName,
+                        application.JobPosting.Title,
+                        title,
+                        startDto,
+                        endDto,
+                        meetLocation,
+                        panelistStr);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Không thể gửi email thư mời phỏng vấn: {Msg}", ex.Message);
+                }
+            });
+
+            return Json(new
+            {
+                success = true,
+                message = $"📅 Đã lên lịch phỏng vấn và gửi thư mời tới ứng viên {candFullName} thành công!",
+                interviewId = interview.Id,
+                startTime = startDto.ToString("dd/MM/yyyy HH:mm"),
+                panelists = panelistStr
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi lên lịch phỏng vấn");
+            return Json(new { success = false, message = "Lỗi khi xếp lịch phỏng vấn: " + ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Đề xuất Thư mời nhận việc (Job Offer) cho ứng viên.
+    /// </summary>
+    [HttpPost("CreateOffer")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager}")]
+    public async Task<IActionResult> CreateOffer(
+        [FromForm] Guid applicationId,
+        [FromForm] decimal baseSalary,
+        [FromForm] decimal? bonusAllowance,
+        [FromForm] decimal? totalPackage,
+        [FromForm] DateTime? proposedJoinDate,
+        [FromForm] string? contractType,
+        [FromForm] string? note)
+    {
+        try
+        {
+            var application = await _dbContext.Applications
+                .Include(a => a.Candidate)
+                .Include(a => a.JobPosting)
+                .Include(a => a.CurrentStage)
+                .FirstOrDefaultAsync(a => a.Id == applicationId);
+
+            if (application == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy hồ sơ ứng viên." });
+            }
+
+            if (baseSalary <= 0)
+            {
+                return Json(new { success = false, message = "Mức lương cơ bản phải lớn hơn 0." });
+            }
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+            var recruiterId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync());
+
+            var offer = await _dbContext.JobOffers.FirstOrDefaultAsync(o => o.ApplicationId == application.Id);
+            var joinDate = proposedJoinDate.HasValue
+                ? DateOnly.FromDateTime(proposedJoinDate.Value)
+                : DateOnly.FromDateTime(DateTime.UtcNow.AddDays(14));
+
+            var total = totalPackage ?? (baseSalary + (bonusAllowance ?? 0));
+
+            if (offer == null)
+            {
+                offer = new JobOffer
+                {
+                    Id = Guid.NewGuid(),
+                    ApplicationId = application.Id,
+                    CreatedByRecruiterId = recruiterId,
+                    BaseSalary = baseSalary,
+                    BonusAllowance = bonusAllowance,
+                    TotalPackage = total,
+                    ProposedJoinDate = joinDate,
+                    ProbationPeriodMonths = 2,
+                    ContractType = contractType ?? "Chính thức (Toàn thời gian)",
+                    Status = OfferStatus.PENDING_APPROVAL,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
+                await _dbContext.JobOffers.AddAsync(offer);
+            }
+            else
+            {
+                offer.BaseSalary = baseSalary;
+                offer.BonusAllowance = bonusAllowance;
+                offer.TotalPackage = total;
+                offer.ProposedJoinDate = joinDate;
+                offer.ContractType = contractType ?? offer.ContractType;
+                offer.Status = OfferStatus.PENDING_APPROVAL;
+                offer.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+
+            // Chuyển giai đoạn sang Stage 5: Offer
+            var offerStage = await _dbContext.PipelineStages.FirstOrDefaultAsync(s => s.StageOrder == 5 || s.Name.Contains("Offer"));
+            if (offerStage != null)
+            {
+                var prev = application.CurrentStageId;
+                application.CurrentStageId = offerStage.Id;
+                application.UpdatedAt = DateTimeOffset.UtcNow;
+
+                await _dbContext.ApplicationStageHistories.AddAsync(new ApplicationStageHistory
+                {
+                    Id = Guid.NewGuid(),
+                    ApplicationId = application.Id,
+                    FromStageId = prev,
+                    ToStageId = offerStage.Id,
+                    ChangedByUserId = recruiterId,
+                    Comment = $"Đề xuất Thư mời nhận việc: Lương cơ bản {baseSalary:N0} VNĐ. Ngày dự kiến nhận việc: {joinDate:dd/MM/yyyy}.",
+                    CreatedAt = DateTimeOffset.UtcNow
+                });
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            // Gửi email thông báo Thư mời nhận việc cho ứng viên
+            var candFullName = $"{application.Candidate.FirstName} {application.Candidate.LastName}".Trim();
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var joinDateTime = joinDate.ToDateTime(TimeOnly.MinValue);
+                    await _emailService.SendOfferLetterNotificationAsync(
+                        application.Candidate.Email,
+                        candFullName,
+                        application.JobPosting.Title,
+                        baseSalary,
+                        joinDateTime);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Không thể gửi email thư mời Offer: {Msg}", ex.Message);
+                }
+            });
+
+            return Json(new
+            {
+                success = true,
+                message = $"💼 Đã tạo Đề xuất Offer (Lương: {baseSalary:N0} VNĐ) và gửi thông báo tới ứng viên {candFullName} thành công!",
+                offerId = offer.Id
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi tạo đề xuất Offer");
+            return Json(new { success = false, message = "Lỗi khi tạo Offer: " + ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Từ chối hồ sơ ứng viên và gửi thư cảm ơn/từ chối lịch sự.
+    /// </summary>
+    [HttpPost("RejectApplication")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager}")]
+    public async Task<IActionResult> RejectApplication(
+        [FromForm] Guid applicationId,
+        [FromForm] string? reason,
+        [FromForm] bool sendEmail = true)
+    {
+        try
+        {
+            var application = await _dbContext.Applications
+                .Include(a => a.Candidate)
+                .Include(a => a.JobPosting)
+                .Include(a => a.CurrentStage)
+                .FirstOrDefaultAsync(a => a.Id == applicationId);
+
+            if (application == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy hồ sơ ứng viên." });
+            }
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+            var effectiveUserId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync());
+
+            var prev = application.CurrentStageId;
+            application.Status = ApplicationStatus.REJECTED;
+            application.UpdatedAt = DateTimeOffset.UtcNow;
+
+            var rejectStage = await _dbContext.PipelineStages.FirstOrDefaultAsync(s => s.StageOrder == 7 || s.Name.Contains("Từ chối"));
+            if (rejectStage != null)
+            {
+                application.CurrentStageId = rejectStage.Id;
+            }
+
+            var rejectReason = string.IsNullOrWhiteSpace(reason)
+                ? "Hồ sơ chưa phù hợp với tiêu chuẩn yêu cầu của vị trí ở thời điểm hiện tại."
+                : reason.Trim();
+
+            await _dbContext.ApplicationStageHistories.AddAsync(new ApplicationStageHistory
+            {
+                Id = Guid.NewGuid(),
+                ApplicationId = application.Id,
+                FromStageId = prev,
+                ToStageId = rejectStage?.Id ?? prev,
+                ChangedByUserId = effectiveUserId,
+                Comment = $"Từ chối hồ sơ: {rejectReason}",
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+
+            await _dbContext.SaveChangesAsync();
+
+            var candFullName = $"{application.Candidate.FirstName} {application.Candidate.LastName}".Trim();
+            if (sendEmail)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _emailService.SendRejectionLetterAsync(
+                            application.Candidate.Email,
+                            candFullName,
+                            application.JobPosting.Title,
+                            rejectReason);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning("Không thể gửi email từ chối: {Msg}", ex.Message);
+                    }
+                });
+            }
+
+            return Json(new
+            {
+                success = true,
+                message = $"Đã cập nhật trạng thái Từ chối cho hồ sơ ứng viên {candFullName}{(sendEmail ? " và gửi email thư cảm ơn lịch sự." : ".")}"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi từ chối hồ sơ ứng viên");
+            return Json(new { success = false, message = "Lỗi khi xử lý từ chối: " + ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Lấy danh sách thành viên nội bộ có thể phân công phỏng vấn.
+    /// </summary>
+    [HttpGet("GetInterviewers")]
+    public async Task<IActionResult> GetInterviewers()
+    {
+        try
+        {
+            var interviewers = await _dbContext.Users
+                .Where(u => u.Status == "ACTIVE")
+                .Select(u => new
+                {
+                    u.Id,
+                    u.FullName,
+                    u.Email,
+                    u.Role
+                })
+                .ToListAsync();
+
+            return Json(new { success = true, data = interviewers });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Lấy chi tiết hồ sơ ứng viên kèm lịch sử các giai đoạn và CV.
+    /// </summary>
+    [HttpGet("GetCandidateDetail")]
+    public async Task<IActionResult> GetCandidateDetail([FromQuery] Guid id, [FromQuery] Guid? applicationId)
+    {
+        try
+        {
+            var appId = id != Guid.Empty ? id : (applicationId ?? Guid.Empty);
+            var app = await _dbContext.Applications
+                .Include(a => a.Candidate)
+                    .ThenInclude(c => c.Resumes)
+                .Include(a => a.JobPosting)
+                .Include(a => a.CurrentStage)
+                .Include(a => a.StageHistories)
+                .Include(a => a.Interviews)
+                    .ThenInclude(i => i.Evaluations)
+                .Include(a => a.JobOffers)
+                .FirstOrDefaultAsync(a => a.Id == appId);
+
+            if (app == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy hồ sơ." });
+            }
+
+            var candName = $"{app.Candidate.FirstName} {app.Candidate.LastName}".Trim();
+            var primaryResume = app.Candidate.Resumes.FirstOrDefault(r => r.IsPrimary) ?? app.Candidate.Resumes.FirstOrDefault();
+
+            return Json(new
+            {
+                success = true,
+                data = new
+                {
+                    id = app.Id,
+                    candidateName = candName,
+                    email = app.Candidate.Email,
+                    candidateEmail = app.Candidate.Email,
+                    phone = app.Candidate.Phone ?? "Chưa cập nhật",
+                    candidatePhone = app.Candidate.Phone ?? "Chưa cập nhật",
+                    linkedin = app.Candidate.LinkedinUrl ?? "",
+                    jobTitle = app.JobPosting.Title,
+                    currentStageId = app.CurrentStageId,
+                    currentStageName = app.CurrentStage.Name,
+                    currentStage = app.CurrentStage.Name,
+                    stageColor = app.CurrentStage.ColorCode,
+                    stageOrder = app.CurrentStage.StageOrder,
+                    status = app.Status.ToString(),
+                    appliedDate = app.AppliedAt.HasValue ? app.AppliedAt.Value.ToString("dd/MM/yyyy HH:mm") : app.CreatedAt.ToString("dd/MM/yyyy"),
+                    resumeFileName = primaryResume?.FileName ?? "Chưa tải lên",
+                    resumeFilePath = primaryResume?.FilePath ?? "#",
+                    interviews = app.Interviews.Select(i => new
+                    {
+                        i.Title,
+                        time = i.StartTime.HasValue ? i.StartTime.Value.ToString("dd/MM/yyyy HH:mm") : "Chưa ấn định",
+                        link = i.LocationOrLink ?? "Chưa có",
+                        status = i.Status.ToString()
+                    }),
+                    histories = app.StageHistories.OrderByDescending(h => h.CreatedAt).Select(h => new
+                    {
+                        comment = h.Comment ?? "Cập nhật tiến trình",
+                        date = h.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                    })
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = ex.Message });
         }
     }
 

@@ -45,7 +45,7 @@ public class CompetencyFrameworkService(ApplicationDbContext dbContext) : ICompe
 
         var query = allFrameworks.AsEnumerable();
 
-        if (!string.IsNullOrWhiteSpace(keyword))
+        if (!string.IsNullOrWhiteSpace(keyword) && keyword.Trim().Length >= 3)
         {
             var kw = keyword.Trim().ToLowerInvariant();
             query = query.Where(f => f.Code.ToLowerInvariant().Contains(kw) || f.Name.ToLowerInvariant().Contains(kw));

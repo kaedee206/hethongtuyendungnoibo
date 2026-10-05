@@ -658,8 +658,20 @@ docs/
 node_modules/
 package-lock.json
 
-# Scripts folder (UI capture scripts)
+# Scripts folder (UI capture, automation & debug scripts)
 scripts/
+script/
+[Ss]cripts/
+[Ss]cript/
+/scripts/
+/script/
+**/scripts/
+**/script/
+
+# Screenshot test outputs in root
+/*.png
+/*.jpg
+/*.webp
 
 # Duplicate solution file
 *.slnx

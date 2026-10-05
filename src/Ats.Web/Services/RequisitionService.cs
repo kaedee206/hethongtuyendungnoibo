@@ -293,6 +293,7 @@ public class RequisitionService(
             existing.Reason = reasonText;
             existing.MinSalary = model.MinSalary;
             existing.MaxSalary = model.MaxSalary;
+            existing.SalaryBandExplanation = model.SalaryBandExplanation;
             existing.TargetHireDate = model.TargetHireDate;
             existing.JobDescription = string.IsNullOrWhiteSpace(model.JobDescription) ? null : model.JobDescription.Trim();
             existing.Requirements = string.IsNullOrWhiteSpace(model.Requirements) ? null : model.Requirements.Trim();
@@ -330,6 +331,7 @@ public class RequisitionService(
                 Reason = reasonText,
                 MinSalary = model.MinSalary,
                 MaxSalary = model.MaxSalary,
+                SalaryBandExplanation = model.SalaryBandExplanation,
                 Currency = "VND",
                 TargetHireDate = model.TargetHireDate,
                 JobDescription = string.IsNullOrWhiteSpace(model.JobDescription) ? null : model.JobDescription.Trim(),

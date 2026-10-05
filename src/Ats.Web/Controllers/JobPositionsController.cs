@@ -94,7 +94,7 @@ public class JobPositionsController(
             .AsNoTracking()
             .Where(p => !p.IsDeleted);
 
-        if (!string.IsNullOrWhiteSpace(keyword))
+        if (!string.IsNullOrWhiteSpace(keyword) && keyword.Trim().Length >= 3)
         {
             var kw = keyword.Trim().ToLower();
             query = query.Where(p => p.Code.ToLower().Contains(kw) || p.Title.ToLower().Contains(kw));

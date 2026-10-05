@@ -19,7 +19,6 @@ public class User
     public string? Department { get; set; }
     
     // SCRUM-187: Cập nhật hồ sơ
-    public string? PhoneNumber { get; set; }
     public string? JobTitle { get; set; }
 
     public Guid? DepartmentId { get; set; }

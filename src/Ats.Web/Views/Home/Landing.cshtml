@@ -254,7 +254,11 @@
                                     <input type="text" name="search" id="heroJobSearchInput"
                                            class="form-control"
                                            placeholder="Tìm vị trí: .NET, React, AI..."
-                                           style="padding-left: 36px; height: 42px; border-radius: 8px; border: 1px solid #E2E8F0; font-size: 0.9rem;" />
+                                           autocomplete="off"
+                                           style="padding-left: 36px; padding-right: 32px; height: 42px; border-radius: 8px; border: 1px solid #E2E8F0; font-size: 0.9rem;" />
+                                    <button type="button" id="heroJobSearchClearBtn" class="btn btn-sm btn-link position-absolute top-50 end-0 translate-middle-y me-1 text-muted d-none" style="text-decoration:none; z-index: 5;" title="Xóa từ khóa">
+                                        <i class="bi bi-x-circle-fill"></i>
+                                    </button>
                                 </div>
                             </div>
                             <div class="col-6 col-md-4">
@@ -348,17 +352,315 @@
 
                     <div class="d-flex gap-2">
                         <a asp-controller="Jobs" asp-action="Index" class="btn-career-primary flex-grow-1 justify-content-center">
-                            <i class="bi bi-briefcase"></i> Khám phá 12+ vị trí tuyển dụng
+                            <i class="bi bi-briefcase"></i> Khám phá @(ViewBag.TotalOpenJobs != null ? $"{ViewBag.TotalOpenJobs}" : "các") vị trí tuyển dụng
                         </a>
-                        <a asp-controller="Account" asp-action="CandidateAuth" class="btn-career-outline">
-                            Nộp CV ngay
-                        </a>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <a href="/dashboard" class="btn-career-outline">
+                                <i class="bi bi-speedometer2"></i> Bàn làm việc
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-controller="Account" asp-action="CandidateAuth" class="btn-career-outline">
+                                Nộp CV ngay
+                            </a>
+                        }
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </section>
+
+@* ══════════════════════════════════════════════════════════
+   1.5. SECTION: NOVERATECH HEADQUARTERS & WORKSPACE SHOWCASE (4-SLIDE CAROUSEL)
+   ══════════════════════════════════════════════════════════ *@
+<section class="py-4 bg-white border-bottom" style="border-color: #E2E8F0 !important;">
+    <div class="container-fluid px-4 px-md-5">
+        <style>
+            .office-slide {
+                opacity: 0;
+                visibility: hidden;
+                transform: scale(1.02);
+                transition: opacity 0.85s cubic-bezier(0.4, 0, 0.2, 1), transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.85s;
+                z-index: 1;
+            }
+            .office-slide.active {
+                opacity: 1;
+                visibility: visible;
+                transform: scale(1);
+                z-index: 2;
+            }
+            .office-dot {
+                width: 24px;
+                height: 6px;
+                border-radius: 3px;
+                background: rgba(255, 255, 255, 0.35);
+                border: none;
+                padding: 0;
+                transition: all 0.3s ease;
+                cursor: pointer;
+            }
+            .office-dot.active {
+                width: 36px;
+                background: #10B981;
+            }
+            .backdrop-blur-office {
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+            }
+        </style>
+
+        <div id="officeBannerCarousel" class="position-relative overflow-hidden shadow-sm user-select-none" 
+             style="border-radius: 16px; border: 1px solid #E2E8F0; min-height: 480px; height: 500px; max-height: 60vh;">
+            
+            <!-- Slides Container -->
+            <div class="office-slides-wrapper w-100 h-100 position-relative">
+                
+                <!-- Slide 1: Engineering Hub -->
+                <div class="office-slide active position-absolute top-0 start-0 w-100 h-100">
+                    <img src="~/img/noveratech_office_banner.jpg"
+                         alt="NoveraTech Open Engineering Hub"
+                         class="w-100 h-100 object-fit-cover d-block office-slide-img"
+                         asp-append-version="true" />
+                    <div class="position-absolute bottom-0 start-0 end-0 p-4 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-end gap-3 office-caption"
+                         style="background: linear-gradient(180deg, rgba(15,23,42,0) 0%, rgba(15,23,42,0.85) 60%, rgba(15,23,42,0.96) 100%);">
+                        <div>
+                            <span class="badge text-white px-3 py-1.5 mb-2" style="background: rgba(5,150,105,0.9); border-radius: 6px; font-size: 0.78rem; letter-spacing: 0.06em; font-weight: 600;">
+                                <i class="bi bi-laptop me-1.5"></i>KHÔNG GIAN KỸ THUẬT MỞ (ENGINEERING HUB)
+                            </span>
+                            <h3 class="text-white fw-bold mb-1" style="font-size: clamp(1.4rem, 2.5vw, 2.1rem); letter-spacing: -0.02em;">
+                                Không Gian Làm Việc Chuẩn Silicon Valley Tại Hà Nội
+                            </h3>
+                            <p class="text-white-50 mb-0 small" style="max-width: 720px; line-height: 1.65;">
+                                Không gian mở ngập tràn ánh sáng tự nhiên, trang bị màn hình 4K công thái học, góc cây xanh sinh thái và phòng lab R&D chuyên biệt dành riêng cho đội ngũ kỹ sư kiến tạo giải pháp triệu người dùng.
+                            </p>
+                        </div>
+                        <div class="d-flex gap-2 flex-shrink-0">
+                            <a href="#about" class="btn btn-sm btn-light fw-semibold px-3 py-2 text-dark shadow-sm" style="border-radius: 8px; font-size: 0.85rem;">
+                                <i class="bi bi-compass me-1"></i>Khám phá văn hóa
+                            </a>
+                            <a asp-controller="Jobs" asp-action="Index" class="btn btn-sm btn-success fw-semibold px-3 py-2 text-white shadow-sm" style="background: #059669; border: none; border-radius: 8px; font-size: 0.85rem;">
+                                <i class="bi bi-send me-1"></i>Ứng tuyển ngay
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 2: Pantry & Coffee Lounge 5 Sao -->
+                <div class="office-slide position-absolute top-0 start-0 w-100 h-100">
+                    <img src="~/img/noveratech_office_pantry.jpg"
+                         alt="NoveraTech 5-Star Pantry & Lounge"
+                         class="w-100 h-100 object-fit-cover d-block office-slide-img"
+                         asp-append-version="true" />
+                    <div class="position-absolute bottom-0 start-0 end-0 p-4 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-end gap-3 office-caption"
+                         style="background: linear-gradient(180deg, rgba(15,23,42,0) 0%, rgba(15,23,42,0.85) 60%, rgba(15,23,42,0.96) 100%);">
+                        <div>
+                            <span class="badge text-white px-3 py-1.5 mb-2" style="background: rgba(5,150,105,0.9); border-radius: 6px; font-size: 0.78rem; letter-spacing: 0.06em; font-weight: 600;">
+                                <i class="bi bi-cup-hot me-1.5"></i>PANTRY &amp; LOUNGE CÀ PHÊ 5 SAO
+                            </span>
+                            <h3 class="text-white fw-bold mb-1" style="font-size: clamp(1.4rem, 2.5vw, 2.1rem); letter-spacing: -0.02em;">
+                                Trạm Nạp Năng Lượng &amp; Không Gian Giao Lưu Mở
+                            </h3>
+                            <p class="text-white-50 mb-0 small" style="max-width: 720px; line-height: 1.65;">
+                                Quầy cà phê specialty với máy pha espresso hiện đại, đồ ăn nhẹ healthy tươi mới mỗi ngày và sofa lounge ngắm trọn toàn cảnh thành phố từ tầng cao.
+                            </p>
+                        </div>
+                        <div class="d-flex gap-2 flex-shrink-0">
+                            <a href="#benefits" class="btn btn-sm btn-light fw-semibold px-3 py-2 text-dark shadow-sm" style="border-radius: 8px; font-size: 0.85rem;">
+                                <i class="bi bi-stars me-1"></i>Xem phúc lợi
+                            </a>
+                            <a asp-controller="Jobs" asp-action="Index" class="btn btn-sm btn-success fw-semibold px-3 py-2 text-white shadow-sm" style="background: #059669; border: none; border-radius: 8px; font-size: 0.85rem;">
+                                <i class="bi bi-send me-1"></i>Ứng tuyển ngay
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 3: Agile War Room & Architecture Lab -->
+                <div class="office-slide position-absolute top-0 start-0 w-100 h-100">
+                    <img src="~/img/noveratech_office_meeting.jpg"
+                         alt="NoveraTech Tech Architecture & Meeting Lab"
+                         class="w-100 h-100 object-fit-cover d-block office-slide-img"
+                         asp-append-version="true" />
+                    <div class="position-absolute bottom-0 start-0 end-0 p-4 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-end gap-3 office-caption"
+                         style="background: linear-gradient(180deg, rgba(15,23,42,0) 0%, rgba(15,23,42,0.85) 60%, rgba(15,23,42,0.96) 100%);">
+                        <div>
+                            <span class="badge text-white px-3 py-1.5 mb-2" style="background: rgba(5,150,105,0.9); border-radius: 6px; font-size: 0.78rem; letter-spacing: 0.06em; font-weight: 600;">
+                                <i class="bi bi-kanban me-1.5"></i>AGILE WAR ROOM &amp; TECH LAB
+                            </span>
+                            <h3 class="text-white fw-bold mb-1" style="font-size: clamp(1.4rem, 2.5vw, 2.1rem); letter-spacing: -0.02em;">
+                                Phòng Họp Kiến Trúc Giải Pháp &amp; Nghiên Cứu AI
+                            </h3>
+                            <p class="text-white-50 mb-0 small" style="max-width: 720px; line-height: 1.65;">
+                                Màn hình cảm ứng siêu rộng hiển thị kiến trúc phân tán thời gian thực, tường kính cách âm tiêu chuẩn thu âm studio cùng bàn họp sồi tự nhiên sang trọng.
+                            </p>
+                        </div>
+                        <div class="d-flex gap-2 flex-shrink-0">
+                            <a href="#about" class="btn btn-sm btn-light fw-semibold px-3 py-2 text-dark shadow-sm" style="border-radius: 8px; font-size: 0.85rem;">
+                                <i class="bi bi-cpu me-1"></i>Trụ cột công nghệ
+                            </a>
+                            <a asp-controller="Jobs" asp-action="Index" class="btn btn-sm btn-success fw-semibold px-3 py-2 text-white shadow-sm" style="background: #059669; border: none; border-radius: 8px; font-size: 0.85rem;">
+                                <i class="bi bi-send me-1"></i>Ứng tuyển ngay
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 4: Silent Focus Booths & Tech Library -->
+                <div class="office-slide position-absolute top-0 start-0 w-100 h-100">
+                    <img src="~/img/noveratech_office_focus.jpg"
+                         alt="NoveraTech Focus Booths & Tech Library"
+                         class="w-100 h-100 object-fit-cover d-block office-slide-img"
+                         asp-append-version="true" />
+                    <div class="position-absolute bottom-0 start-0 end-0 p-4 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-end gap-3 office-caption"
+                         style="background: linear-gradient(180deg, rgba(15,23,42,0) 0%, rgba(15,23,42,0.85) 60%, rgba(15,23,42,0.96) 100%);">
+                        <div>
+                            <span class="badge text-white px-3 py-1.5 mb-2" style="background: rgba(5,150,105,0.9); border-radius: 6px; font-size: 0.78rem; letter-spacing: 0.06em; font-weight: 600;">
+                                <i class="bi bi-headphones me-1.5"></i>FOCUS PODS &amp; THƯ VIỆN KỸ THUẬT
+                            </span>
+                            <h3 class="text-white fw-bold mb-1" style="font-size: clamp(1.4rem, 2.5vw, 2.1rem); letter-spacing: -0.02em;">
+                                Không Gian Tập Trung Sâu Cho Các Bài Toán Phức Tạp
+                            </h3>
+                            <p class="text-white-50 mb-0 small" style="max-width: 720px; line-height: 1.65;">
+                                Buồng làm việc cách âm cá nhân (Silent Pods), tủ sách kỹ thuật AI &amp; Kiến trúc hệ thống cập nhật liên tục giúp kỹ sư tối ưu hóa trạng thái Deep Work.
+                            </p>
+                        </div>
+                        <div class="d-flex gap-2 flex-shrink-0">
+                            <a href="#process" class="btn btn-sm btn-light fw-semibold px-3 py-2 text-dark shadow-sm" style="border-radius: 8px; font-size: 0.85rem;">
+                                <i class="bi bi-diagram-3 me-1"></i>Quy trình tuyển
+                            </a>
+                            <a asp-controller="Jobs" asp-action="Index" class="btn btn-sm btn-success fw-semibold px-3 py-2 text-white shadow-sm" style="background: #059669; border: none; border-radius: 8px; font-size: 0.85rem;">
+                                <i class="bi bi-send me-1"></i>Ứng tuyển ngay
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Top Controls Bar (Dots + Prev/Next) -->
+            <div class="position-absolute top-0 end-0 p-3 p-md-4 d-flex align-items-center justify-content-end" style="z-index: 5; pointer-events: none;">
+                <!-- Navigation Controls -->
+                <div class="d-flex align-items-center gap-2" style="pointer-events: auto;">
+                    <!-- Dots -->
+                    <div class="d-flex align-items-center gap-1.5 me-2" id="officeSlideDots">
+                        <button type="button" class="office-dot active" data-slide="0" aria-label="Slide 1"></button>
+                        <button type="button" class="office-dot" data-slide="1" aria-label="Slide 2"></button>
+                        <button type="button" class="office-dot" data-slide="2" aria-label="Slide 3"></button>
+                        <button type="button" class="office-dot" data-slide="3" aria-label="Slide 4"></button>
+                    </div>
+
+                    <!-- Prev/Next Buttons -->
+                    <button type="button" id="officePrevBtn" class="btn btn-sm btn-dark bg-opacity-75 text-white p-2 d-flex align-items-center justify-content-center border border-white border-opacity-10 shadow-sm" style="border-radius: 8px; width: 34px; height: 34px;" title="Ảnh trước">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button type="button" id="officeNextBtn" class="btn btn-sm btn-dark bg-opacity-75 text-white p-2 d-flex align-items-center justify-content-center border border-white border-opacity-10 shadow-sm" style="border-radius: 8px; width: 34px; height: 34px;" title="Ảnh tiếp theo">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Auto-Slide Random Progress Bar (5s - 8s) -->
+            <div class="position-absolute bottom-0 start-0 end-0" style="height: 3px; background: rgba(255,255,255,0.15); z-index: 6;">
+                <div id="officeProgressBar" style="height: 100%; width: 0%; background: #10B981; transition: width linear;"></div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<script>
+    (function initOfficeBannerCarousel() {
+        function runCarousel() {
+            var carouselEl = document.getElementById('officeBannerCarousel');
+            if (!carouselEl) return;
+
+            var slides = carouselEl.querySelectorAll('.office-slide');
+            var dots = carouselEl.querySelectorAll('.office-dot');
+            var progressBar = document.getElementById('officeProgressBar');
+            var prevBtn = document.getElementById('officePrevBtn');
+            var nextBtn = document.getElementById('officeNextBtn');
+
+            if (!slides || slides.length <= 1) return;
+
+            var currentIndex = 0;
+            var timerId = null;
+            var isPaused = false;
+            var currentDuration = 6000;
+
+            // Random từ 5 đến 8 giây (5000ms đến 8000ms)
+            function getRandomDuration() {
+                return Math.floor(Math.random() * (8000 - 5000 + 1)) + 5000;
+            }
+
+            function goToSlide(newIndex) {
+                if (slides[currentIndex]) slides[currentIndex].classList.remove('active');
+                if (dots[currentIndex]) dots[currentIndex].classList.remove('active');
+
+                currentIndex = (newIndex + slides.length) % slides.length;
+
+                if (slides[currentIndex]) slides[currentIndex].classList.add('active');
+                if (dots[currentIndex]) dots[currentIndex].classList.add('active');
+
+                scheduleNextRandom();
+            }
+
+            function scheduleNextRandom() {
+                if (timerId) clearTimeout(timerId);
+
+                currentDuration = getRandomDuration();
+
+                if (progressBar) {
+                    progressBar.style.transition = 'none';
+                    progressBar.style.width = '0%';
+                    void progressBar.offsetWidth;
+                    if (!isPaused) {
+                        progressBar.style.transition = 'width ' + currentDuration + 'ms linear';
+                        progressBar.style.width = '100%';
+                    }
+                }
+
+                if (!isPaused) {
+                    timerId = setTimeout(function() {
+                        goToSlide(currentIndex + 1);
+                    }, currentDuration);
+                }
+            }
+
+            if (nextBtn) {
+                nextBtn.onclick = function() { goToSlide(currentIndex + 1); };
+            }
+            if (prevBtn) {
+                prevBtn.onclick = function() { goToSlide(currentIndex - 1); };
+            }
+
+            dots.forEach(function(dot, idx) {
+                dot.onclick = function() { goToSlide(idx); };
+            });
+
+            carouselEl.onmouseenter = function() {
+                isPaused = true;
+                if (timerId) clearTimeout(timerId);
+                if (progressBar) progressBar.style.transitionPlayState = 'paused';
+            };
+
+            carouselEl.onmouseleave = function() {
+                isPaused = false;
+                scheduleNextRandom();
+            };
+
+            scheduleNextRandom();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', runCarousel);
+        } else {
+            runCarousel();
+        }
+    })();
+</script>
 
 @* ══════════════════════════════════════════════════════════
    2. SECTION: VỀ NOVERATECH (WHO WE ARE & TECH VISION)
@@ -814,11 +1116,20 @@
                     </p>
                     <div class="d-flex justify-content-center gap-3 flex-wrap">
                         <a asp-controller="Jobs" asp-action="Index" class="btn-career-primary px-4 py-2.5" style="font-size: 1rem; border-radius: 8px;">
-                            <i class="bi bi-briefcase-fill me-1.5"></i> Xem tất cả công việc công ty đang có (12+ vị trí) &rarr;
+                            <i class="bi bi-briefcase-fill me-1.5"></i> Xem tất cả công việc đang mở (@(ViewBag.TotalOpenJobs != null ? $"{ViewBag.TotalOpenJobs}" : "các") vị trí) &rarr;
                         </a>
-                        <a asp-controller="Account" asp-action="CandidateAuth" class="btn-career-outline px-4 py-2.5" style="font-size: 1rem; border-radius: 8px;">
-                            <i class="bi bi-send-fill me-1.5"></i> Nộp hồ sơ tự do
-                        </a>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <a href="/dashboard" class="btn-career-outline px-4 py-2.5" style="font-size: 1rem; border-radius: 8px;">
+                                <i class="bi bi-speedometer2 me-1.5"></i> Bàn làm việc của tôi &rarr;
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-controller="Account" asp-action="CandidateAuth" class="btn-career-outline px-4 py-2.5" style="font-size: 1rem; border-radius: 8px;">
+                                <i class="bi bi-send-fill me-1.5"></i> Nộp hồ sơ tự do
+                            </a>
+                        }
                     </div>
                 </div>
             </div>
@@ -966,7 +1277,7 @@
         function filterJobs(category, btn) {
             // Update active tab
             document.querySelectorAll('.job-filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+            if (btn) btn.classList.add('active');
 
             // Filter cards
             const items = document.querySelectorAll('.job-item');
@@ -979,21 +1290,79 @@
             });
         }
 
-        // Hero input filter search
-        const heroInput = document.getElementById('heroJobSearchInput');
-        if (heroInput) {
-            heroInput.addEventListener('input', function() {
-                const query = this.value.toLowerCase().trim();
+        // Hero input filter & URL synchronization
+        document.addEventListener('DOMContentLoaded', function () {
+            const heroInput = document.getElementById('heroJobSearchInput');
+            const heroClearBtn = document.getElementById('heroJobSearchClearBtn');
+            const heroDept = document.getElementById('heroDeptSelect');
+
+            function syncLandingSearchState() {
+                const query = (heroInput ? heroInput.value : '').trim();
+                const dept = (heroDept ? heroDept.value : 'all').toLowerCase();
+
+                if (heroClearBtn) {
+                    if (query.length > 0) heroClearBtn.classList.remove('d-none');
+                    else heroClearBtn.classList.add('d-none');
+                }
+
+                if (window.NoveraInstantSearch) {
+                    window.NoveraInstantSearch.syncUrlParams({
+                        search: query || null,
+                        department: dept !== 'all' ? dept : null
+                    });
+                }
+
+                // If job items exist on this page, filter them instantaneously (<10ms)
                 const items = document.querySelectorAll('.job-item');
-                items.forEach(item => {
-                    const text = item.innerText.toLowerCase();
-                    if (!query || text.includes(query)) {
-                        item.style.display = 'block';
-                    } else {
-                        item.style.display = 'none';
+                if (items.length > 0) {
+                    items.forEach(item => {
+                        const text = item.innerText || '';
+                        const matchesQuery = !query || (window.NoveraInstantSearch
+                            ? window.NoveraInstantSearch.matchSearchTokens(text, query)
+                            : text.toLowerCase().includes(query.toLowerCase()));
+                        const cat = item.getAttribute('data-category') || '';
+                        const matchesDept = (dept === 'all') || (cat === dept);
+
+                        item.style.display = (matchesQuery && matchesDept) ? 'block' : 'none';
+                    });
+                }
+            }
+
+            if (heroInput) {
+                const debouncedSync = window.NoveraInstantSearch
+                    ? window.NoveraInstantSearch.debounce(syncLandingSearchState, 15)
+                    : syncLandingSearchState;
+                heroInput.addEventListener('input', debouncedSync);
+            }
+
+            if (heroClearBtn) {
+                heroClearBtn.addEventListener('click', function () {
+                    if (heroInput) {
+                        heroInput.value = '';
+                        syncLandingSearchState();
+                        heroInput.focus();
                     }
                 });
-            });
-        }
+            }
+
+            if (heroDept) {
+                heroDept.addEventListener('change', syncLandingSearchState);
+            }
+
+            function hydrateLandingFromUrl() {
+                if (!window.NoveraInstantSearch) return;
+                const params = window.NoveraInstantSearch.getUrlParams();
+                if (heroInput && params.search !== undefined) {
+                    heroInput.value = params.search;
+                }
+                if (heroDept && params.department !== undefined) {
+                    heroDept.value = params.department;
+                }
+                syncLandingSearchState();
+            }
+
+            window.addEventListener('popstate', hydrateLandingFromUrl);
+            hydrateLandingFromUrl();
+        });
     </script>
 }

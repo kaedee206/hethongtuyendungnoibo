@@ -70,7 +70,6 @@ public class UpdateProfileRequestDto
     [StringLength(100, ErrorMessage = "Họ tên không được vượt quá 100 ký tự.")]
     public string FullName { get; set; } = default!;
 
-    [RegularExpression(@"^(0|\+84)[3|5|7|8|9][0-9]{8}$", ErrorMessage = "Số điện thoại không hợp lệ.")]
     [RegularExpression(@"^(0|\+84|84)[35789][0-9]{8}$", ErrorMessage = "Số điện thoại không hợp lệ.")]
     public string? PhoneNumber { get; set; }
 

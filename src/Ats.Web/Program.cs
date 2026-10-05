@@ -34,6 +34,7 @@ builder.Services.AddScoped<IJobService, JobService>();
 builder.Services.AddScoped<ICompetencyFrameworkService, CompetencyFrameworkService>();
 builder.Services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
 builder.Services.AddScoped<IRequisitionService, RequisitionService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
 
 
 // Cấu hình thời gian Session (Idle timeout)
@@ -131,10 +132,137 @@ app.MapControllerRoute(
     .WithStaticAssets();
 
 
-// Khởi tạo seed data tự động
+// Khởi tạo seed data tự động và đảm bảo schema bảng đầy đủ
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    try
+    {
+        await dbContext.Database.ExecuteSqlRawAsync(@"
+            ALTER TABLE departments ADD COLUMN IF NOT EXISTS level INTEGER NOT NULL DEFAULT 1;
+            ALTER TABLE departments ADD COLUMN IF NOT EXISTS path TEXT NOT NULL DEFAULT '';
+            UPDATE departments SET path = '/' || id || '/' WHERE path = '' OR path IS NULL;
+            ALTER TABLE job_requisitions ADD COLUMN IF NOT EXISTS salary_band_explanation TEXT;
+            ALTER TABLE job_positions ADD COLUMN IF NOT EXISTS competency_framework_id UUID;
+
+            CREATE TABLE IF NOT EXISTS competency_frameworks (
+                id UUID PRIMARY KEY,
+                code TEXT NOT NULL,
+                name TEXT NOT NULL,
+                description TEXT,
+                target_role TEXT,
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                is_system BOOLEAN NOT NULL DEFAULT FALSE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+
+            CREATE TABLE IF NOT EXISTS competency_criteria (
+                id UUID PRIMARY KEY,
+                framework_id UUID NOT NULL REFERENCES competency_frameworks(id) ON DELETE CASCADE,
+                name TEXT NOT NULL,
+                description TEXT,
+                weight INTEGER NOT NULL DEFAULT 1,
+                rubric_level1 TEXT,
+                rubric_level2 TEXT,
+                rubric_level3 TEXT,
+                rubric_level4 TEXT,
+                rubric_level5 TEXT,
+                display_order INTEGER NOT NULL DEFAULT 0,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+
+            CREATE TABLE IF NOT EXISTS interview_question_banks (
+                id UUID PRIMARY KEY,
+                content TEXT NOT NULL DEFAULT '',
+                competency TEXT NOT NULL DEFAULT '',
+                difficulty TEXT NOT NULL DEFAULT 'Cơ bản',
+                suggested_answer TEXT,
+                competency_framework_id UUID,
+                competency_criterion_id UUID,
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+            ALTER TABLE interview_question_banks ADD COLUMN IF NOT EXISTS content TEXT NOT NULL DEFAULT '';
+            ALTER TABLE interview_question_banks ADD COLUMN IF NOT EXISTS competency TEXT NOT NULL DEFAULT '';
+            ALTER TABLE interview_question_banks ADD COLUMN IF NOT EXISTS difficulty TEXT NOT NULL DEFAULT 'Cơ bản';
+            ALTER TABLE interview_question_banks ADD COLUMN IF NOT EXISTS suggested_answer TEXT;
+            ALTER TABLE interview_question_banks ADD COLUMN IF NOT EXISTS competency_framework_id UUID;
+            ALTER TABLE interview_question_banks ADD COLUMN IF NOT EXISTS competency_criterion_id UUID;
+
+            DO $$ 
+            DECLARE
+                r RECORD;
+            BEGIN
+                FOR r IN (
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'interview_question_banks' 
+                      AND is_nullable = 'NO' 
+                      AND column_default IS NULL
+                      AND column_name NOT IN ('id')
+                ) LOOP
+                    EXECUTE 'ALTER TABLE interview_question_banks ALTER COLUMN ' || quote_ident(r.column_name) || ' DROP NOT NULL';
+                END LOOP;
+            END $$;
+
+            CREATE TABLE IF NOT EXISTS recruitment_catalogs (
+                id UUID PRIMARY KEY,
+                catalog_type TEXT NOT NULL,
+                code TEXT NOT NULL,
+                name TEXT NOT NULL,
+                description TEXT,
+                display_order INTEGER NOT NULL DEFAULT 0,
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                is_system BOOLEAN NOT NULL DEFAULT FALSE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+
+            CREATE TABLE IF NOT EXISTS company_profiles (
+                id UUID PRIMARY KEY,
+                company_name TEXT NOT NULL DEFAULT 'Tập đoàn Công nghệ NoveraTech',
+                headline TEXT NOT NULL DEFAULT 'Cùng NoveraTech kiến tạo tương lai công nghệ số',
+                about_text TEXT,
+                engineering_culture TEXT,
+                tech_stack_json TEXT,
+                proof_metrics_json TEXT,
+                perks_json TEXT,
+                headquarters_address TEXT,
+                contact_email TEXT,
+                phone_contact TEXT,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+        ");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[DB_MIGRATION_WARN] {ex.Message}");
+    }
+
     await DatabaseSeeder.SeedAsync(dbContext);
 }
 

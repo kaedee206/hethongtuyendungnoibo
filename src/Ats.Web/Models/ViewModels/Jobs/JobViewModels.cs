@@ -28,12 +28,17 @@ public class JobItemViewModel
 public class JobListViewModel
 {
     public List<JobItemViewModel> Jobs { get; set; } = new();
+    public List<JobItemViewModel> AllJobs { get; set; } = new();
     public string? SearchKeyword { get; set; }
     public string? SelectedDepartment { get; set; }
     public string? SelectedLocation { get; set; }
     public string? SelectedLevel { get; set; }
-    public int TotalOpenings => Jobs.Count;
-    public int HotOpeningsCount => Jobs.Count(j => j.IsHot);
+    public int TotalOpenings => TotalRecords > 0 ? TotalRecords : Jobs.Count;
+    public int HotOpeningsCount => (AllJobs != null && AllJobs.Any() ? AllJobs : Jobs).Count(j => j.IsHot);
+    public int CurrentPage { get; set; } = 1;
+    public int PageSize { get; set; } = 9;
+    public int TotalRecords { get; set; }
+    public int TotalPages => PageSize > 0 ? (int)Math.Ceiling(TotalRecords / (double)PageSize) : 0;
 }
 
 public class JobDetailViewModel
@@ -41,3 +46,22 @@ public class JobDetailViewModel
     public JobItemViewModel Job { get; set; } = new();
     public List<JobItemViewModel> RelatedJobs { get; set; } = new();
 }
+
+public class CreateJobViewModel
+{
+    public string Title { get; set; } = string.Empty;
+    public string DepartmentName { get; set; } = "Công nghệ Thông tin (IT)";
+    public int Quantity { get; set; } = 1;
+    public string EmploymentType { get; set; } = "Toàn thời gian (Full-time)";
+    public string ExperienceLevel { get; set; } = "SENIOR";
+    public string WorkLocation { get; set; } = "Hà Nội (Hybrid 2 ngày WFH)";
+    public string SalaryDisplay { get; set; } = "35 – 50 Triệu VNĐ";
+    public DateTime ExpiredDate { get; set; } = DateTime.UtcNow.AddDays(30);
+
+    public string Overview { get; set; } = string.Empty;
+    public string Responsibilities { get; set; } = string.Empty;
+    public string Requirements { get; set; } = string.Empty;
+    public string TechStack { get; set; } = string.Empty; // Comma-delimited list of tags
+    public string Benefits { get; set; } = string.Empty;
+}
+

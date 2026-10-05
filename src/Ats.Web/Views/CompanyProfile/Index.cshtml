@@ -1,0 +1,146 @@
+@model Ats.Web.Models.Entities.CompanyProfile
+@{
+    ViewData["Title"] = "Cấu hình hồ sơ doanh nghiệp & Landing";
+}
+
+<div class="container-fluid px-3 px-md-4 py-4">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">Hồ sơ Doanh nghiệp & Cấu hình Landing</h1>
+            <p class="text-muted small mb-0">Quản lý nội dung công khai hiển thị trên trang chủ tuyển dụng (/gioi-thieu), thông điệp văn hóa và kênh liên hệ.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/gioi-thieu" target="_blank" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" style="border-radius: 8px;">
+                <i class="bi bi-box-arrow-up-right"></i>
+                <span class="fw-semibold">Xem trang công khai</span>
+            </a>
+            <button type="submit" form="companyProfileForm" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" style="border-radius: 8px;">
+                <i class="bi bi-check2-circle"></i>
+                <span class="fw-semibold">Lưu thay đổi</span>
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert" style="border-radius: 8px;">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert" style="border-radius: 8px;">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+
+    <form id="companyProfileForm" method="post" asp-action="Update">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+
+        <div class="row g-4">
+            <!-- Left column: Main Profile & Mission -->
+            <div class="col-12 col-lg-8">
+                <!-- Card 1: Thông tin cốt lõi -->
+                <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: #FFFFFF; border: 1px solid #E2E8F0;">
+                    <div class="card-header bg-white py-3 border-bottom" style="border-color: #E2E8F0;">
+                        <h6 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-building me-2 text-primary"></i> 1. Thông điệp Tuyển dụng Cốt lõi
+                        </h6>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-dark">Tên doanh nghiệp (*)</label>
+                            <input type="text" asp-for="CompanyName" class="form-control" placeholder="Tập đoàn Công nghệ..." style="border-radius: 8px;" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-dark">Tiêu đề chính (Headline trên Banner) (*)</label>
+                            <input type="text" asp-for="Headline" class="form-control" placeholder="Cùng NoveraTech kiến tạo tương lai số..." style="border-radius: 8px;" required />
+                            <div class="form-text small">Hiển thị ở kích thước lớn nhất trên đầu trang /gioi-thieu.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-dark">Giới thiệu ngắn (About text)</label>
+                            <textarea asp-for="AboutText" class="form-control" rows="3" placeholder="Mô tả tóm tắt về vị thế doanh nghiệp..." style="border-radius: 8px;"></textarea>
+                        </div>
+
+                        <div class="mb-0">
+                            <label class="form-label fw-semibold text-dark">Văn hóa Kỹ thuật (Engineering Culture)</label>
+                            <input type="text" asp-for="EngineeringCulture" class="form-control" placeholder="Engineering-First, Zero Politics..." style="border-radius: 8px;" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Công nghệ & Số liệu minh chứng -->
+                <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: #FFFFFF; border: 1px solid #E2E8F0;">
+                    <div class="card-header bg-white py-3 border-bottom" style="border-color: #E2E8F0;">
+                        <h6 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-cpu me-2 text-primary"></i> 2. Hệ sinh thái Công nghệ & Số liệu minh chứng (Proof Metrics)
+                        </h6>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-dark">Danh sách Tech Stack (JSON format)</label>
+                            <textarea asp-for="TechStackJson" class="form-control font-monospace" rows="3" style="border-radius: 8px; font-size: 0.9rem;"></textarea>
+                            <div class="form-text small">Mảng JSON các công nghệ, ví dụ: <code>[".NET 9", "React 19", "PostgreSQL", "Docker/K8s"]</code></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-dark">Số liệu minh chứng tuyển dụng (Proof Metrics JSON)</label>
+                            <textarea asp-for="ProofMetricsJson" class="form-control font-monospace" rows="4" style="border-radius: 8px; font-size: 0.9rem;"></textarea>
+                            <div class="form-text small">Mảng JSON dạng: <code>[{"label": "Kỹ sư", "value": "500+"}, {"label": "Tháng lương", "value": "14-16"}]</code></div>
+                        </div>
+
+                        <div class="mb-0">
+                            <label class="form-label fw-semibold text-dark">Đãi ngộ & Phúc lợi nổi bật (Perks JSON)</label>
+                            <textarea asp-for="PerksJson" class="form-control font-monospace" rows="4" style="border-radius: 8px; font-size: 0.9rem;"></textarea>
+                            <div class="form-text small">Mảng JSON dạng chuỗi danh sách phúc lợi.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right column: Contact & Office -->
+            <div class="col-12 col-lg-4">
+                <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: #FFFFFF; border: 1px solid #E2E8F0;">
+                    <div class="card-header bg-white py-3 border-bottom" style="border-color: #E2E8F0;">
+                        <h6 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-geo-alt me-2 text-primary"></i> 3. Kênh liên hệ & Trụ sở
+                        </h6>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-dark">Địa chỉ Trụ sở chính</label>
+                            <input type="text" asp-for="HeadquartersAddress" class="form-control" placeholder="Tầng 18 Novera Tower..." style="border-radius: 8px;" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-dark">Email Tuyển dụng tiếp nhận</label>
+                            <input type="email" asp-for="ContactEmail" class="form-control" placeholder="careers@noveratech.digital" style="border-radius: 8px;" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-dark">Hotline Tuyển dụng</label>
+                            <input type="text" asp-for="PhoneContact" class="form-control" placeholder="(+84) 24 3999 8888" style="border-radius: 8px;" />
+                        </div>
+
+                        <div class="p-3 bg-light rounded-3 border" style="border-color: #E2E8F0;">
+                            <div class="d-flex align-items-center gap-2 mb-2 text-success fw-bold">
+                                <i class="bi bi-shield-check"></i>
+                                <span>Tuân thủ RULE.md</span>
+                            </div>
+                            <p class="small text-muted mb-0">
+                                Mọi nội dung chỉnh sửa tại đây sẽ đồng bộ tức thời với trang giới thiệu công ty và hiển thị đồng nhất trên toàn bộ giao diện công khai.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>

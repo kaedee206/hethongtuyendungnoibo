@@ -16,13 +16,16 @@ public class JobService : IJobService
         _logger = logger;
     }
 
-    public async Task<JobListViewModel> GetJobListAsync(string? search = null, string? department = null, string? location = null, string? level = null)
+    public async Task<JobListViewModel> GetJobListAsync(string? search = null, string? department = null, string? location = null, string? level = null, int page = 1, int pageSize = 9)
     {
+        if (page < 1) page = 1;
+        if (pageSize <= 0) pageSize = 9;
+
         var allJobs = await GetAllJobsInternalAsync();
 
         var query = allJobs.AsEnumerable();
 
-        if (!string.IsNullOrWhiteSpace(search))
+        if (!string.IsNullOrWhiteSpace(search) && search.Trim().Length >= 3)
         {
             var s = search.Trim().ToLower();
             query = query.Where(j => 
@@ -52,14 +55,20 @@ public class JobService : IJobService
         }
 
         var filteredList = query.ToList();
+        var totalRecords = filteredList.Count;
+        var pagedList = filteredList.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
         return new JobListViewModel
         {
-            Jobs = filteredList,
+            Jobs = pagedList,
+            AllJobs = allJobs,
             SearchKeyword = search,
             SelectedDepartment = department,
             SelectedLocation = location,
-            SelectedLevel = level
+            SelectedLevel = level,
+            CurrentPage = page,
+            PageSize = pageSize,
+            TotalRecords = totalRecords
         };
     }
 
@@ -139,6 +148,37 @@ public class JobService : IJobService
         else if (deptName.Contains("Kinh doanh", StringComparison.OrdinalIgnoreCase) || deptName.Contains("Sales", StringComparison.OrdinalIgnoreCase)) category = "other";
         else if (deptName.Contains("Nhân sự", StringComparison.OrdinalIgnoreCase) || deptName.Contains("HR", StringComparison.OrdinalIgnoreCase)) category = "hr";
 
+        var rawReqs = entity.Requirements ?? "";
+        var techList = new List<string>();
+        if (rawReqs.Contains("[TECHSTACK]") && rawReqs.Contains("[/TECHSTACK]"))
+        {
+            var start = rawReqs.IndexOf("[TECHSTACK]") + "[TECHSTACK]".Length;
+            var end = rawReqs.IndexOf("[/TECHSTACK]");
+            var techStr = rawReqs.Substring(start, end - start);
+            techList = techStr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            rawReqs = rawReqs.Substring(end + "[/TECHSTACK]".Length).Trim();
+        }
+        if (!techList.Any())
+        {
+            techList = new List<string> { ".NET 9", "Clean Architecture", "PostgreSQL", "React" };
+        }
+
+        var respList = new List<string>();
+        if (rawReqs.Contains("[RESPONSIBILITIES]") && rawReqs.Contains("[/RESPONSIBILITIES]"))
+        {
+            var start = rawReqs.IndexOf("[RESPONSIBILITIES]") + "[RESPONSIBILITIES]".Length;
+            var end = rawReqs.IndexOf("[/RESPONSIBILITIES]");
+            var respStr = rawReqs.Substring(start, end - start);
+            respList = respStr.Split(new[] { '\n', '\r', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            rawReqs = rawReqs.Substring(end + "[/RESPONSIBILITIES]".Length).Trim();
+        }
+        else
+        {
+            respList = rawReqs.Split(new[] { '\n', '\r', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        }
+
+        var reqList = rawReqs.Split(new[] { '\n', '\r', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
         return new JobItemViewModel
         {
             Id = entity.Id.ToString(),
@@ -153,10 +193,10 @@ public class JobService : IJobService
             IsHot = isHot,
             ShortSummary = entity.JobDescription?.Length > 160 ? entity.JobDescription[..160] + "..." : (entity.JobDescription ?? ""),
             Overview = entity.JobDescription ?? "",
-            Responsibilities = entity.Requirements?.Split(new[] { '\n', '\r', ';' }, StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>(),
-            Requirements = entity.Requirements?.Split(new[] { '\n', '\r', ';' }, StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>(),
-            Benefits = entity.Benefits?.Split(new[] { '\n', '\r', ';' }, StringSplitOptions.RemoveEmptyEntries).ToList() ?? GetDefaultNoveraTechBenefits(),
-            TechStack = new List<string> { ".NET 9", "Clean Architecture", "PostgreSQL", "React" },
+            Responsibilities = respList.Any() ? respList : new List<string> { "Tham gia phát triển các tính năng phần mềm theo yêu cầu kiến trúc.", "Phối hợp cùng đội ngũ kỹ sư và kiểm thử chất lượng sản phẩm." },
+            Requirements = reqList.Any() ? reqList : new List<string> { "Có kinh nghiệm thực chiến trong lĩnh vực tương đương.", "Tư duy giải quyết vấn đề tốt, cầu tiến." },
+            Benefits = entity.Benefits?.Split(new[] { '\n', '\r', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList() ?? GetDefaultNoveraTechBenefits(),
+            TechStack = techList,
             PostedDate = entity.PublishedAt?.DateTime ?? DateTime.UtcNow.AddDays(-5),
             Deadline = entity.ExpiredAt?.DateTime ?? DateTime.UtcNow.AddDays(25)
         };
