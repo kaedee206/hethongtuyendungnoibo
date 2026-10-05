@@ -8,19 +8,24 @@
         <form id="profileForm" novalidate>
             @Html.AntiForgeryToken()
             
-            <h6 class="text-muted">Thông tin tài khoản (Chỉ đọc)</h6>
+            <h6 class="text-muted mb-1">Thông tin tài khoản (Chỉ đọc)</h6>
+            <div class="alert alert-secondary py-2 mb-4 d-flex align-items-center" role="alert" style="font-size: 0.85rem;">
+                <i class="bi bi-info-circle-fill text-secondary me-2"></i>
+                <span>Bạn không được tự thay đổi các thông tin này. Vui lòng liên hệ <strong>Admin</strong> nếu cần cập nhật.</span>
+            </div>
+            
             <div class="row mb-4">
                 <div class="col-md-4 mb-3">
                     <label asp-for="Email" class="form-label">Email</label>
-                    <input asp-for="Email" class="form-control bg-light" disabled readonly />
+                    <input asp-for="Email" class="form-control bg-light" disabled readonly data-bs-toggle="tooltip" title="Liên hệ Admin để thay đổi Email" />
                 </div>
                 <div class="col-md-4 mb-3">
                     <label asp-for="RoleName" class="form-label">Vai trò</label>
-                    <input asp-for="RoleName" class="form-control bg-light" disabled readonly />
+                    <input asp-for="RoleName" class="form-control bg-light" disabled readonly data-bs-toggle="tooltip" title="Liên hệ Admin để thay đổi Vai trò" />
                 </div>
                 <div class="col-md-4 mb-3">
                     <label asp-for="DepartmentName" class="form-label">Phòng ban</label>
-                    <input asp-for="DepartmentName" class="form-control bg-light" disabled readonly />
+                    <input asp-for="DepartmentName" class="form-control bg-light" disabled readonly data-bs-toggle="tooltip" title="Liên hệ Admin để thay đổi Phòng ban" />
                 </div>
             </div>
 
@@ -113,6 +118,10 @@
                     editableInputs.forEach(input => input.disabled = false);
                 }
             });
+
+            // Khởi tạo tooltips của Bootstrap
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
         });
     </script>
 }
