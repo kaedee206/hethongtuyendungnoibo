@@ -23,12 +23,12 @@ public static class UserRoles
 
     public static string GetDisplayName(string? role) => role switch
     {
-        Admin or "Quản trị viên hệ thống" => "Quản trị hệ thống",
-        HRManager or "Trưởng phòng nhân sự" or "HR" => "Trưởng phòng Nhân sự",
-        HiringManager or "Quản lý chuyên môn" => "Trưởng bộ phận",
+        Admin or "Quản trị viên hệ thống" or "Quản trị viên" => "Quản trị viên",
+        HRManager or "Trưởng phòng nhân sự" or "Trưởng phòng Nhân sự" or "Quản lý nhân sự" or "HR" => "Quản lý nhân sự",
+        HiringManager or "Quản lý chuyên môn" or "Quản lý tuyển dụng" => "Quản lý tuyển dụng",
         Interviewer or "Người phỏng vấn" => "Người phỏng vấn",
-        Recruiter or "Chuyên viên tuyển dụng" => "Nhân viên tuyển dụng",
-        Approver or "Người phê duyệt" => "Người duyệt",
+        Recruiter or "Chuyên viên tuyển dụng" or "Nhân viên tuyển dụng" => "Chuyên viên tuyển dụng",
+        Approver or "Người phê duyệt" or "Người duyệt" => "Người phê duyệt",
         Candidate or "Ứng viên nội bộ" => "Ứng viên",
         _ => role ?? string.Empty
     };
@@ -36,7 +36,7 @@ public static class UserRoles
     public static string NormalizeRole(string? role) => role switch
     {
         "Quản trị viên hệ thống" or "Admin" => Admin,
-        "Trưởng phòng nhân sự" or "HRManager" or "HR" => HRManager,
+        "Trưởng phòng nhân sự" or "Trưởng phòng Nhân sự" or "HRManager" or "HR" => HRManager,
         "Quản lý chuyên môn" or "HiringManager" => HiringManager,
         "Người phỏng vấn" or "Interviewer" => Interviewer,
         "Chuyên viên tuyển dụng" or "Recruiter" => Recruiter,

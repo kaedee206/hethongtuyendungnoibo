@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Ats.Web.Models.ViewModels.Account;
 
@@ -16,7 +16,7 @@ public class AccountLoginViewModel
 {
     [Required(ErrorMessage = "Vui lòng nhập email công ty.")]
     [EmailAddress(ErrorMessage = "Email không đúng định dạng.")]
-    [Display(Name = "Email")]
+    [Display(Name = "Email công ty")]
     public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Vui lòng nhập mật khẩu.")]

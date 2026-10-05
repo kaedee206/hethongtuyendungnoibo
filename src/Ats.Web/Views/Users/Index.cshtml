@@ -138,7 +138,7 @@
                                                 "Approver" => "bg-secondary-subtle text-secondary border border-secondary-subtle",
                                                 _ => "bg-light text-dark border"
                                             };
-                                            <span class="badge @badgeClass rounded-pill fw-medium px-2 py-1">
+                                            <span class="badge @badgeClass fw-medium px-2 py-1" style="border-radius: 6px;">
                                                 @role
                                             </span>
                                         }
@@ -148,22 +148,22 @@
                                     @switch (user.Status)
                                     {
                                         case "ACTIVE":
-                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="border-radius: 6px;">
                                                 <i class="bi bi-check-circle me-1"></i> Hoạt động
                                             </span>
                                             break;
                                         case "LOCKED":
-                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill">
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" style="border-radius: 6px;">
                                                 <i class="bi bi-lock-fill me-1"></i> Đã khóa
                                             </span>
                                             break;
                                         case "PENDING":
-                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 rounded-pill">
+                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1" style="border-radius: 6px;">
                                                 <i class="bi bi-clock-history me-1"></i> Chờ kích hoạt
                                             </span>
                                             break;
                                         default:
-                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 rounded-pill">
+                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1" style="border-radius: 6px;">
                                                 Ngừng hoạt động
                                             </span>
                                             break;
@@ -264,7 +264,7 @@
 <!-- Modal Khóa Tài Khoản (S1-10) -->
 <div class="modal fade" id="lockModal" tabindex="-1" aria-labelledby="lockModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
             <form id="lockForm" method="post" asp-action="Lock">
                 @Html.AntiForgeryToken()
                 <div class="modal-header bg-danger text-white">
@@ -277,19 +277,19 @@
                     <p class="mb-3">
                         Bạn đang chuẩn bị khóa tài khoản của: <strong id="lockTargetUserName" class="text-danger"></strong>.
                     </p>
-                    <div class="alert alert-warning small mb-3">
+                    <div class="alert alert-warning small mb-3" style="border-radius: 8px;">
                         <i class="bi bi-shield-exclamation me-1"></i>
                         <strong>Lưu ý bảo mật:</strong> Mọi phiên làm việc đang mở của người dùng này trên tất cả thiết bị sẽ bị thu hồi ngay lập tức, và tài khoản sẽ không thể đăng nhập cho đến khi được mở khóa.
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Lý do khóa tài khoản <span class="text-danger">*</span></label>
-                        <textarea name="lockReason" class="form-control" rows="3" required placeholder="Nhập chi tiết lý do khóa tài khoản (nghỉ việc, vi phạm chính sách, bàn giao công việc...)" minlength="5"></textarea>
+                        <textarea name="lockReason" class="form-control" rows="3" required placeholder="Nhập chi tiết lý do khóa tài khoản (nghỉ việc, vi phạm chính sách, bàn giao công việc...)" minlength="5" style="border-radius: 8px;"></textarea>
                         <div class="form-text small text-muted">Lý do khóa sẽ được lưu vào lịch sử quản trị hệ thống.</div>
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
-                    <button type="submit" class="btn btn-danger px-4">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-danger px-4" style="border-radius: 8px;">
                         <i class="bi bi-lock-fill me-1"></i> Xác nhận khóa
                     </button>
                 </div>
@@ -301,7 +301,7 @@
 <!-- Modal Mở Khóa Tài Khoản (S1-10) -->
 <div class="modal fade" id="unlockModal" tabindex="-1" aria-labelledby="unlockModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
             <form id="unlockForm" method="post" asp-action="Unlock">
                 @Html.AntiForgeryToken()
                 <div class="modal-header bg-success text-white">
@@ -319,8 +319,8 @@
                     </p>
                 </div>
                 <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-success px-4">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy</button>
+                    <button type="submit" class="btn btn-success px-4" style="border-radius: 8px;">
                         <i class="bi bi-unlock-fill me-1"></i> Xác nhận mở khóa
                     </button>
                 </div>

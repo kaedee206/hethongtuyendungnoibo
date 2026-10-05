@@ -1,3 +1,5 @@
+using Ats.Web.Models.Enums;
+
 namespace Ats.Web.Models.Entities;
 
 public class User
@@ -6,16 +8,25 @@ public class User
     public string Email { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
+    public string? PhoneNumber { get; set; }
+    public string? AvatarUrl { get; set; }
+    public UserType UserType { get; set; } = UserType.INTERNAL;
 
     // Thuộc tính lưu Vai trò phân quyền chính (Mặc định: Candidate)
     public string Role { get; set; } = "Candidate";
 
-    // SCRUM-129: Phòng ban
+    // SCRUM-129: Phòng ban (dạng chuỗi phục vụ quản trị và tìm kiếm)
     public string? Department { get; set; }
     
     // SCRUM-187: Cập nhật hồ sơ
     public string? PhoneNumber { get; set; }
     public string? JobTitle { get; set; }
+
+    public Guid? DepartmentId { get; set; }
+    public Department? DepartmentEntity { get; set; }
+
+    public Guid? JobPositionId { get; set; }
+    public JobPosition? JobPosition { get; set; }
 
     public int FailedLoginAttempts { get; set; } = 0;
     public DateTimeOffset? LockedUntil { get; set; }

@@ -1,0 +1,460 @@
+@model Ats.Web.Models.ViewModels.Jobs.JobListViewModel
+@{
+    ViewData["Title"] = "Cơ Hội Nghề Nghiệp & Vị Trí Tuyển Dụng — NoveraTech";
+    ViewData["BodyClass"] = "jobs-index-page";
+}
+
+@* ══════════════════════════════════════════════════════════
+   NOVERATECH CAREERS — DANH SÁCH VIỆC LÀM ĐANG MỞ
+   Định vị: Cổng Tuyển Dụng Nhân Tài NoveraTech (RULE.md Compliant)
+   ══════════════════════════════════════════════════════════ *@
+
+<style>
+    /* CSS Variables & Tokens theo RULE.MD */
+    :root {
+        --color-canvas: #F8FAFC;
+        --color-card: #FFFFFF;
+        --color-border: #E2E8F0;
+        --color-text-main: #0F172A;
+        --color-text-muted: #64748B;
+        --color-accent: #059669;
+        --color-accent-hover: #047857;
+        --color-accent-subtle: #ECFDF5;
+        --radius-button: 8px;
+        --radius-card: 12px;
+        --radius-badge: 6px;
+    }
+
+    body {
+        background-color: var(--color-canvas);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: var(--color-text-main);
+    }
+
+    /* Hero Banner */
+    .jobs-hero {
+        background-color: #FFFFFF;
+        border-bottom: 1px solid var(--color-border);
+        padding: 3.5rem 0 2.5rem;
+        position: relative;
+    }
+
+    .jobs-hero::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(circle, #E2E8F0 1px, transparent 1px);
+        background-size: 28px 28px;
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    .jobs-title {
+        font-size: clamp(2rem, 3.8vw, 2.75rem);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: var(--color-text-main);
+        line-height: 1.2;
+    }
+
+    /* Filter Bar Box */
+    .jobs-filter-card {
+        background: #FFFFFF;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-card);
+        padding: 1.25rem;
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+        margin-top: 1.5rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    .form-control-custom, .form-select-custom {
+        border: 1.5px solid var(--color-border);
+        border-radius: var(--radius-button);
+        padding: 0.6rem 0.85rem;
+        font-size: 0.9rem;
+        color: var(--color-text-main);
+        transition: all .15s ease-in-out;
+    }
+
+    .form-control-custom:focus, .form-select-custom:focus {
+        border-color: var(--color-accent);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+    }
+
+    /* Primary & Outline Buttons */
+    .btn-jobs-primary {
+        background: var(--color-accent);
+        color: #FFFFFF;
+        border: none;
+        border-radius: var(--radius-button);
+        padding: 0.6rem 1.25rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        transition: all .2s ease;
+    }
+    .btn-jobs-primary:hover {
+        background: var(--color-accent-hover);
+        color: #FFFFFF;
+        box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+    }
+
+    .btn-jobs-outline {
+        background: #FFFFFF;
+        color: var(--color-text-main);
+        border: 1.5px solid var(--color-border);
+        border-radius: var(--radius-button);
+        padding: 0.6rem 1.25rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        transition: all .2s ease;
+    }
+    .btn-jobs-outline:hover {
+        border-color: var(--color-accent);
+        color: var(--color-accent);
+        background: var(--color-accent-subtle);
+    }
+
+    /* Job Card */
+    .job-card {
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-card);
+        padding: 1.5rem;
+        transition: all .2s ease;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        position: relative;
+    }
+    .job-card:hover {
+        border-color: rgba(5, 150, 105, 0.45);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        transform: translateY(-2px);
+    }
+
+    .job-title-link {
+        color: var(--color-text-main);
+        text-decoration: none;
+        font-size: 1.15rem;
+        font-weight: 700;
+        line-height: 1.35;
+        transition: color .15s ease;
+    }
+    .job-title-link:hover {
+        color: var(--color-accent);
+    }
+
+    .salary-text {
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: var(--color-accent);
+    }
+
+    .badge-dept {
+        background: #F1F5F9;
+        color: #334155;
+        border-radius: var(--radius-badge);
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 0.3rem 0.6rem;
+    }
+
+    .badge-hot {
+        background: #FEE2E2;
+        color: #DC2626;
+        border: 1px solid #FECACA;
+        border-radius: var(--radius-badge);
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.2rem 0.5rem;
+        letter-spacing: 0.05em;
+    }
+
+    .meta-item {
+        font-size: 0.825rem;
+        color: var(--color-text-muted);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .tech-tag {
+        background: #F8FAFC;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-badge);
+        color: #475569;
+        font-size: 0.72rem;
+        font-weight: 500;
+        padding: 0.2rem 0.5rem;
+    }
+</style>
+
+<!-- ── HERO & FILTER SECTION ── -->
+<section class="jobs-hero">
+    <div class="container-fluid px-4 px-md-5">
+        <div class="row justify-content-center text-center">
+            <div class="col-12 col-xl-9">
+                <span class="badge px-3 py-1.5 mb-3" style="background: var(--color-accent-subtle); color: var(--color-accent); border: 1px solid #A7F3D0; font-size: 0.78rem; font-weight: 600; border-radius: var(--radius-badge); letter-spacing: 0.06em; text-transform: uppercase;">
+                    <i class="bi bi-stars me-1"></i> NoveraTech Career Opportunities
+                </span>
+                <h1 class="jobs-title mb-3">
+                    Gia Nhập Đội Ngũ Kỹ Sư & Chuyên Gia Công Nghệ
+                </h1>
+                <p class="text-muted fs-6 mb-0" style="max-width: 720px; margin: 0 auto; line-height: 1.7;">
+                    NoveraTech đang mở rộng mạnh mẽ quy mô nghiên cứu và phát triển sản phẩm. Chúng tôi tìm kiếm những cá nhân xuất sắc, đam mê công nghệ sạch (Clean Code), kiến trúc phân tán chịu tải cao và ứng dụng trí tuệ nhân tạo (GenAI).
+                </p>
+            </div>
+        </div>
+
+        <!-- Filter & Search Bar -->
+        <div class="row justify-content-center">
+            <div class="col-12 col-xl-11">
+                <div class="jobs-filter-card">
+                    <form method="get" asp-controller="Jobs" asp-action="Index">
+                        <div class="row g-2 align-items-center">
+                            <!-- Keyword Input -->
+                            <div class="col-12 col-md-4">
+                                <div class="position-relative">
+                                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                                    <input type="text" name="search" class="form-control form-control-custom ps-5" 
+                                           placeholder="Từ khóa: .NET, React, AI, Python, K8s..." 
+                                           value="@Model.SearchKeyword" />
+                                </div>
+                            </div>
+
+                            <!-- Department Dropdown -->
+                            <div class="col-6 col-md-2.5 col-lg-2">
+                                <select name="department" class="form-select form-select-custom">
+                                    <option value="all">Tất cả Khối / Phòng</option>
+                                    <option value="it" selected="@(Model.SelectedDepartment == "it")">Kỹ thuật & IT</option>
+                                    <option value="ai" selected="@(Model.SelectedDepartment == "ai")">AI & Data Lab</option>
+                                    <option value="cloud" selected="@(Model.SelectedDepartment == "cloud")">Hạ tầng & Cloud</option>
+                                    <option value="product" selected="@(Model.SelectedDepartment == "product")">Khối Sản phẩm</option>
+                                    <option value="qa" selected="@(Model.SelectedDepartment == "qa")">Đảm bảo Chất lượng</option>
+                                    <option value="security" selected="@(Model.SelectedDepartment == "security")">An toàn Bảo mật</option>
+                                    <option value="hr" selected="@(Model.SelectedDepartment == "hr")">Nhân sự & Tuyển dụng</option>
+                                </select>
+                            </div>
+
+                            <!-- Location Dropdown -->
+                            <div class="col-6 col-md-2">
+                                <select name="location" class="form-select form-select-custom">
+                                    <option value="all">Tất cả địa điểm</option>
+                                    <option value="Hà Nội" selected="@(Model.SelectedLocation == "Hà Nội")">Hà Nội</option>
+                                    <option value="Hồ Chí Minh" selected="@(Model.SelectedLocation == "Hồ Chí Minh")">TP. Hồ Chí Minh</option>
+                                    <option value="Hybrid" selected="@(Model.SelectedLocation == "Hybrid")">Làm việc Hybrid</option>
+                                </select>
+                            </div>
+
+                            <!-- Level Dropdown -->
+                            <div class="col-6 col-md-2">
+                                <select name="level" class="form-select form-select-custom">
+                                    <option value="all">Tất cả cấp bậc</option>
+                                    <option value="Senior" selected="@(Model.SelectedLevel == "Senior")">Senior</option>
+                                    <option value="Lead" selected="@(Model.SelectedLevel == "Lead")">Lead / Principal</option>
+                                    <option value="Middle" selected="@(Model.SelectedLevel == "Middle")">Middle</option>
+                                </select>
+                            </div>
+
+                            <!-- Submit Buttons -->
+                            <div class="col-6 col-md-1.5 col-lg-2 d-flex gap-2">
+                                <button type="submit" class="btn-jobs-primary w-100">
+                                    <i class="bi bi-funnel-fill"></i> Lọc
+                                </button>
+                                @if (!string.IsNullOrEmpty(Model.SearchKeyword) || !string.IsNullOrEmpty(Model.SelectedDepartment) || !string.IsNullOrEmpty(Model.SelectedLocation) || !string.IsNullOrEmpty(Model.SelectedLevel))
+                                {
+                                    <a asp-controller="Jobs" asp-action="Index" class="btn-jobs-outline px-2" title="Xóa bộ lọc">
+                                        <i class="bi bi-arrow-counterclockwise"></i>
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── MAIN JOB LISTINGS SECTION ── -->
+<section class="py-5">
+    <div class="container-fluid px-4 px-md-5">
+        <!-- Results Summary Bar -->
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center pb-3 mb-4 gap-2" style="border-bottom: 1px solid var(--color-border);">
+            <div>
+                <h5 class="fw-bold mb-1" style="font-size: 1.15rem; color: var(--color-text-main);">
+                    Danh sách vị trí đang tuyển dụng
+                </h5>
+                <span class="text-muted small">
+                    Đang hiển thị <strong class="text-dark">@Model.TotalOpenings</strong> vị trí phù hợp
+                    @if (Model.HotOpeningsCount > 0)
+                    {
+                        <span> · Có <strong class="text-danger">@Model.HotOpeningsCount</strong> vị trí tuyển gấp (HOT)</span>
+                    }
+                </span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-light text-secondary border px-2.5 py-1.5" style="border-radius: var(--radius-badge); font-size: 0.78rem;">
+                    <i class="bi bi-lightning-charge text-warning me-1"></i> Cam kết phản hồi trong 48h
+                </span>
+            </div>
+        </div>
+
+        @if (!Model.Jobs.Any())
+        {
+            <!-- Empty State -->
+            <div class="text-center py-5 my-4 bg-white rounded-3 border" style="border-color: var(--color-border) !important; border-radius: var(--radius-card);">
+                <div class="d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px; background: #F1F5F9; border-radius: 50%; color: #64748B;">
+                    <i class="bi bi-search fs-3"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-2">Chưa tìm thấy vị trí phù hợp</h4>
+                <p class="text-muted small mb-4" style="max-width: 480px; margin: 0 auto;">
+                    Không có kết quả nào khớp với bộ lọc bạn chọn. Bạn có thể xóa bộ lọc tìm kiếm hoặc nộp CV trực tiếp tới Talent Network để được ưu tiên khi có vị trí mới.
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <a asp-controller="Jobs" asp-action="Index" class="btn-jobs-outline">
+                        <i class="bi bi-arrow-counterclockwise"></i> Xem tất cả công việc
+                    </a>
+                    <a asp-controller="Account" asp-action="CandidateAuth" class="btn-jobs-primary">
+                        <i class="bi bi-send-fill"></i> Nộp hồ sơ tự do
+                    </a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- Job Cards Grid -->
+            <div class="row g-4">
+                @foreach (var job in Model.Jobs)
+                {
+                    <div class="col-12 col-md-6 col-xl-4">
+                        <div class="job-card">
+                            <!-- Header: Dept + Salary -->
+                            <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
+                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                    <span class="badge-dept">@job.Department</span>
+                                    @if (job.IsHot)
+                                    {
+                                        <span class="badge-hot"><i class="bi bi-fire me-0.5"></i>HOT</span>
+                                    }
+                                </div>
+                                <span class="salary-text flex-shrink-0">@job.SalaryDisplay</span>
+                            </div>
+
+                            <!-- Title Link -->
+                            <h3 class="mb-2">
+                                <a asp-controller="Jobs" asp-action="Detail" asp-route-id="@job.Slug" class="job-title-link">
+                                    @job.Title
+                                </a>
+                            </h3>
+
+                            <!-- Meta Details -->
+                            <div class="d-flex flex-wrap gap-3 mb-3">
+                                <span class="meta-item">
+                                    <i class="bi bi-geo-alt text-success"></i> @job.WorkLocation
+                                </span>
+                                <span class="meta-item">
+                                    <i class="bi bi-bar-chart-steps text-primary"></i> @job.ExperienceLevel
+                                </span>
+                                <span class="meta-item">
+                                    <i class="bi bi-clock-history text-muted"></i> @job.EmploymentType
+                                </span>
+                            </div>
+
+                            <!-- Short Summary Description -->
+                            <p class="text-muted small flex-grow-1 mb-3" style="line-height: 1.6;">
+                                @job.ShortSummary
+                            </p>
+
+                            <!-- Tech Stack Badges -->
+                            <div class="d-flex flex-wrap gap-1.5 mb-4">
+                                @foreach (var tech in job.TechStack.Take(5))
+                                {
+                                    <span class="tech-tag">@tech</span>
+                                }
+                                @if (job.TechStack.Count > 5)
+                                {
+                                    <span class="tech-tag text-muted">+@(job.TechStack.Count - 5)</span>
+                                }
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex gap-2 pt-2 border-top" style="border-color: var(--color-border) !important;">
+                                <a asp-controller="Jobs" asp-action="Detail" asp-route-id="@job.Slug" class="btn-jobs-outline flex-grow-1 text-center py-2">
+                                    Chi tiết JD
+                                </a>
+                                <a asp-controller="Jobs" asp-action="Detail" asp-route-id="@job.Slug" class="btn-jobs-primary flex-grow-1 text-center py-2">
+                                    Ứng tuyển <i class="bi bi-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+<!-- ── WHY JOIN NOVERATECH CALLOUT BANNER ── -->
+<section class="py-5" style="background: #FFFFFF; border-top: 1px solid var(--color-border);">
+    <div class="container-fluid px-4 px-md-5">
+        <div class="row align-items-center gy-4">
+            <div class="col-12 col-lg-8">
+                <span style="font-size: 0.72rem; font-weight: 700; color: var(--color-accent); text-transform: uppercase; letter-spacing: 0.1em;">
+                    MÔI TRƯỜNG LÀM VIỆC ĐỈNH CAO TẠI NOVERATECH
+                </span>
+                <h3 class="fw-bold mt-1 mb-2" style="font-size: 1.6rem; color: var(--color-text-main);">
+                    Đãi ngộ Top 10% thị trường & Thiết bị tối tân
+                </h3>
+                <p class="text-muted small mb-3" style="line-height: 1.65; max-width: 650px;">
+                    Mọi kỹ sư khi gia nhập NoveraTech đều được trang bị 100% Apple MacBook Pro chip M3/M4 Max cấu hình cao nhất, màn hình kép 4K công thái học, bảo hiểm sức khỏe NoveraCare VIP và tài trợ 25 triệu/năm thi chứng chỉ chuyên nghiệp.
+                </p>
+                <div class="d-flex flex-wrap gap-3">
+                    <span class="d-inline-flex align-items-center gap-1.5 small text-dark fw-medium">
+                        <i class="bi bi-check-circle-fill text-success"></i> 14 – 16 tháng lương/năm
+                    </span>
+                    <span class="d-inline-flex align-items-center gap-1.5 small text-dark fw-medium">
+                        <i class="bi bi-check-circle-fill text-success"></i> Review 2 lần/năm (Tháng 3 & 9)
+                    </span>
+                    <span class="d-inline-flex align-items-center gap-1.5 small text-dark fw-medium">
+                        <i class="bi bi-check-circle-fill text-success"></i> Hybrid 2 ngày WFH/tuần
+                    </span>
+                    <span class="d-inline-flex align-items-center gap-1.5 small text-dark fw-medium">
+                        <i class="bi bi-check-circle-fill text-success"></i> Tuyệt đối không văn hóa OT
+                    </span>
+                </div>
+            </div>
+            <div class="col-12 col-lg-4 text-lg-end">
+                <div class="p-3 bg-light rounded-3 d-inline-block text-start border" style="border-radius: var(--radius-card); max-width: 320px;">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background: var(--color-accent-subtle); color: var(--color-accent); border-radius: 8px;">
+                            <i class="bi bi-envelope-check"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold small text-dark">Gửi CV ứng tuyển trực tiếp</div>
+                            <div class="text-muted" style="font-size: 0.72rem;">Bộ phận Talent Acquisition</div>
+                        </div>
+                    </div>
+                    <div class="font-monospace text-dark fw-bold small mb-2">careers@@noveratech.digital</div>
+                    <a asp-controller="Account" asp-action="CandidateAuth" class="btn-jobs-primary w-100 py-1.5 small">
+                        <i class="bi bi-file-earmark-arrow-up"></i> Nộp hồ sơ ngay
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

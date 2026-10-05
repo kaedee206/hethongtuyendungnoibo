@@ -385,6 +385,10 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
         // AC S1-10: Cảnh báo nếu người đó phụ trách vị trí tuyển dụng (Recruiter / Hiring Manager)
         string? handoverWarning = null;
         var roles = user.UserRoles.Select(ur => UserRoles.NormalizeRole(ur.Role.Name)).ToHashSet();
+        if (!string.IsNullOrWhiteSpace(user.Role))
+        {
+            roles.Add(UserRoles.NormalizeRole(user.Role));
+        }
         if (roles.Contains(UserRoles.Recruiter) || roles.Contains(UserRoles.HiringManager))
         {
             var roleNames = string.Join(" và ", roles.Where(r => r == UserRoles.Recruiter || r == UserRoles.HiringManager).Select(UserRoles.GetDisplayName));
