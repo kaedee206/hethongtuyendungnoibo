@@ -33,8 +33,12 @@ public class JobListViewModel
     public string? SelectedDepartment { get; set; }
     public string? SelectedLocation { get; set; }
     public string? SelectedLevel { get; set; }
-    public int TotalOpenings => Jobs.Count;
-    public int HotOpeningsCount => Jobs.Count(j => j.IsHot);
+    public int TotalOpenings => TotalRecords > 0 ? TotalRecords : Jobs.Count;
+    public int HotOpeningsCount => (AllJobs != null && AllJobs.Any() ? AllJobs : Jobs).Count(j => j.IsHot);
+    public int CurrentPage { get; set; } = 1;
+    public int PageSize { get; set; } = 9;
+    public int TotalRecords { get; set; }
+    public int TotalPages => PageSize > 0 ? (int)Math.Ceiling(TotalRecords / (double)PageSize) : 0;
 }
 
 public class JobDetailViewModel

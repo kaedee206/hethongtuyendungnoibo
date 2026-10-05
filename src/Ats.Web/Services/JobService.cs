@@ -16,13 +16,16 @@ public class JobService : IJobService
         _logger = logger;
     }
 
-    public async Task<JobListViewModel> GetJobListAsync(string? search = null, string? department = null, string? location = null, string? level = null)
+    public async Task<JobListViewModel> GetJobListAsync(string? search = null, string? department = null, string? location = null, string? level = null, int page = 1, int pageSize = 9)
     {
+        if (page < 1) page = 1;
+        if (pageSize <= 0) pageSize = 9;
+
         var allJobs = await GetAllJobsInternalAsync();
 
         var query = allJobs.AsEnumerable();
 
-        if (!string.IsNullOrWhiteSpace(search))
+        if (!string.IsNullOrWhiteSpace(search) && search.Trim().Length >= 3)
         {
             var s = search.Trim().ToLower();
             query = query.Where(j => 
@@ -52,15 +55,20 @@ public class JobService : IJobService
         }
 
         var filteredList = query.ToList();
+        var totalRecords = filteredList.Count;
+        var pagedList = filteredList.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
         return new JobListViewModel
         {
-            Jobs = filteredList,
+            Jobs = pagedList,
             AllJobs = allJobs,
             SearchKeyword = search,
             SelectedDepartment = department,
             SelectedLocation = location,
-            SelectedLevel = level
+            SelectedLevel = level,
+            CurrentPage = page,
+            PageSize = pageSize,
+            TotalRecords = totalRecords
         };
     }
 

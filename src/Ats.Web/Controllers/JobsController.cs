@@ -38,9 +38,11 @@ public class JobsController : Controller
         [FromQuery] string? search,
         [FromQuery] string? department,
         [FromQuery] string? location,
-        [FromQuery] string? level)
+        [FromQuery] string? level,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 9)
     {
-        var model = await _jobService.GetJobListAsync(search, department, location, level);
+        var model = await _jobService.GetJobListAsync(search, department, location, level, page, pageSize);
         return View(model);
     }
 
