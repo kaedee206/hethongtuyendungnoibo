@@ -1,0 +1,2 @@
+﻿namespace Ats.Web.Models.Enums;
+public enum OfferStatus { DRAFT, PENDING_APPROVAL, APPROVED, SENT_TO_CANDIDATE, ACCEPTED, REJECTED, WITHDRAWN }

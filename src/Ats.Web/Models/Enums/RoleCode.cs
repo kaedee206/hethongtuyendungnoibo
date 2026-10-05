@@ -1,0 +1,2 @@
+﻿namespace Ats.Web.Models.Enums;
+public enum RoleCode { ADMIN, HR_MANAGER, RECRUITER, HIRING_MANAGER, INTERVIEWER, APPROVER, CANDIDATE }

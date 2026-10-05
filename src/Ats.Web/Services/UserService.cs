@@ -385,6 +385,10 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
         // AC S1-10: Cảnh báo nếu người đó phụ trách vị trí tuyển dụng (Recruiter / Hiring Manager)
         string? handoverWarning = null;
         var roles = user.UserRoles.Select(ur => UserRoles.NormalizeRole(ur.Role.Name)).ToHashSet();
+        if (!string.IsNullOrWhiteSpace(user.Role))
+        {
+            roles.Add(UserRoles.NormalizeRole(user.Role));
+        }
         if (roles.Contains(UserRoles.Recruiter) || roles.Contains(UserRoles.HiringManager))
         {
             var roleNames = string.Join(" và ", roles.Where(r => r == UserRoles.Recruiter || r == UserRoles.HiringManager).Select(UserRoles.GetDisplayName));
@@ -591,6 +595,7 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
             }
 
             // Validate Phone Number
+            if (!string.IsNullOrEmpty(phoneNumber) && !System.Text.RegularExpressions.Regex.IsMatch(phoneNumber, @"^(0|\+84)[3|5|7|8|9][0-9]{8}$"))
             if (!string.IsNullOrEmpty(phoneNumber) && !System.Text.RegularExpressions.Regex.IsMatch(phoneNumber, @"^(0|\+84|84)[35789][0-9]{8}$"))
             {
                 errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Số điện thoại", ErrorMessage = "Không đúng định dạng" });

@@ -3,8 +3,9 @@ using Ats.Web.Services;
 using Ats.Web.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-// 1. Nạp file .env vào Environment Variables
-DotNetEnv.Env.Load();
+DotNetEnv.Env.TraversePath().Load();
+if (File.Exists(".env")) DotNetEnv.Env.Load(".env");
+if (File.Exists("src/Ats.Web/.env")) DotNetEnv.Env.Load("src/Ats.Web/.env");
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -29,6 +30,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IJobService, JobService>();
+builder.Services.AddScoped<ICompetencyFrameworkService, CompetencyFrameworkService>();
+builder.Services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
+builder.Services.AddScoped<IRequisitionService, RequisitionService>();
+
 
 // Cấu hình thời gian Session (Idle timeout)
 var idleTimeoutMinutesStr = Environment.GetEnvironmentVariable("SESSION_IDLE_TIMEOUT_MINUTES") ?? "30";
@@ -45,8 +51,15 @@ builder.Services.AddSession(options =>
     options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
-// 2. Thêm cấu hình Authentication Cookie nếu ứng dụng dùng Cookie Auth
-builder.Services.AddAuthentication("AtsCookieScheme")
+// 2. Thêm cấu hình Authentication Cookie & External Google OAuth
+var googleClientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID")?.Trim();
+var googleClientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET")?.Trim();
+
+var authBuilder = builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultScheme = "AtsCookieScheme";
+        options.DefaultChallengeScheme = "AtsCookieScheme";
+    })
     .AddCookie("AtsCookieScheme", options =>
     {
         options.Cookie.Name = "Ats.AuthCookie";
@@ -57,7 +70,31 @@ builder.Services.AddAuthentication("AtsCookieScheme")
         options.SlidingExpiration = true; // Tự động gia hạn phiên khi user hoạt động > 50% thời hạn
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
+    })
+    .AddCookie("ExternalCookieScheme", options =>
+    {
+        options.Cookie.Name = "Ats.ExternalCookie";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
     });
+
+// Kiểm tra xem đã cung cấp ClientId thực tế hay chưa
+bool hasValidGoogleConfig = !string.IsNullOrWhiteSpace(googleClientId) && 
+                            !string.IsNullOrWhiteSpace(googleClientSecret) &&
+                            !googleClientId.Contains("YOUR_GOOGLE_CLIENT_ID", StringComparison.OrdinalIgnoreCase);
+
+if (hasValidGoogleConfig)
+{
+    authBuilder.AddGoogle(options =>
+    {
+        options.SignInScheme = "ExternalCookieScheme";
+        options.ClientId = googleClientId!;
+        options.ClientSecret = googleClientSecret!;
+        options.CallbackPath = "/signin-google";
+        options.SaveTokens = true;
+    });
+}
 
 var app = builder.Build();
 
@@ -93,5 +130,12 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
+
+// Khởi tạo seed data tự động
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await DatabaseSeeder.SeedAsync(dbContext);
+}
 
 app.Run();

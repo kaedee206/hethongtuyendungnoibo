@@ -1,4 +1,4 @@
-﻿@model Ats.Web.Models.ViewModels.Account.AccountLoginViewModel
+@model Ats.Web.Models.ViewModels.Account.AccountLoginViewModel
 @{
     ViewData["Title"] = "Đăng nhập";
     Layout = "_LoginLayout";
@@ -8,7 +8,9 @@
     <div class="login-card shadow-sm">
 
         <div class="login-card__header text-center">
-            <img src="~/img/logo.svg" alt="ATS - Hệ thống tuyển dụng nội bộ" class="login-card__logo" />
+            <a href="/gioi-thieu" title="Quay lại Trang chủ NoveraTech">
+                <img src="~/img/logo.svg" alt="ATS - Hệ thống tuyển dụng nội bộ" class="login-card__logo" onerror="this.src='/img/logo-dark-transparent.png'" />
+            </a>
             <h1 class="login-card__title">Đăng nhập hệ thống</h1>
             <p class="login-card__subtitle">Sử dụng email công ty để truy cập ATS</p>
         </div>
@@ -17,11 +19,6 @@
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="ReturnUrl" />
 
-            @* AC S1-01: đăng nhập sai -> hiển thị THÔNG BÁO CHUNG, không tiết lộ
-               email có tồn tại hay không. Controller phải add lỗi bằng
-               ModelState.AddModelError(string.Empty, "Email hoặc mật khẩu không chính xác.")
-               (không gắn lỗi vào field Email/Password riêng lẻ) để asp-validation-summary
-               bên dưới hiển thị đúng một thông báo chung duy nhất. *@
             <div asp-validation-summary="ModelOnly"
                  class="alert alert-danger login-card__alert"
                  role="alert"
@@ -33,7 +30,7 @@
                        class="form-control"
                        autocomplete="username"
                        autofocus
-                       placeholder="[email protected]" />
+                       placeholder="user@noveratech.digital" />
                 <span asp-validation-for="Email" class="text-danger small"></span>
             </div>
 
@@ -61,9 +58,15 @@
                 </a>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100 login-card__submit">
+            <button type="submit" class="btn btn-primary w-100 login-card__submit mb-3">
                 Đăng nhập
             </button>
+
+            <div class="text-center mt-2">
+                <a href="/gioi-thieu" class="text-decoration-none text-muted small">
+                    <i class="bi bi-arrow-left me-1"></i> Quay lại Trang chủ
+                </a>
+            </div>
         </form>
     </div>
 </div>
