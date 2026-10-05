@@ -299,6 +299,20 @@ namespace Ats.Web.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<int?>("Code")
+                        .HasColumnType("integer")
+                        .HasColumnName("code");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("IsSystem")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_system");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
                     b.Property<string>("Address")
                         .HasColumnType("text")
                         .HasColumnName("address");
@@ -345,6 +359,21 @@ namespace Ats.Web.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_blacklisted");
 
+                    b.Property<string>("LockReason")
+                        .HasColumnType("text")
+                        .HasColumnName("lock_reason");
+
+                    b.Property<DateTimeOffset?>("LockedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_at");
+
+                    b.Property<Guid?>("LockedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("locked_by");
+
+                    b.Property<DateTimeOffset?>("LockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_until");
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
                         .HasColumnName("is_deleted");
@@ -397,6 +426,26 @@ namespace Ats.Web.Migrations
                     b.ToTable("candidates", (string)null);
                 });
 
+            modelBuilder.Entity("Ats.Web.Models.Entities.UserRole", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("role_id");
+
+                    b.HasKey("UserId", "RoleId")
+                        .HasName("pk_user_roles");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_user_roles_role_id");
+
+                    b.ToTable("user_roles", (string)null);
+                });
+
+            modelBuilder.Entity("Ats.Web.Models.Entities.UserSession", b =>
             modelBuilder.Entity("Ats.Web.Models.Entities.Department", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2318,6 +2367,8 @@ namespace Ats.Web.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Ats.Web.Models.Entities.Role", b =>
+                {
             modelBuilder.Entity("Ats.Web.Models.Entities.UserSession", b =>
                 {
                     b.HasOne("Ats.Web.Models.Entities.User", null)

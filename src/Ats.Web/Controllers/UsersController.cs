@@ -4,6 +4,7 @@ using Ats.Web.Models.ViewModels.Users;
 using Ats.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Ats.Web.Models.DTOs;
 
 namespace Ats.Web.Controllers;
 
@@ -197,5 +198,88 @@ public class UsersController(
         }
 
         return RedirectToAction(nameof(Index));
+    }
+
+    /// <summary>
+    /// SCRUM-176: Tải tệp mẫu Excel nhập nhân sự
+    /// </summary>
+    [HttpGet("import-template")]
+    public async Task<IActionResult> DownloadImportTemplate(CancellationToken cancellationToken)
+    {
+        var fileContents = await _userService.GenerateExcelTemplateAsync(cancellationToken);
+        return File(fileContents, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Mau_Nhap_Nhan_Su.xlsx");
+    }
+
+    /// <summary>
+    /// SCRUM-178: Xử lý đọc và validate dữ liệu từng dòng trong tệp Excel
+    /// </summary>
+    [HttpPost("import-excel")]
+    public async Task<IActionResult> ImportExcel(IFormFile file, CancellationToken cancellationToken)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest("Vui lòng tải lên một tệp Excel hợp lệ.");
+        }
+
+        var ext = Path.GetExtension(file.FileName).ToLower();
+        if (ext != ".xlsx" && ext != ".xls")
+        {
+            return BadRequest("Chỉ hỗ trợ định dạng tệp Excel (.xlsx, .xls).");
+        }
+
+        // SCRUM-183: Validate file size (max 5MB)
+        const long maxFileSize = 5 * 1024 * 1024;
+        if (file.Length > maxFileSize)
+        {
+            return BadRequest("Dung lượng tệp vượt quá giới hạn cho phép (tối đa 5MB).");
+        }
+
+        using var stream = file.OpenReadStream();
+        try
+        {
+            var result = await _userService.ValidateExcelImportAsync(stream, cancellationToken);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi xử lý tệp Excel nhập nhân sự");
+            return BadRequest("Tệp Excel không đúng định dạng hoặc bị lỗi.");
+        }
+    }
+
+    /// <summary>
+    /// SCRUM-180: Thực thi nhập dữ liệu hàng loạt từ danh sách dòng hợp lệ
+    /// </summary>
+    [HttpPost("execute-import")]
+    public async Task<IActionResult> ExecuteImport([FromBody] ExecuteImportRequestDto request, CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        if (request.ValidRows == null || request.ValidRows.Count == 0)
+        {
+            return BadRequest("Danh sách nhập dữ liệu trống.");
+        }
+
+        try
+        {
+            var result = await _userService.ExecuteImportAsync(request, cancellationToken);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi thực thi nhập dữ liệu nhân sự hàng loạt");
+            return StatusCode(500, "Đã xảy ra lỗi hệ thống trong quá trình nhập dữ liệu.");
+        }
     }
 }

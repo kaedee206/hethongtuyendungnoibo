@@ -82,9 +82,13 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
             {
                 new(ClaimTypes.NameIdentifier, result.Data.Id.ToString()),
                 new(ClaimTypes.Email, result.Data.Email),
-                new(ClaimTypes.Name, result.Data.FullName),
-                new(ClaimTypes.Role, result.Data.Role)
+                new(ClaimTypes.Name, result.Data.FullName)
             };
+
+            foreach (var role in result.Data.Roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, Ats.Web.Constants.UserRoles.NormalizeRole(role)));
+            }
             var claimsIdentity = new ClaimsIdentity(claims, "AtsCookieScheme");
             await HttpContext.SignInAsync("AtsCookieScheme", new ClaimsPrincipal(claimsIdentity));
         }
