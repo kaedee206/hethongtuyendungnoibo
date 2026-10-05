@@ -11,4 +11,10 @@ public class ProfilesController : Controller
     {
         return View();
     }
+
+    [HttpGet("/ho-so/chinh-sua")]
+    public IActionResult Edit()
+    {
+        return View();
+    }
 }
