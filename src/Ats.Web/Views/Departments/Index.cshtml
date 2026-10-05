@@ -1,0 +1,595 @@
+@{
+    ViewData["Title"] = "Cơ cấu tổ chức & Phòng ban";
+    var activeUsers = ViewBag.ActiveUsers as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+
+<div class="container-fluid px-3 px-md-4 py-4">
+    <!-- Single-Tier Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 fw-bold mb-1" style="color: var(--text-primary);">Sơ đồ Cơ cấu Tổ chức & Phòng ban</h1>
+            <p class="text-muted mb-0" style="font-size: 0.92rem;">Quản lý cây phòng ban đa cấp, người phụ trách và kiểm soát ràng buộc tuyển dụng</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary d-inline-flex align-items-center gap-2" style="border-radius: 8px;" onclick="openCreateDeptModal(null)">
+                <i class="bi bi-plus-lg"></i> Thêm phòng ban mới
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter & Stats Bar -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+        <div class="card-body p-3 p-md-4">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0" style="border-radius: 8px 0 0 8px;"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 bg-light" id="deptSearchInput" placeholder="Tìm theo tên hoặc mã phòng ban... (từ 3 ký tự)" style="border-radius: 0 8px 8px 0;" />
+                    </div>
+                    <div id="deptSearchHint" class="text-warning d-none" style="font-size: 0.72rem; margin-top: 3px;">
+                        <i class="bi bi-info-circle me-1"></i>Nhập tối thiểu 3 ký tự để tìm kiếm
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select bg-light" id="statusFilterSelect" style="border-radius: 8px;" onchange="loadDepartmentTree()">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="true">Đang hoạt động</option>
+                        <option value="false">Ngừng áp dụng</option>
+                    </select>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <button class="btn btn-outline-secondary btn-sm me-2" style="border-radius: 8px;" onclick="expandAllNodes()">
+                        <i class="bi bi-arrows-expand me-1"></i> Mở rộng tất cả
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" style="border-radius: 8px;" onclick="collapseAllNodes()">
+                        <i class="bi bi-arrows-collapse me-1"></i> Thu gọn tất cả
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tree View Card -->
+    <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+        <div class="card-body p-4">
+            <div id="loadingSpinner" class="text-center py-5">
+                <div class="spinner-border text-success" role="status">
+                    <span class="visually-hidden">Đang tải dữ liệu...</span>
+                </div>
+                <p class="text-muted small mt-2">Đang tải sơ đồ cây phòng ban...</p>
+            </div>
+
+            <div id="treeContainer" class="d-none">
+                <ul id="deptTreeRoot" class="list-unstyled mb-0"></ul>
+            </div>
+
+            <div id="emptyTreeState" class="text-center py-5 d-none">
+                <div class="mb-3">
+                    <i class="bi bi-diagram-3 text-muted" style="font-size: 3rem;"></i>
+                </div>
+                <h5 class="fw-bold" style="color: var(--text-primary);">Chưa có phòng ban nào</h5>
+                <p class="text-muted small mb-3">Bắt đầu bằng cách tạo phòng ban cấp cao nhất cho tổ chức của bạn.</p>
+                <button class="btn btn-primary btn-sm" style="border-radius: 8px;" onclick="openCreateDeptModal(null)">
+                    <i class="bi bi-plus-lg me-1"></i> Tạo phòng ban đầu tiên
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Tạo / Chỉnh sửa phòng ban -->
+<div class="modal fade" id="deptModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold" id="deptModalTitle" style="color: var(--text-primary);">Thêm phòng ban</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="deptForm" novalidate>
+                <input type="hidden" id="deptId" />
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Phòng ban cấp cha</label>
+                        <select class="form-select" id="deptParentSelect" style="border-radius: 8px;">
+                            <option value="">-- Là phòng ban gốc (Cấp 1) --</option>
+                        </select>
+                        <div class="form-text small text-muted">Để trống nếu đây là khối/phòng ban cao nhất trong tập đoàn.</div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold text-secondary">Mã phòng ban <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control font-mono" id="deptCode" required placeholder="VD: TECH, AI_LAB" style="border-radius: 8px;" />
+                            <div class="invalid-feedback">Vui lòng nhập mã phòng ban.</div>
+                        </div>
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold text-secondary">Tên phòng ban <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="deptName" required placeholder="VD: Trung tâm Kỹ thuật Phần mềm" style="border-radius: 8px;" />
+                            <div class="invalid-feedback">Vui lòng nhập tên phòng ban.</div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Người phụ trách (Manager)</label>
+                        <select class="form-select" id="deptManagerSelect" style="border-radius: 8px;">
+                            <option value="">-- Chưa gán người phụ trách --</option>
+                            @foreach (var user in activeUsers)
+                            {
+                                <option value="@user.Id">@user.FullName (@user.Email) - @user.Role</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-top bg-light" style="border-radius: 0 0 12px 12px;">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy bỏ</button>
+                    <button type="submit" id="btnSubmitDept" class="btn btn-primary" style="border-radius: 8px;">
+                        <span id="deptSubmitSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
+                        Lưu thông tin
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Gán người phụ trách -->
+<div class="modal fade" id="assignManagerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold" style="color: var(--text-primary);">Gán người phụ trách phòng ban</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="assignDeptId" />
+                <p class="small text-muted mb-3">Phòng ban: <strong id="assignDeptName" class="text-dark"></strong></p>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-secondary">Chọn người phụ trách mới <span class="text-danger">*</span></label>
+                    <select class="form-select" id="newManagerSelect" style="border-radius: 8px;">
+                        <option value="">-- Chọn nhân viên đang hoạt động --</option>
+                        @foreach (var user in activeUsers)
+                        {
+                            <option value="@user.Id">@user.FullName (@user.Email) - @user.Role</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer border-top bg-light" style="border-radius: 0 0 12px 12px;">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy bỏ</button>
+                <button type="button" id="btnSaveManager" class="btn btn-primary" style="border-radius: 8px;">Xác nhận gán</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container (RULE.MD: bottom-right) -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;">
+    <div id="deptToast" class="toast align-items-center shadow-lg border-0" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius: 12px;">
+        <div class="d-flex">
+            <div class="toast-body d-flex align-items-center gap-2">
+                <i id="deptToastIcon" class="bi fs-5"></i>
+                <span id="deptToastMessage" class="small fw-semibold"></span>
+            </div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<style>
+.dept-tree-node {
+    border-left: 2px dashed #E2E8F0;
+    margin-left: 1.25rem;
+    padding-left: 1.25rem;
+    position: relative;
+}
+.dept-tree-node::before {
+    content: '';
+    position: absolute;
+    top: 1.25rem;
+    left: 0;
+    width: 1.25rem;
+    height: 2px;
+    border-top: 2px dashed #E2E8F0;
+}
+.dept-card-item {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.6rem;
+    transition: all 0.15s ease;
+}
+.dept-card-item:hover {
+    border-color: #CBD5E1;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+}
+.dept-card-item.inactive {
+    background: #F8FAFC;
+    opacity: 0.8;
+}
+</style>
+
+@section Scripts {
+<script>
+let flatDeptList = [];
+let deptModalObj = null;
+let assignModalObj = null;
+let toastObj = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    deptModalObj = new bootstrap.Modal(document.getElementById('deptModal'));
+    assignModalObj = new bootstrap.Modal(document.getElementById('assignManagerModal'));
+    toastObj = new bootstrap.Toast(document.getElementById('deptToast'), { delay: 4500 });
+
+    loadDepartmentTree();
+
+    document.getElementById('deptSearchInput').addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        filterTreeNodes(query);
+    });
+
+    document.getElementById('deptForm').addEventListener('submit', handleSaveDept);
+    document.getElementById('btnSaveManager').addEventListener('click', handleSaveManager);
+});
+
+function showToast(message, isSuccess = true) {
+    const toastEl = document.getElementById('deptToast');
+    const toastIcon = document.getElementById('deptToastIcon');
+    const toastMessage = document.getElementById('deptToastMessage');
+
+    toastEl.className = 'toast align-items-center shadow-lg border-0 ' + (isSuccess ? 'toast-success' : 'toast-error');
+    toastIcon.className = 'bi fs-5 ' + (isSuccess ? 'bi-check-circle-fill text-success' : 'bi-exclamation-triangle-fill text-danger');
+    toastMessage.textContent = message;
+    toastObj.show();
+}
+
+async function loadDepartmentTree() {
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const treeContainer = document.getElementById('treeContainer');
+    const emptyState = document.getElementById('emptyTreeState');
+
+    loadingSpinner.classList.remove('d-none');
+    treeContainer.classList.add('d-none');
+    emptyState.classList.add('d-none');
+
+    const statusVal = document.getElementById('statusFilterSelect').value;
+    let url = '/api/phong-ban/tree';
+    if (statusVal !== '') {
+        url += `?isActive=${statusVal}`;
+    }
+
+    try {
+        const res = await fetch(url);
+        const result = await res.json();
+
+        loadingSpinner.classList.add('d-none');
+
+        if (res.ok && result.isSuccess && result.data && result.data.length > 0) {
+            flatDeptList = [];
+            collectFlatList(result.data);
+            populateParentSelect();
+
+            renderTree(result.data);
+            treeContainer.classList.remove('d-none');
+        } else {
+            emptyState.classList.remove('d-none');
+        }
+    } catch (err) {
+        loadingSpinner.classList.add('d-none');
+        showToast('Lỗi khi tải danh sách phòng ban: ' + err.message, false);
+    }
+}
+
+function collectFlatList(nodes) {
+    nodes.forEach(node => {
+        flatDeptList.push({ id: node.id, name: node.name, code: node.code, level: node.level });
+        if (node.children && node.children.length > 0) {
+            collectFlatList(node.children);
+        }
+    });
+}
+
+function populateParentSelect(currentEditId = null) {
+    const parentSelect = document.getElementById('deptParentSelect');
+    parentSelect.innerHTML = '<option value="">-- Là phòng ban gốc (Cấp 1) --</option>';
+
+    flatDeptList.forEach(dept => {
+        if (dept.id !== currentEditId) {
+            const indent = '&nbsp;&nbsp;'.repeat((dept.level - 1) * 2);
+            const opt = document.createElement('option');
+            opt.value = dept.id;
+            opt.innerHTML = `${indent} ${dept.code} - ${dept.name}`;
+            parentSelect.appendChild(opt);
+        }
+    });
+}
+
+function renderTree(nodes) {
+    const rootEl = document.getElementById('deptTreeRoot');
+    rootEl.innerHTML = '';
+    nodes.forEach(node => {
+        rootEl.appendChild(createNodeElement(node));
+    });
+}
+
+function createNodeElement(node) {
+    const li = document.createElement('li');
+    li.className = 'dept-tree-item';
+    li.dataset.id = node.id;
+    li.dataset.name = node.name.toLowerCase();
+    li.dataset.code = node.code.toLowerCase();
+
+    const hasChildren = node.children && node.children.length > 0;
+
+    let managerHtml = '';
+    if (node.managerName) {
+        managerHtml = `<span class="badge bg-light text-secondary border me-2" style="border-radius: 6px; font-weight: 500;">
+            <i class="bi bi-person-check text-success me-1"></i>${node.managerName}
+        </span>`;
+    } else {
+        managerHtml = `<button class="btn btn-outline-warning btn-sm py-0 px-2 me-2" style="font-size: 0.75rem; border-radius: 6px;" onclick="openAssignManagerModal('${node.id}', '${node.name}')">
+            <i class="bi bi-person-plus me-1"></i>Gán Manager
+        </button>`;
+    }
+
+    const statusBadge = node.isActive
+        ? `<span class="badge" style="background-color: var(--brand-surface); color: var(--brand-primary); border: 1px solid var(--brand-border); border-radius: 6px; font-weight: 600;">Hoạt động</span>`
+        : `<span class="badge bg-secondary text-white" style="border-radius: 6px;">Ngừng áp dụng</span>`;
+
+    const card = document.createElement('div');
+    card.className = 'dept-card-item d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 ' + (!node.isActive ? 'inactive' : '');
+    card.innerHTML = `
+        <div class="d-flex align-items-center gap-2">
+            ${hasChildren ? `<button class="btn btn-link btn-sm p-0 text-secondary node-toggle" onclick="toggleNode(this)"><i class="bi bi-chevron-down"></i></button>` : `<span style="width: 14px; display: inline-block;"></span>`}
+            <span class="badge bg-light text-dark font-mono border" style="border-radius: 6px;">${node.code}</span>
+            <span class="fw-bold" style="color: var(--text-primary);">${node.name}</span>
+            <span class="badge bg-light text-muted border small" style="border-radius: 6px; font-size: 0.72rem;">Cấp ${node.level}</span>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            ${managerHtml}
+            ${statusBadge}
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" title="Thêm phòng ban con" style="border-radius: 6px;" onclick="openCreateDeptModal('${node.id}')">
+                    <i class="bi bi-plus-lg text-success"></i>
+                </button>
+                <button class="btn btn-outline-secondary" title="Chỉnh sửa" style="border-radius: 6px;" onclick="openEditDeptModal('${node.id}')">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                ${node.isActive
+                    ? `<button class="btn btn-outline-warning" title="Ngừng áp dụng (cascade)" style="border-radius: 6px;" onclick="deactivateDept('${node.id}')"><i class="bi bi-pause-circle"></i></button>`
+                    : `<button class="btn btn-outline-success" title="Kích hoạt lại" style="border-radius: 6px;" onclick="reactivateDept('${node.id}')"><i class="bi bi-play-circle"></i></button>`
+                }
+                <button class="btn btn-outline-danger" title="Xóa phòng ban" style="border-radius: 6px;" onclick="deleteDept('${node.id}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+
+    li.appendChild(card);
+
+    if (hasChildren) {
+        const subUl = document.createElement('ul');
+        subUl.className = 'list-unstyled dept-tree-node';
+        node.children.forEach(child => {
+            subUl.appendChild(createNodeElement(child));
+        });
+        li.appendChild(subUl);
+    }
+
+    return li;
+}
+
+function toggleNode(btn) {
+    const icon = btn.querySelector('i');
+    const li = btn.closest('li');
+    const childUl = li.querySelector('.dept-tree-node');
+    if (childUl) {
+        if (childUl.classList.contains('d-none')) {
+            childUl.classList.remove('d-none');
+            icon.className = 'bi bi-chevron-down';
+        } else {
+            childUl.classList.add('d-none');
+            icon.className = 'bi bi-chevron-right';
+        }
+    }
+}
+
+function expandAllNodes() {
+    document.querySelectorAll('.dept-tree-node').forEach(ul => ul.classList.remove('d-none'));
+    document.querySelectorAll('.node-toggle i').forEach(i => i.className = 'bi bi-chevron-down');
+}
+
+function collapseAllNodes() {
+    document.querySelectorAll('.dept-tree-node').forEach(ul => ul.classList.add('d-none'));
+    document.querySelectorAll('.node-toggle i').forEach(i => i.className = 'bi bi-chevron-right');
+}
+
+function filterTreeNodes(query) {
+    const hint = document.getElementById('deptSearchHint');
+    if (hint) {
+        if (query.length > 0 && query.length < 3) hint.classList.remove('d-none');
+        else hint.classList.add('d-none');
+    }
+
+    document.querySelectorAll('.dept-tree-item').forEach(item => {
+        if (!query || query.length < 3) {
+            item.classList.remove('d-none');
+            return;
+        }
+        const name = item.dataset.name;
+        const code = item.dataset.code;
+        if (name.includes(query) || code.includes(query)) {
+            item.classList.remove('d-none');
+            let parent = item.parentElement.closest('.dept-tree-item');
+            while (parent) {
+                parent.classList.remove('d-none');
+                const subUl = parent.querySelector('.dept-tree-node');
+                if (subUl) subUl.classList.remove('d-none');
+                parent = parent.parentElement.closest('.dept-tree-item');
+            }
+        } else {
+            item.classList.add('d-none');
+        }
+    });
+}
+
+function openCreateDeptModal(parentId = null) {
+    document.getElementById('deptModalTitle').textContent = 'Thêm phòng ban mới';
+    document.getElementById('deptId').value = '';
+    document.getElementById('deptCode').value = '';
+    document.getElementById('deptName').value = '';
+    document.getElementById('deptManagerSelect').value = '';
+    populateParentSelect();
+    if (parentId) {
+        document.getElementById('deptParentSelect').value = parentId;
+    }
+    deptModalObj.show();
+}
+
+async function openEditDeptModal(deptId) {
+    document.getElementById('deptModalTitle').textContent = 'Chỉnh sửa phòng ban';
+    populateParentSelect(deptId);
+
+    try {
+        const res = await fetch(`/api/phong-ban/${deptId}`);
+        const result = await res.json();
+        if (res.ok && result.isSuccess) {
+            const d = result.data;
+            document.getElementById('deptId').value = d.id;
+            document.getElementById('deptCode').value = d.code;
+            document.getElementById('deptName').value = d.name;
+            document.getElementById('deptParentSelect').value = d.parentId || '';
+            document.getElementById('deptManagerSelect').value = d.managerId || '';
+            deptModalObj.show();
+        } else {
+            showToast(result.message || 'Không thể lấy thông tin phòng ban.', false);
+        }
+    } catch (err) {
+        showToast('Lỗi kết nối: ' + err.message, false);
+    }
+}
+
+async function handleSaveDept(e) {
+    e.preventDefault();
+    const deptId = document.getElementById('deptId').value;
+    const code = document.getElementById('deptCode').value.trim();
+    const name = document.getElementById('deptName').value.trim();
+    const parentId = document.getElementById('deptParentSelect').value || null;
+    const managerId = document.getElementById('deptManagerSelect').value || null;
+
+    if (!code || !name) {
+        if (!code) document.getElementById('deptCode').classList.add('is-invalid');
+        if (!name) document.getElementById('deptName').classList.add('is-invalid');
+        return;
+    }
+
+    const payload = { code, name, parentId, managerId, isActive: true };
+    const isEdit = Boolean(deptId);
+    const url = isEdit ? `/api/phong-ban/${deptId}` : '/api/phong-ban';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (res.ok && result.isSuccess) {
+            deptModalObj.hide();
+            showToast(result.message || (isEdit ? 'Cập nhật thành công.' : 'Tạo mới thành công.'), true);
+            loadDepartmentTree();
+        } else {
+            showToast(result.message || 'Lỗi khi lưu phòng ban.', false);
+        }
+    } catch (err) {
+        showToast('Lỗi máy chủ: ' + err.message, false);
+    }
+}
+
+function openAssignManagerModal(deptId, deptName) {
+    document.getElementById('assignDeptId').value = deptId;
+    document.getElementById('assignDeptName').textContent = deptName;
+    document.getElementById('newManagerSelect').value = '';
+    assignModalObj.show();
+}
+
+async function handleSaveManager() {
+    const deptId = document.getElementById('assignDeptId').value;
+    const managerId = document.getElementById('newManagerSelect').value;
+    if (!managerId) {
+        showToast('Vui lòng chọn nhân viên làm người phụ trách.', false);
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/phong-ban/${deptId}/assign-manager`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ managerId })
+        });
+        const result = await res.json();
+        if (res.ok && result.isSuccess) {
+            assignModalObj.hide();
+            showToast(result.message || 'Gán người phụ trách thành công.', true);
+            loadDepartmentTree();
+        } else {
+            showToast(result.message || 'Gán người phụ trách thất bại.', false);
+        }
+    } catch (err) {
+        showToast('Lỗi máy chủ: ' + err.message, false);
+    }
+}
+
+async function deactivateDept(deptId) {
+    if (!confirm('Bạn có chắc chắn muốn ngừng áp dụng phòng ban này? Tất cả các phòng ban con cũng sẽ bị ngừng áp dụng (cascade).')) {
+        return;
+    }
+    try {
+        const res = await fetch(`/api/phong-ban/${deptId}/deactivate`, { method: 'PUT' });
+        const result = await res.json();
+        if (res.ok && result.isSuccess) {
+            showToast(result.message || 'Ngừng áp dụng thành công.', true);
+            loadDepartmentTree();
+        } else {
+            showToast(result.message || 'Thao tác thất bại.', false);
+        }
+    } catch (err) {
+        showToast('Lỗi máy chủ: ' + err.message, false);
+    }
+}
+
+async function reactivateDept(deptId) {
+    try {
+        const res = await fetch(`/api/phong-ban/${deptId}/reactivate`, { method: 'PUT' });
+        const result = await res.json();
+        if (res.ok && result.isSuccess) {
+            showToast(result.message || 'Kích hoạt lại thành công.', true);
+            loadDepartmentTree();
+        } else {
+            showToast(result.message || 'Kích hoạt lại thất bại.', false);
+        }
+    } catch (err) {
+        showToast('Lỗi máy chủ: ' + err.message, false);
+    }
+}
+
+async function deleteDept(deptId) {
+    if (!confirm('Bạn có chắc chắn muốn xóa phòng ban này?')) {
+        return;
+    }
+    try {
+        const res = await fetch(`/api/phong-ban/${deptId}`, { method: 'DELETE' });
+        const result = await res.json();
+        if (res.ok && result.isSuccess) {
+            showToast(result.message || 'Xóa phòng ban thành công.', true);
+            loadDepartmentTree();
+        } else {
+            // S2-04: Blocked if open requisitions exist (Status 409)
+            showToast(result.message || 'Không thể xóa phòng ban này.', false);
+        }
+    } catch (err) {
+        showToast('Lỗi máy chủ: ' + err.message, false);
+    }
+}
+</script>
+}

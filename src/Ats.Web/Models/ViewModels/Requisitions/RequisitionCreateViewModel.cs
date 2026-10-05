@@ -50,6 +50,11 @@ public class RequisitionCreateViewModel : IValidatableObject
 
     public decimal? MaxSalary { get; set; }
 
+    /// <summary>
+    /// Giải trình lý do khi mức lương đề xuất nằm ngoài dải lương chuẩn của vị trí.
+    /// </summary>
+    public string? SalaryBandExplanation { get; set; }
+
     public DateOnly? TargetHireDate { get; set; } = DateOnly.FromDateTime(DateTime.Today.AddDays(30));
 
     /// <summary>
@@ -167,6 +172,22 @@ public class RequisitionCreateViewModel : IValidatableObject
                 yield return new ValidationResult(
                     "Vui lòng nhập yêu cầu ứng viên (trình độ học vấn, kinh nghiệm, kỹ năng, chứng chỉ...) khi gửi duyệt.",
                     [nameof(Requirements)]);
+            }
+
+            if (JobPositionId.HasValue && JobPositionOptions != null && JobPositionOptions.Count > 0)
+            {
+                var pos = JobPositionOptions.FirstOrDefault(p => p.Id == JobPositionId.Value);
+                if (pos != null && pos.MinSalary.HasValue && pos.MaxSalary.HasValue)
+                {
+                    bool isOutsideBand = (MinSalary.HasValue && MinSalary.Value < pos.MinSalary.Value) ||
+                                         (MaxSalary.HasValue && MaxSalary.Value > pos.MaxSalary.Value);
+                    if (isOutsideBand && string.IsNullOrWhiteSpace(SalaryBandExplanation))
+                    {
+                        yield return new ValidationResult(
+                            "Mức lương đề xuất nằm ngoài dải lương chuẩn của vị trí. Bắt buộc phải nhập giải trình lý do vượt khung.",
+                            [nameof(SalaryBandExplanation)]);
+                    }
+                }
             }
         }
     }

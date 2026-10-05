@@ -36,9 +36,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<JobOffer> JobOffers { get; set; }
     public DbSet<OfferApproval> OfferApprovals { get; set; }
 
-    public DbSet<AuditLog> AuditLogs { get; set; }
     public DbSet<EmailLog> EmailLogs { get; set; }
     public DbSet<Notification> Notifications { get; set; }
+
+    public DbSet<CompetencyFramework> CompetencyFrameworks { get; set; }
+    public DbSet<CompetencyCriterion> CompetencyCriteria { get; set; }
+    public DbSet<InterviewQuestionBank> InterviewQuestionBanks { get; set; }
+    public DbSet<RecruitmentCatalog> RecruitmentCatalogs { get; set; }
+    public DbSet<CompanyProfile> CompanyProfiles { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
