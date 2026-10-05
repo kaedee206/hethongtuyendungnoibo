@@ -562,8 +562,20 @@ tmp/
 logoweb/
 note.txt
 notes.txt
+seeddata.txt
+seeddata*.txt
+seed_data.txt
+seed_data*.txt
 seed_data_info.txt
+[Ss]eed[Dd]ata*.txt
+[Ss]eed_data*.txt
+[Ss]eed-data*.txt
 Coding_Convention.md
+coding_convention.md
+[Cc]oding_[Cc]onvention*.md
+RULE.md
+rule.md
+[Rr][Uu][Ll][Ee]*.md
 .agents/
 .gemini/
 
@@ -614,6 +626,8 @@ TestResults/
 ehthumbs.db
 Thumbs.db
 [Dd]esktop.ini
+# Bỏ qua thư mục cấu hình AI Agent
+.agent/
 
 # ============================================================
 # Custom ignores - NoveraTech ATS Project

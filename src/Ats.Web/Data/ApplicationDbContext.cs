@@ -9,6 +9,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Role> Roles { get; set; }
     public DbSet<Permission> Permissions { get; set; }
     public DbSet<UserRole> UserRoles { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
     public DbSet<RolePermission> RolePermissions { get; set; }
 
     public DbSet<AuthAuditLog> AuthAuditLogs { get; set; }
@@ -186,6 +187,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.ToTable("audit_logs");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.OldValues).HasColumnType("jsonb");
+            entity.Property(e => e.NewValues).HasColumnType("jsonb");
+        });
         // Other Indexes
         modelBuilder.Entity<Candidate>().HasIndex(c => c.Email);
         modelBuilder.Entity<JobRequisition>().HasIndex(r => r.Code).IsUnique();

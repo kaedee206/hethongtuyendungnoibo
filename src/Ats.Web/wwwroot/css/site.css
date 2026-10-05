@@ -416,3 +416,382 @@ footer {
 .toast.toast-warning {
   border-left: 4px solid var(--status-warning) !important;
 }
+/* =========================================================
+   NoveraTech ATS — Clean Enterprise Design System (RULE.MD Compliant)
+   Palette: Slate Neutral (60%) | Slate-900 (30%) | Emerald-600 (10%)
+   Radius: 8px buttons/inputs, 12px cards, 6px badges
+   ========================================================= */
+
+/* ─── Design Tokens ─────────────────────────────────────── */
+:root {
+  /* Canvas & Surfaces (RULE.MD Section 2.1) */
+  --bg-canvas:        #F8FAFC;   /* Slate-50: Main application canvas */
+  --bg-card:          #FFFFFF;   /* Pure white: Cards, forms, modals */
+  --bg-subtle:        #F1F5F9;   /* Slate-100: Table headers, hover rows, inputs */
+  --border-default:   #E2E8F0;   /* Slate-200: Dividers, card borders */
+  --border-strong:    #CBD5E1;   /* Slate-300: Active borders */
+
+  /* Typography */
+  --text-primary:     #0F172A;   /* Slate-900: Titles, headings, KPI values */
+  --text-secondary:   #475569;   /* Slate-600: Body copy, active labels */
+  --text-muted:       #64748B;   /* Slate-500: Helper text, secondary labels */
+  --text-dim:         #94A3B8;   /* Slate-400: Placeholders, timestamps */
+
+  /* Brand Accents (Emerald-600) */
+  --brand-primary:    #059669;   /* Main CTA, active states */
+  --brand-hover:      #047857;   /* Hover CTA */
+  --brand-surface:    #ECFDF5;   /* Light accent background */
+  --brand-border:     #D1FAE5;   /* Light accent border */
+
+  /* Semantic Feedback */
+  --status-success:   #10B981;
+  --status-warning:   #F59E0B;
+  --status-error:     #EF4444;
+  --status-info:      #3B82F6;
+
+  /* Backward Compatibility Aliases */
+  --dt-bg-deepest:    #F8FAFC;
+  --dt-bg-dark:       #FFFFFF;
+  --dt-bg-mid:        #F1F5F9;
+  --dt-bg-card:       #FFFFFF;
+  --dt-mint:          #059669;
+  --dt-mint-hover:    #047857;
+  --dt-mint-light:    #ECFDF5;
+  --dt-aqua:          #10B981;
+  --dt-text-primary:  #0F172A;
+  --dt-text-secondary:#475569;
+  --dt-text-muted:    #64748B;
+  --dt-border:        #E2E8F0;
+  --dt-border-strong: #CBD5E1;
+  --dt-radius-sm:     6px;
+  --dt-radius:        8px;
+  --dt-radius-lg:     12px;
+  --dt-radius-xl:     16px;
+  --dt-shadow-card:   0 1px 3px rgba(15, 23, 42, 0.05);
+  --dt-shadow-glow:   0 4px 12px rgba(5, 150, 105, 0.12);
+  --dt-shadow-mint:   0 2px 8px rgba(5, 150, 105, 0.20);
+}
+
+/* ─── Base Styles ───────────────────────────────────────── */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-canvas);
+  color: var(--text-secondary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+
+main { flex: 1 0 auto; }
+footer { flex-shrink: 0; }
+
+/* ─── Navbar ────────────────────────────────────────────── */
+.ats-navbar {
+  background-color: #FFFFFF !important;
+  border-bottom: 1px solid var(--border-default) !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+}
+
+.ats-brand-logo {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  font-size: 1.05rem;
+}
+
+.ats-brand-logo:hover {
+  color: var(--brand-primary) !important;
+}
+
+.ats-nav-link {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--text-secondary) !important;
+  padding: 0.45rem 0.85rem !important;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.ats-nav-link:hover {
+  color: var(--text-primary) !important;
+  background-color: var(--bg-subtle) !important;
+}
+
+.ats-nav-link.active {
+  color: var(--brand-primary) !important;
+  background-color: var(--brand-surface) !important;
+  font-weight: 600;
+}
+
+/* Dropdown Menu */
+.ats-navbar .dropdown-menu {
+  background-color: #FFFFFF;
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+}
+
+.ats-navbar .dropdown-item {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+}
+
+.ats-navbar .dropdown-item:hover {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.ats-navbar .dropdown-divider {
+  border-color: var(--border-default);
+}
+
+/* Navbar user button (RULE.MD: 8px radius, no 9999px pill) */
+.ats-navbar .btn-user-toggle {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  border-radius: 8px !important;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  transition: all 0.15s ease;
+}
+
+.ats-navbar .btn-user-toggle:hover {
+  background: #E2E8F0;
+  border-color: var(--border-strong);
+}
+
+/* ─── Global Button Standardization (RULE.MD: 8px radius) ─ */
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.18s ease;
+}
+
+.btn-primary,
+.bg-primary {
+  background-color: var(--brand-primary) !important;
+  border-color: var(--brand-primary) !important;
+  color: #FFFFFF !important;
+  font-weight: 600;
+}
+
+.btn-primary:hover,
+.bg-primary:hover {
+  background-color: var(--brand-hover) !important;
+  border-color: var(--brand-hover) !important;
+  color: #FFFFFF !important;
+}
+
+.btn-outline-primary {
+  border-color: var(--border-strong) !important;
+  color: var(--text-primary) !important;
+}
+
+.btn-outline-primary:hover {
+  border-color: var(--brand-primary) !important;
+  background-color: var(--brand-surface) !important;
+  color: var(--brand-primary) !important;
+}
+
+.text-primary { color: var(--brand-primary) !important; }
+
+/* DT Utility Buttons */
+.btn-dt-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--brand-primary);
+  color: #FFFFFF !important;
+  border: none;
+  border-radius: 8px !important;
+  font-weight: 600;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.btn-dt-primary:hover {
+  background: var(--brand-hover);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+}
+
+.btn-dt-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px !important;
+  font-weight: 500;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.btn-dt-outline:hover {
+  border-color: var(--brand-primary);
+  color: var(--brand-primary) !important;
+  background: var(--brand-surface);
+}
+
+/* ─── Badge Standardization (RULE.MD: 6px radius) ───────── */
+.badge,
+.rounded-pill {
+  border-radius: 6px !important;
+}
+
+.dt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--brand-surface);
+  color: var(--brand-primary);
+  border: 1px solid var(--brand-border);
+  border-radius: 6px !important;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Role Badges — Clean, muted contrast */
+.badge-admin         { background-color: #FEF2F2 !important; color: #DC2626 !important; border: 1px solid #FEE2E2; }
+.badge-hrmanager     { background-color: #EFF6FF !important; color: #2563EB !important; border: 1px solid #DBEAFE; }
+.badge-recruiter     { background-color: #EEF2FF !important; color: #4F46E5 !important; border: 1px solid #E0E7FF; }
+.badge-hiringmanager { background-color: #FFFBEB !important; color: #D97706 !important; border: 1px solid #FEF3C7; }
+.badge-interviewer   { background-color: #ECFDF5 !important; color: #059669 !important; border: 1px solid #D1FAE5; }
+.badge-approver      { background-color: #FAF5FF !important; color: #9333EA !important; border: 1px solid #F3E8FF; }
+
+/* ─── Card Standardization (RULE.MD: 12px radius) ───────── */
+.card,
+.dt-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-default) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.card-header {
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--border-default);
+}
+
+/* ─── KPI Metric Cards (RULE.MD Section 5.2) ────────────── */
+.kpi-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-default);
+  border-radius: 12px !important;
+  padding: 1.25rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-card:hover {
+  border-color: rgba(5, 150, 105, 0.4);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+}
+
+/* ─── Table Modernization (RULE.MD Section 5.3) ─────────── */
+.table {
+  color: var(--text-primary);
+  margin-bottom: 0;
+}
+
+.table thead th {
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.table tbody td {
+  padding: 0.85rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #F1F5F9;
+  font-size: 0.875rem;
+}
+
+.table tbody tr:hover td {
+  background-color: #F8FAFC;
+}
+
+/* ─── Form Inputs ───────────────────────────────────────── */
+.form-control,
+.form-select {
+  border-radius: 8px;
+  border: 1px solid var(--border-default);
+  background-color: #FFFFFF;
+  color: var(--text-primary);
+  padding: 0.55rem 0.85rem;
+  font-size: 0.875rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+}
+
+/* ─── Footer ────────────────────────────────────────────── */
+footer.ats-footer,
+footer {
+  background: #FFFFFF !important;
+  border-top: 1px solid var(--border-default) !important;
+  color: var(--text-muted) !important;
+  font-size: 0.82rem;
+}
+
+/* ─── Utilities ─────────────────────────────────────────── */
+.font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.text-xs { font-size: 0.75rem; }
+.tracking-tight { letter-spacing: -0.025em; }
+
+/* ─── Anti-Slop Cleanups: Disable pulse glow and orbs ───── */
+.dt-orb,
+.animate-pulse-glow {
+  animation: none !important;
+  box-shadow: none !important;
+}
+
+.form-control.is-invalid,
+.form-select.is-invalid {
+  border-color: var(--status-error) !important;
+  background-image: none !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
+.form-control.is-valid,
+.form-select.is-valid {
+  border-color: var(--status-success) !important;
+  background-image: none !important;
+}
+
+.invalid-feedback {
+  color: var(--status-error);
+  font-size: 0.8125rem;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}

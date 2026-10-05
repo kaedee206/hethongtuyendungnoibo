@@ -4,6 +4,7 @@ using Ats.Web.Models.Entities;
 using Ats.Web.Models.ViewModels.Users;
 using Ats.Web.Services;
 using Ats.Web.Services.Interfaces;
+using Ats.Web.Models.DTOs;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

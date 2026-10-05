@@ -3,8 +3,9 @@ using Ats.Web.Services;
 using Ats.Web.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-// 1. Nạp file .env vào Environment Variables
-DotNetEnv.Env.Load();
+DotNetEnv.Env.TraversePath().Load();
+if (File.Exists(".env")) DotNetEnv.Env.Load(".env");
+if (File.Exists("src/Ats.Web/.env")) DotNetEnv.Env.Load("src/Ats.Web/.env");
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -30,6 +31,10 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IJobService, JobService>();
+builder.Services.AddScoped<ICompetencyFrameworkService, CompetencyFrameworkService>();
+builder.Services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
+builder.Services.AddScoped<IRequisitionService, RequisitionService>();
+
 
 // Cấu hình thời gian Session (Idle timeout)
 var idleTimeoutMinutesStr = Environment.GetEnvironmentVariable("SESSION_IDLE_TIMEOUT_MINUTES") ?? "30";

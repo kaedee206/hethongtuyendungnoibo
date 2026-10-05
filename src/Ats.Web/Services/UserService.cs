@@ -6,6 +6,7 @@ using Ats.Web.Models.ViewModels.Users;
 using Ats.Web.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
+using ClosedXML.Excel;
 
 namespace Ats.Web.Services;
 
@@ -439,5 +440,278 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
 
         // Trộn ngẫu nhiên
         return new string(chars.OrderBy(_ => RandomNumberGenerator.GetInt32(100)).ToArray());
+    }
+
+    public Task<byte[]> GenerateExcelTemplateAsync(CancellationToken cancellationToken = default)
+    {
+        using var workbook = new XLWorkbook();
+        
+        // Sheet 1: Hướng dẫn
+        var instructionSheet = workbook.Worksheets.Add("Hướng dẫn");
+        instructionSheet.Cell(1, 1).Value = "HƯỚNG DẪN NHẬP DỮ LIỆU NHÂN SỰ";
+        instructionSheet.Cell(1, 1).Style.Font.Bold = true;
+        instructionSheet.Cell(1, 1).Style.Font.FontSize = 14;
+        
+        instructionSheet.Cell(3, 1).Value = "1. Các cột có dấu (*) là bắt buộc nhập.";
+        instructionSheet.Cell(4, 1).Value = "2. Cột Email phải có định dạng hợp lệ (vd: @noveratech.digital) và chưa tồn tại trong hệ thống.";
+        instructionSheet.Cell(5, 1).Value = "3. Vai trò (*): Điền tên các vai trò (cách nhau bởi dấu phẩy, vd: Interviewer, Employee).";
+        instructionSheet.Cell(6, 1).Value = "4. Không thay đổi thứ tự hoặc xóa các cột ở sheet 'Dữ liệu'.";
+        instructionSheet.Columns().AdjustToContents();
+
+        // Sheet 2: Dữ liệu
+        var dataSheet = workbook.Worksheets.Add("Dữ liệu");
+        
+        // Header
+        var headers = new string[] { "Họ và tên (*)", "Email (*)", "Số điện thoại", "Phòng ban", "Chức vụ", "Vai trò (*)" };
+        for (int i = 0; i < headers.Length; i++)
+        {
+            var cell = dataSheet.Cell(1, i + 1);
+            cell.Value = headers[i];
+            cell.Style.Font.Bold = true;
+            cell.Style.Fill.BackgroundColor = XLColor.LightGray;
+            cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        }
+
+        // Example data
+        dataSheet.Cell(2, 1).Value = "Nguyễn Văn A";
+        dataSheet.Cell(2, 2).Value = "nguyenvana@noveratech.digital";
+        dataSheet.Cell(2, 3).Value = "0901234567";
+        dataSheet.Cell(2, 4).Value = "Phòng IT";
+        dataSheet.Cell(2, 5).Value = "Nhân viên phát triển phần mềm";
+        dataSheet.Cell(2, 6).Value = "Interviewer, Employee";
+        
+        dataSheet.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        return Task.FromResult(stream.ToArray());
+    }
+
+    public async Task<ImportExcelResultDto> ValidateExcelImportAsync(Stream excelStream, CancellationToken cancellationToken = default)
+    {
+        var result = new ImportExcelResultDto();
+
+        var validDepartments = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var validJobPositions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        
+        var conn = _dbContext.Database.GetDbConnection();
+        bool wasClosed = conn.State == System.Data.ConnectionState.Closed;
+        if (wasClosed) await conn.OpenAsync(cancellationToken);
+        try
+        {
+            using var cmd1 = conn.CreateCommand();
+            cmd1.CommandText = "SELECT name FROM departments";
+            using var reader1 = await cmd1.ExecuteReaderAsync(cancellationToken);
+            while (await reader1.ReadAsync(cancellationToken))
+            {
+                validDepartments.Add(reader1.GetString(0));
+            }
+        }
+        catch { /* ignore if table not exists */ }
+
+        try
+        {
+            using var cmd2 = conn.CreateCommand();
+            cmd2.CommandText = "SELECT name FROM job_positions";
+            using var reader2 = await cmd2.ExecuteReaderAsync(cancellationToken);
+            while (await reader2.ReadAsync(cancellationToken))
+            {
+                validJobPositions.Add(reader2.GetString(0));
+            }
+        }
+        catch { /* ignore if table not exists */ }
+        
+        if (wasClosed) await conn.CloseAsync();
+
+        using var workbook = new XLWorkbook(excelStream);
+        var worksheet = workbook.Worksheets.FirstOrDefault(ws => ws.Name == "Dữ liệu") ?? workbook.Worksheet(1);
+        
+        // SCRUM-183: Validate headers
+        var expectedHeaders = new string[] { "Họ và tên (*)", "Email (*)", "Số điện thoại", "Phòng ban", "Chức vụ", "Vai trò (*)" };
+        var headerRow = worksheet.Row(1);
+        for (int i = 0; i < expectedHeaders.Length; i++)
+        {
+            if (!string.Equals(headerRow.Cell(i + 1).GetString().Trim(), expectedHeaders[i], StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Cấu trúc tệp không hợp lệ. Vui lòng sử dụng tệp mẫu được cung cấp (sai hoặc thiếu tên cột).");
+            }
+        }
+
+        var rows = worksheet.RowsUsed().Skip(1); // skip header
+        
+        // SCRUM-184: Prepare for duplicate detection
+        var existingEmails = await _dbContext.Users.Select(u => u.Email.ToLower()).ToListAsync(cancellationToken);
+        var existingEmailsSet = new HashSet<string>(existingEmails, StringComparer.OrdinalIgnoreCase);
+        var emailsInFile = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var row in rows)
+        {
+            int rowIndex = row.RowNumber();
+            var errors = new List<ImportExcelErrorDetailDto>();
+            
+            string fullName = row.Cell(1).GetString().Trim();
+            string email = row.Cell(2).GetString().Trim();
+            string phoneNumber = row.Cell(3).GetString().Trim();
+            string department = row.Cell(4).GetString().Trim();
+            string jobPosition = row.Cell(5).GetString().Trim();
+            string roles = row.Cell(6).GetString().Trim();
+            
+            // Validate required
+            if (string.IsNullOrEmpty(fullName))
+                errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Họ và tên", ErrorMessage = "Không được để trống" });
+            if (string.IsNullOrEmpty(email))
+                errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Email", ErrorMessage = "Không được để trống" });
+            if (string.IsNullOrEmpty(roles))
+                errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Vai trò", ErrorMessage = "Không được để trống" });
+                
+            // Validate Email format and duplicates
+            if (!string.IsNullOrEmpty(email))
+            {
+                // Format check
+                if (!new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(email))
+                {
+                    errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Email", ErrorMessage = "Không đúng định dạng" });
+                }
+                else if (!email.EndsWith("@noveratech.digital", StringComparison.OrdinalIgnoreCase))
+                {
+                    errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Email", ErrorMessage = "Phải là email nội bộ (@noveratech.digital)" });
+                }
+                
+                // SCRUM-184: Duplicate in file check
+                if (emailsInFile.TryGetValue(email, out int duplicateRowIndex))
+                {
+                    errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Email", ErrorMessage = $"Email bị trùng lặp với dòng số {duplicateRowIndex} trong tệp" });
+                }
+                else
+                {
+                    emailsInFile[email] = rowIndex;
+                }
+
+                // SCRUM-184: Duplicate in system check
+                if (existingEmailsSet.Contains(email))
+                {
+                    errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Email", ErrorMessage = "Email đã tồn tại trong hệ thống" });
+                }
+            }
+
+            // Validate Phone Number
+            if (!string.IsNullOrEmpty(phoneNumber) && !System.Text.RegularExpressions.Regex.IsMatch(phoneNumber, @"^(0|\+84)[3|5|7|8|9][0-9]{8}$"))
+            if (!string.IsNullOrEmpty(phoneNumber) && !System.Text.RegularExpressions.Regex.IsMatch(phoneNumber, @"^(0|\+84|84)[35789][0-9]{8}$"))
+            {
+                errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Số điện thoại", ErrorMessage = "Không đúng định dạng" });
+            }
+
+            // Validate Department and Job Position
+            if (!string.IsNullOrEmpty(department) && validDepartments.Count > 0 && !validDepartments.Contains(department))
+            {
+                errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Phòng ban", ErrorMessage = "Không tồn tại trong hệ thống" });
+            }
+            if (!string.IsNullOrEmpty(jobPosition) && validJobPositions.Count > 0 && !validJobPositions.Contains(jobPosition))
+            {
+                errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Chức vụ", ErrorMessage = "Không tồn tại trong hệ thống" });
+            }
+
+            if (errors.Count > 0)
+            {
+                result.InvalidRows.Add(new ImportExcelErrorRowDto { RowIndex = rowIndex, Errors = errors });
+            }
+            else
+            {
+                result.ValidRows.Add(new ImportExcelRowDto 
+                { 
+                    RowIndex = rowIndex, 
+                    FullName = fullName, 
+                    Email = email, 
+                    PhoneNumber = phoneNumber,
+                    Department = department, 
+                    JobPosition = jobPosition, 
+                    Roles = roles 
+                });
+            }
+        }
+
+        return result;
+    }
+
+    public async Task<ExecuteImportResultDto> ExecuteImportAsync(ExecuteImportRequestDto request, CancellationToken cancellationToken = default)
+    {
+        var result = new ExecuteImportResultDto();
+
+        // SCRUM-180: Use transaction
+        using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var allRoles = await _dbContext.Roles.ToListAsync(cancellationToken);
+            string defaultPassword = "AtsUser@123456"; 
+            
+            foreach (var row in request.ValidRows)
+            {
+                // Check if email exists
+                bool emailExists = await _dbContext.Users.AnyAsync(u => u.Email.ToLower() == row.Email.ToLower(), cancellationToken);
+                if (emailExists)
+                {
+                    result.Errors.Add(new ImportExcelErrorRowDto
+                    {
+                        RowIndex = row.RowIndex,
+                        Errors = new List<ImportExcelErrorDetailDto>
+                        {
+                            new() { ColumnName = "Email", ErrorMessage = "Email đã tồn tại trong hệ thống." }
+                        }
+                    });
+                    result.TotalFailed++;
+                    continue;
+                }
+
+                var newUser = new User
+                {
+                    Id = Guid.NewGuid(),
+                    FullName = row.FullName,
+                    Email = row.Email.ToLower(),
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(defaultPassword),
+                    Department = row.Department,
+                    Status = "ACTIVE",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
+
+                var roleNames = row.Roles.Split(',').Select(r => r.Trim()).Where(r => !string.IsNullOrEmpty(r)).ToList();
+                if (roleNames.Any())
+                {
+                    newUser.Role = Ats.Web.Constants.UserRoles.NormalizeRole(roleNames.First()); 
+                }
+
+                foreach (var roleName in roleNames)
+                {
+                    var normalizedName = Ats.Web.Constants.UserRoles.NormalizeRole(roleName);
+                    var matchedRole = allRoles.FirstOrDefault(r => r.Name == normalizedName);
+                    if (matchedRole != null)
+                    {
+                        newUser.UserRoles.Add(new UserRole
+                        {
+                            UserId = newUser.Id,
+                            RoleId = matchedRole.Id
+                        });
+                        
+                        if (newUser.RoleId == null)
+                        {
+                            newUser.RoleId = matchedRole.Id;
+                        }
+                    }
+                }
+
+                _dbContext.Users.Add(newUser);
+                result.TotalSuccess++;
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw; 
+        }
+
+        return result;
     }
 }

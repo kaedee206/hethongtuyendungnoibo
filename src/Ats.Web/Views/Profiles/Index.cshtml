@@ -1,0 +1,89 @@
+@model Ats.Web.Models.ViewModels.Profiles.ProfileUpdateViewModel
+
+<div class="card shadow-sm profile-component">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="card-title mb-0">Hồ sơ cá nhân</h5>
+            <a href="/ho-so/chinh-sua" class="btn btn-outline-primary">
+                <i class="bi bi-pencil me-1"></i> Chỉnh sửa
+            </a>
+        </div>
+
+        <div class="row mb-4">
+            <!-- Họ tên -->
+            <div class="col-md-12 mb-3">
+                <h6 class="text-muted mb-1">Họ tên hiển thị</h6>
+                <p class="fw-bold mb-0" id="display-FullName">@(Model?.FullName ?? "Đang tải...")</p>
+            </div>
+
+            <!-- Email -->
+            <div class="col-md-6 mb-3">
+                <h6 class="text-muted mb-1">Email</h6>
+                <p class="fw-bold mb-0" id="display-Email">@(Model?.Email ?? "Đang tải...")</p>
+            </div>
+
+            <!-- Số điện thoại -->
+            <div class="col-md-6 mb-3">
+                <h6 class="text-muted mb-1">Số điện thoại</h6>
+                <p class="fw-bold mb-0" id="display-PhoneNumber">@(Model?.PhoneNumber ?? "Chưa cập nhật")</p>
+            </div>
+
+            <!-- Chức danh -->
+            <div class="col-md-6 mb-3">
+                <h6 class="text-muted mb-1">Chức danh / Vị trí</h6>
+                <p class="fw-bold mb-0" id="display-JobTitle">@(Model?.JobTitle ?? "Chưa cập nhật")</p>
+            </div>
+
+            <!-- Phòng ban -->
+            <div class="col-md-6 mb-3">
+                <h6 class="text-muted mb-1">Phòng ban</h6>
+                <p class="fw-bold mb-0" id="display-DepartmentName">@(Model?.DepartmentName ?? "Chưa cập nhật")</p>
+            </div>
+
+            <!-- Vai trò -->
+            <div class="col-md-6 mb-3">
+                <h6 class="text-muted mb-1">Vai trò</h6>
+                <p class="fw-bold mb-0">
+                    <span class="badge bg-info text-dark" id="display-RoleName">@(Model?.RoleName ?? "Chưa phân quyền")</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Giả lập Frontend call API để lấy dữ liệu profile nếu dữ liệu chưa có sẵn từ Model (SSR)
+            const hasModelData = '@(Model != null ? "true" : "false")' === 'true';
+            
+            if (!hasModelData) {
+                try {
+                    // Gọi API lấy dữ liệu profile (Endpoint giả định /api/tai-khoan/ho-so)
+                    const response = await fetch('/api/tai-khoan/ho-so', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        // Cập nhật UI
+                        document.getElementById('display-FullName').textContent = data.fullName || 'Chưa cập nhật';
+                        document.getElementById('display-Email').textContent = data.email || 'Chưa cập nhật';
+                        document.getElementById('display-PhoneNumber').textContent = data.phoneNumber || 'Chưa cập nhật';
+                        document.getElementById('display-JobTitle').textContent = data.jobTitle || 'Chưa cập nhật';
+                        document.getElementById('display-DepartmentName').textContent = data.departmentName || 'Chưa cập nhật';
+                        document.getElementById('display-RoleName').textContent = data.roleName || 'Chưa phân quyền';
+                    } else {
+                        console.error('Không thể tải dữ liệu hồ sơ.');
+                    }
+                } catch (error) {
+                    console.error('Lỗi mạng khi tải hồ sơ:', error);
+                }
+            }
+        });
+    </script>
+}

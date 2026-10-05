@@ -1,0 +1,262 @@
+@model IEnumerable<Ats.Web.Models.ViewModels.Requisitions.RequisitionDraftItemViewModel>
+@{
+    ViewData["Title"] = "Yêu cầu Tuyển dụng Nháp";
+}
+
+<div class="container-fluid px-3 px-md-4 py-4" style="background-color: #F8FAFC; min-height: calc(100vh - 70px);">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-10">
+            
+            <!-- Breadcrumb & Header Card -->
+            <div class="bg-white border rounded-3 p-3 p-md-4 mb-4 shadow-sm" style="border-radius: 12px !important; border-color: #E2E8F0 !important;">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1 text-muted small">
+                        <li class="breadcrumb-item">
+                            <a asp-controller="Home" asp-action="Index" class="text-decoration-none text-muted">Trang chủ</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a asp-action="Create" class="text-decoration-none text-muted">Yêu cầu tuyển dụng</a>
+                        </li>
+                        <li class="breadcrumb-item active text-dark fw-medium" aria-current="page">Bản nháp</li>
+                    </ol>
+                </nav>
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mt-2">
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                            <i class="bi bi-file-earmark-text text-success"></i>
+                            <span>Danh sách Yêu cầu Tuyển dụng Nháp</span>
+                        </h4>
+                        <p class="text-secondary small mb-0">
+                            Các đề xuất tuyển dụng đang được lưu tạm hoặc lưu tự động. Bạn có thể tiếp tục chỉnh sửa bất cứ lúc nào trước khi gửi duyệt.
+                        </p>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <a asp-action="Create" class="btn btn-success d-inline-flex align-items-center gap-2 fw-semibold px-3 py-2" style="border-radius: 8px;">
+                            <i class="bi bi-plus-lg"></i>
+                            <span>Tạo yêu cầu mới</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 py-3 px-4 shadow-sm mb-4" role="alert" style="border-radius: 10px; border-left: 5px solid #059669 !important;">
+                    <i class="bi bi-check-circle-fill fs-4 text-success"></i>
+                    <div>
+                        <strong>Thành công!</strong> @TempData["SuccessMessage"]
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 py-3 px-4 shadow-sm mb-4" role="alert" style="border-radius: 10px; border-left: 5px solid #DC2626 !important;">
+                    <i class="bi bi-exclamation-triangle-fill fs-4 text-danger"></i>
+                    <div>
+                        <strong>Lỗi!</strong> @TempData["ErrorMessage"]
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <!-- Drafts List Card -->
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; overflow: hidden; background: #FFFFFF;">
+                <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <h6 class="fw-bold text-dark mb-0">Bản nháp đang lưu</h6>
+                        <span class="badge bg-secondary-subtle text-secondary font-monospace" style="border-radius: 6px;">
+                            @(Model?.Count() ?? 0) bản ghi
+                        </span>
+                    </div>
+                    <div class="text-muted small">
+                        <i class="bi bi-shield-lock me-1"></i>Chỉ bạn mới có quyền xem và sửa các bản nháp này.
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    @if (Model != null && Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light text-muted small">
+                                    <tr>
+                                        <th class="ps-4 py-3" style="width: 140px;">Mã nháp</th>
+                                        <th class="py-3">Chức danh tuyển dụng</th>
+                                        <th class="py-3">Phòng ban</th>
+                                        <th class="py-3 text-center" style="width: 90px;">Số lượng</th>
+                                        <th class="py-3" style="width: 190px;">Dải lương dự kiến</th>
+                                        <th class="py-3" style="width: 170px;">Cập nhật lần cuối</th>
+                                        <th class="pe-4 py-3 text-end" style="width: 200px;">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model)
+                                    {
+                                        <tr>
+                                            <td class="ps-4 font-monospace fw-bold text-secondary small">
+                                                <div class="d-flex align-items-center gap-1">
+                                                    <span class="badge bg-light text-dark border">@item.Code</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrWhiteSpace(item.JobPositionTitle))
+                                                {
+                                                    <div class="fw-semibold text-dark">@item.JobPositionTitle</div>
+                                                    @if (!string.IsNullOrWhiteSpace(item.JobPositionCode))
+                                                    {
+                                                        <span class="text-muted small font-monospace">@item.JobPositionCode</span>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted fst-italic small">
+                                                        <i class="bi bi-dash-circle me-1"></i>(Chưa chọn chức danh)
+                                                    </span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrWhiteSpace(item.DepartmentName))
+                                                {
+                                                    <span class="text-dark small">@item.DepartmentName</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted fst-italic small">
+                                                        <i class="bi bi-dash-circle me-1"></i>(Chưa chọn phòng ban)
+                                                    </span>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-light text-dark border font-monospace">
+                                                    @(item.Quantity > 0 ? item.Quantity.ToString() : "-")
+                                                </span>
+                                            </td>
+                                            <td class="small font-monospace">
+                                                @if (item.MinSalary.HasValue && item.MaxSalary.HasValue && item.MaxSalary.Value > 0)
+                                                {
+                                                    <span class="text-success fw-medium">
+                                                        @(item.MinSalary.Value.ToString("N0")) – @(item.MaxSalary.Value.ToString("N0")) đ
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted fst-italic">--</span>
+                                                }
+                                            </td>
+                                            <td class="small text-muted font-monospace">
+                                                <div>@item.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy")</div>
+                                                <div class="text-secondary" style="font-size: 0.78rem;">@item.UpdatedAt.ToLocalTime().ToString("HH:mm:ss")</div>
+                                            </td>
+                                            <td class="pe-4 text-end">
+                                                <div class="d-inline-flex align-items-center gap-1">
+                                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1" style="border-radius: 6px;" title="Tiếp tục chỉnh sửa">
+                                                        <i class="bi bi-pencil-square"></i>
+                                                        <span>Chỉnh sửa</span>
+                                                    </a>
+                                                    <button type="button" 
+                                                            class="btn btn-sm btn-outline-danger d-inline-flex align-items-center btn-delete-draft" 
+                                                            style="border-radius: 6px;" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#deleteDraftModal" 
+                                                            data-draft-id="@item.Id" 
+                                                            data-draft-code="@item.Code"
+                                                            data-draft-title="@(item.JobPositionTitle ?? "Bản nháp " + item.Code)"
+                                                            title="Xóa bản nháp">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Empty State -->
+                        <div class="text-center py-5 px-3">
+                            <div class="mb-3">
+                                <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light border p-4 text-muted" style="width: 80px; height: 80px;">
+                                    <i class="bi bi-folder2-open fs-1 text-secondary"></i>
+                                </span>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-1">Chưa có bản nháp yêu cầu nào</h5>
+                            <p class="text-secondary small mb-4 mx-auto" style="max-width: 480px;">
+                                Khi bạn nhập dữ liệu phiếu yêu cầu tuyển dụng và chọn 'Lưu bản nháp' hoặc hệ thống tự động lưu định kỳ 30 giây, các bản nháp sẽ xuất hiện tại đây để bạn tiếp tục hoàn thiện.
+                            </p>
+                            <a asp-action="Create" class="btn btn-success d-inline-flex align-items-center gap-2 fw-semibold px-4 py-2" style="border-radius: 8px;">
+                                <i class="bi bi-file-earmark-plus"></i>
+                                <span>Tạo yêu cầu tuyển dụng mới</span>
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal xác nhận xóa bản nháp -->
+<div class="modal fade" id="deleteDraftModal" tabindex="-1" aria-labelledby="deleteDraftModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header border-bottom py-3 px-4 bg-danger-subtle text-danger">
+                <h6 class="modal-title fw-bold d-flex align-items-center gap-2" id="deleteDraftModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>Xác nhận xóa bản nháp</span>
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="deleteDraftForm" method="post" asp-action="DeleteDraft">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4">
+                    <p class="mb-2 text-dark">
+                        Bạn có chắc chắn muốn xóa bản nháp: <strong id="deleteDraftTitle" class="text-danger"></strong>?
+                    </p>
+                    <p class="text-muted small mb-0">
+                        Hành động này sẽ hủy bản nháp khỏi hệ thống và không thể hoàn tác.
+                    </p>
+                </div>
+                <div class="modal-footer border-top py-2 px-4 bg-light">
+                    <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal" style="border-radius: 8px;">
+                        Hủy bỏ
+                    </button>
+                    <button type="submit" class="btn btn-danger px-3 d-inline-flex align-items-center gap-1 fw-semibold" style="border-radius: 8px;">
+                        <i class="bi bi-trash"></i>
+                        <span>Xác nhận xóa</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const deleteModal = document.getElementById('deleteDraftModal');
+            if (deleteModal) {
+                deleteModal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    const draftId = button.getAttribute('data-draft-id');
+                    const draftTitle = button.getAttribute('data-draft-title');
+                    const draftCode = button.getAttribute('data-draft-code');
+
+                    const titleSpan = deleteModal.querySelector('#deleteDraftTitle');
+                    if (titleSpan) {
+                        titleSpan.textContent = `${draftCode} - ${draftTitle}`;
+                    }
+
+                    const form = deleteModal.querySelector('#deleteDraftForm');
+                    if (form && draftId) {
+                        form.action = `/yeu-cau-tuyen-dung/xoa-nhap/${draftId}`;
+                    }
+                });
+            }
+        });
+    </script>
+}

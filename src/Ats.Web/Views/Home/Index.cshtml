@@ -1268,48 +1268,98 @@
 
 <!-- Modal 4: Khởi tạo đề xuất nhân sự (Hiring Manager) -->
 <div class="modal fade" id="createRequisitionModal" tabindex="-1" aria-labelledby="createRequisitionModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark" id="createRequisitionModalLabel" style="font-size: 1.05rem;">
-                    <i class="bi bi-file-earmark-plus text-warning me-2"></i>Khởi tạo đề xuất tuyển dụng nhân sự
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header border-0 pb-0 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex align-items-center justify-content-center rounded" style="width: 34px; height: 34px; background: #FEF3C7; color: #D97706;">
+                        <i class="bi bi-file-earmark-plus-fill"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="createRequisitionModalLabel" style="font-size: 1.05rem;">
+                            Đề xuất tuyển dụng nhân sự
+                        </h5>
+                        <div class="text-muted" style="font-size: 0.75rem;">Khai báo nhanh yêu cầu tuyển dụng cho phòng ban</div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="/yeu-cau-tuyen-dung/tao-moi" class="btn btn-outline-secondary btn-sm d-none d-sm-inline-flex align-items-center gap-1" style="border-radius: 8px; font-size: 0.78rem;">
+                        <i class="bi bi-box-arrow-up-right"></i> Mở trang chi tiết
+                    </a>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
             </div>
             <div class="modal-body py-3">
+                <div id="reqModalAlert" class="alert alert-danger d-none py-2 px-3 small rounded-3" role="alert"></div>
                 <form id="reqForm" onsubmit="handleReqSubmit(event)">
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-dark">Chức danh cần bổ sung</label>
-                        <input type="text" class="form-control" placeholder="VD: Backend Engineer (Golang/C#)" required id="reqTitle" style="border-radius: 8px;" />
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold text-dark">Số lượng</label>
-                            <input type="number" class="form-control" value="1" min="1" required id="reqQuantity" style="border-radius: 8px;" />
+                    <div class="row g-3">
+                        <!-- Chức danh -->
+                        <div class="col-12 col-md-7">
+                            <label class="form-label small fw-semibold text-dark">Chức danh cần tuyển <span class="text-danger">*</span></label>
+                            <select class="form-select" id="reqPositionId" required style="border-radius: 8px;">
+                                <option value="">-- Đang nạp danh mục chức danh... --</option>
+                            </select>
+                            <div class="form-text" style="font-size: 0.72rem;" id="reqPosHelpText">
+                                Dữ liệu chuẩn từ danh mục chức danh của công ty
+                            </div>
                         </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold text-dark">Ngày cần có mặt</label>
-                            <input type="date" class="form-control" value="@DateTime.UtcNow.AddDays(45).ToString("yyyy-MM-dd")" required id="reqDate" style="border-radius: 8px;" />
+
+                        <!-- Phòng ban -->
+                        <div class="col-12 col-md-5">
+                            <label class="form-label small fw-semibold text-dark">Phòng ban đề xuất <span class="text-danger">*</span></label>
+                            <select class="form-select" id="reqDepartmentId" required style="border-radius: 8px;">
+                                <option value="">-- Đang nạp phòng ban... --</option>
+                            </select>
+                            <div class="form-text text-muted" style="font-size: 0.72rem;" id="reqDeptNotice">
+                                Tự động gán phòng ban của Trưởng bộ phận
+                            </div>
+                        </div>
+
+                        <!-- Số lượng & Ngày cần người & Loại đề xuất -->
+                        <div class="col-12 col-md-4">
+                            <label class="form-label small fw-semibold text-dark">Số lượng cần tuyển <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control font-monospace" value="1" min="1" max="1000" required id="reqQuantity" style="border-radius: 8px;" />
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label small fw-semibold text-dark">Ngày cần có nhân sự <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control font-monospace" min="@DateTime.UtcNow.ToString("yyyy-MM-dd")" value="@DateTime.UtcNow.AddDays(30).ToString("yyyy-MM-dd")" required id="reqDate" style="border-radius: 8px;" />
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label small fw-semibold text-dark">Lý do tuyển dụng <span class="text-danger">*</span></label>
+                            <select class="form-select" id="reqHeadcountType" required style="border-radius: 8px;">
+                                <option value="REPLACEMENT">Thay thế nhân sự nghỉ việc</option>
+                                <option value="NEW_HEADCOUNT">Tăng mới headcount</option>
+                            </select>
+                        </div>
+
+                        <!-- Dải lương đề xuất -->
+                        <div class="col-12 col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Mức lương tối thiểu (VND) <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control font-monospace" placeholder="10,000,000" required id="reqMinSalaryFormatted" style="border-radius: 8px;" />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Mức lương tối đa (VND) <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control font-monospace" placeholder="25,000,000" required id="reqMaxSalaryFormatted" style="border-radius: 8px;" />
+                        </div>
+
+                        <!-- Chi tiết lý do -->
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold text-dark">Chi tiết lý do / Mục tiêu tuyển dụng</label>
+                            <textarea class="form-control" rows="2" placeholder="Ví dụ: Bổ sung cho dự án Core Banking Quý 4, thay thế nhân viên nghỉ việc..." id="reqDescription" style="border-radius: 8px;"></textarea>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-dark">Lý do tuyển dụng</label>
-                        <select class="form-select" id="reqReason" style="border-radius: 8px;">
-                            <option>Mở rộng quy mô dự án mới</option>
-                            <option>Thay thế nhân sự nghỉ việc</option>
-                            <option>Bổ sung nhân sự chuyên gia cho dự án trọng điểm</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-dark">Mô tả mục tiêu & Yêu cầu trọng tâm</label>
-                        <textarea class="form-control" rows="3" placeholder="Mục tiêu công việc chính cần giải quyết..." required id="reqDescription" style="border-radius: 8px;"></textarea>
-                    </div>
-                    <div class="d-flex justify-content-end gap-2 mt-4 pt-2" style="border-top: 1px solid #E2E8F0;">
-                        <button type="button" class="btn btn-light px-4" style="border-radius: 8px; font-size: 0.85rem;" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn btn-warning px-4 fw-semibold text-dark" style="border-radius: 8px; font-size: 0.85rem;" id="btnSubmitReq">
-                            <span class="spinner-border spinner-border-sm me-1 d-none" id="spinnerReq"></span>
-                            Lưu & Gửi duyệt đề xuất
-                        </button>
+
+                    <div class="d-flex justify-content-between align-items-center gap-2 mt-4 pt-2" style="border-top: 1px solid #E2E8F0;">
+                        <a href="/yeu-cau-tuyen-dung/tao-moi" class="text-decoration-none small text-muted">
+                            <i class="bi bi-box-arrow-up-right me-1"></i>Trang tạo đầy đủ có preview
+                        </a>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-light px-3" style="border-radius: 8px; font-size: 0.85rem;" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary px-4 fw-semibold text-white" style="border-radius: 8px; font-size: 0.85rem;" id="btnSubmitReq">
+                                <span class="spinner-border spinner-border-sm me-1 d-none" id="spinnerReq"></span>
+                                Lưu & Gửi duyệt đề xuất
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -1806,37 +1856,187 @@
             }
         }
 
-        // 5. Khởi tạo đề xuất nhân sự
+        // 5. Khởi tạo đề xuất nhân sự (Đồng bộ chuẩn Module Requisitions EP-03)
+        var reqOptionsLoaded = false;
+        var reqPositionsData = [];
+
+        function formatVndNumber(val) {
+            if (!val && val !== 0) return '';
+            var clean = val.toString().replace(/\D/g, '');
+            if (!clean) return '';
+            return new Intl.NumberFormat('vi-VN').format(clean);
+        }
+
+        function parseRawVnd(val) {
+            if (!val) return 0;
+            return parseInt(val.toString().replace(/\D/g, ''), 10) || 0;
+        }
+
+        async function loadRequisitionOptions() {
+            if (reqOptionsLoaded) return;
+            try {
+                var res = await fetch('/yeu-cau-tuyen-dung/api/form-options');
+                if (!res.ok) return;
+                var data = await res.json();
+                if (data.success) {
+                    reqPositionsData = data.jobPositions || [];
+
+                    var posSelect = document.getElementById('reqPositionId');
+                    if (posSelect) {
+                        posSelect.innerHTML = '<option value="">-- Chọn chức danh cần tuyển --</option>';
+                        reqPositionsData.forEach(function (p) {
+                            var opt = document.createElement('option');
+                            opt.value = p.id;
+                            opt.textContent = p.title + ' (' + p.code + ' - ' + p.jobLevel + ')';
+                            opt.dataset.deptId = p.departmentId || '';
+                            opt.dataset.deptName = p.departmentName || '';
+                            opt.dataset.minSalary = p.standardMinSalary || 0;
+                            opt.dataset.maxSalary = p.standardMaxSalary || 0;
+                            posSelect.appendChild(opt);
+                        });
+                    }
+
+                    var deptSelect = document.getElementById('reqDepartmentId');
+                    if (deptSelect) {
+                        deptSelect.innerHTML = '<option value="">-- Chọn phòng ban --</option>';
+                        (data.departments || []).forEach(function (d) {
+                            var opt = document.createElement('option');
+                            opt.value = d.id;
+                            opt.textContent = d.name + ' (' + d.code + ')';
+                            deptSelect.appendChild(opt);
+                        });
+
+                        if (data.defaultDepartmentId) {
+                            deptSelect.value = data.defaultDepartmentId;
+                        }
+
+                        if (!data.canChangeDepartment) {
+                            deptSelect.classList.add('bg-light');
+                            var deptNotice = document.getElementById('reqDeptNotice');
+                            if (deptNotice) {
+                                deptNotice.textContent = 'Phòng ban được cố định theo bộ phận quản lý của bạn';
+                            }
+                        }
+                    }
+
+                    reqOptionsLoaded = true;
+                }
+            } catch (err) {
+                console.error('Lỗi nạp danh mục tuyển dụng:', err);
+            }
+        }
+
+        function handleModalPositionChange() {
+            var posSelect = document.getElementById('reqPositionId');
+            if (!posSelect) return;
+            var selectedOpt = posSelect.options[posSelect.selectedIndex];
+            if (!selectedOpt || !selectedOpt.value) return;
+
+            var deptId = selectedOpt.dataset.deptId;
+            var deptSelect = document.getElementById('reqDepartmentId');
+            if (deptId && deptSelect && !deptSelect.disabled) {
+                deptSelect.value = deptId;
+            }
+
+            var min = parseRawVnd(selectedOpt.dataset.minSalary);
+            var max = parseRawVnd(selectedOpt.dataset.maxSalary);
+            if (min > 0) {
+                document.getElementById('reqMinSalaryFormatted').value = formatVndNumber(min);
+            }
+            if (max > 0) {
+                document.getElementById('reqMaxSalaryFormatted').value = formatVndNumber(max);
+            }
+        }
+
+        function showReqModalAlert(msg) {
+            var alertEl = document.getElementById('reqModalAlert');
+            if (alertEl) {
+                alertEl.textContent = msg;
+                alertEl.classList.remove('d-none');
+            } else {
+                showToast(msg, false);
+            }
+        }
+
         async function handleReqSubmit(e) {
             e.preventDefault();
+            var alertEl = document.getElementById('reqModalAlert');
+            if (alertEl) {
+                alertEl.classList.add('d-none');
+                alertEl.textContent = '';
+            }
+
+            var positionId = document.getElementById('reqPositionId').value;
+            var departmentId = document.getElementById('reqDepartmentId').value;
+            var quantity = parseInt(document.getElementById('reqQuantity').value, 10);
+            var headcountType = document.getElementById('reqHeadcountType').value;
+            var targetDate = document.getElementById('reqDate').value;
+            var minSalary = parseRawVnd(document.getElementById('reqMinSalaryFormatted').value);
+            var maxSalary = parseRawVnd(document.getElementById('reqMaxSalaryFormatted').value);
+            var reasonDesc = document.getElementById('reqDescription').value;
+
+            if (!positionId) {
+                showReqModalAlert('Vui lòng chọn chức danh cần tuyển dụng.');
+                return;
+            }
+            if (!departmentId) {
+                showReqModalAlert('Vui lòng chọn phòng ban đề xuất.');
+                return;
+            }
+            if (!quantity || quantity < 1) {
+                showReqModalAlert('Số lượng cần tuyển tối thiểu là 1 người.');
+                return;
+            }
+            if (!targetDate) {
+                showReqModalAlert('Vui lòng chọn ngày cần có nhân sự.');
+                return;
+            }
+            var todayStr = new Date().toISOString().split('T')[0];
+            if (targetDate < todayStr) {
+                showReqModalAlert('Ngày cần có nhân sự không thể là ngày trong quá khứ.');
+                return;
+            }
+            if (minSalary <= 0 || maxSalary <= 0) {
+                showReqModalAlert('Vui lòng nhập dải lương đề xuất hợp lệ (lớn hơn 0).');
+                return;
+            }
+            if (minSalary > maxSalary) {
+                showReqModalAlert('Mức lương tối thiểu không được lớn hơn mức lương tối đa.');
+                return;
+            }
+
             var btn = document.getElementById('btnSubmitReq');
             var spinner = document.getElementById('spinnerReq');
             btn.disabled = true;
             spinner.classList.remove('d-none');
 
             var formData = new FormData();
-            formData.append('title', document.getElementById('reqTitle').value);
-            formData.append('quantity', document.getElementById('reqQuantity').value);
-            formData.append('targetDate', document.getElementById('reqDate').value);
-            formData.append('reason', document.getElementById('reqReason').value);
-            formData.append('description', document.getElementById('reqDescription').value);
+            formData.append('JobPositionId', positionId);
+            formData.append('DepartmentId', departmentId);
+            formData.append('Quantity', quantity);
+            formData.append('HeadcountType', headcountType);
+            formData.append('MinSalary', minSalary);
+            formData.append('MaxSalary', maxSalary);
+            formData.append('TargetHireDate', targetDate);
+            formData.append('ReasonDescription', reasonDesc);
             formData.append('__RequestVerificationToken', getCsrfToken());
 
             try {
-                var res = await fetch('/Workspace/CreateRequisition', {
+                var res = await fetch('/yeu-cau-tuyen-dung/api/quick-create', {
                     method: 'POST',
                     body: formData
                 });
                 var data = await res.json();
-                if (data.success) {
+                if (res.ok && data.success) {
                     var modalEl = document.getElementById('createRequisitionModal');
                     bootstrap.Modal.getInstance(modalEl).hide();
+                    document.getElementById('reqForm').reset();
                     showToast(data.message, true);
                 } else {
-                    showToast(data.message || 'Lỗi gửi đề xuất', false);
+                    showReqModalAlert(data.message || 'Lỗi gửi đề xuất.');
                 }
             } catch (err) {
-                showToast('Lỗi kết nối: ' + err.message, false);
+                showReqModalAlert('Lỗi kết nối máy chủ: ' + err.message);
             } finally {
                 btn.disabled = false;
                 spinner.classList.add('d-none');
@@ -2529,6 +2729,29 @@
                     scrollToFeatureSection(activeFeature);
                 }, 350);
             }
+
+            // Đăng ký sự kiện nạp dữ liệu và xử lý dải lương cho Modal Đề xuất tuyển dụng
+            var reqModalEl = document.getElementById('createRequisitionModal');
+            if (reqModalEl) {
+                reqModalEl.addEventListener('show.bs.modal', function () {
+                    loadRequisitionOptions();
+                });
+            }
+
+            var posSelect = document.getElementById('reqPositionId');
+            if (posSelect) {
+                posSelect.addEventListener('change', handleModalPositionChange);
+            }
+
+            var minInp = document.getElementById('reqMinSalaryFormatted');
+            var maxInp = document.getElementById('reqMaxSalaryFormatted');
+            [minInp, maxInp].forEach(function (inp) {
+                if (!inp) return;
+                inp.addEventListener('input', function () {
+                    var raw = parseRawVnd(this.value);
+                    this.value = raw > 0 ? formatVndNumber(raw) : '';
+                });
+            });
         });
     </script>
 }

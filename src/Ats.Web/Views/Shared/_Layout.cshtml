@@ -44,6 +44,93 @@
                         <div class="me-auto"></div>
 
                         <!-- User Profile & Action Dropdown (RULE.MD: Tinh gọn Top Bar, toàn bộ điều hướng nằm trong profile dropdown) -->
+                            @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" asp-controller="JobPositions" asp-action="Index">
+                                        <i class="bi bi-person-badge-fill me-1"></i> Chức danh
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" asp-controller="CompetencyFrameworks" asp-action="Index">
+                                        <i class="bi bi-diagram-3-fill me-1"></i> Khung năng lực
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" asp-controller="EvaluationCriteria" asp-action="Index">
+                                        <i class="bi bi-ui-checks-grid me-1"></i> Tiêu chí & Thang điểm
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" asp-controller="Requisitions" asp-action="Create">
+                                        <i class="bi bi-file-earmark-plus me-1"></i> Yêu cầu tuyển dụng
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" asp-controller="Requisitions" asp-action="Drafts">
+                                        <i class="bi bi-file-earmark-text me-1"></i> Bản nháp
+                                    </a>
+                                </li>
+                            }
+
+                            @* Menu dành cho HR Manager & Recruiter *@
+                            @if (User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#createJobModal">
+                                        <i class="bi bi-megaphone me-1"></i> + Đăng tin tuyển dụng
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" asp-controller="QuestionBanks" asp-action="Index">
+                                        <i class="bi bi-journal-text me-1"></i> Ngân hàng câu hỏi
+                                    </a>
+                                </li>
+                            }
+
+                            @* Menu dành cho Hiring Manager *@
+                            @if (User.IsInRole(UserRoles.HiringManager))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" asp-controller="Requisitions" asp-action="Create">
+                                        <i class="bi bi-file-earmark-plus me-1"></i> + Đề xuất nhân sự
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" asp-controller="Requisitions" asp-action="Drafts">
+                                        <i class="bi bi-file-earmark-text me-1"></i> Bản nháp
+                                    </a>
+                                </li>
+                            }
+
+                            @* Menu dành cho Interviewer *@
+                            @if (User.IsInRole(UserRoles.Interviewer))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" asp-controller="EvaluationCriteria" asp-action="Index">
+                                        <i class="bi bi-ui-checks-grid me-1"></i> Tiêu chí & Thang điểm
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#interviewEvaluationModal">
+                                        <i class="bi bi-clipboard2-check me-1"></i> Đánh giá phỏng vấn
+                                    </a>
+                                </li>
+                            }
+
+                            @* Menu dành cho Approver *@
+                            @if (User.IsInRole(UserRoles.Approver))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" href="/#staff-workspace">
+                                        <i class="bi bi-check2-square me-1"></i> Duyệt Offer
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+
+
+                        <!-- User Profile & Action Dropdown (S1-04, S1-09) -->
                         <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-2 mt-3 mt-lg-0">
                             <!-- Role Badges for Multi-role representation -->
                             <div class="d-flex flex-wrap gap-1 me-lg-2">
@@ -154,6 +241,11 @@
                                     }
 
                                     <li><hr class="dropdown-divider my-1"></li>
+                                    <li>
+                                        <a class="dropdown-item py-2" asp-controller="Profiles" asp-action="Index">
+                                            <i class="bi bi-person me-2 text-primary"></i> Hồ sơ cá nhân
+                                        </a>
+                                    </li>
                                     <li>
                                         <a class="dropdown-item py-2" asp-controller="Account" asp-action="ChangePassword">
                                             <i class="bi bi-key me-2 text-muted"></i> Đổi mật khẩu
