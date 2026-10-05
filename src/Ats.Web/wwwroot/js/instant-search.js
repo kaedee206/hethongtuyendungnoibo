@@ -51,21 +51,31 @@
     }
 
     /**
+     * Kiểm tra xem chuỗi tìm kiếm có đủ điều kiện hợp lệ không (tối thiểu 3 ký tự)
+     */
+    function isValidSearchQuery(query, minLength = 3) {
+        if (!query) return false;
+        return String(query).trim().length >= minLength;
+    }
+
+    /**
      * Đồng bộ tham số vào URL query mà không tải lại trang (history.replaceState)
      * Tự động loại bỏ các tham số rỗng hoặc giá trị mặc định ('all', 'ALL', '')
+     * Bỏ qua từ khóa tìm kiếm nếu chưa đạt tối thiểu minSearchLength (mặc định 3 ký tự)
      */
     const _debouncedReplaceState = debounce(function (url) {
         window.history.replaceState(null, '', url);
     }, 50);
 
-    function syncUrlParams(paramsObj, immediate = false) {
+    function syncUrlParams(paramsObj, immediate = false, minSearchLength = 3) {
         try {
             const url = new URL(window.location.href);
             const searchParams = url.searchParams;
 
             for (const [key, rawVal] of Object.entries(paramsObj)) {
                 const val = (rawVal === null || rawVal === undefined) ? '' : String(rawVal).trim();
-                if (!val || val === 'all' || val === 'ALL') {
+                const isSearchParam = (key === 'search' || key === 'keyword' || key === 'q');
+                if (!val || val === 'all' || val === 'ALL' || (isSearchParam && val.length < minSearchLength)) {
                     searchParams.delete(key);
                 } else {
                     searchParams.set(key, val);
@@ -85,14 +95,33 @@
 
     /**
      * Kiểm tra xem văn bản mục tiêu có chứa tất cả các từ trong chuỗi tìm kiếm không (Multi-token match)
+     * Quy tắc: Chỉ tìm kiếm khi từ khóa có từ 3 ký tự trở lên (>= 3 chars). Nếu < 3 ký tự, coi như khớp tất cả (không lọc).
      */
-    function matchSearchTokens(targetText, queryText) {
+    function matchSearchTokens(targetText, queryText, minLength = 3) {
         if (!queryText) return true;
+        const trimmed = String(queryText).trim();
+        if (trimmed.length === 0) return true;
+        // Bắt buộc từ 3 ký tự trở lên mới kích hoạt lọc
+        if (trimmed.length < minLength) return true;
+
         const normalizedTarget = removeVietnameseTones(targetText);
-        const normalizedQuery = removeVietnameseTones(queryText);
+        const normalizedQuery = removeVietnameseTones(trimmed);
         const tokens = normalizedQuery.split(' ').filter(Boolean);
         if (tokens.length === 0) return true;
         return tokens.every(token => normalizedTarget.includes(token));
+    }
+
+    /**
+     * Hiển thị hoặc ẩn thông báo gợi ý số ký tự tối thiểu
+     */
+    function updateSearchHint(inputEl, hintEl, minLength = 3) {
+        if (!inputEl || !hintEl) return;
+        const val = (inputEl.value || '').trim();
+        if (val.length > 0 && val.length < minLength) {
+            hintEl.classList.remove('d-none');
+        } else {
+            hintEl.classList.add('d-none');
+        }
     }
 
     // Export ra window toàn cục
@@ -101,7 +130,9 @@
         debounce,
         getUrlParams,
         syncUrlParams,
-        matchSearchTokens
+        matchSearchTokens,
+        isValidSearchQuery,
+        updateSearchHint
     };
 
 })(window);
