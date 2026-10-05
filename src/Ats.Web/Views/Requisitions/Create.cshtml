@@ -1,0 +1,77 @@
+@model Ats.Web.Models.ViewModels.Requisitions.RequisitionCreateViewModel
+@{
+    ViewData["Title"] = "Khai báo Yêu cầu Tuyển dụng Nhân sự";
+}
+
+<div class="container-fluid px-3 px-md-4 py-4" style="background-color: #F8FAFC; min-height: calc(100vh - 70px);">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-9 col-xl-8">
+            
+            <!-- Breadcrumb & Header -->
+            <div class="bg-white border rounded-3 p-3 p-md-4 mb-4 shadow-sm" style="border-radius: 12px !important; border-color: #E2E8F0 !important;">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1 text-muted small">
+                        <li class="breadcrumb-item">
+                            <a asp-controller="Home" asp-action="Index" class="text-decoration-none text-muted">Trang chủ</a>
+                        </li>
+                        <li class="breadcrumb-item text-muted">Yêu cầu tuyển dụng</li>
+                        <li class="breadcrumb-item active text-dark fw-medium" aria-current="page">Tạo mới đề xuất</li>
+                    </ol>
+                </nav>
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                            <i class="bi bi-file-earmark-plus text-success"></i>
+                            <span>Khai báo Thông tin Yêu cầu Tuyển dụng</span>
+                        </h4>
+                        <p class="text-secondary small mb-0">
+                            Khởi tạo phiếu đề xuất tuyển dụng nhân sự (Requisition) cho bộ phận của bạn gửi Ban Giám đốc & Phòng Nhân sự phê duyệt.
+                        </p>
+                    </div>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 font-monospace" style="border-radius: 6px; font-size: 0.82rem;">
+                        EP-03_REQUISITION
+                    </span>
+                </div>
+            </div>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 py-3 px-4 shadow-sm mb-4" role="alert" style="border-radius: 10px; border-left: 5px solid #059669 !important;">
+                    <i class="bi bi-check-circle-fill fs-4 text-success"></i>
+                    <div>
+                        <strong>Thành công!</strong> @TempData["SuccessMessage"]
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <!-- Main Form Card -->
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; overflow: hidden; background: #FFFFFF;">
+                <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Thông tin cơ bản yêu cầu tuyển dụng</h6>
+                        <span class="text-muted small">Tất cả các trường có dấu (*) là thông tin bắt buộc</span>
+                    </div>
+                    <div class="small text-muted font-monospace">
+                        Người lập: <strong class="text-dark">@(Model.CurrentUserName ?? User.Identity?.Name ?? "Hiring Manager")</strong>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <partial name="_RequisitionFormPartial" model="Model" />
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/rich-text-editor.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/rich-text-editor.js" asp-append-version="true"></script>
+    <script src="~/js/requisition-form.js" asp-append-version="true"></script>
+}

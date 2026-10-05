@@ -27,7 +27,7 @@ public class AuthTests
         {
             Id = Guid.NewGuid(),
             Email = "nam.dang@noveratech.digital",
-            FullName = "Đặng Hoàng Nam",
+            FullName = "Lường Minh Hiếu",
             Role = UserRoles.Admin,
             Status = "ACTIVE",
             PasswordHash = passwordHash,

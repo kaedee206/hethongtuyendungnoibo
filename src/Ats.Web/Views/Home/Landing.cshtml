@@ -1,310 +1,999 @@
 @{
-    ViewData["Title"] = "Cổng Tuyển Dụng NoveraTech - Career Portal";
+    ViewData["Title"] = "NoveraTech Careers — Cơ Hội Nghề Nghiệp & Gia Nhập Đội Ngũ Công Nghệ";
+    ViewData["BodyClass"] = "landing-page";
 }
 
-<div class="container-fluid px-3 px-md-5 py-4">
-    <!-- Hero Header Section -->
-    <div class="text-center mx-auto mb-5 pt-3" style="max-width: 900px;">
-        <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 mb-3 small fw-semibold">
-            <i class="bi bi-stars text-warning"></i>
-            <span>Hệ Thống Tuyển Dụng & Phát Triển Nhân Tài NoveraTech</span>
-        </div>
-        <h1 class="display-4 fw-bold text-dark mb-3 tracking-tight">
-            Kiến Tạo Tương Lai Cùng <span class="text-primary">NoveraTech</span>
-        </h1>
-        <p class="lead text-muted mx-auto mb-4" style="max-width: 760px;">
-            Nền tảng tuyển dụng số hóa toàn diện kết nối nhân tài công nghệ xuất sắc với các dự án đột phá, quy trình minh bạch, bảo mật đa lớp và phản hồi thần tốc.
-        </p>
-        <div class="d-flex flex-wrap justify-content-center gap-3">
-            <a href="#open-jobs" class="btn btn-primary btn-lg px-4 py-2.5 rounded-pill fw-semibold shadow-sm text-white">
-                <i class="bi bi-search me-1"></i> Khám phá vị trí đang mở
-            </a>
-            <a asp-controller="Account" asp-action="CandidateAuth" class="btn btn-outline-success btn-lg px-4 py-2.5 rounded-pill fw-semibold">
-                <i class="bi bi-person-plus me-1"></i> Đăng ký Ứng viên
-            </a>
-            <a asp-controller="Account" asp-action="StaffLogin" class="btn btn-outline-secondary btn-lg px-4 py-2.5 rounded-pill fw-semibold">
-                <i class="bi bi-shield-lock me-1"></i> Cổng Nội bộ
-            </a>
-        </div>
-    </div>
+@* ══════════════════════════════════════════════════════════
+   NOVERATECH CAREERS — LANDING PAGE
+   Định vị: Website Tuyển Dụng Công Nghệ & Giới Thiệu Công Ty
+   Tuân thủ nghiêm ngặt docs/RULE.md:
+   - Nền trung tính: #F8FAFC, Card: #FFFFFF, Viền: #E2E8F0, Accent: #059669
+   - Bo góc: 8px cho Button/Input, 12px cho Card/Modal, 6px cho Badge
+   - Font: Inter (UI) & JetBrains Mono (Mức lương, số liệu thống kê)
+   - Triệt tiêu hoàn toàn AI slop, đồ họa neon 3D, từ ngữ khoe tính năng ATS
+   ══════════════════════════════════════════════════════════ *@
 
-    <!-- Dual Portal Gateway Cards -->
-    <div class="row g-4 mb-5 justify-content-center">
-        <!-- Portal 1: Candidate Careers Portal -->
-        <div class="col-12 col-lg-6">
-            <div class="card h-100 border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white position-relative overflow-hidden hover-shadow transition-all border-top border-4 border-success">
-                <div class="d-flex align-items-center justify-content-between mb-4">
-                    <div class="bg-success bg-opacity-10 text-success p-3 rounded-4 d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                        <i class="bi bi-person-workspace fs-3"></i>
-                    </div>
-                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-1.5 small fw-semibold">
-                        <i class="bi bi-briefcase me-1"></i> Dành cho Ứng viên
-                    </span>
-                </div>
+<style>
+    /* ── Typography & Global Reset ─────────────────────── */
+    body {
+        background: #F8FAFC;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #0F172A;
+    }
 
-                <h2 class="h3 fw-bold text-dark mb-2">Cổng Ứng Viên & Tuyển Dụng</h2>
-                <p class="text-muted mb-4">
-                    Tìm kiếm cơ hội nghề nghiệp, nộp CV trực tuyến, theo dõi tiến độ xét duyệt và nhận thư mời phỏng vấn một cách nhanh chóng, minh bạch.
+    /* Dot-grid hero background */
+    .career-hero {
+        background-color: #F8FAFC;
+        background-image: radial-gradient(circle, #CBD5E1 1px, transparent 1px);
+        background-size: 32px 32px;
+        min-height: 85vh;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid #E2E8F0;
+        padding-top: 3.5rem;
+        padding-bottom: 4rem;
+    }
+
+    /* Headings */
+    .career-h1 {
+        font-size: clamp(2.2rem, 4.5vw, 3.4rem);
+        font-weight: 800;
+        color: #0F172A;
+        letter-spacing: -0.035em;
+        line-height: 1.15;
+    }
+
+    .career-h2 {
+        font-size: clamp(1.6rem, 3vw, 2.2rem);
+        font-weight: 700;
+        color: #0F172A;
+        letter-spacing: -0.025em;
+    }
+
+    .career-lead {
+        font-size: 1.05rem;
+        color: #475569;
+        line-height: 1.75;
+    }
+
+    .career-section-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #059669;
+        display: inline-block;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Standard Buttons — 8px radius per RULE.MD */
+    .btn-career-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #059669;
+        color: #FFFFFF;
+        border: none;
+        border-radius: 8px;
+        padding: 0.65rem 1.35rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all .2s ease;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .btn-career-primary:hover {
+        background: #047857;
+        color: #FFFFFF;
+        box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+    }
+
+    .btn-career-outline {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #FFFFFF;
+        color: #0F172A;
+        border: 1.5px solid #CBD5E1;
+        border-radius: 8px;
+        padding: 0.65rem 1.35rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all .2s ease;
+    }
+    .btn-career-outline:hover {
+        border-color: #059669;
+        color: #059669;
+        background: #ECFDF5;
+    }
+
+    /* Cards — 12px radius per RULE.MD */
+    .career-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 1.75rem;
+        transition: all .2s ease;
+        height: 100%;
+    }
+    .career-card:hover {
+        border-color: rgba(5, 150, 105, 0.4);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        transform: translateY(-2px);
+    }
+
+    /* Job Card Apply Button — 8px radius */
+    .btn-job-apply {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        background: #F8FAFC;
+        color: #059669;
+        border: 1.5px solid #D1FAE5;
+        border-radius: 8px;
+        padding: 0.55rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all .2s ease;
+    }
+    .btn-job-apply:hover {
+        background: #059669;
+        border-color: #059669;
+        color: #FFFFFF;
+    }
+
+    /* Number metrics — JetBrains Mono per RULE.MD */
+    .career-metric-val {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #0F172A;
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+        line-height: 1;
+    }
+    .career-metric-label {
+        font-size: 0.8rem;
+        color: #64748B;
+        margin-top: 0.35rem;
+        font-weight: 500;
+    }
+
+    /* Stepper — 4 bước tuyển dụng */
+    .career-stepper {
+        display: flex;
+        align-items: stretch;
+        gap: 1.25rem;
+    }
+    .career-step-card {
+        flex: 1;
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 1.5rem;
+        position: relative;
+    }
+    .career-step-badge {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: #ECFDF5;
+        color: #059669;
+        border: 1.5px solid #D1FAE5;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 700;
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Section padding */
+    .career-section {
+        padding: 5rem 0;
+    }
+    .career-section-alt {
+        background: #F1F5F9;
+        border-top: 1px solid #E2E8F0;
+        border-bottom: 1px solid #E2E8F0;
+    }
+
+    /* Filter pills for job list */
+    .job-filter-btn {
+        background: #FFFFFF;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 0.45rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .2s ease;
+    }
+    .job-filter-btn:hover, .job-filter-btn.active {
+        background: #0F172A;
+        color: #FFFFFF;
+        border-color: #0F172A;
+    }
+
+    @@media (max-width: 991px) {
+        .career-stepper {
+            flex-direction: column;
+        }
+    }
+</style>
+
+@* ══════════════════════════════════════════════════════════
+   1. HERO SECTION: Giới thiệu NoveraTech & Lời mời ứng tuyển
+   ══════════════════════════════════════════════════════════ *@
+<section class="career-hero">
+    <div class="container-fluid px-4 px-md-5">
+        <div class="row align-items-center gy-5">
+            @* Left Column: Copy & Search Bar *@
+            <div class="col-12 col-lg-7">
+                <span class="career-section-label">
+                    <i class="bi bi-stars me-1"></i> NoveraTech Careers · Gia nhập đội ngũ công nghệ
+                </span>
+                <h1 class="career-h1 mb-4">
+                    Cùng NoveraTech kiến tạo<br />
+                    <span style="color: #059669;">tương lai công nghệ số</span>
+                </h1>
+                <p class="career-lead mb-4" style="max-width: 600px;">
+                    NoveraTech là công ty công nghệ tiên phong phát triển các nền tảng số hóa, FinTech và hệ thống Enterprise AI thế hệ mới. Chúng tôi tìm kiếm những kỹ sư đam mê kiến trúc chuẩn mực, giải quyết bài toán triệu người dùng và cùng vươn tầm công nghệ Việt.
                 </p>
 
-                <div class="bg-light rounded-3 p-3 mb-4 border border-light-subtle">
-                    <div class="fw-semibold text-dark small mb-2 text-uppercase tracking-wider">Tiện ích ứng viên:</div>
-                    <ul class="list-unstyled mb-0 small text-muted d-flex flex-column gap-2">
-                        <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-circle-fill text-success fs-6"></i>
-                            <span>Nộp hồ sơ ứng tuyển trực tuyến & cập nhật CV linh hoạt</span>
-                        </li>
-                        <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-circle-fill text-success fs-6"></i>
-                            <span>Tra cứu trạng thái hồ sơ theo thời gian thực (Sơ loại, Phỏng vấn, Offer)</span>
-                        </li>
-                        <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-circle-fill text-success fs-6"></i>
-                            <span>Tự do đăng ký với email cá nhân (Gmail, Outlook, Yahoo...)</span>
-                        </li>
-                    </ul>
+                @* Job Quick Search Bar *@
+                <div class="bg-white p-2 p-md-3 border rounded-3 shadow-xs mb-4" style="border-color: #E2E8F0 !important; border-radius: 12px; max-width: 640px;">
+                    <form method="get" asp-controller="Jobs" asp-action="Index">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-12 col-md-5">
+                                <div class="position-relative">
+                                    <i class="bi bi-search position-absolute" style="left: 12px; top: 50%; transform: translateY(-50%); color: #94A3B8;"></i>
+                                    <input type="text" name="search" id="heroJobSearchInput"
+                                           class="form-control"
+                                           placeholder="Tìm vị trí: .NET, React, AI..."
+                                           style="padding-left: 36px; height: 42px; border-radius: 8px; border: 1px solid #E2E8F0; font-size: 0.9rem;" />
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <select name="department" id="heroDeptSelect" class="form-select" style="height: 42px; border-radius: 8px; border: 1px solid #E2E8F0; font-size: 0.88rem; color: #475569;">
+                                    <option value="all">Tất cả phòng ban</option>
+                                    <option value="it">Công nghệ Thông tin</option>
+                                    <option value="ai">AI / Data Lab</option>
+                                    <option value="product">Khối Sản phẩm</option>
+                                    <option value="hr">Nhân sự & Vận hành</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <button type="submit" class="btn-career-primary w-100 justify-content-center" style="height: 42px; white-space: nowrap;">
+                                    <i class="bi bi-search"></i> Tìm việc
+                                </button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
 
-                <div class="mt-auto d-flex flex-column flex-sm-row gap-3">
-                    <a asp-controller="Account" asp-action="CandidateAuth"
-                       class="btn btn-success btn-lg px-4 py-2.5 rounded-3 fw-semibold shadow-sm text-white d-inline-flex align-items-center justify-content-center gap-2 flex-grow-1">
-                        <i class="bi bi-box-arrow-in-right"></i>
-                        <span>Vào Cổng Ứng Viên</span>
-                    </a>
-                    <a href="/Account/CandidateAuth#signup"
-                       class="btn btn-outline-secondary btn-lg px-3 py-2.5 rounded-3 fw-medium d-inline-flex align-items-center justify-content-center gap-1">
-                        <span>Tạo tài khoản mới</span>
-                    </a>
+                @* Key Proof Numbers (RULE.MD: JetBrains Mono for metrics) *@
+                <div class="d-flex align-items-center gap-3 gap-md-5 flex-wrap pt-2">
+                    <div>
+                        <div class="career-metric-val">500+</div>
+                        <div class="career-metric-label">Kỹ sư & Chuyên gia</div>
+                    </div>
+                    <div style="width: 1px; height: 40px; background: #E2E8F0;"></div>
+                    <div>
+                        <div class="career-metric-val">14–16</div>
+                        <div class="career-metric-label">Tháng lương/năm + ESOP</div>
+                    </div>
+                    <div style="width: 1px; height: 40px; background: #E2E8F0;"></div>
+                    <div>
+                        <div class="career-metric-val">Top 10</div>
+                        <div class="career-metric-label">Môi trường IT lý tưởng</div>
+                    </div>
+                    <div style="width: 1px; height: 40px; background: #E2E8F0;"></div>
+                    <div>
+                        <div class="career-metric-val">48h</div>
+                        <div class="career-metric-label">Phản hồi hồ sơ nhanh</div>
+                    </div>
+                </div>
+            </div>
+
+            @* Right Column: Tech & Culture Card Mockup *@
+            <div class="col-12 col-lg-5">
+                <div class="card bg-white p-4 shadow-sm" style="border: 1px solid #E2E8F0; border-radius: 12px;">
+                    <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <img src="~/img/logo-icon-dark-transparent.png" alt="NoveraTech" style="width: 32px; height: 32px; object-fit: contain;" asp-append-version="true" />
+                            <div>
+                                <div class="fw-bold text-dark" style="font-size: 0.95rem;">Môi trường Kỹ thuật NoveraTech</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">Engineering-First Culture</div>
+                            </div>
+                        </div>
+                        <span class="badge bg-success-subtle text-success px-2 py-1" style="border-radius: 6px; font-size: 0.72rem; font-weight: 600;">
+                            Tuyển dụng 2026
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="text-muted small fw-semibold text-uppercase mb-2" style="font-size: 0.72rem; letter-spacing: 0.05em;">Công nghệ chúng tôi sử dụng hàng ngày:</div>
+                        <div class="d-flex flex-wrap gap-1.5">
+                            <span class="badge bg-light text-dark border px-2.5 py-1.5" style="border-radius: 6px; font-weight: 500;">.NET 9 / C#</span>
+                            <span class="badge bg-light text-dark border px-2.5 py-1.5" style="border-radius: 6px; font-weight: 500;">React 19 & TypeScript</span>
+                            <span class="badge bg-light text-dark border px-2.5 py-1.5" style="border-radius: 6px; font-weight: 500;">Clean Architecture</span>
+                            <span class="badge bg-light text-dark border px-2.5 py-1.5" style="border-radius: 6px; font-weight: 500;">PostgreSQL & Redis</span>
+                            <span class="badge bg-light text-dark border px-2.5 py-1.5" style="border-radius: 6px; font-weight: 500;">LangChain & GenAI</span>
+                            <span class="badge bg-light text-dark border px-2.5 py-1.5" style="border-radius: 6px; font-weight: 500;">Docker & K8s</span>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 mb-3 border border-light-subtle" style="border-radius: 8px;">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <i class="bi bi-laptop text-primary"></i>
+                            <span class="fw-semibold text-dark" style="font-size: 0.85rem;">Trang bị 100% MacBook Pro M3/M4</span>
+                        </div>
+                        <div class="text-muted" style="font-size: 0.8rem; line-height: 1.5;">
+                            Cấp máy xịn cấu hình tối đa + 2 màn hình 4K công thái học ngay ngày đầu nhận việc.
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-success-subtle border border-success border-opacity-25 rounded-3 mb-4" style="border-radius: 8px;">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="fw-semibold text-success-emphasis" style="font-size: 0.85rem;">
+                                <i class="bi bi-clock-history me-1"></i> Cam kết phản hồi ứng viên:
+                            </span>
+                            <span class="fw-bold font-monospace text-success" style="font-size: 0.9rem;">Trong 48 giờ</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <a asp-controller="Jobs" asp-action="Index" class="btn-career-primary flex-grow-1 justify-content-center">
+                            <i class="bi bi-briefcase"></i> Khám phá 12+ vị trí tuyển dụng
+                        </a>
+                        <a asp-controller="Account" asp-action="CandidateAuth" class="btn-career-outline">
+                            Nộp CV ngay
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
+</section>
 
-        <!-- Portal 2: Staff & Internal Portal -->
-        <div class="col-12 col-lg-6">
-            <div class="card h-100 border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white position-relative overflow-hidden hover-shadow transition-all border-top border-4 border-primary">
-                <div class="d-flex align-items-center justify-content-between mb-4">
-                    <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-4 d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                        <i class="bi bi-shield-lock-fill fs-3"></i>
-                    </div>
-                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-1.5 small fw-semibold">
-                        <i class="bi bi-building me-1"></i> Cán bộ Nhân viên
-                    </span>
-                </div>
-
-                <h2 class="h3 fw-bold text-dark mb-2">Cổng Nhân Sự Nội Bộ</h2>
-                <p class="text-muted mb-4">
-                    Phân hệ quản trị quy trình tuyển dụng chuẩn mực dành riêng cho nhân sự NoveraTech với tên miền email bắt buộc <code class="text-primary fw-semibold">@@noveratech.digital</code>.
+@* ══════════════════════════════════════════════════════════
+   2. SECTION: VỀ NOVERATECH (WHO WE ARE & TECH VISION)
+   ══════════════════════════════════════════════════════════ *@
+<section id="about" class="career-section career-section-alt">
+    <div class="container-fluid px-4 px-md-5">
+        <div class="row align-items-center gy-5">
+            <div class="col-12 col-lg-5">
+                <span class="career-section-label">Về NoveraTech · Chúng tôi là ai?</span>
+                <h2 class="career-h2 mb-4">Nơi những ý tưởng công nghệ lớn thành hiện thực</h2>
+                <p class="career-lead mb-4">
+                    Thành lập với sứ mệnh định hình lại năng lực công nghệ doanh nghiệp, NoveraTech quy tụ các kỹ sư hàng đầu để giải quyết những bài toán kỹ thuật phức tạp nhất tại thị trường Việt Nam và khu vực.
                 </p>
-
-                <div class="bg-light rounded-3 p-3 mb-4 border border-light-subtle">
-                    <div class="fw-semibold text-dark small mb-2 text-uppercase tracking-wider">Phân quyền nghiệp vụ nội bộ:</div>
-                    <ul class="list-unstyled mb-0 small text-muted d-flex flex-column gap-2">
-                        <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-circle-fill text-primary fs-6"></i>
-                            <span>Kiểm soát phân quyền 6 vai trò: Admin, HR Manager, Recruiter, Hiring Manager, Interviewer, Approver</span>
-                        </li>
-                        <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-circle-fill text-primary fs-6"></i>
-                            <span>Tạo và phê duyệt đề xuất tuyển dụng, quản trị chiến dịch tuyển dụng</span>
-                        </li>
-                        <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-circle-fill text-primary fs-6"></i>
-                            <span>Nhập phiếu phỏng vấn, đánh giá ứng viên, phê duyệt thư mời nhận việc</span>
-                        </li>
-                    </ul>
+                <div class="d-flex flex-column gap-3 mb-4">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px; background: #ECFDF5; color: #059669; border-radius: 8px;">
+                            <i class="bi bi-check2"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark" style="font-size: 0.95rem;">Engineering-First, Zero Politics</div>
+                            <div class="text-muted small">Tôn trọng tiếng nói kỹ thuật, đánh giá dựa trên năng lực và giải pháp thực chất.</div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px; background: #ECFDF5; color: #059669; border-radius: 8px;">
+                            <i class="bi bi-check2"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark" style="font-size: 0.95rem;">Làm chủ kiến trúc hiện đại</div>
+                            <div class="text-muted small">Không bảo thủ với công nghệ cũ. Chúng tôi tiên phong ứng dụng .NET 9, Cloud-Native và GenAI.</div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px; background: #ECFDF5; color: #059669; border-radius: 8px;">
+                            <i class="bi bi-check2"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark" style="font-size: 0.95rem;">Cân bằng cuộc sống & Không OT</div>
+                            <div class="text-muted small">Khuyến khích hiệu suất thông minh trong giờ làm việc, tôn trọng thời gian cá nhân và gia đình.</div>
+                        </div>
+                    </div>
                 </div>
+            </div>
 
-                <div class="mt-auto d-flex flex-column flex-sm-row gap-3">
-                    <a asp-controller="Account" asp-action="StaffLogin"
-                       class="btn btn-primary btn-lg px-4 py-2.5 rounded-3 fw-semibold shadow-sm text-white d-inline-flex align-items-center justify-content-center gap-2 flex-grow-1">
-                        <i class="bi bi-shield-lock"></i>
-                        <span>Đăng Nhập Cổng Nội Bộ</span>
-                    </a>
-                    <span class="d-flex align-items-center justify-content-center text-muted small text-center px-2">
-                        <i class="bi bi-envelope-at me-1"></i> Chỉ dùng email @@noveratech.digital
-                    </span>
+            <div class="col-12 col-lg-7">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <div class="career-card">
+                            <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #EFF6FF; color: #2563EB; border-radius: 10px;">
+                                <i class="bi bi-layers-fill fs-5"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Hệ thống chịu tải cao</h5>
+                            <p class="text-muted small mb-0" style="line-height: 1.65;">
+                                Xây dựng kiến trúc phân tán microservices xử lý hàng chục triệu requests/ngày với độ trễ thấp và độ tin cậy 99.99%.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="career-card">
+                            <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #FFFBEB; color: #D97706; border-radius: 10px;">
+                                <i class="bi bi-robot fs-5"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">AI & Agentic Workflows</h5>
+                            <p class="text-muted small mb-0" style="line-height: 1.65;">
+                                Phát triển các mô hình ngôn ngữ lớn (LLMs), RAG pipelines và trợ lý thông minh tự động hóa quy trình nghiệp vụ cấp cao.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="career-card">
+                            <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #ECFDF5; color: #059669; border-radius: 10px;">
+                                <i class="bi bi-shield-check fs-5"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Bảo mật & Chuẩn Enterprise</h5>
+                            <p class="text-muted small mb-0" style="line-height: 1.65;">
+                                Tuân thủ nghiêm ngặt các tiêu chuẩn bảo mật dữ liệu cấp ngân hàng, kiểm soát phiên đa lớp và hệ thống audit log toàn diện.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="career-card">
+                            <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #F5F3FF; color: #7C3AED; border-radius: 10px;">
+                                <i class="bi bi-graph-up-arrow fs-5"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Lộ trình thăng tiến mở</h5>
+                            <p class="text-muted small mb-0" style="line-height: 1.65;">
+                                Tùy chọn phát triển chuyên sâu kỹ thuật (Technical Specialist / Principal) hoặc quản trị đội ngũ (Engineering Manager).
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</section>
 
-    <!-- Featured Open Positions Section -->
-    <div id="open-jobs" class="mb-5 pt-3">
-        <div class="text-center mb-4">
-            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 small fw-semibold text-uppercase">Cơ Hội Nghề Nghiệp</span>
-            <h2 class="h3 fw-bold text-dark mt-2 mb-1">Các Vị Trí Tuyển Dụng Đang Mở</h2>
-            <p class="text-muted small">Khám phá các vị trí công việc hấp dẫn tại NoveraTech và gia nhập đội ngũ tinh hoa</p>
+@* ══════════════════════════════════════════════════════════
+   3. SECTION: PHÚC LỢI & ĐÃI NGỘ (BENEFITS & CULTURE)
+   ══════════════════════════════════════════════════════════ *@
+<section id="benefits" class="career-section">
+    <div class="container-fluid px-4 px-md-5">
+        <div class="text-center mb-5">
+            <span class="career-section-label">ĐÃI NGỘ XỨNG TẦM · ĐỒNG HÀNH BỀN VỮNG</span>
+            <h2 class="career-h2">Tại sao bạn sẽ yêu thích làm việc tại NoveraTech?</h2>
+            <p class="text-muted mt-2" style="max-width: 600px; margin: 0.5rem auto 0; font-size: 0.95rem;">
+                Chúng tôi hiểu rằng những kỹ sư giỏi nhất xứng đáng nhận được môi trường làm việc tốt nhất cùng chế độ đãi ngộ vượt trội.
+            </p>
         </div>
 
         <div class="row g-4">
-            <!-- Job 1 -->
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card h-100 border-0 shadow-sm rounded-4 p-4 bg-white hover-shadow transition-all d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 text-xs">Toàn thời gian</span>
-                        <span class="text-success fw-bold small">35 - 50 Triệu</span>
+            @* Perk 1 *@
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="career-card">
+                    <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #ECFDF5; color: #059669; border-radius: 10px;">
+                        <i class="bi bi-cash-stack fs-5"></i>
                     </div>
-                    <h5 class="fw-bold text-dark mb-1">Senior Fullstack .NET / React</h5>
-                    <p class="text-muted small mb-3"><i class="bi bi-geo-alt me-1"></i> Hà Nội (Hybrid)</p>
-                    <p class="text-muted small flex-grow-1 mb-3">
-                        Xây dựng và tối ưu hệ thống microservices .NET 8, kiến trúc Clean Architecture, cơ sở dữ liệu PostgreSQL và giao diện React hiện đại.
+                    <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Thu nhập Top 10% thị trường</h5>
+                    <p class="text-muted small mb-0" style="line-height: 1.65;">
+                        Mức lương cạnh tranh, thưởng dự án, 14–16 tháng lương/năm. Review tăng lương 2 lần/năm (tháng 3 & tháng 9) dựa trên đóng góp thực tế.
                     </p>
-                    <div class="d-flex flex-wrap gap-1 mb-4">
-                        <span class="badge bg-light text-secondary border">.NET 8</span>
-                        <span class="badge bg-light text-secondary border">PostgreSQL</span>
-                        <span class="badge bg-light text-secondary border">React</span>
-                    </div>
-                    <a asp-controller="Account" asp-action="CandidateAuth" class="btn btn-outline-primary rounded-pill w-100 fw-semibold">
-                        Ứng tuyển ngay <i class="bi bi-arrow-right ms-1"></i>
-                    </a>
                 </div>
             </div>
 
-            <!-- Job 2 -->
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card h-100 border-0 shadow-sm rounded-4 p-4 bg-white hover-shadow transition-all d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-3 py-1 text-xs">Hot Position</span>
-                        <span class="text-success fw-bold small">40 - 65 Triệu</span>
+            @* Perk 2 *@
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="career-card">
+                    <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #EFF6FF; color: #2563EB; border-radius: 10px;">
+                        <i class="bi bi-laptop fs-5"></i>
                     </div>
-                    <h5 class="fw-bold text-dark mb-1">AI / LLM Application Engineer</h5>
-                    <p class="text-muted small mb-3"><i class="bi bi-geo-alt me-1"></i> Hà Nội / TP.HCM</p>
-                    <p class="text-muted small flex-grow-1 mb-3">
-                        Phát triển các giải pháp RAG, Vector Search, và Agentic Workflow tự động hóa quy trình tuyển dụng và đánh giá nhân sự.
+                    <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Thiết bị làm việc cao cấp</h5>
+                    <p class="text-muted small mb-0" style="line-height: 1.65;">
+                        Cấp mới 100% MacBook Pro M3/M4 hoặc máy trạm cấu hình tối đa, kèm bàn phím cơ, chuột công thái học và màn hình kép 4K 27-inch.
                     </p>
-                    <div class="d-flex flex-wrap gap-1 mb-4">
-                        <span class="badge bg-light text-secondary border">Python</span>
-                        <span class="badge bg-light text-secondary border">LangChain</span>
-                        <span class="badge bg-light text-secondary border">Vector DB</span>
-                    </div>
-                    <a asp-controller="Account" asp-action="CandidateAuth" class="btn btn-outline-primary rounded-pill w-100 fw-semibold">
-                        Ứng tuyển ngay <i class="bi bi-arrow-right ms-1"></i>
-                    </a>
                 </div>
             </div>
 
-            <!-- Job 3 -->
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card h-100 border-0 shadow-sm rounded-4 p-4 bg-white hover-shadow transition-all d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <span class="badge bg-info-subtle text-info-emphasis rounded-pill px-3 py-1 text-xs">Tuyển gấp</span>
-                        <span class="text-success fw-bold small">18 - 28 Triệu</span>
+            @* Perk 3 *@
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="career-card">
+                    <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #FFFBEB; color: #D97706; border-radius: 10px;">
+                        <i class="bi bi-heart-pulse-fill fs-5"></i>
                     </div>
-                    <h5 class="fw-bold text-dark mb-1">Talent Acquisition Specialist</h5>
-                    <p class="text-muted small mb-3"><i class="bi bi-geo-alt me-1"></i> Hà Nội (Văn phòng)</p>
-                    <p class="text-muted small flex-grow-1 mb-3">
-                        Tìm kiếm và kết nối nguồn nhân lực công nghệ cao (Tech Sourcing), điều phối lịch phỏng vấn và chăm sóc trải nghiệm ứng viên.
+                    <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Bảo hiểm sức khỏe Diamond</h5>
+                    <p class="text-muted small mb-0" style="line-height: 1.65;">
+                        Gói bảo hiểm sức khỏe quốc tế cao cấp cho bản thân và ưu đãi cho người thân. Khám sức khỏe toàn diện định kỳ tại bệnh viện quốc tế hàng năm.
                     </p>
-                    <div class="d-flex flex-wrap gap-1 mb-4">
-                        <span class="badge bg-light text-secondary border">Tech Recruiter</span>
-                        <span class="badge bg-light text-secondary border">Sourcing</span>
-                    </div>
-                    <a asp-controller="Account" asp-action="CandidateAuth" class="btn btn-outline-primary rounded-pill w-100 fw-semibold">
-                        Ứng tuyển ngay <i class="bi bi-arrow-right ms-1"></i>
-                    </a>
                 </div>
             </div>
 
-            <!-- Job 4 -->
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card h-100 border-0 shadow-sm rounded-4 p-4 bg-white hover-shadow transition-all d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 text-xs">Toàn thời gian</span>
-                        <span class="text-success fw-bold small">40 - 55 Triệu</span>
+            @* Perk 4 *@
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="career-card">
+                    <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #F5F3FF; color: #7C3AED; border-radius: 10px;">
+                        <i class="bi bi-mortarboard-fill fs-5"></i>
                     </div>
-                    <h5 class="fw-bold text-dark mb-1">Product Owner (Fintech / ATS)</h5>
-                    <p class="text-muted small mb-3"><i class="bi bi-geo-alt me-1"></i> Hà Nội</p>
-                    <p class="text-muted small flex-grow-1 mb-3">
-                        Định hướng roadmap tính năng, quản trị Product Backlog, làm việc trực tiếp cùng Stakeholders và Tech Team theo quy trình Agile/Scrum.
+                    <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Ngân sách học tập $1,000/năm</h5>
+                    <p class="text-muted small mb-0" style="line-height: 1.65;">
+                        Hỗ trợ 100% chi phí thi các chứng chỉ quốc tế (AWS, Azure, GCP, K8s), tham gia các hội thảo Tech quốc tế và mua sách chuyên ngành không giới hạn.
                     </p>
-                    <div class="d-flex flex-wrap gap-1 mb-4">
-                        <span class="badge bg-light text-secondary border">Scrum</span>
-                        <span class="badge bg-light text-secondary border">PRD</span>
-                        <span class="badge bg-light text-secondary border">Roadmap</span>
+                </div>
+            </div>
+
+            @* Perk 5 *@
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="career-card">
+                    <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #FEF2F2; color: #DC2626; border-radius: 10px;">
+                        <i class="bi bi-house-door-fill fs-5"></i>
                     </div>
-                    <a asp-controller="Account" asp-action="CandidateAuth" class="btn btn-outline-primary rounded-pill w-100 fw-semibold">
-                        Ứng tuyển ngay <i class="bi bi-arrow-right ms-1"></i>
-                    </a>
+                    <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Mô hình làm việc Hybrid linh hoạt</h5>
+                    <p class="text-muted small mb-0" style="line-height: 1.65;">
+                        Linh hoạt kết hợp 2 ngày WFH/tuần. Giờ giấc làm việc linh hoạt, tôn trọng quyền tự chủ của kỹ sư và nói không với văn hóa OT không cần thiết.
+                    </p>
+                </div>
+            </div>
+
+            @* Perk 6 *@
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="career-card">
+                    <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #ECFDF5; color: #059669; border-radius: 10px;">
+                        <i class="bi bi-cup-hot-fill fs-5"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Pantry 5 sao & Văn hóa cởi mở</h5>
+                    <p class="text-muted small mb-0" style="line-height: 1.65;">
+                        Miễn phí cà phê pha máy nguyên chất, đồ uống, trái cây và snack bar mỗi ngày. Du lịch hàng năm, teambuilding định kỳ và các câu lạc bộ thể thao.
+                    </p>
                 </div>
             </div>
         </div>
     </div>
+</section>
 
-    <!-- Recruitment Workflow Section -->
-    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-5">
-        <div class="text-center mb-4">
-            <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1 small fw-semibold text-uppercase">Quy trình tuyển chọn</span>
-            <h3 class="h4 fw-bold text-dark mt-2 mb-1">4 Bước Gia Nhập NoveraTech</h3>
-            <p class="text-muted small">Quy trình tuyển chọn minh bạch, chuyên nghiệp và bảo mật thông tin tối đa</p>
+@* ══════════════════════════════════════════════════════════
+   4. SECTION: VỊ TRÍ TUYỂN DỤNG ĐANG MỞ (JOB OPENINGS)
+   ══════════════════════════════════════════════════════════ *@
+<section id="open-jobs" class="career-section career-section-alt">
+    <div class="container-fluid px-4 px-md-5">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-end mb-4 gap-3">
+            <div>
+                <span class="career-section-label">CƠ HỘI NGHỀ NGHIỆP · VỊ TRÍ ĐANG HOT</span>
+                <h2 class="career-h2 mb-1">Gia nhập đội ngũ công nghệ NoveraTech</h2>
+                <p class="text-muted mb-0 small">Chúng tôi đang mở rộng quy mô lớn và chào đón các kỹ sư, chuyên gia công nghệ xuất sắc.</p>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                @* Department Filter Tabs *@
+                <div class="d-flex flex-wrap gap-2 me-md-2">
+                    <button type="button" class="job-filter-btn active" onclick="filterJobs('all', this)">Tất cả (6)</button>
+                    <button type="button" class="job-filter-btn" onclick="filterJobs('it', this)">Kỹ thuật & IT (4)</button>
+                    <button type="button" class="job-filter-btn" onclick="filterJobs('ai', this)">AI & Data (1)</button>
+                    <button type="button" class="job-filter-btn" onclick="filterJobs('other', this)">Sản phẩm & Vận hành (1)</button>
+                </div>
+                <a asp-controller="Jobs" asp-action="Index" class="btn-career-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                    <i class="bi bi-grid-fill me-1"></i> Xem toàn bộ vị trí &rarr;
+                </a>
+            </div>
         </div>
 
-        <div class="row g-4 text-center">
-            <div class="col-6 col-md-3">
-                <div class="p-3">
-                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 fs-5 fw-bold shadow-sm" style="width: 48px; height: 48px;">
-                        1
+        <div class="row g-3" id="jobGrid">
+            @* Job 1: Senior Fullstack *@
+            <div class="col-12 col-md-6 col-xl-4 job-item" data-category="it">
+                <div class="career-card d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="d-flex align-items-center gap-1.5">
+                            <span class="badge bg-primary-subtle text-primary px-2.5 py-1" style="border-radius: 6px; font-weight: 600;">
+                                Kỹ thuật Phần mềm
+                            </span>
+                            <span class="badge bg-danger text-white px-1.5 py-0.5" style="border-radius: 4px; font-size: 0.65rem; font-weight: 700;">HOT</span>
+                        </div>
+                        <span class="fw-bold font-monospace text-success" style="font-size: 0.95rem;">35 – 50 Triệu</span>
                     </div>
-                    <h5 class="fw-bold text-dark fs-6 mb-1">Nộp Hồ Sơ</h5>
-                    <p class="text-muted small mb-0">Ứng viên đăng ký tài khoản & nộp CV trực tuyến qua Cổng Ứng Viên.</p>
+                    <h5 class="fw-bold mb-1" style="font-size: 1.05rem;">
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="senior-fullstack-dotnet-react-engineer" class="text-dark text-decoration-none hover-green">
+                            Senior Fullstack .NET 9 & React Engineer
+                        </a>
+                    </h5>
+                    <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1 text-success"></i>Hà Nội (Hybrid 2 ngày WFH) · Full-time</p>
+                    <p class="text-muted small flex-grow-1 mb-3" style="line-height: 1.6;">
+                        Chịu trách nhiệm kiến trúc và phát triển hệ thống microservices .NET 9, tối ưu truy vấn PostgreSQL, xây dựng giao diện React 19 hiện đại.
+                    </p>
+                    <div class="d-flex flex-wrap gap-1 mb-3">
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">.NET 9</span>
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">React 19</span>
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">PostgreSQL</span>
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">Clean Architecture</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="senior-fullstack-dotnet-react-engineer" class="btn-career-outline flex-grow-1 text-center justify-content-center py-1.5" style="font-size: 0.85rem;">
+                            Chi tiết JD
+                        </a>
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="senior-fullstack-dotnet-react-engineer" class="btn-job-apply flex-grow-1">
+                            Ứng tuyển <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
 
-            <div class="col-6 col-md-3">
-                <div class="p-3">
-                    <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 fs-5 fw-bold shadow-sm" style="width: 48px; height: 48px;">
-                        2
+            @* Job 2: AI / LLM Engineer *@
+            <div class="col-12 col-md-6 col-xl-4 job-item" data-category="ai">
+                <div class="career-card d-flex flex-column" style="border-color: #FDE68A;">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="d-flex align-items-center gap-1.5">
+                            <span class="badge bg-warning-subtle text-warning-emphasis px-2.5 py-1" style="border-radius: 6px; font-weight: 600;">
+                                AI & Data Lab
+                            </span>
+                            <span class="badge bg-danger text-white px-1.5 py-0.5" style="border-radius: 4px; font-size: 0.65rem; font-weight: 700;">HOT</span>
+                        </div>
+                        <span class="fw-bold font-monospace text-success" style="font-size: 0.95rem;">40 – 65 Triệu</span>
                     </div>
-                    <h5 class="fw-bold text-dark fs-6 mb-1">Sơ Loại CV</h5>
-                    <p class="text-muted small mb-0">Recruiter sàng lọc hồ sơ và gửi thông báo kết quả trong vòng 48h làm việc.</p>
+                    <h5 class="fw-bold mb-1" style="font-size: 1.05rem;">
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="ai-llm-application-engineer" class="text-dark text-decoration-none hover-green">
+                            AI / LLM Application Engineer
+                        </a>
+                    </h5>
+                    <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1 text-success"></i>Hà Nội / TP.HCM · Full-time</p>
+                    <p class="text-muted small flex-grow-1 mb-3" style="line-height: 1.6;">
+                        Nghiên cứu và triển khai giải pháp GenAI, kiến trúc RAG nâng cao, Vector Search và Agentic Workflow tự động hóa quy trình nghiệp vụ quy mô lớn.
+                    </p>
+                    <div class="d-flex flex-wrap gap-1 mb-3">
+                        <span class="badge bg-warning-subtle text-warning-emphasis border px-2 py-1" style="border-radius: 6px;">Python</span>
+                        <span class="badge bg-warning-subtle text-warning-emphasis border px-2 py-1" style="border-radius: 6px;">LangChain</span>
+                        <span class="badge bg-warning-subtle text-warning-emphasis border px-2 py-1" style="border-radius: 6px;">Vector DB</span>
+                        <span class="badge bg-warning-subtle text-warning-emphasis border px-2 py-1" style="border-radius: 6px;">LlamaIndex</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="ai-llm-application-engineer" class="btn-career-outline flex-grow-1 text-center justify-content-center py-1.5" style="font-size: 0.85rem;">
+                            Chi tiết JD
+                        </a>
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="ai-llm-application-engineer" class="btn-job-apply flex-grow-1" style="border-color: #FDE68A; color: #D97706;">
+                            Ứng tuyển <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
 
-            <div class="col-6 col-md-3">
-                <div class="p-3">
-                    <div class="bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 fs-5 fw-bold shadow-sm" style="width: 48px; height: 48px;">
-                        3
+            @* Job 3: Senior DevOps *@
+            <div class="col-12 col-md-6 col-xl-4 job-item" data-category="it">
+                <div class="career-card d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="d-flex align-items-center gap-1.5">
+                            <span class="badge bg-info-subtle text-info-emphasis px-2.5 py-1" style="border-radius: 6px; font-weight: 600;">
+                                Hạ tầng & Cloud
+                            </span>
+                            <span class="badge bg-danger text-white px-1.5 py-0.5" style="border-radius: 4px; font-size: 0.65rem; font-weight: 700;">HOT</span>
+                        </div>
+                        <span class="fw-bold font-monospace text-success" style="font-size: 0.95rem;">38 – 55 Triệu</span>
                     </div>
-                    <h5 class="fw-bold text-dark fs-6 mb-1">Phỏng Vấn</h5>
-                    <p class="text-muted small mb-0">Interviewer phỏng vấn chuyên môn và đánh giá độ phù hợp văn hóa qua Google Meet.</p>
+                    <h5 class="fw-bold mb-1" style="font-size: 1.05rem;">
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="senior-devops-cloud-platform-engineer" class="text-dark text-decoration-none hover-green">
+                            Senior DevOps & Cloud Platform Engineer
+                        </a>
+                    </h5>
+                    <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1 text-success"></i>Hà Nội (Hybrid) · Full-time</p>
+                    <p class="text-muted small flex-grow-1 mb-3" style="line-height: 1.6;">
+                        Quản trị cụm Kubernetes sản xuất, thiết kế CI/CD pipeline tự động hóa chuẩn GitOps, cấu hình IaC với Terraform và giám sát độ sẵn sàng 99.99%.
+                    </p>
+                    <div class="d-flex flex-wrap gap-1 mb-3">
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">Kubernetes</span>
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">Terraform</span>
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">AWS / GCP</span>
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">CI/CD</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="senior-devops-cloud-platform-engineer" class="btn-career-outline flex-grow-1 text-center justify-content-center py-1.5" style="font-size: 0.85rem;">
+                            Chi tiết JD
+                        </a>
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="senior-devops-cloud-platform-engineer" class="btn-job-apply flex-grow-1">
+                            Ứng tuyển <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
 
-            <div class="col-6 col-md-3">
-                <div class="p-3">
-                    <div class="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 fs-5 fw-bold shadow-sm" style="width: 48px; height: 48px;">
-                        4
+            @* Job 4: Product Owner *@
+            <div class="col-12 col-md-6 col-xl-4 job-item" data-category="other">
+                <div class="career-card d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="d-flex align-items-center gap-1.5">
+                            <span class="badge bg-primary-subtle text-primary px-2.5 py-1" style="border-radius: 6px; font-weight: 600;">
+                                Khối Sản phẩm
+                            </span>
+                            <span class="badge bg-danger text-white px-1.5 py-0.5" style="border-radius: 4px; font-size: 0.65rem; font-weight: 700;">HOT</span>
+                        </div>
+                        <span class="fw-bold font-monospace text-success" style="font-size: 0.95rem;">40 – 55 Triệu</span>
                     </div>
-                    <h5 class="fw-bold text-dark fs-6 mb-1">Offer & Onboard</h5>
-                    <p class="text-muted small mb-0">Approver duyệt thư mời nhận việc và ban lãnh đạo chào đón thành viên mới.</p>
+                    <h5 class="fw-bold mb-1" style="font-size: 1.05rem;">
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="product-owner-fintech-ai-platforms" class="text-dark text-decoration-none hover-green">
+                            Product Owner (Fintech & AI Platforms)
+                        </a>
+                    </h5>
+                    <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1 text-success"></i>Hà Nội · Full-time</p>
+                    <p class="text-muted small flex-grow-1 mb-3" style="line-height: 1.6;">
+                        Định hướng roadmap tính năng, quản trị Product Backlog, làm việc cùng Tech Lead và Stakeholders đưa sản phẩm tiếp cận hàng triệu người dùng.
+                    </p>
+                    <div class="d-flex flex-wrap gap-1 mb-3">
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">Scrum</span>
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">Roadmap</span>
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">PRD</span>
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">FinTech</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="product-owner-fintech-ai-platforms" class="btn-career-outline flex-grow-1 text-center justify-content-center py-1.5" style="font-size: 0.85rem;">
+                            Chi tiết JD
+                        </a>
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="product-owner-fintech-ai-platforms" class="btn-job-apply flex-grow-1">
+                            Ứng tuyển <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            @* Job 5: QA Automation Lead *@
+            <div class="col-12 col-md-6 col-xl-4 job-item" data-category="it">
+                <div class="career-card d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="d-flex align-items-center gap-1.5">
+                            <span class="badge bg-success-subtle text-success px-2.5 py-1" style="border-radius: 6px; font-weight: 600;">
+                                Chất lượng Phần mềm
+                            </span>
+                            <span class="badge bg-danger text-white px-1.5 py-0.5" style="border-radius: 4px; font-size: 0.65rem; font-weight: 700;">HOT</span>
+                        </div>
+                        <span class="fw-bold font-monospace text-success" style="font-size: 0.95rem;">30 – 45 Triệu</span>
+                    </div>
+                    <h5 class="fw-bold mb-1" style="font-size: 1.05rem;">
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="qa-test-automation-lead" class="text-dark text-decoration-none hover-green">
+                            QA / Test Automation Lead
+                        </a>
+                    </h5>
+                    <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1 text-success"></i>Hà Nội · Full-time</p>
+                    <p class="text-muted small flex-grow-1 mb-3" style="line-height: 1.6;">
+                        Xây dựng automation framework từ đầu cho Web và API microservices (Playwright / C#), thực hiện kiểm thử tải k6 và đảm bảo chất lượng phát hành.
+                    </p>
+                    <div class="d-flex flex-wrap gap-1 mb-3">
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">Playwright</span>
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">API Testing</span>
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">k6 Load Test</span>
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">CI/CD</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="qa-test-automation-lead" class="btn-career-outline flex-grow-1 text-center justify-content-center py-1.5" style="font-size: 0.85rem;">
+                            Chi tiết JD
+                        </a>
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="qa-test-automation-lead" class="btn-job-apply flex-grow-1">
+                            Ứng tuyển <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            @* Job 6: Tech Recruiter *@
+            <div class="col-12 col-md-6 col-xl-4 job-item" data-category="other">
+                <div class="career-card d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge bg-secondary-subtle text-secondary px-2.5 py-1" style="border-radius: 6px; font-weight: 600;">
+                            Nhân sự & Tuyển dụng
+                        </span>
+                        <span class="fw-bold font-monospace text-success" style="font-size: 0.95rem;">18 – 28 Triệu</span>
+                    </div>
+                    <h5 class="fw-bold mb-1" style="font-size: 1.05rem;">
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="talent-acquisition-specialist-tech-recruiter" class="text-dark text-decoration-none hover-green">
+                            Talent Acquisition Specialist (Tech Recruiter)
+                        </a>
+                    </h5>
+                    <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1 text-success"></i>Hà Nội (Văn phòng) · Full-time</p>
+                    <p class="text-muted small flex-grow-1 mb-3" style="line-height: 1.6;">
+                        Săn tìm và kết nối các ứng viên tài năng trong lĩnh vực công nghệ cao (.NET, AI, Cloud), điều phối quy trình phỏng vấn chuyên nghiệp và xây dựng thương hiệu.
+                    </p>
+                    <div class="d-flex flex-wrap gap-1 mb-3">
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">Tech Sourcing</span>
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">Headhunting</span>
+                        <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">Employer Branding</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="talent-acquisition-specialist-tech-recruiter" class="btn-career-outline flex-grow-1 text-center justify-content-center py-1.5" style="font-size: 0.85rem;">
+                            Chi tiết JD
+                        </a>
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="talent-acquisition-specialist-tech-recruiter" class="btn-job-apply flex-grow-1">
+                            Ứng tuyển <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            @* ── CALLOUT BOX: NÚT HIỂN THỊ THÊM CÔNG VIỆC DẪN TỚI /JOBS ── *@
+            <div class="col-12 mt-4">
+                <div class="p-4 p-md-5 text-center bg-white border shadow-xs" style="border-radius: 12px; border-color: #E2E8F0 !important;">
+                    <span class="badge px-3 py-1 mb-2" style="background: #ECFDF5; color: #059669; border-radius: 6px; font-weight: 600; font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase;">
+                        <i class="bi bi-lightning-charge-fill me-1"></i> Nhu Cầu Tuyển Dụng Lớn Năm 2026
+                    </span>
+                    <h3 class="fw-bold text-dark mb-2" style="font-size: 1.5rem;">
+                        Bạn muốn khám phá thêm nhiều cơ hội nghề nghiệp tại NoveraTech?
+                    </h3>
+                    <p class="text-muted small mb-4" style="max-width: 620px; margin: 0 auto; line-height: 1.65;">
+                        Ngoài các vị trí hot trên, NoveraTech còn đang mở tuyển các vị trí Kiến trúc sư giải pháp (Solution Architect), Lập trình viên Di động (Mobile Flutter), Kỹ sư Dữ liệu (Data Engineer), Chuyên gia An toàn thông tin (Cybersecurity)...
+                    </p>
+                    <div class="d-flex justify-content-center gap-3 flex-wrap">
+                        <a asp-controller="Jobs" asp-action="Index" class="btn-career-primary px-4 py-2.5" style="font-size: 1rem; border-radius: 8px;">
+                            <i class="bi bi-briefcase-fill me-1.5"></i> Xem tất cả công việc công ty đang có (12+ vị trí) &rarr;
+                        </a>
+                        <a asp-controller="Account" asp-action="CandidateAuth" class="btn-career-outline px-4 py-2.5" style="font-size: 1rem; border-radius: 8px;">
+                            <i class="bi bi-send-fill me-1.5"></i> Nộp hồ sơ tự do
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</section>
 
-    <!-- Value Highlights & Trust Metrics -->
-    <div class="row g-4 text-center mb-4">
-        <div class="col-12 col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
-                <i class="bi bi-shield-check text-primary fs-1 mb-2"></i>
-                <h5 class="fw-bold text-dark mb-1">Bảo Mật Chuẩn Doanh Nghiệp</h5>
-                <p class="text-muted small mb-0">Mã hóa mật khẩu BCrypt, xác thực đa phiên, Rate Limit chống brute-force và audit log toàn diện.</p>
-            </div>
+@* ══════════════════════════════════════════════════════════
+   5. SECTION: QUY TRÌNH ỨNG TUYỂN 4 BƯỚC MINH BẠCH
+   ══════════════════════════════════════════════════════════ *@
+<section id="process" class="career-section">
+    <div class="container-fluid px-4 px-md-5">
+        <div class="text-center mb-5">
+            <span class="career-section-label">QUY TRÌNH TINH GỌN · PHẢN HỒI NHANH CHÓNG</span>
+            <h2 class="career-h2">4 bước gia nhập đại gia đình NoveraTech</h2>
+            <p class="text-muted mt-2" style="max-width: 580px; margin: 0.5rem auto 0; font-size: 0.95rem;">
+                Chúng tôi tôn trọng thời gian của bạn với quy trình tuyển chọn rõ ràng, thực chiến và thông báo kết quả minh bạch.
+            </p>
         </div>
 
-        <div class="col-12 col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
-                <i class="bi bi-lightning-charge text-warning fs-1 mb-2"></i>
-                <h5 class="fw-bold text-dark mb-1">Tốc Độ & Minh Bạch</h5>
-                <p class="text-muted small mb-0">Cập nhật trạng thái tự động theo thời gian thực giúp ứng viên luôn nắm rõ lộ trình xét duyệt.</p>
+        <div class="career-stepper">
+            <div class="career-step-card">
+                <div class="career-step-badge">01</div>
+                <h5 class="fw-bold text-dark mb-2" style="font-size: 1rem;">Nộp hồ sơ trực tuyến</h5>
+                <p class="text-muted small mb-0" style="line-height: 1.65;">
+                    Tải lên CV (định dạng PDF) trực tiếp trên trang hoặc gửi qua email tuyển dụng. Quá trình chỉ mất chưa tới 1 phút.
+                </p>
             </div>
-        </div>
-
-        <div class="col-12 col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
-                <i class="bi bi-people text-success fs-1 mb-2"></i>
-                <h5 class="fw-bold text-dark mb-1">Quy Trình 6 Vai Trò Chuẩn Mực</h5>
-                <p class="text-muted small mb-0">Phân định rõ ràng trách nhiệm giữa Admin, HR, Recruiter, Hiring Manager, Interviewer và Approver.</p>
+            <div class="career-step-card">
+                <div class="career-step-badge">02</div>
+                <h5 class="fw-bold text-dark mb-2" style="font-size: 1rem;">Sàng lọc & Phản hồi trong 48h</h5>
+                <p class="text-muted small mb-0" style="line-height: 1.65;">
+                    Đội ngũ Talent Acquisition đánh giá hồ sơ và phản hồi kết quả trực tiếp cho bạn qua email trong vòng 48 giờ làm việc.
+                </p>
+            </div>
+            <div class="career-step-card">
+                <div class="career-step-badge">03</div>
+                <h5 class="fw-bold text-dark mb-2" style="font-size: 1rem;">Phỏng vấn kỹ thuật online</h5>
+                <p class="text-muted small mb-0" style="line-height: 1.65;">
+                    Buổi trao đổi chuyên môn qua Google Meet cùng Tech Lead, tập trung vào tư duy thiết kế hệ thống và kinh nghiệm thực chiến.
+                </p>
+            </div>
+            <div class="career-step-card">
+                <div class="career-step-badge">04</div>
+                <h5 class="fw-bold text-dark mb-2" style="font-size: 1rem;">Nhận Offer & Onboarding</h5>
+                <p class="text-muted small mb-0" style="line-height: 1.65;">
+                    Gửi thư mời nhận việc với mức đãi ngộ minh bạch, nhận thiết bị làm việc MacBook Pro và chào đón thành viên mới gia nhập.
+                </p>
             </div>
         </div>
     </div>
-</div>
+</section>
+
+@* ══════════════════════════════════════════════════════════
+   6. SECTION: LỜI NHẮN TỪ CEO & VĂN HÓA DOANH NGHIỆP
+   ══════════════════════════════════════════════════════════ *@
+<section class="career-section career-section-alt">
+    <div class="container-fluid px-4 px-md-5">
+        <div class="row align-items-center justify-content-center">
+            <div class="col-12 col-lg-10">
+                <div class="card bg-white p-4 p-md-5 shadow-sm" style="border: 1px solid #E2E8F0; border-radius: 12px;">
+                    <div class="row align-items-center gy-4">
+                        <div class="col-12 col-md-3 text-center">
+                            <div class="d-inline-flex align-items-center justify-content-center fw-bold text-success mb-2"
+                                 style="width: 80px; height: 80px; background: #ECFDF5; border: 2px solid #D1FAE5; border-radius: 50%; font-size: 1.8rem;">
+                                H
+                            </div>
+                            <div class="fw-bold text-dark mt-2" style="font-size: 1rem;">Lường Minh Hiếu</div>
+                            <div class="text-muted small">Chief Executive Officer (CEO)</div>
+                            <div class="text-success font-monospace" style="font-size: 0.75rem;">NoveraTech Leadership</div>
+                        </div>
+                        <div class="col-12 col-md-9 border-start-md ps-md-4">
+                            <i class="bi bi-quote fs-1 text-success opacity-50 d-block mb-2"></i>
+                            <p class="fs-5 text-dark fw-medium mb-3" style="line-height: 1.7;">
+                                "Tại NoveraTech, chúng tôi không đánh giá một kỹ sư qua số dòng code họ gõ hay số giờ họ ngồi ở văn phòng. Chúng tôi trao quyền tự chủ tuyệt đối để bạn làm chủ giải pháp kiến trúc, giải quyết những bài toán lớn và tự hào về sản phẩm công nghệ do chính tay mình tạo ra."
+                            </p>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge bg-light text-dark border px-2.5 py-1" style="border-radius: 6px; font-weight: 500;">
+                                    <i class="bi bi-shield-check text-success me-1"></i> Văn hóa Trao quyền
+                                </span>
+                                <span class="badge bg-light text-dark border px-2.5 py-1" style="border-radius: 6px; font-weight: 500;">
+                                    <i class="bi bi-heart text-danger me-1"></i> Tôn trọng Cá nhân
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* ══════════════════════════════════════════════════════════
+   7. FOOTER CALL TO ACTION (CTA BANNER)
+   ══════════════════════════════════════════════════════════ *@
+<section style="background: #0F172A; padding: 4.5rem 0;">
+    <div class="container-fluid px-4 px-md-5">
+        <div class="row align-items-center gy-4">
+            <div class="col-12 col-lg-8">
+                <span style="color: #10B981; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase;">
+                    BẮT ĐẦU CHẶNG ĐƯỜNG MỚI CÙNG NOVERATECH
+                </span>
+                <h2 style="font-size: 2rem; font-weight: 800; color: #F8FAFC; margin: 0.5rem 0 0.75rem;">
+                    Sẵn sàng đưa sự nghiệp công nghệ lên tầm cao mới?
+                </h2>
+                <p style="color: #94A3B8; font-size: 0.95rem; margin: 0; max-width: 620px;">
+                    Hãy gửi hồ sơ ứng tuyển của bạn ngay hôm nay. Đội ngũ Talent Acquisition của chúng tôi sẽ liên hệ và đồng hành cùng bạn trong từng chặng phỏng vấn.
+                </p>
+            </div>
+            <div class="col-12 col-lg-4 d-flex gap-2 justify-content-lg-end flex-wrap">
+                <a asp-controller="Account" asp-action="CandidateAuth" class="btn-career-primary" style="background: #059669; padding: 0.75rem 1.5rem;">
+                    <i class="bi bi-send-fill"></i> Nộp hồ sơ ngay
+                </a>
+                <a href="#open-jobs" class="btn-career-outline" style="border-color: #334155; color: #CBD5E1; background: transparent; padding: 0.75rem 1.5rem;">
+                    <i class="bi bi-briefcase"></i> Xem các vị trí
+                </a>
+            </div>
+        </div>
+
+        <div class="border-top mt-5 pt-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3" style="border-color: #1E293B !important;">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <img src="~/img/logo-dark-transparent.png" alt="NoveraTech" style="height: 26px; width: auto; filter: brightness(0) invert(1);" asp-append-version="true" />
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34D399; font-size: 0.7rem; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">Careers</span>
+                </div>
+                <div style="color: #64748B; font-size: 0.85rem;">
+                    <i class="bi bi-geo-alt me-1 text-success"></i> Trụ sở chính: Tầng 18, Tòa nhà Novera Tower, Phố Duy Tân, Quận Cầu Giấy, Hà Nội
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-3" style="font-size: 0.85rem; color: #94A3B8;">
+                <span><i class="bi bi-envelope me-1 text-success"></i> careers@@noveratech.digital</span>
+                <span>&middot;</span>
+                <span><i class="bi bi-telephone me-1 text-success"></i> (+84) 24 7300 8899</span>
+                <span>&middot;</span>
+                <a asp-controller="Account" asp-action="StaffLogin" style="color: #64748B; text-decoration: none;" title="Dành riêng cho nhân sự nội bộ">
+                    <i class="bi bi-shield-lock me-1"></i> Cổng nội bộ
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        function filterJobs(category, btn) {
+            // Update active tab
+            document.querySelectorAll('.job-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Filter cards
+            const items = document.querySelectorAll('.job-item');
+            items.forEach(item => {
+                if (category === 'all' || item.getAttribute('data-category') === category) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // Hero input filter search
+        const heroInput = document.getElementById('heroJobSearchInput');
+        if (heroInput) {
+            heroInput.addEventListener('input', function() {
+                const query = this.value.toLowerCase().trim();
+                const items = document.querySelectorAll('.job-item');
+                items.forEach(item => {
+                    const text = item.innerText.toLowerCase();
+                    if (!query || text.includes(query)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+    </script>
+}
