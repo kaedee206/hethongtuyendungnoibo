@@ -1,5 +1,6 @@
 using Ats.Web.Data;
 using Ats.Web.Models.DTOs;
+using Ats.Web.Models.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -201,14 +202,57 @@ public class UserController : ControllerBase
             return NotFound(new { isSuccess = false, message = "Không tìm thấy tài khoản người dùng." });
         }
 
-        // Cập nhật các trường được phép
-        currentUser.FullName = request.FullName.Trim();
-        currentUser.PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim();
-        currentUser.JobTitle = string.IsNullOrWhiteSpace(request.JobTitle) ? null : request.JobTitle.Trim();
+        // Tạo bản ghi theo dõi thay đổi (Audit log)
+        var oldValues = new Dictionary<string, string?>();
+        var newValues = new Dictionary<string, string?>();
+
+        var newFullName = request.FullName.Trim();
+        if (currentUser.FullName != newFullName)
+        {
+            oldValues["FullName"] = currentUser.FullName;
+            newValues["FullName"] = newFullName;
+            currentUser.FullName = newFullName;
+        }
+
+        var newPhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim();
+        if (currentUser.PhoneNumber != newPhoneNumber)
+        {
+            oldValues["PhoneNumber"] = currentUser.PhoneNumber;
+            newValues["PhoneNumber"] = newPhoneNumber;
+            currentUser.PhoneNumber = newPhoneNumber;
+        }
+
+        var newJobTitle = string.IsNullOrWhiteSpace(request.JobTitle) ? null : request.JobTitle.Trim();
+        if (currentUser.JobTitle != newJobTitle)
+        {
+            oldValues["JobTitle"] = currentUser.JobTitle;
+            newValues["JobTitle"] = newJobTitle;
+            currentUser.JobTitle = newJobTitle;
+        }
+
+        // Nếu không có gì thay đổi
+        if (oldValues.Count == 0)
+        {
+            return Ok(new { isSuccess = true, message = "Không có thông tin nào được thay đổi." });
+        }
 
         // Ghi nhận audit
         currentUser.UpdatedAt = DateTimeOffset.UtcNow;
         currentUser.UpdatedBy = currentUserId;
+
+        // Lưu vào bảng audit_logs
+        var auditLog = new AuditLog
+        {
+            UserId = currentUserId,
+            Action = "UPDATE_PROFILE",
+            EntityName = "User",
+            EntityId = currentUserId.ToString(),
+            OldValues = System.Text.Json.JsonSerializer.Serialize(oldValues),
+            NewValues = System.Text.Json.JsonSerializer.Serialize(newValues),
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+            UserAgent = Request.Headers["User-Agent"].ToString()
+        };
+        _dbContext.AuditLogs.Add(auditLog);
 
         try
         {
