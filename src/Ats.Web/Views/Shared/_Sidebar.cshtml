@@ -1,0 +1,359 @@
+@using System.Security.Claims
+@using Ats.Web.Constants
+
+@{
+    var isCandidate = User.IsInRole(UserRoles.Candidate);
+    var isAdmin = User.IsInRole(UserRoles.Admin);
+    var isHrManager = User.IsInRole(UserRoles.HRManager);
+    var isRecruiter = User.IsInRole(UserRoles.Recruiter);
+    var isHiringManager = User.IsInRole(UserRoles.HiringManager);
+    var isInterviewer = User.IsInRole(UserRoles.Interviewer);
+    var isApprover = User.IsInRole(UserRoles.Approver);
+    var userInitial = (User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "U");
+    var userName = User.Identity?.Name ?? "Người dùng";
+    var userEmail = User.FindFirstValue(ClaimTypes.Email) ?? "";
+}
+
+<aside class="ats-sidebar" id="atsSidebar" aria-label="Menu điều hướng hệ thống">
+    <div class="d-flex flex-column h-100">
+
+        <!-- ── Sidebar Header Bar ── -->
+        <div class="sidebar-header-bar">
+            <!-- Logo + ATS badge (hidden when collapsed) -->
+            <div class="d-flex align-items-center gap-2 sidebar-nav-link-text" style="overflow:hidden;">
+                <img src="~/img/logo-dark-transparent.png" alt="NoveraTech"
+                     style="height: 22px; width: auto; flex-shrink:0;" asp-append-version="true" />
+                <span class="badge fw-semibold px-2" style="font-size:0.68rem; border-radius:6px; background:#ECFDF5; color:#059669; border:1px solid #D1FAE5;">ATS</span>
+            </div>
+            <!-- Collapse toggle (desktop only) -->
+            <button type="button"
+                    class="sidebar-collapse-btn d-none d-lg-flex"
+                    id="btnToggleSidebarCollapse"
+                    aria-label="Thu gọn / Mở rộng menu"
+                    title="Thu gọn / Mở rộng">
+                <i class="bi bi-layout-sidebar-reverse" id="sidebarCollapseIcon" style="font-size:0.85rem;"></i>
+            </button>
+            <!-- Mobile close button -->
+            <button type="button"
+                    class="sidebar-collapse-btn d-lg-none"
+                    id="btnCloseSidebar"
+                    aria-label="Đóng menu">
+                <i class="bi bi-x-lg" style="font-size:0.85rem;"></i>
+            </button>
+        </div>
+
+        <!-- ── Navigation Scrollable Body ── -->
+        <div class="flex-grow-1 overflow-auto pe-1 mt-1" style="scrollbar-width: thin;">
+
+            @if (isCandidate)
+            {
+                <!-- ═══════════ ỨNG VIÊN ═══════════ -->
+
+                <!-- Group: Không gian Ứng viên -->
+                <div class="sidebar-category-label" data-group="candidate-workspace">
+                    <i class="bi bi-grid" style="font-size:0.7rem;"></i>
+                    <span>Không gian Ứng viên</span>
+                    <i class="bi bi-chevron-down sidebar-group-chevron" style="font-size:0.65rem;"></i>
+                </div>
+                <div class="sidebar-section" id="section-candidate-workspace">
+                    <a href="/dashboard/tong-quan"
+                       class="sidebar-nav-link"
+                       data-path="/dashboard/tong-quan"
+                       data-tooltip="Tổng quan">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-grid-1x2"></i>
+                            <span class="sidebar-nav-link-text">Tổng quan</span>
+                        </span>
+                    </a>
+                    <a href="/dashboard/ho-so"
+                       class="sidebar-nav-link"
+                       data-path="/dashboard/ho-so"
+                       data-tooltip="Hồ sơ & CV">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-person-vcard"></i>
+                            <span class="sidebar-nav-link-text">Hồ sơ &amp; CV</span>
+                        </span>
+                    </a>
+                    <a href="/dashboard/tien-do"
+                       class="sidebar-nav-link"
+                       data-path="/dashboard/tien-do"
+                       data-tooltip="Tiến độ ứng tuyển">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-calendar2-check"></i>
+                            <span class="sidebar-nav-link-text">Tiến độ ứng tuyển</span>
+                        </span>
+                    </a>
+                    <a href="/dashboard/viec-lam"
+                       class="sidebar-nav-link"
+                       data-path="/dashboard/viec-lam"
+                       data-tooltip="Cơ hội việc làm">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-briefcase"></i>
+                            <span class="sidebar-nav-link-text">Cơ hội việc làm</span>
+                        </span>
+                    </a>
+                </div>
+
+                <hr class="sidebar-section-divider" />
+
+                <!-- Group: Tài khoản -->
+                <div class="sidebar-category-label" data-group="candidate-account">
+                    <i class="bi bi-person-circle" style="font-size:0.7rem;"></i>
+                    <span>Tài khoản</span>
+                    <i class="bi bi-chevron-down sidebar-group-chevron" style="font-size:0.65rem;"></i>
+                </div>
+                <div class="sidebar-section" id="section-candidate-account">
+                    <a href="/ho-so"
+                       class="sidebar-nav-link"
+                       data-path="/ho-so"
+                       data-tooltip="Hồ sơ cá nhân">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-person"></i>
+                            <span class="sidebar-nav-link-text">Hồ sơ cá nhân</span>
+                        </span>
+                    </a>
+                    <a href="/Account/ChangePassword"
+                       class="sidebar-nav-link"
+                       data-path="/account/changepassword"
+                       data-tooltip="Đổi mật khẩu">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-key"></i>
+                            <span class="sidebar-nav-link-text">Đổi mật khẩu</span>
+                        </span>
+                    </a>
+                </div>
+            }
+            else
+            {
+                <!-- ═══════════ NHÂN SỰ & QUẢN TRỊ ═══════════ -->
+
+                <!-- Group: Bàn làm việc -->
+                <div class="sidebar-category-label" data-group="staff-workspace">
+                    <i class="bi bi-speedometer2" style="font-size:0.7rem;"></i>
+                    <span>Bàn làm việc</span>
+                    <i class="bi bi-chevron-down sidebar-group-chevron" style="font-size:0.65rem;"></i>
+                </div>
+                <div class="sidebar-section" id="section-staff-workspace">
+                    <a href="/dashboard/tong-quan"
+                       class="sidebar-nav-link"
+                       data-path="/dashboard/tong-quan"
+                       data-tooltip="Tổng quan">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-speedometer2"></i>
+                            <span class="sidebar-nav-link-text">Tổng quan</span>
+                        </span>
+                    </a>
+                    <a href="/dashboard/tuyen-dung"
+                       class="sidebar-nav-link"
+                       data-path="/dashboard/tuyen-dung"
+                       data-tooltip="Phễu tuyển dụng">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-funnel"></i>
+                            <span class="sidebar-nav-link-text">Phễu tuyển dụng</span>
+                        </span>
+                    </a>
+                    <a href="/dashboard/ung-vien"
+                       class="sidebar-nav-link"
+                       data-path="/dashboard/ung-vien"
+                       data-tooltip="Hồ sơ ứng viên">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-people"></i>
+                            <span class="sidebar-nav-link-text">Hồ sơ ứng viên</span>
+                        </span>
+                    </a>
+                    <a href="/dashboard/lich-phong-van"
+                       class="sidebar-nav-link"
+                       data-path="/dashboard/lich-phong-van"
+                       data-tooltip="Lịch phỏng vấn">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-calendar3"></i>
+                            <span class="sidebar-nav-link-text">Lịch phỏng vấn</span>
+                        </span>
+                    </a>
+                    <a href="/dashboard/phe-duyet"
+                       class="sidebar-nav-link"
+                       data-path="/dashboard/phe-duyet"
+                       data-tooltip="Phê duyệt Offer">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-patch-check"></i>
+                            <span class="sidebar-nav-link-text">Phê duyệt Offer</span>
+                        </span>
+                    </a>
+                    <a href="/dashboard/tac-vu"
+                       class="sidebar-nav-link"
+                       data-path="/dashboard/tac-vu"
+                       data-tooltip="Tác vụ nhanh">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-lightning-charge"></i>
+                            <span class="sidebar-nav-link-text">Tác vụ nhanh</span>
+                        </span>
+                    </a>
+                </div>
+
+                <hr class="sidebar-section-divider" />
+
+                <!-- Group: Cơ cấu & Tiêu chuẩn -->
+                <div class="sidebar-category-label" data-group="standards">
+                    <i class="bi bi-diagram-2" style="font-size:0.7rem;"></i>
+                    <span>Cơ cấu &amp; Tiêu chuẩn</span>
+                    <i class="bi bi-chevron-down sidebar-group-chevron" style="font-size:0.65rem;"></i>
+                </div>
+                <div class="sidebar-section" id="section-standards">
+                    <a href="/phong-ban"
+                       class="sidebar-nav-link"
+                       data-path="/phong-ban"
+                       data-tooltip="Sơ đồ tổ chức">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-diagram-2"></i>
+                            <span class="sidebar-nav-link-text">Sơ đồ tổ chức</span>
+                        </span>
+                    </a>
+                    <a href="/job-positions"
+                       class="sidebar-nav-link"
+                       data-path="/job-positions"
+                       data-tooltip="Chức danh & Dải lương">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-person-badge"></i>
+                            <span class="sidebar-nav-link-text">Chức danh &amp; Dải lương</span>
+                        </span>
+                    </a>
+                    <a href="/competency-frameworks"
+                       class="sidebar-nav-link"
+                       data-path="/competency-frameworks"
+                       data-tooltip="Khung năng lực">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-diagram-3"></i>
+                            <span class="sidebar-nav-link-text">Khung năng lực</span>
+                        </span>
+                    </a>
+                    <a href="/question-banks"
+                       class="sidebar-nav-link"
+                       data-path="/question-banks"
+                       data-tooltip="Ngân hàng câu hỏi">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-journal-text"></i>
+                            <span class="sidebar-nav-link-text">Ngân hàng câu hỏi</span>
+                        </span>
+                    </a>
+                    <a href="/recruitment-catalogs"
+                       class="sidebar-nav-link"
+                       data-path="/recruitment-catalogs"
+                       data-tooltip="Danh mục dùng chung">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-collection"></i>
+                            <span class="sidebar-nav-link-text">Danh mục dùng chung</span>
+                        </span>
+                    </a>
+                </div>
+
+                <hr class="sidebar-section-divider" />
+
+                <!-- Group: Tuyển dụng & Website -->
+                <div class="sidebar-category-label" data-group="recruitment-web">
+                    <i class="bi bi-megaphone" style="font-size:0.7rem;"></i>
+                    <span>Tuyển dụng &amp; Website</span>
+                    <i class="bi bi-chevron-down sidebar-group-chevron" style="font-size:0.65rem;"></i>
+                </div>
+                <div class="sidebar-section" id="section-recruitment-web">
+                    <a href="/jobs"
+                       class="sidebar-nav-link"
+                       data-path="/jobs"
+                       data-tooltip="Việc làm NoveraTech">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-briefcase"></i>
+                            <span class="sidebar-nav-link-text">Việc làm NoveraTech</span>
+                        </span>
+                    </a>
+                    @if (isAdmin || isHrManager)
+                    {
+                        <a href="/company-profile"
+                           class="sidebar-nav-link"
+                           data-path="/company-profile"
+                           data-tooltip="Hồ sơ doanh nghiệp">
+                            <span class="sidebar-nav-link-content">
+                                <i class="bi bi-buildings"></i>
+                                <span class="sidebar-nav-link-text">Hồ sơ doanh nghiệp</span>
+                            </span>
+                        </a>
+                    }
+                </div>
+
+                @if (isAdmin)
+                {
+                    <hr class="sidebar-section-divider" />
+
+                    <!-- Group: Quản trị hệ thống -->
+                    <div class="sidebar-category-label" data-group="admin-system">
+                        <i class="bi bi-shield-check" style="font-size:0.7rem;"></i>
+                        <span>Quản trị hệ thống</span>
+                        <i class="bi bi-chevron-down sidebar-group-chevron" style="font-size:0.65rem;"></i>
+                    </div>
+                    <div class="sidebar-section" id="section-admin-system">
+                        <a href="/users"
+                           class="sidebar-nav-link"
+                           data-path="/users"
+                           data-tooltip="Quản lý người dùng">
+                            <span class="sidebar-nav-link-content">
+                                <i class="bi bi-people-fill"></i>
+                                <span class="sidebar-nav-link-text">Quản lý người dùng</span>
+                            </span>
+                        </a>
+                    </div>
+                }
+
+                <hr class="sidebar-section-divider" />
+
+                <!-- Group: Tài khoản -->
+                <div class="sidebar-category-label" data-group="staff-account">
+                    <i class="bi bi-person-circle" style="font-size:0.7rem;"></i>
+                    <span>Tài khoản</span>
+                    <i class="bi bi-chevron-down sidebar-group-chevron" style="font-size:0.65rem;"></i>
+                </div>
+                <div class="sidebar-section" id="section-staff-account">
+                    <a href="/ho-so"
+                       class="sidebar-nav-link"
+                       data-path="/ho-so"
+                       data-tooltip="Hồ sơ cá nhân">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-person"></i>
+                            <span class="sidebar-nav-link-text">Hồ sơ cá nhân</span>
+                        </span>
+                    </a>
+                    <a href="/Account/ChangePassword"
+                       class="sidebar-nav-link"
+                       data-path="/account/changepassword"
+                       data-tooltip="Đổi mật khẩu">
+                        <span class="sidebar-nav-link-content">
+                            <i class="bi bi-key"></i>
+                            <span class="sidebar-nav-link-text">Đổi mật khẩu</span>
+                        </span>
+                    </a>
+                </div>
+            }
+        </div>
+
+        <!-- ── Sidebar Footer: Compact User Card ── -->
+        <div class="pt-2 border-top mt-2">
+            <div class="sidebar-footer-card">
+                <!-- Avatar -->
+                <div class="sidebar-footer-avatar">@userInitial</div>
+                <!-- Info (hidden when collapsed) -->
+                <div class="sidebar-footer-info">
+                    <div class="fw-semibold text-dark text-truncate" style="font-size:0.82rem;">@userName</div>
+                    <div class="text-muted text-truncate font-mono" style="font-size:0.7rem;">@userEmail</div>
+                </div>
+                <!-- Logout button -->
+                <form asp-controller="Account" asp-action="Logout" method="post" class="m-0 p-0 ms-1" style="flex-shrink:0;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit"
+                            class="btn btn-sm btn-light border text-danger p-1"
+                            style="border-radius:6px; width:28px; height:28px; display:flex; align-items:center; justify-content:center;"
+                            title="Đăng xuất">
+                        <i class="bi bi-box-arrow-right" style="font-size:0.85rem;"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</aside>
+<div class="ats-sidebar-backdrop" id="atsSidebarBackdrop"></div>
