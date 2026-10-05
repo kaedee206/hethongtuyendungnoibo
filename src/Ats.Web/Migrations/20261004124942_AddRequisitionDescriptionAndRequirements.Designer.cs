@@ -3,6 +3,7 @@ using System;
 using Ats.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Ats.Web.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261004124942_AddRequisitionDescriptionAndRequirements")]
+    partial class AddRequisitionDescriptionAndRequirements
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1149,7 +1152,7 @@ namespace Ats.Web.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
-                    b.Property<Guid?>("DepartmentId")
+                    b.Property<Guid>("DepartmentId")
                         .HasColumnType("uuid")
                         .HasColumnName("department_id");
 
@@ -1169,7 +1172,7 @@ namespace Ats.Web.Migrations
                         .HasColumnType("text")
                         .HasColumnName("job_description");
 
-                    b.Property<Guid?>("JobPositionId")
+                    b.Property<Guid>("JobPositionId")
                         .HasColumnType("uuid")
                         .HasColumnName("job_position_id");
 
@@ -2160,6 +2163,8 @@ namespace Ats.Web.Migrations
                     b.HasOne("Ats.Web.Models.Entities.Department", "Department")
                         .WithMany()
                         .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
                         .HasConstraintName("fk_job_requisitions_departments_department_id");
 
                     b.HasOne("Ats.Web.Models.Entities.User", "HiringManager")
@@ -2172,6 +2177,8 @@ namespace Ats.Web.Migrations
                     b.HasOne("Ats.Web.Models.Entities.JobPosition", "JobPosition")
                         .WithMany()
                         .HasForeignKey("JobPositionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
                         .HasConstraintName("fk_job_requisitions_job_positions_job_position_id");
 
                     b.Navigation("AssignedRecruiter");
