@@ -1,175 +1,308 @@
 @model Ats.Web.Models.ViewModels.Profiles.ProfileUpdateViewModel
 
-<div class="card shadow-sm profile-component">
-    <div class="card-body">
-        <h5 class="card-title mb-4">Chỉnh sửa hồ sơ cá nhân</h5>
+@{
+    ViewData["Title"] = "Chỉnh sửa hồ sơ cá nhân";
+}
 
-        <!-- id="profileForm" để JS hook vào xử lý sự kiện submit -->
-        <form id="profileForm" novalidate>
-            @Html.AntiForgeryToken()
-            
-            <h6 class="text-muted mb-1">Thông tin tài khoản (Chỉ đọc)</h6>
-            <div class="alert alert-secondary py-2 mb-4 d-flex align-items-center" role="alert" style="font-size: 0.85rem;">
-                <i class="bi bi-info-circle-fill text-secondary me-2"></i>
-                <span>Bạn không được tự thay đổi các thông tin này. Vui lòng liên hệ <strong>Admin</strong> nếu cần cập nhật.</span>
-            </div>
-            
-            <div class="row mb-4">
-                <div class="col-md-4 mb-3">
-                    <label asp-for="Email" class="form-label">Email</label>
-                    <input asp-for="Email" class="form-control bg-light" disabled readonly data-bs-toggle="tooltip" title="Liên hệ Admin để thay đổi Email" />
+<div class="container py-4" style="max-width: 900px;">
+    <!-- Single-Tier Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1" style="color: var(--text-primary);">Chỉnh sửa hồ sơ cá nhân</h1>
+            <p class="text-muted mb-0" style="font-size: 0.9rem;">Cập nhật thông tin liên hệ và ảnh đại diện</p>
+        </div>
+        <div>
+            <a href="/ho-so" class="btn btn-outline-secondary" style="border-radius: 8px;">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại hồ sơ
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+        <div class="card-body p-4 p-md-5">
+
+            <!-- S2-03: Avatar Upload Section -->
+            <div class="d-flex flex-column flex-sm-row align-items-center gap-4 pb-4 mb-4 border-bottom">
+                <div class="position-relative">
+                    @if (!string.IsNullOrEmpty(Model.AvatarUrl))
+                    {
+                        <img src="@Model.AvatarUrl" alt="Avatar" id="avatarPreview" class="border shadow-sm" style="width: 96px; height: 96px; border-radius: 12px; object-fit: cover;" />
+                    }
+                    else
+                    {
+                        <div id="avatarFallback" class="d-flex align-items-center justify-content-center bg-light border text-secondary fw-bold shadow-sm" style="width: 96px; height: 96px; border-radius: 12px; font-size: 2rem;">
+                            @(string.IsNullOrEmpty(Model.FullName) ? "U" : Model.FullName.Substring(0, 1).ToUpper())
+                        </div>
+                    }
                 </div>
-                <div class="col-md-4 mb-3">
-                    <label asp-for="RoleName" class="form-label">Vai trò</label>
-                    <input asp-for="RoleName" class="form-control bg-light" disabled readonly data-bs-toggle="tooltip" title="Liên hệ Admin để thay đổi Vai trò" />
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label asp-for="DepartmentName" class="form-label">Phòng ban</label>
-                    <input asp-for="DepartmentName" class="form-control bg-light" disabled readonly data-bs-toggle="tooltip" title="Liên hệ Admin để thay đổi Phòng ban" />
+                <div class="flex-grow-1 text-center text-sm-start">
+                    <h6 class="fw-bold mb-1" style="color: var(--text-primary);">Ảnh đại diện</h6>
+                    <p class="text-muted small mb-2">Định dạng hỗ trợ: JPG, PNG. Dung lượng tối đa: 2MB.</p>
+                    <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-sm-start">
+                        <label for="avatarFileInput" class="btn btn-outline-primary btn-sm" style="border-radius: 8px; cursor: pointer;">
+                            <i class="bi bi-cloud-arrow-up me-1"></i> Chọn ảnh mới
+                        </label>
+                        <input type="file" id="avatarFileInput" accept="image/jpeg,image/png" class="d-none" />
+                        <button type="button" id="btnUploadAvatar" class="btn btn-primary btn-sm d-none" style="border-radius: 8px;">
+                            <span id="avatarSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
+                            Tải lên
+                        </button>
+                    </div>
+                    <div id="avatarUploadError" class="text-danger small mt-1 d-none"></div>
                 </div>
             </div>
 
-            <h6 class="text-muted">Thông tin cá nhân</h6>
-            <div class="row mb-4">
-                <div class="col-md-12 mb-3">
-                    <label asp-for="FullName" class="form-label">Họ tên hiển thị <span class="text-danger">*</span></label>
-                    <input asp-for="FullName" class="form-control" required />
-                    <span class="text-danger" id="error-FullName"></span>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label asp-for="PhoneNumber" class="form-label">Số điện thoại</label>
-                    <input asp-for="PhoneNumber" class="form-control" />
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label asp-for="JobTitle" class="form-label">Chức danh / Vị trí</label>
-                    <input asp-for="JobTitle" class="form-control" />
-                </div>
-            </div>
+            <!-- Profile Form -->
+            <form id="profileForm" novalidate>
+                @Html.AntiForgeryToken()
 
-            <div class="d-flex justify-content-end">
-                <button type="submit" id="btnSubmitProfile" class="btn btn-primary">
-                    <span id="submitSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                    <span id="submitText">Lưu thay đổi</span>
-                </button>
-            </div>
-        </form>
+                <!-- Read-Only Info Block -->
+                <div class="alert alert-light border p-3 mb-4" style="border-radius: 8px; border-color: var(--border-default) !important;">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-lock-fill text-muted me-2"></i>
+                        <span class="fw-semibold text-secondary small">Thông tin tài khoản được quản lý bởi Quản trị viên (Chỉ đọc)</span>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small mb-1">Email công vụ</label>
+                            <input type="text" class="form-control font-mono bg-light text-muted" value="@Model.Email" readonly disabled style="border-radius: 8px;" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small mb-1">Vai trò hệ thống</label>
+                            <input type="text" class="form-control bg-light text-muted" value="@Model.RoleName" readonly disabled style="border-radius: 8px;" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small mb-1">Phòng ban</label>
+                            <input type="text" class="form-control bg-light text-muted" value="@Model.DepartmentName" readonly disabled style="border-radius: 8px;" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Editable Personal Info -->
+                <h6 class="fw-bold mb-3" style="color: var(--text-primary);">Thông tin cá nhân</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-12">
+                        <label for="inputFullName" class="form-label fw-semibold small">Họ và tên hiển thị <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="inputFullName" name="FullName" value="@Model.FullName" required maxlength="100" style="border-radius: 8px;" placeholder="Nguyễn Văn A" />
+                        <div class="invalid-feedback" id="errorFullName">Vui lòng nhập họ tên.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="inputPhone" class="form-label fw-semibold small">Số điện thoại liên hệ</label>
+                        <input type="text" class="form-control font-mono" id="inputPhone" name="PhoneNumber" value="@Model.PhoneNumber" style="border-radius: 8px;" placeholder="0912345678" />
+                        <div class="invalid-feedback" id="errorPhone">Số điện thoại không hợp lệ (định dạng VN: 03x, 05x, 07x, 08x, 09x).</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="inputJobTitle" class="form-label fw-semibold small">Chức danh / Vị trí</label>
+                        <input type="text" class="form-control" id="inputJobTitle" name="JobTitle" value="@Model.JobTitle" maxlength="100" style="border-radius: 8px;" placeholder="Senior Software Engineer" />
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                    <a href="/ho-so" class="btn btn-outline-secondary" style="border-radius: 8px;">Hủy bỏ</a>
+                    <button type="submit" id="btnSaveProfile" class="btn btn-primary" style="border-radius: 8px;">
+                        <span id="saveSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
+                        <span id="saveBtnText">Lưu thay đổi</span>
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
-<!-- Toast Container -->
-<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
-    <div id="profileToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+<!-- Strict RULE.MD Bottom-Right Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;">
+    <div id="feedbackToast" class="toast align-items-center shadow-lg border-0" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius: 12px;">
         <div class="d-flex">
-            <div class="toast-body d-flex align-items-center">
-                <i id="toastIcon" class="bi me-2 fs-5"></i>
-                <span id="toastMessage"></span>
+            <div class="toast-body d-flex align-items-center gap-2">
+                <i id="toastIcon" class="bi fs-5"></i>
+                <span id="toastMessage" class="small fw-semibold"></span>
             </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const profileForm = document.getElementById('profileForm');
-            const btnSubmit = document.getElementById('btnSubmitProfile');
-            const submitSpinner = document.getElementById('submitSpinner');
-            const submitText = document.getElementById('submitText');
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const profileForm = document.getElementById('profileForm');
+    const inputFullName = document.getElementById('inputFullName');
+    const inputPhone = document.getElementById('inputPhone');
+    const inputJobTitle = document.getElementById('inputJobTitle');
+    const btnSaveProfile = document.getElementById('btnSaveProfile');
+    const saveSpinner = document.getElementById('saveSpinner');
+    const saveBtnText = document.getElementById('saveBtnText');
 
-            // Khởi tạo Toast
-            const toastEl = document.getElementById('profileToast');
-            const toastMessage = document.getElementById('toastMessage');
-            const toastIcon = document.getElementById('toastIcon');
-            const profileToast = new bootstrap.Toast(toastEl, { delay: 5000 });
+    // Avatar upload elements
+    const avatarFileInput = document.getElementById('avatarFileInput');
+    const btnUploadAvatar = document.getElementById('btnUploadAvatar');
+    const avatarSpinner = document.getElementById('avatarSpinner');
+    const avatarUploadError = document.getElementById('avatarUploadError');
+    const avatarPreview = document.getElementById('avatarPreview');
 
-            function showToast(message, type) {
-                toastEl.className = 'toast align-items-center text-white border-0'; // reset
-                toastIcon.className = 'bi me-2 fs-5'; // reset
-                
-                if (type === 'success') {
-                    toastEl.classList.add('bg-success');
-                    toastIcon.classList.add('bi-check-circle-fill');
-                } else if (type === 'error') {
-                    toastEl.classList.add('bg-danger');
-                    toastIcon.classList.add('bi-x-circle-fill');
-                }
-                
-                toastMessage.textContent = message;
-                profileToast.show();
+    // Toast elements
+    const toastEl = document.getElementById('feedbackToast');
+    const toastIcon = document.getElementById('toastIcon');
+    const toastMessage = document.getElementById('toastMessage');
+    const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+
+    function showToast(message, isSuccess = true) {
+        toastEl.className = 'toast align-items-center shadow-lg border-0 ' + (isSuccess ? 'toast-success' : 'toast-error');
+        toastIcon.className = 'bi fs-5 ' + (isSuccess ? 'bi-check-circle-fill text-success' : 'bi-exclamation-triangle-fill text-danger');
+        toastMessage.textContent = message;
+        toast.show();
+    }
+
+    // Avatar selection preview
+    let selectedAvatarFile = null;
+    avatarFileInput.addEventListener('change', (e) => {
+        avatarUploadError.classList.add('d-none');
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            // Validate size <= 2MB
+            if (file.size > 2 * 1024 * 1024) {
+                avatarUploadError.textContent = 'Dung lượng ảnh vượt quá 2MB. Vui lòng chọn ảnh nhỏ hơn.';
+                avatarUploadError.classList.remove('d-none');
+                avatarFileInput.value = '';
+                btnUploadAvatar.classList.add('d-none');
+                return;
+            }
+            // Validate extension
+            const validTypes = ['image/jpeg', 'image/png'];
+            if (!validTypes.includes(file.type)) {
+                avatarUploadError.textContent = 'Định dạng ảnh không hợp lệ. Chỉ chấp nhận JPG hoặc PNG.';
+                avatarUploadError.classList.remove('d-none');
+                avatarFileInput.value = '';
+                btnUploadAvatar.classList.add('d-none');
+                return;
             }
 
-            profileForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
+            selectedAvatarFile = file;
+            btnUploadAvatar.classList.remove('d-none');
 
-                // 1. Quản lý trạng thái UI (Loading state & Disable Form)
-                btnSubmit.disabled = true;
-                submitSpinner.classList.remove('d-none');
-                submitText.textContent = 'Đang cập nhật...';
-                
-                // Disable toàn bộ input có thể edit trong lúc chờ API
-                const editableInputs = profileForm.querySelectorAll('input:not([readonly])');
-                editableInputs.forEach(input => input.disabled = true);
-
-                // 2. Gom dữ liệu Editable từ Form
-                const formData = new FormData(profileForm);
-                const payload = {
-                    fullName: formData.get('FullName'),
-                    phoneNumber: formData.get('PhoneNumber'),
-                    jobTitle: formData.get('JobTitle')
-                };
-
-                // Lấy Token chống CSRF bắt buộc của ASP.NET Core
-                const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
-
-                try {
-                    // 3. Gọi API cập nhật
-                    const response = await fetch('/api/tai-khoan/ho-so', {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'RequestVerificationToken': csrfToken // Truyền token bảo mật
-                        },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (response.ok) {
-                        showToast('Cập nhật hồ sơ thành công!', 'success');
-                    } else {
-                        const errorData = await response.json();
-                        console.error('Validation Errors:', errorData);
-                        
-                        let errorMessage = 'Có lỗi xảy ra, vui lòng kiểm tra lại thông tin.';
-                        
-                        // Parse lỗi validation từ backend (VD: ASP.NET Core model binding errors)
-                        if (errorData.errors) {
-                            const messages = [];
-                            for (const field in errorData.errors) {
-                                messages.push(errorData.errors[field].join(', '));
-                            }
-                            errorMessage = 'Lỗi nhập liệu: ' + messages.join(' | ');
-                        } else if (errorData.message) {
-                            errorMessage = errorData.message;
-                        }
-                        
-                        showToast(errorMessage, 'error');
+            // Client preview
+            const reader = new FileReader();
+            reader.onload = (re) => {
+                if (avatarPreview) {
+                    avatarPreview.src = re.target.result;
+                } else {
+                    const fallback = document.getElementById('avatarFallback');
+                    if (fallback) {
+                        const img = document.createElement('img');
+                        img.id = 'avatarPreview';
+                        img.src = re.target.result;
+                        img.className = 'border shadow-sm';
+                        img.style = 'width: 96px; height: 96px; border-radius: 12px; object-fit: cover;';
+                        fallback.parentNode.replaceChild(img, fallback);
                     }
-                } catch (error) {
-                    console.error('Lỗi mạng:', error);
-                    showToast('Lỗi hệ thống: Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng hoặc thử lại sau.', 'error');
-                } finally {
-                    // 4. Hoàn tất - Khôi phục trạng thái UI
-                    btnSubmit.disabled = false;
-                    submitSpinner.classList.add('d-none');
-                    submitText.textContent = 'Lưu thay đổi';
-                    
-                    editableInputs.forEach(input => input.disabled = false);
                 }
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Upload avatar
+    btnUploadAvatar.addEventListener('click', async () => {
+        if (!selectedAvatarFile) return;
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        const formData = new FormData();
+        formData.append('avatarFile', selectedAvatarFile);
+
+        btnUploadAvatar.disabled = true;
+        avatarSpinner.classList.remove('d-none');
+
+        try {
+            const res = await fetch('/ho-so/avatar', {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': token || ''
+                },
+                body: formData
             });
 
-            // Khởi tạo tooltips của Bootstrap
-            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-            const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
-        });
-    </script>
+            const data = await res.json();
+            if (res.ok && data.isSuccess) {
+                showToast(data.message || 'Cập nhật ảnh đại diện thành công.', true);
+                btnUploadAvatar.classList.add('d-none');
+                selectedAvatarFile = null;
+            } else {
+                showToast(data.message || 'Tải ảnh đại diện thất bại.', false);
+            }
+        } catch (err) {
+            showToast('Lỗi kết nối máy chủ.', false);
+        } finally {
+            btnUploadAvatar.disabled = false;
+            avatarSpinner.classList.add('d-none');
+        }
+    });
+
+    // Submit profile update
+    profileForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const fullName = inputFullName.value.trim();
+        const phone = inputPhone.value.trim();
+        const jobTitle = inputJobTitle.value.trim();
+
+        // Client validation
+        let hasError = false;
+        if (!fullName) {
+            inputFullName.classList.add('is-invalid');
+            hasError = true;
+        } else {
+            inputFullName.classList.remove('is-invalid');
+        }
+
+        const phoneRegex = /^(0|\+84|84)[35789][0-9]{8}$/;
+        if (phone && !phoneRegex.test(phone.replace(/\s+/g, '').replace(/-/g, ''))) {
+            inputPhone.classList.add('is-invalid');
+            hasError = true;
+        } else {
+            inputPhone.classList.remove('is-invalid');
+        }
+
+        if (hasError) return;
+
+        btnSaveProfile.disabled = true;
+        saveSpinner.classList.remove('d-none');
+        saveBtnText.textContent = 'Đang lưu...';
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        const payload = {
+            fullName: fullName,
+            phoneNumber: phone || null,
+            jobTitle: jobTitle || null
+        };
+
+        try {
+            const res = await fetch('/ho-so/chinh-sua', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token || ''
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            if (res.ok && data.isSuccess) {
+                showToast(data.message || 'Cập nhật thông tin thành công.', true);
+                setTimeout(() => {
+                    window.location.href = '/ho-so';
+                }, 1200);
+            } else {
+                showToast(data.message || 'Cập nhật thất bại.', false);
+            }
+        } catch (err) {
+            showToast('Lỗi kết nối máy chủ. Vui lòng thử lại sau.', false);
+        } finally {
+            btnSaveProfile.disabled = false;
+            saveSpinner.classList.add('d-none');
+            saveBtnText.textContent = 'Lưu thay đổi';
+        }
+    });
+});
+</script>
 }
