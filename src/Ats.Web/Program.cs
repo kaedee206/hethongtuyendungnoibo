@@ -135,6 +135,24 @@ app.MapControllerRoute(
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    
+    // Fix pending migrations in EFHistory
+    try {
+        await dbContext.Database.ExecuteSqlRawAsync("INSERT INTO \"__EFMigrationsHistory\" (migration_id, product_version) VALUES ('20261002010046_FixMissingColumns', '9.0.0') ON CONFLICT DO NOTHING;");
+        await dbContext.Database.ExecuteSqlRawAsync("INSERT INTO \"__EFMigrationsHistory\" (migration_id, product_version) VALUES ('20261002163707_InitialCreate', '9.0.0') ON CONFLICT DO NOTHING;");
+        
+        // Add missing columns manually
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE departments ADD COLUMN IF NOT EXISTS level integer NOT NULL DEFAULT 1;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE departments ADD COLUMN IF NOT EXISTS path text NOT NULL DEFAULT '';");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS job_title text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS department_id uuid;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS job_position_id uuid;");
+        
+    } catch(Exception e) {
+        Console.WriteLine(e.Message);
+    }
+
     await DatabaseSeeder.SeedAsync(dbContext);
 }
 

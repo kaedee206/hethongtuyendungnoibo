@@ -36,7 +36,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<JobOffer> JobOffers { get; set; }
     public DbSet<OfferApproval> OfferApprovals { get; set; }
 
-    public DbSet<AuditLog> AuditLogs { get; set; }
     public DbSet<EmailLog> EmailLogs { get; set; }
     public DbSet<Notification> Notifications { get; set; }
 
