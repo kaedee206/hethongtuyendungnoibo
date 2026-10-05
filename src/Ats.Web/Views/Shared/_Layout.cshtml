@@ -205,6 +205,11 @@
                                         <div class="small text-truncate font-mono" style="color: #64748B; font-size: 0.75rem;">@User.FindFirstValue(ClaimTypes.Email)</div>
                                     </li>
                                     <li>
+                                        <a class="dropdown-item py-2" asp-controller="Profiles" asp-action="Index">
+                                            <i class="bi bi-person me-2 text-primary"></i> Hồ sơ cá nhân
+                                        </a>
+                                    </li>
+                                    <li>
                                         <a class="dropdown-item py-2" asp-controller="Account" asp-action="ChangePassword">
                                             <i class="bi bi-key me-2 text-success"></i> Đổi mật khẩu
                                         </a>
