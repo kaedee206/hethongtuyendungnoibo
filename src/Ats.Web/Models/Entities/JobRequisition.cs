@@ -6,8 +6,8 @@ public class JobRequisition : BaseEntity
 {
     public Guid Id { get; set; }
     public string Code { get; set; } = string.Empty;
-    public Guid JobPositionId { get; set; }
-    public Guid DepartmentId { get; set; }
+    public Guid? JobPositionId { get; set; }
+    public Guid? DepartmentId { get; set; }
     public Guid HiringManagerId { get; set; }
     public Guid? AssignedRecruiterId { get; set; }
     
@@ -32,8 +32,8 @@ public class JobRequisition : BaseEntity
     /// </summary>
     public string? Requirements { get; set; }
 
-    public JobPosition JobPosition { get; set; } = null!;
-    public Department Department { get; set; } = null!;
+    public JobPosition? JobPosition { get; set; }
+    public Department? Department { get; set; }
     public User HiringManager { get; set; } = null!;
     public User? AssignedRecruiter { get; set; }
     public ICollection<RequisitionApproval> Approvals { get; set; } = new List<RequisitionApproval>();
