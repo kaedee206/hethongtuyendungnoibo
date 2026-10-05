@@ -94,12 +94,7 @@
             <!-- Quick Global Shortcuts -->
             <div class="d-flex align-items-center gap-2 flex-shrink-0">
                 <a href="/Jobs" style="display:inline-flex; align-items:center; gap:0.4rem; font-size:0.8rem; font-weight:600; color:#065F46; background:#ECFDF5; text-decoration:none; padding:0.4rem 0.85rem; border:1px solid #A7F3D0; border-radius:8px; transition:all .2s;">
-                    <i class="bi bi-briefcase-fill" style="color:#059669;"></i> Vị Trí Đang Mở (@(Model.IsStaff ? Model.TotalOpenJobs : Model.CandidateOpenJobs.Count))
-                </a>
-                <a href="/landing" style="display:inline-flex; align-items:center; gap:0.4rem; font-size:0.8rem; font-weight:500; color:#475569; background:#FFFFFF; text-decoration:none; padding:0.4rem 0.85rem; border:1px solid #E2E8F0; border-radius:8px; transition:all .2s;"
-                   onmouseover="this.style.borderColor='#059669'; this.style.color='#059669';"
-                   onmouseout="this.style.borderColor='#E2E8F0'; this.style.color='#475569';">
-                    <i class="bi bi-globe2"></i> Landing Page
+                    <i class="bi bi-briefcase-fill" style="color:#059669;"></i> Vị Trí Đang Mở (@Model.TotalOpenJobs)
                 </a>
                 <a asp-controller="Account" asp-action="ChangePassword"
                    style="display:inline-flex; align-items:center; gap:0.4rem; font-size:0.8rem; font-weight:500; color:#475569; background:#FFFFFF; text-decoration:none; padding:0.4rem 0.85rem; border:1px solid #E2E8F0; border-radius:8px; transition:all .2s;"
@@ -112,7 +107,7 @@
 
         <!-- ── DASHBOARD FEATURE SUB-NAVIGATION BAR (URL SPECIFIC: /dashboard/{ten-tinh-nang}) ── -->
         <div class="dashboard-feature-nav mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2 p-2 bg-white shadow-sm"
-             style="border: 1px solid #E2E8F0; border-radius: 12px; position: sticky; top: 68px; z-index: 99; backdrop-filter: blur(8px);">
+             style="border: 1px solid #E2E8F0; border-radius: 12px;">
             <div class="d-flex align-items-center gap-1.5 flex-wrap" id="dashboardFeatureTabs">
                 @if (Model.IsCandidate)
                 {
@@ -143,6 +138,11 @@
                     <a href="/dashboard/tuyen-dung" class="dashboard-feature-tab @(ViewBag.ActiveFeature == "tuyen-dung" ? "active" : "")"
                        data-feature="tuyen-dung" onclick="switchDashboardFeature('tuyen-dung', event)">
                         <i class="bi bi-funnel"></i> Phễu tuyển dụng
+                    </a>
+                    <a href="/dashboard/ung-vien" class="dashboard-feature-tab @(ViewBag.ActiveFeature == "ung-vien" ? "active" : "")"
+                       data-feature="ung-vien" onclick="switchDashboardFeature('ung-vien', event)">
+                        <i class="bi bi-people"></i> Hồ sơ ứng viên
+                        <span class="badge ms-1" style="background:#ECFDF5; color:#047857; border:1px solid #A7F3D0;">@Model.CandidatePipelineItems.Count</span>
                     </a>
                     <a href="/dashboard/lich-phong-van" class="dashboard-feature-tab @(ViewBag.ActiveFeature == "lich-phong-van" ? "active" : "")"
                        data-feature="lich-phong-van" onclick="switchDashboardFeature('lich-phong-van', event)">
@@ -609,6 +609,225 @@
                             </div>
                         </div>
 
+                        <!-- Khối 1.5: Bảng Quản Lý Ứng Viên & Tiến Trình Tuyển Dụng (Candidate Progression & Actions Board) -->
+                        <div id="feature-section-staff-ung-vien" class="card border-0 shadow-sm p-4 bg-white scroll-margin-nav" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 pb-2 gap-2" style="border-bottom: 1px solid #F1F5F9;">
+                                <div>
+                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">
+                                        <i class="bi bi-people-fill me-2" style="color: #059669;"></i>Quản Lý Hồ Sơ & Tiến Trình Tuyển Dụng
+                                    </h5>
+                                    <small class="text-muted">Chuyển tiếp giai đoạn tuyển chọn, lên lịch phỏng vấn, thẩm định và phát hành offer trực tiếp</small>
+                                </div>
+                                <div class="d-flex align-items-center gap-2 w-100 w-md-auto">
+                                    <div class="input-group input-group-sm position-relative" style="max-width: 280px;">
+                                        <span class="input-group-text bg-light border-end-0" style="border-color: #E2E8F0;"><i class="bi bi-search text-muted"></i></span>
+                                        <input type="text" id="candidateSearchInput" class="form-control border-start-0 pe-4" placeholder="Tìm tên, email, vị trí..." style="border-color: #E2E8F0; font-size: 0.8rem;" autocomplete="off" />
+                                        <button type="button" id="candidateSearchClearBtn" class="btn btn-sm btn-link position-absolute top-50 end-0 translate-middle-y me-1 text-muted d-none" style="text-decoration:none; z-index: 5;" title="Xóa từ khóa">
+                                            <i class="bi bi-x-circle-fill"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Filter Stage Buttons -->
+                            <div class="d-flex flex-wrap gap-1.5 mb-3" id="candidateStageFilterGroup">
+                                <button type="button" class="btn btn-sm btn-outline-success active" style="border-radius: 6px; font-size: 0.75rem;" onclick="filterPipelineCandidates('ALL', this)">
+                                    Tất cả (@Model.CandidatePipelineItems.Count)
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius: 6px; font-size: 0.75rem;" onclick="filterPipelineCandidates('1', this)">
+                                    01. Ứng tuyển mới (@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 1))
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius: 6px; font-size: 0.75rem;" onclick="filterPipelineCandidates('2', this)">
+                                    02. Sàng lọc CV (@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 2))
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius: 6px; font-size: 0.75rem;" onclick="filterPipelineCandidates('4', this)">
+                                    04. Phỏng vấn (@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 4))
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius: 6px; font-size: 0.75rem;" onclick="filterPipelineCandidates('5', this)">
+                                    05. Đề xuất Offer (@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 5))
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius: 6px; font-size: 0.75rem;" onclick="filterPipelineCandidates('6', this)">
+                                    06. Đã Onboard (@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 6))
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius: 6px; font-size: 0.75rem;" onclick="filterPipelineCandidates('REJECTED', this)">
+                                    Đã từ chối (@Model.CandidatePipelineItems.Count(x => x.Status == "REJECTED"))
+                                </button>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table align-middle mb-0" style="font-size: 0.85rem;">
+                                    <thead>
+                                        <tr style="border-bottom: 1px solid #E2E8F0; color: #64748B; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold" style="border-top-left-radius: 6px; border-bottom-left-radius: 6px;">Ứng viên</th>
+                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Vị trí ứng tuyển</th>
+                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Giai đoạn hiện tại</th>
+                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Ngày nộp</th>
+                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-end" style="border-top-right-radius: 6px; border-bottom-right-radius: 6px;">Thao tác xử lý quy trình</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="candidatePipelineTableBody">
+                                        @if (Model.CandidatePipelineItems.Any())
+                                        {
+                                            @foreach (var cand in Model.CandidatePipelineItems)
+                                            {
+                                                <tr id="cand-row-@cand.ApplicationId" class="pipeline-candidate-row"
+                                                    data-stage-order="@cand.CurrentStageOrder"
+                                                    data-status="@cand.Status"
+                                                    data-name="@cand.CandidateName.ToLower()"
+                                                    data-email="@cand.CandidateEmail.ToLower()"
+                                                    data-job="@cand.JobTitle.ToLower()"
+                                                    style="border-bottom: 1px solid #F1F5F9; transition: background .15s;"
+                                                    onmouseover="this.style.background='#F8FAFC';" onmouseout="this.style.background='#FFFFFF';">
+                                                    <td class="py-3 px-3">
+                                                        <div class="d-flex align-items-center gap-2.5">
+                                                            <div class="d-flex align-items-center justify-content-center fw-bold text-white rounded-circle flex-shrink-0"
+                                                                 style="width: 34px; height: 34px; background: #0F172A; font-size: 0.82rem;">
+                                                                @(string.IsNullOrEmpty(cand.CandidateName) ? "?" : cand.CandidateName.Substring(0, 1).ToUpper())
+                                                            </div>
+                                                            <div>
+                                                                <div class="fw-bold text-dark" style="font-size: 0.88rem;">@cand.CandidateName</div>
+                                                                <div class="d-flex align-items-center gap-2" style="font-size: 0.75rem; color: #64748B;">
+                                                                    <span style="font-family:'JetBrains Mono',monospace;">@cand.CandidateEmail</span>
+                                                                    @if (!string.IsNullOrEmpty(cand.CandidatePhone))
+                                                                    {
+                                                                        <span>•</span>
+                                                                        <span>@cand.CandidatePhone</span>
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="py-3 px-3">
+                                                        <span class="fw-semibold text-dark">@cand.JobTitle</span>
+                                                    </td>
+                                                    <td class="py-3 px-3">
+                                                        @if (cand.Status == "REJECTED")
+                                                        {
+                                                            <span class="badge" style="background:#FEE2E2; color:#DC2626; border:1px solid #FECACA; border-radius:6px; font-size:0.75rem; font-weight:600;">
+                                                                <i class="bi bi-x-circle me-1"></i>Từ chối hồ sơ
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge" style="background:@(cand.StageColor)15; color:@cand.StageColor; border:1px solid @(cand.StageColor)40; border-radius:6px; font-size:0.75rem; font-weight:600;">
+                                                                <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem; vertical-align: middle;"></i>@cand.CurrentStageName
+                                                            </span>
+                                                        }
+                                                    </td>
+                                                    <td class="py-3 px-3 text-muted" style="font-size: 0.78rem; font-family:'JetBrains Mono',monospace;">
+                                                        @cand.AppliedDateDisplay
+                                                    </td>
+                                                    <td class="py-3 px-3 text-end">
+                                                        <div class="d-flex justify-content-end align-items-center gap-1.5 flex-wrap">
+                                                            @if (!string.IsNullOrEmpty(cand.ResumeFilePath))
+                                                            {
+                                                                <a href="@cand.ResumeFilePath" target="_blank" class="btn btn-sm btn-light"
+                                                                   style="border-radius:6px; font-size:0.75rem; font-weight:600; border:1px solid #E2E8F0; padding:0.25rem 0.6rem;"
+                                                                   title="Xem CV Ứng viên">
+                                                                    <i class="bi bi-file-earmark-pdf text-danger me-1"></i>CV
+                                                                </a>
+                                                            }
+
+                                                            @if (cand.Status == "REJECTED")
+                                                            {
+                                                                <span class="text-muted small fst-italic">Hồ sơ đã lưu trữ</span>
+                                                            }
+                                                            else if (cand.CurrentStageOrder == 1)
+                                                            {
+                                                                <!-- Ứng tuyển mới -> Duyệt sơ loại -->
+                                                                <button type="button" class="btn btn-sm btn-outline-success"
+                                                                        style="border-radius:6px; font-size:0.75rem; font-weight:600; padding:0.25rem 0.65rem;"
+                                                                        onclick="advanceStageQuick('@cand.ApplicationId', 'Sàng lọc CV', '@cand.CandidateName')">
+                                                                    <i class="bi bi-arrow-right-circle me-1"></i>Duyệt Sơ Loại
+                                                                </button>
+                                                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                                                        style="border-radius:6px; font-size:0.75rem; font-weight:600; padding:0.25rem 0.5rem;"
+                                                                        title="Từ chối hồ sơ"
+                                                                        onclick="openRejectModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
+                                                                    <i class="bi bi-x-circle"></i>
+                                                                </button>
+                                                            }
+                                                            else if (cand.CurrentStageOrder == 2)
+                                                            {
+                                                                <!-- Sàng lọc CV -> Lên lịch phỏng vấn -->
+                                                                <button type="button" class="btn btn-sm btn-primary"
+                                                                        style="border-radius:6px; font-size:0.75rem; font-weight:600; padding:0.25rem 0.65rem;"
+                                                                        onclick="openScheduleModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
+                                                                    <i class="bi bi-calendar-plus me-1"></i>Lên Lịch PV
+                                                                </button>
+                                                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                                                        style="border-radius:6px; font-size:0.75rem; font-weight:600; padding:0.25rem 0.5rem;"
+                                                                        title="Từ chối hồ sơ"
+                                                                        onclick="openRejectModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
+                                                                    <i class="bi bi-x-circle"></i>
+                                                                </button>
+                                                            }
+                                                            else if (cand.CurrentStageOrder == 4)
+                                                            {
+                                                                <!-- Phỏng vấn -> Thêm lịch hoặc Đề xuất Offer -->
+                                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                                        style="border-radius:6px; font-size:0.75rem; font-weight:600; padding:0.25rem 0.55rem;"
+                                                                        title="Lên lịch phỏng vấn vòng kế tiếp"
+                                                                        onclick="openScheduleModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
+                                                                    <i class="bi bi-calendar-event me-1"></i>Lịch PV
+                                                                </button>
+                                                                <button type="button" class="btn btn-sm btn-warning text-dark fw-semibold"
+                                                                        style="border-radius:6px; font-size:0.75rem; padding:0.25rem 0.65rem;"
+                                                                        onclick="openCreateOfferModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
+                                                                    <i class="bi bi-envelope-paper-fill me-1"></i>Đề Xuất Offer
+                                                                </button>
+                                                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                                                        style="border-radius:6px; font-size:0.75rem; font-weight:600; padding:0.25rem 0.5rem;"
+                                                                        title="Từ chối hồ sơ"
+                                                                        onclick="openRejectModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
+                                                                    <i class="bi bi-x-circle"></i>
+                                                                </button>
+                                                            }
+                                                            else if (cand.CurrentStageOrder == 5)
+                                                            {
+                                                                <!-- Đề xuất Offer -> Xác nhận Onboard -->
+                                                                <button type="button" class="btn btn-sm btn-success"
+                                                                        style="border-radius:6px; font-size:0.75rem; font-weight:600; padding:0.25rem 0.65rem;"
+                                                                        onclick="advanceStageQuick('@cand.ApplicationId', 'Đã Onboard', '@cand.CandidateName')">
+                                                                    <i class="bi bi-check2-all me-1"></i>Xác Nhận Onboard
+                                                                </button>
+                                                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                                                        style="border-radius:6px; font-size:0.75rem; font-weight:600; padding:0.25rem 0.5rem;"
+                                                                        title="Từ chối hồ sơ"
+                                                                        onclick="openRejectModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
+                                                                    <i class="bi bi-x-circle"></i>
+                                                                </button>
+                                                            }
+                                                            else if (cand.CurrentStageOrder == 6)
+                                                            {
+                                                                <span class="badge" style="background:#ECFDF5; color:#047857; border:1px solid #A7F3D0; border-radius:6px; font-size:0.75rem; font-weight:600;">
+                                                                    <i class="bi bi-person-check-fill me-1"></i>Đã Tiếp Nhận
+                                                                </span>
+                                                            }
+
+                                                            <!-- Chi tiết hồ sơ -->
+                                                            <button type="button" class="btn btn-sm btn-light"
+                                                                    style="border-radius:6px; font-size:0.75rem; border:1px solid #E2E8F0; padding:0.25rem 0.5rem;"
+                                                                    title="Xem chi tiết & Lịch sử tuyển dụng"
+                                                                    onclick="openCandidateDetailModal('@cand.ApplicationId')">
+                                                                <i class="bi bi-eye text-muted"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <tr>
+                                                <td colspan="5" class="text-center text-muted py-4">Chưa có hồ sơ ứng viên nào trong hệ thống.</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                         <!-- Khối 2: Lịch Phỏng Vấn Tuần Này (Interview Schedule Table) -->
                         <div id="feature-section-staff-lich-phong-van" class="card border-0 shadow-sm p-4 bg-white scroll-margin-nav" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 pb-2 gap-2" style="border-bottom: 1px solid #F1F5F9;">
@@ -786,22 +1005,21 @@
                                 <!-- Action 1: Đăng tin tuyển dụng mới -->
                                 @if (User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter) || User.IsInRole(UserRoles.Admin))
                                 {
-                                    <button type="button" class="btn w-100 text-start p-2.5 d-flex align-items-center justify-content-between"
-                                            style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; transition: all .15s;"
-                                            data-bs-toggle="modal" data-bs-target="#createJobModal"
-                                            onmouseover="this.style.background='#FFFFFF'; this.style.borderColor='#059669';"
-                                            onmouseout="this.style.background='#F8FAFC'; this.style.borderColor='#E2E8F0';">
+                                    <a href="/Jobs/Create" class="btn w-100 text-start p-2.5 d-flex align-items-center justify-content-between text-decoration-none"
+                                       style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; transition: all .15s;"
+                                       onmouseover="this.style.background='#FFFFFF'; this.style.borderColor='#059669';"
+                                       onmouseout="this.style.background='#F8FAFC'; this.style.borderColor='#E2E8F0';">
                                         <div class="d-flex align-items-center gap-2.5">
                                             <div class="d-flex align-items-center justify-content-center rounded" style="width: 32px; height: 32px; background: #ECFDF5; color: #059669;">
                                                 <i class="bi bi-megaphone-fill" style="font-size: 0.9rem;"></i>
                                             </div>
                                             <div>
-                                                <div class="fw-bold text-dark" style="font-size: 0.82rem;">Tạo tin tuyển dụng mới</div>
-                                                <div style="font-size: 0.7rem; color: #64748B;">Khởi chạy chiến dịch tuyển chọn</div>
+                                                <div class="fw-bold text-dark" style="font-size: 0.82rem;">Đăng tin tuyển dụng mới</div>
+                                                <div style="font-size: 0.7rem; color: #64748B;">Soạn thảo chuẩn mực, gắn tag & Live Preview</div>
                                             </div>
                                         </div>
                                         <i class="bi bi-chevron-right text-muted" style="font-size: 0.75rem;"></i>
-                                    </button>
+                                    </a>
                                 }
 
                                 <!-- Action 2: Khởi tạo đề xuất nhân sự -->
@@ -1212,14 +1430,187 @@
     </div>
 </div>
 
-<!-- Toast Container để hiển thị phản hồi tức thì -->
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1090;">
-    <div id="actionToast" class="toast align-items-center text-white bg-dark border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius: 10px;">
-        <div class="d-flex">
-            <div class="toast-body d-flex align-items-center gap-2" id="toastMessage" style="font-size: 0.85rem;">
-                <i class="bi bi-check-circle-fill text-success fs-5"></i> Thao tác thành công.
+<!-- Modal 7: Lên lịch phỏng vấn & Phân công hội đồng -->
+<div class="modal fade" id="scheduleInterviewModal" tabindex="-1" aria-labelledby="scheduleInterviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="scheduleInterviewModalLabel" style="font-size: 1.05rem;">
+                    <i class="bi bi-calendar-plus text-primary me-2"></i>Lên lịch phỏng vấn ứng viên
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            <div class="modal-body py-3">
+                <div class="p-2.5 mb-3" style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px;">
+                    <div class="fw-bold text-dark" id="schedCandidateName" style="font-size: 0.9rem;">-</div>
+                    <div class="text-muted small" id="schedJobTitle">-</div>
+                </div>
+                <form id="scheduleInterviewForm" onsubmit="handleScheduleInterviewSubmit(event)">
+                    <input type="hidden" id="schedApplicationId" />
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Thời gian phỏng vấn</label>
+                        <input type="datetime-local" class="form-control" id="schedDate" required style="border-radius:8px;" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Hình thức phỏng vấn</label>
+                        <select class="form-select" id="schedType" style="border-radius:8px;">
+                            <option value="ONLINE_MEET">Trực tuyến (Google Meet / MS Teams)</option>
+                            <option value="OFFLINE_OFFICE">Trực tiếp tại Trụ sở NoveraTech</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Địa điểm / Link phòng họp</label>
+                        <input type="text" class="form-control" id="schedLocation" placeholder="https://meet.google.com/... hoặc Phòng Họp Tầng 12" required style="border-radius:8px;" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Thành viên hội đồng phỏng vấn (Panelists)</label>
+                        <select class="form-select" id="schedPanelists" multiple size="3" style="border-radius:8px; font-size:0.85rem;">
+                            <!-- Populated dynamically via /Workspace/GetInterviewers -->
+                        </select>
+                        <small class="text-muted" style="font-size:0.75rem;">Giữ phím Ctrl / Shift để chọn nhiều người phỏng vấn.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Ghi chú chuẩn bị / Lời nhắn ứng viên</label>
+                        <textarea class="form-control" id="schedNotes" rows="2" placeholder="Vui lòng chuẩn bị slide hoặc mã nguồn demo (nếu có)..." style="border-radius:8px; font-size:0.85rem;"></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-2" style="border-top:1px solid #E2E8F0;">
+                        <button type="button" class="btn btn-light px-4" style="border-radius:8px; font-size:0.85rem;" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold text-white" style="border-radius:8px; font-size:0.85rem;" id="btnSubmitSched">
+                            <span class="spinner-border spinner-border-sm me-1 d-none" id="spinnerSched"></span>
+                            Xác nhận lịch & Gửi email mời PV
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 8: Khởi tạo đề xuất Offer -->
+<div class="modal fade" id="createOfferModal" tabindex="-1" aria-labelledby="createOfferModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="createOfferModalLabel" style="font-size: 1.05rem;">
+                    <i class="bi bi-envelope-paper text-warning me-2"></i>Đề xuất Thư mời Nhận việc (Offer)
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="p-2.5 mb-3" style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px;">
+                    <div class="fw-bold text-dark" id="offerCandidateName" style="font-size: 0.9rem;">-</div>
+                    <div class="text-muted small" id="offerJobTitle">-</div>
+                </div>
+                <form id="createOfferForm" onsubmit="handleCreateOfferSubmit(event)">
+                    <input type="hidden" id="offerApplicationId" />
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-dark">Lương cơ bản (Gross/tháng - VNĐ)</label>
+                            <input type="number" class="form-control" id="offerBaseSalary" placeholder="VD: 35000000" required min="1000000" style="border-radius:8px;" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-dark">Phụ cấp & Thưởng dự án (VNĐ)</label>
+                            <input type="number" class="form-control" id="offerAllowances" value="0" min="0" style="border-radius:8px;" />
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-dark">Ngày gia nhập (Onboard)</label>
+                            <input type="date" class="form-control" id="offerJoinDate" required style="border-radius:8px;" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-dark">Hạn phản hồi Offer</label>
+                            <input type="date" class="form-control" id="offerExpirationDate" required style="border-radius:8px;" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Ghi chú điều kiện / Phúc lợi riêng</label>
+                        <textarea class="form-control" id="offerNotes" rows="2" placeholder="Thời gian thử việc 2 tháng 85% lương, thưởng KPI theo quý..." style="border-radius:8px; font-size:0.85rem;"></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-2" style="border-top:1px solid #E2E8F0;">
+                        <button type="button" class="btn btn-light px-4" style="border-radius:8px; font-size:0.85rem;" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-warning px-4 fw-semibold text-dark" style="border-radius:8px; font-size:0.85rem;" id="btnSubmitOffer">
+                            <span class="spinner-border spinner-border-sm me-1 d-none" id="spinnerOffer"></span>
+                            Lưu & Chuyển sang hàng chờ duyệt
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 9: Từ chối hồ sơ ứng viên & Gửi email -->
+<div class="modal fade" id="rejectCandidateModal" tabindex="-1" aria-labelledby="rejectCandidateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="rejectCandidateModalLabel" style="font-size: 1.05rem;">
+                    <i class="bi bi-x-circle text-danger me-2"></i>Dừng tuyển chọn & Từ chối hồ sơ
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="p-2.5 mb-3" style="background:#FEF2F2; border:1px solid #FECACA; border-radius:8px;">
+                    <div class="fw-bold text-danger" id="rejectCandidateName" style="font-size: 0.9rem;">-</div>
+                    <div class="text-muted small" id="rejectJobTitle">-</div>
+                </div>
+                <form id="rejectCandidateForm" onsubmit="handleRejectCandidateSubmit(event)">
+                    <input type="hidden" id="rejectApplicationId" />
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Lý do dừng tuyển chọn</label>
+                        <select class="form-select" id="rejectReason" style="border-radius:8px;">
+                            <option value="Không phù hợp tiêu chí kỹ thuật chuyên môn">Không phù hợp tiêu chí kỹ thuật chuyên môn</option>
+                            <option value="Kinh nghiệm chưa tương xứng với yêu cầu vị trí">Kinh nghiệm chưa tương xứng với yêu cầu vị trí</option>
+                            <option value="Kỳ vọng chế độ đãi ngộ vượt khung ngân sách">Kỳ vọng chế độ đãi ngộ vượt khung ngân sách</option>
+                            <option value="Vị trí đã tuyển đủ chỉ tiêu đợt này">Vị trí đã tuyển đủ chỉ tiêu đợt này</option>
+                            <option value="Ứng viên chủ động rút hồ sơ">Ứng viên chủ động rút hồ sơ</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Góp ý lịch thiệp gửi kèm email cho ứng viên (tùy chọn)</label>
+                        <textarea class="form-control" id="rejectFeedbackNote" rows="3" placeholder="Chia sẻ thêm thông tin giúp ứng viên hoàn thiện hơn trong tương lai..." style="border-radius:8px; font-size:0.85rem;"></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-2" style="border-top:1px solid #E2E8F0;">
+                        <button type="button" class="btn btn-light px-4" style="border-radius:8px; font-size:0.85rem;" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-danger px-4 fw-semibold text-white" style="border-radius:8px; font-size:0.85rem;" id="btnSubmitReject">
+                            <span class="spinner-border spinner-border-sm me-1 d-none" id="spinnerReject"></span>
+                            Xác nhận & Gửi thư từ chối
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 10: Xem chi tiết hồ sơ ứng viên & Lịch sử tuyển dụng -->
+<div class="modal fade" id="candidateDetailModal" tabindex="-1" aria-labelledby="candidateDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="candidateDetailModalLabel" style="font-size: 1.05rem;">
+                    <i class="bi bi-person-lines-fill text-success me-2"></i>Hồ sơ chi tiết & Lịch sử tuyển dụng
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3" id="candidateDetailContent">
+                <div class="text-center py-4 text-muted">
+                    <span class="spinner-border spinner-border-sm me-2"></span>Đang nạp chi tiết hồ sơ...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container để hiển thị phản hồi tức thì (RULE.MD: bottom-right, clean theme) -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1090;">
+    <div id="actionToast" class="toast toast-success align-items-center bg-white shadow-lg" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius: 12px; min-width: 320px; max-width: 420px;">
+        <div class="d-flex align-items-center p-2">
+            <div class="toast-body d-flex align-items-center gap-2 flex-grow-1" id="toastMessage" style="font-size: 0.85rem; color: #0F172A; font-weight: 500;">
+                <i class="bi bi-check-circle-fill text-success fs-5"></i> <span>Thao tác thành công.</span>
+            </div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
     </div>
 </div>
@@ -1235,11 +1626,11 @@
             var toastEl = document.getElementById('actionToast');
             var msgEl = document.getElementById('toastMessage');
             if (isSuccess) {
-                toastEl.className = "toast align-items-center text-white bg-dark border-0 shadow-lg";
-                msgEl.innerHTML = '<i class="bi bi-check-circle-fill text-success fs-5"></i> ' + message;
+                toastEl.className = "toast toast-success align-items-center bg-white shadow-lg";
+                msgEl.innerHTML = '<i class="bi bi-check-circle-fill text-success fs-5"></i> <span>' + message + '</span>';
             } else {
-                toastEl.className = "toast align-items-center text-white bg-danger border-0 shadow-lg";
-                msgEl.innerHTML = '<i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i> ' + message;
+                toastEl.className = "toast toast-error align-items-center bg-white shadow-lg";
+                msgEl.innerHTML = '<i class="bi bi-x-circle-fill text-danger fs-5"></i> <span>' + message + '</span>';
             }
             var toast = new bootstrap.Toast(toastEl, { delay: 4000 });
             toast.show();
@@ -1600,6 +1991,455 @@
             }
         }
 
+        // 8.1. Lọc và tìm kiếm bảng ứng viên trực tiếp (Candidate Pipeline Board with Instant Filter & URL Sync)
+        window.currentPipelineStage = 'ALL';
+
+        function applyPipelineFilters(shouldSyncUrl = true) {
+            const input = document.getElementById('candidateSearchInput');
+            const clearBtn = document.getElementById('candidateSearchClearBtn');
+            const query = (input ? input.value : '').trim();
+            const stageOrder = window.currentPipelineStage || 'ALL';
+
+            if (clearBtn) {
+                if (query.length > 0) clearBtn.classList.remove('d-none');
+                else clearBtn.classList.add('d-none');
+            }
+
+            const rows = document.querySelectorAll('.pipeline-candidate-row');
+            let visibleCount = 0;
+
+            rows.forEach(r => {
+                const rowStage = r.getAttribute('data-stage-order') || '';
+                const rowStatus = r.getAttribute('data-status') || '';
+                const name = r.getAttribute('data-name') || '';
+                const email = r.getAttribute('data-email') || '';
+                const job = r.getAttribute('data-job') || '';
+
+                // Stage match
+                let stageMatch = false;
+                if (stageOrder === 'ALL') {
+                    stageMatch = true;
+                } else if (stageOrder === 'REJECTED') {
+                    stageMatch = (rowStatus === 'REJECTED');
+                } else {
+                    stageMatch = (rowStage === stageOrder && rowStatus !== 'REJECTED');
+                }
+
+                // Text search match with Vietnamese tone normalization
+                const combinedText = `${name} ${email} ${job}`;
+                const textMatch = !query || (window.NoveraInstantSearch
+                    ? window.NoveraInstantSearch.matchSearchTokens(combinedText, query)
+                    : combinedText.toLowerCase().includes(query.toLowerCase()));
+
+                if (stageMatch && textMatch) {
+                    r.style.display = '';
+                    visibleCount++;
+                } else {
+                    r.style.display = 'none';
+                }
+            });
+
+            // Empty state row in table
+            const tbody = document.getElementById('candidatePipelineTableBody');
+            let noResultsRow = document.getElementById('pipelineNoResultsRow');
+            if (visibleCount === 0) {
+                if (!noResultsRow && tbody) {
+                    noResultsRow = document.createElement('tr');
+                    noResultsRow.id = 'pipelineNoResultsRow';
+                    noResultsRow.innerHTML = '<td colspan="5" class="text-center py-4 text-muted"><i class="bi bi-search me-1"></i> Không tìm thấy ứng viên nào phù hợp với bộ lọc hiện tại.</td>';
+                    tbody.appendChild(noResultsRow);
+                }
+            } else if (noResultsRow) {
+                noResultsRow.remove();
+            }
+
+            // Sync URL query
+            if (shouldSyncUrl && window.NoveraInstantSearch) {
+                window.NoveraInstantSearch.syncUrlParams({
+                    cand_search: query || null,
+                    cand_stage: stageOrder !== 'ALL' ? stageOrder : null
+                });
+            }
+        }
+
+        function filterPipelineCandidates(stageOrder, btnElement) {
+            window.currentPipelineStage = stageOrder || 'ALL';
+            if (btnElement) {
+                const group = btnElement.parentElement.querySelectorAll('button');
+                group.forEach(b => {
+                    b.classList.remove('active');
+                    b.classList.remove('btn-outline-success');
+                    b.classList.add('btn-outline-secondary');
+                });
+                btnElement.classList.add('active');
+                btnElement.classList.remove('btn-outline-secondary');
+                btnElement.classList.add('btn-outline-success');
+            }
+            applyPipelineFilters(true);
+        }
+
+        function searchPipelineCandidates(query) {
+            applyPipelineFilters(true);
+        }
+
+        // Initialize candidate pipeline search events & URL hydration
+        document.addEventListener('DOMContentLoaded', function () {
+            const candInput = document.getElementById('candidateSearchInput');
+            const candClearBtn = document.getElementById('candidateSearchClearBtn');
+
+            if (candInput) {
+                const debouncedSearch = window.NoveraInstantSearch
+                    ? window.NoveraInstantSearch.debounce(() => applyPipelineFilters(true), 15)
+                    : () => applyPipelineFilters(true);
+                candInput.addEventListener('input', debouncedSearch);
+                candInput.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') e.preventDefault();
+                });
+            }
+
+            if (candClearBtn) {
+                candClearBtn.addEventListener('click', function () {
+                    if (candInput) {
+                        candInput.value = '';
+                        applyPipelineFilters(true);
+                        candInput.focus();
+                    }
+                });
+            }
+
+            function hydrateCandidatePipelineFromUrl() {
+                if (!window.NoveraInstantSearch) return;
+                const params = window.NoveraInstantSearch.getUrlParams();
+                if (candInput && params.cand_search !== undefined) {
+                    candInput.value = params.cand_search;
+                }
+                if (params.cand_stage !== undefined) {
+                    window.currentPipelineStage = params.cand_stage;
+                    const stageButtons = document.querySelectorAll('#candidateStageFilterGroup button');
+                    stageButtons.forEach(btn => {
+                        const onclickAttr = btn.getAttribute('onclick') || '';
+                        if (onclickAttr.includes(`'${params.cand_stage}'`)) {
+                            stageButtons.forEach(b => {
+                                b.classList.remove('active', 'btn-outline-success');
+                                b.classList.add('btn-outline-secondary');
+                            });
+                            btn.classList.add('active', 'btn-outline-success');
+                            btn.classList.remove('btn-outline-secondary');
+                        }
+                    });
+                }
+                applyPipelineFilters(false);
+            }
+
+            window.addEventListener('popstate', hydrateCandidatePipelineFromUrl);
+            hydrateCandidatePipelineFromUrl();
+        });
+
+        // 8.2. Chuyển tiếp giai đoạn tuyển chọn nhanh (Advance Stage)
+        async function advanceStageQuick(applicationId, nextStage, candidateName) {
+            if (!confirm(`Xác nhận chuyển ứng viên ${candidateName || ''} sang giai đoạn: "${nextStage}"?`)) {
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('applicationId', applicationId);
+            formData.append('nextStage', nextStage);
+            formData.append('__RequestVerificationToken', getCsrfToken());
+
+            try {
+                var res = await fetch('/Workspace/AdvanceStage', {
+                    method: 'POST',
+                    body: formData
+                });
+                var data = await res.json();
+                if (data.success) {
+                    showToast(data.message, true);
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Lỗi khi chuyển giai đoạn', false);
+                }
+            } catch (err) {
+                showToast('Lỗi kết nối: ' + err.message, false);
+            }
+        }
+
+        // 8.3. Lên lịch phỏng vấn (Schedule Interview)
+        async function openScheduleModal(applicationId, candidateName, jobTitle) {
+            document.getElementById('schedApplicationId').value = applicationId;
+            document.getElementById('schedCandidateName').textContent = candidateName || 'Ứng viên';
+            document.getElementById('schedJobTitle').textContent = jobTitle || 'Vị trí';
+
+            // Set default date to tomorrow at 09:00
+            var tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(9, 0, 0, 0);
+            var localIso = new Date(tomorrow.getTime() - tomorrow.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            document.getElementById('schedDate').value = localIso;
+
+            // Load internal interviewers
+            var select = document.getElementById('schedPanelists');
+            select.innerHTML = '<option disabled>Đang tải danh sách nhân sự...</option>';
+
+            try {
+                var res = await fetch('/Workspace/GetInterviewers');
+                var data = await res.json();
+                if (data.success && data.interviewers.length > 0) {
+                    select.innerHTML = data.interviewers.map((u, idx) => `
+                        <option value="${u.id}" ${idx === 0 ? 'selected' : ''}>${u.name} (${u.role}) - ${u.email}</option>
+                    `).join('');
+                } else {
+                    select.innerHTML = '<option value="">(Chưa có người phỏng vấn khác trong CSDL)</option>';
+                }
+            } catch (e) {
+                select.innerHTML = '<option value="">(Không thể tải danh sách)</option>';
+            }
+
+            var modal = new bootstrap.Modal(document.getElementById('scheduleInterviewModal'));
+            modal.show();
+        }
+
+        async function handleScheduleInterviewSubmit(e) {
+            e.preventDefault();
+            var btn = document.getElementById('btnSubmitSched');
+            var spinner = document.getElementById('spinnerSched');
+            btn.disabled = true;
+            spinner.classList.remove('d-none');
+
+            var select = document.getElementById('schedPanelists');
+            var selectedPanelists = Array.from(select.selectedOptions).map(o => o.value).filter(v => v);
+
+            var payload = {
+                applicationId: document.getElementById('schedApplicationId').value,
+                scheduledDate: document.getElementById('schedDate').value,
+                interviewType: document.getElementById('schedType').value,
+                locationOrLink: document.getElementById('schedLocation').value,
+                notes: document.getElementById('schedNotes').value,
+                panelistIds: selectedPanelists
+            };
+
+            try {
+                var res = await fetch('/Workspace/ScheduleInterview', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getCsrfToken()
+                    },
+                    body: JSON.stringify(payload)
+                });
+                var data = await res.json();
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('scheduleInterviewModal')).hide();
+                    showToast(data.message, true);
+                    setTimeout(() => window.location.reload(), 1200);
+                } else {
+                    showToast(data.message || 'Lỗi khi lên lịch phỏng vấn', false);
+                }
+            } catch (err) {
+                showToast('Lỗi kết nối: ' + err.message, false);
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('d-none');
+            }
+        }
+
+        // 8.4. Đề xuất Thư mời Offer
+        function openCreateOfferModal(applicationId, candidateName, jobTitle) {
+            document.getElementById('offerApplicationId').value = applicationId;
+            document.getElementById('offerCandidateName').textContent = candidateName || 'Ứng viên';
+            document.getElementById('offerJobTitle').textContent = jobTitle || 'Vị trí';
+
+            var now = new Date();
+            var join = new Date();
+            join.setDate(now.getDate() + 14);
+            var exp = new Date();
+            exp.setDate(now.getDate() + 7);
+
+            document.getElementById('offerJoinDate').value = join.toISOString().split('T')[0];
+            document.getElementById('offerExpirationDate').value = exp.toISOString().split('T')[0];
+
+            var modal = new bootstrap.Modal(document.getElementById('createOfferModal'));
+            modal.show();
+        }
+
+        async function handleCreateOfferSubmit(e) {
+            e.preventDefault();
+            var btn = document.getElementById('btnSubmitOffer');
+            var spinner = document.getElementById('spinnerOffer');
+            btn.disabled = true;
+            spinner.classList.remove('d-none');
+
+            var payload = {
+                applicationId: document.getElementById('offerApplicationId').value,
+                baseSalary: parseFloat(document.getElementById('offerBaseSalary').value) || 0,
+                allowances: parseFloat(document.getElementById('offerAllowances').value) || 0,
+                joinDate: document.getElementById('offerJoinDate').value,
+                expirationDate: document.getElementById('offerExpirationDate').value,
+                notes: document.getElementById('offerNotes').value
+            };
+
+            try {
+                var res = await fetch('/Workspace/CreateOffer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getCsrfToken()
+                    },
+                    body: JSON.stringify(payload)
+                });
+                var data = await res.json();
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('createOfferModal')).hide();
+                    showToast(data.message, true);
+                    setTimeout(() => window.location.reload(), 1200);
+                } else {
+                    showToast(data.message || 'Lỗi khởi tạo đề xuất Offer', false);
+                }
+            } catch (err) {
+                showToast('Lỗi kết nối: ' + err.message, false);
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('d-none');
+            }
+        }
+
+        // 8.5. Dừng tuyển & Từ chối hồ sơ ứng viên
+        function openRejectModal(applicationId, candidateName, jobTitle) {
+            document.getElementById('rejectApplicationId').value = applicationId;
+            document.getElementById('rejectCandidateName').textContent = candidateName || 'Ứng viên';
+            document.getElementById('rejectJobTitle').textContent = jobTitle || 'Vị trí';
+
+            var modal = new bootstrap.Modal(document.getElementById('rejectCandidateModal'));
+            modal.show();
+        }
+
+        async function handleRejectCandidateSubmit(e) {
+            e.preventDefault();
+            var btn = document.getElementById('btnSubmitReject');
+            var spinner = document.getElementById('spinnerReject');
+            btn.disabled = true;
+            spinner.classList.remove('d-none');
+
+            var payload = {
+                applicationId: document.getElementById('rejectApplicationId').value,
+                reason: document.getElementById('rejectReason').value,
+                feedbackNote: document.getElementById('rejectFeedbackNote').value
+            };
+
+            try {
+                var res = await fetch('/Workspace/RejectApplication', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getCsrfToken()
+                    },
+                    body: JSON.stringify(payload)
+                });
+                var data = await res.json();
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('rejectCandidateModal')).hide();
+                    showToast(data.message, true);
+                    setTimeout(() => window.location.reload(), 1200);
+                } else {
+                    showToast(data.message || 'Lỗi khi từ chối hồ sơ', false);
+                }
+            } catch (err) {
+                showToast('Lỗi kết nối: ' + err.message, false);
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('d-none');
+            }
+        }
+
+        // 8.6. Xem chi tiết hồ sơ & Audit Trail
+        async function openCandidateDetailModal(applicationId) {
+            var modal = new bootstrap.Modal(document.getElementById('candidateDetailModal'));
+            modal.show();
+            var container = document.getElementById('candidateDetailContent');
+            container.innerHTML = '<div class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Đang truy xuất hồ sơ và lịch sử...</div>';
+
+            try {
+                var res = await fetch('/Workspace/GetCandidateDetail?applicationId=' + encodeURIComponent(applicationId));
+                var data = await res.json();
+                if (data.success && data.data) {
+                    var d = data.data;
+                    var timelineHtml = (d.histories || d.stageHistory || []).map(h => `
+                        <div class="d-flex align-items-start gap-2 mb-2 pb-2" style="border-bottom: 1px dashed #E2E8F0;">
+                            <i class="bi bi-clock-history text-muted mt-1"></i>
+                            <div>
+                                <div class="fw-semibold text-dark" style="font-size: 0.85rem;">
+                                    ${h.comment || h.notes || 'Cập nhật tiến trình'}
+                                </div>
+                                <div class="text-muted" style="font-size: 0.75rem;">${h.date || h.createdAt || ''}</div>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    var interviewsHtml = (d.interviews || []).map(iv => `
+                        <div class="p-2.5 mb-2" style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold text-dark" style="font-size: 0.85rem;">${iv.title || 'Phỏng vấn'}</span>
+                                <span class="badge ${iv.status === 'COMPLETED' ? 'bg-success' : 'bg-primary'}">${iv.status}</span>
+                            </div>
+                            <div class="small text-muted mt-1">Thời gian: <b>${iv.time || iv.scheduledDate || 'Chưa ấn định'}</b></div>
+                            <div class="small text-muted">Địa điểm / Link: <b>${iv.link || iv.locationOrLink || 'Trực tuyến'}</b></div>
+                        </div>
+                    `).join('');
+
+                    var offersHtml = (d.offers || []).map(o => `
+                        <div class="p-2.5 mb-2" style="background:#FEF3C7; border:1px solid #FDE68A; border-radius:8px;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold text-dark">Lương: ${o.salaryDisplay}</span>
+                                <span class="badge ${o.status === 'APPROVED' ? 'bg-success' : 'bg-warning text-dark'}">${o.status}</span>
+                            </div>
+                            <div class="small text-muted mt-1">Gia nhập: ${o.joinDate} · Hạn offer: ${o.expirationDate}</div>
+                        </div>
+                    `).join('');
+
+                    container.innerHTML = `
+                        <div class="row g-3">
+                            <div class="col-12 col-md-5">
+                                <div class="p-3 h-100" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;">
+                                    <div class="fw-bold text-dark mb-1" style="font-size: 1rem;">${d.candidateName}</div>
+                                    <div class="small text-muted" style="font-family:'JetBrains Mono',monospace;">${d.candidateEmail || d.email}</div>
+                                    <div class="small text-muted mb-2">${d.candidatePhone || d.phone || 'Chưa có SĐT'}</div>
+                                    <hr class="my-2" />
+                                    <div class="small mb-1"><b>Vị trí:</b> ${d.jobTitle}</div>
+                                    <div class="small mb-1"><b>Giai đoạn:</b> <span class="badge bg-success-subtle text-success border border-success-subtle">${d.currentStageName || d.currentStage}</span></div>
+                                    <div class="small mb-1"><b>Trạng thái:</b> <span class="badge bg-light text-dark border">${d.status}</span></div>
+                                    <div class="small mb-3"><b>Ngày nộp:</b> ${d.appliedDate}</div>
+                                    ${d.resumeFilePath && d.resumeFilePath !== '#' ? `
+                                        <a href="${d.resumeFilePath}" target="_blank" class="btn btn-sm btn-outline-danger w-100 fw-semibold" style="border-radius:6px;">
+                                            <i class="bi bi-file-earmark-pdf me-1"></i>Xem CV ${d.resumeFileName || ''}
+                                        </a>
+                                    ` : '<div class="text-muted small"><i class="bi bi-file-earmark-check me-1"></i>CV: ' + (d.resumeFileName || 'Đã nạp') + '</div>'}
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-7">
+                                <h6 class="fw-bold text-dark mb-2" style="font-size: 0.9rem;"><i class="bi bi-journal-text me-1 text-primary"></i>Lịch sử tuyển chọn (Audit Trail)</h6>
+                                <div class="mb-3" style="max-height: 180px; overflow-y: auto;">
+                                    ${timelineHtml || '<div class="text-muted small">Chưa có lịch sử chuyển giai đoạn.</div>'}
+                                </div>
+
+                                <h6 class="fw-bold text-dark mb-2" style="font-size: 0.9rem;"><i class="bi bi-calendar2-check me-1 text-success"></i>Lịch phỏng vấn</h6>
+                                <div class="mb-3" style="max-height: 140px; overflow-y: auto;">
+                                    ${interviewsHtml || '<div class="text-muted small">Chưa có phiên phỏng vấn nào.</div>'}
+                                </div>
+
+                                ${offersHtml ? `
+                                    <h6 class="fw-bold text-dark mb-2" style="font-size: 0.9rem;"><i class="bi bi-envelope-paper me-1 text-warning"></i>Đề xuất Offer</h6>
+                                    <div>${offersHtml}</div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = '<div class="text-center py-4 text-danger">' + (data.message || 'Không thể tải chi tiết hồ sơ.') + '</div>';
+                }
+            } catch (err) {
+                container.innerHTML = '<div class="text-center py-4 text-danger">Lỗi kết nối: ' + err.message + '</div>';
+            }
+        }
+
         // 9. Client-side Dashboard Feature Router (/dashboard/{ten-tinh-nang})
         var activeFeature = '@(ViewBag.ActiveFeature ?? "tong-quan")';
 
@@ -1649,6 +2489,8 @@
             } else {
                 if (feature === 'tuyen-dung' || feature === 'pipeline') {
                     targetId = 'feature-section-staff-tuyen-dung';
+                } else if (feature === 'ung-vien' || feature === 'candidates' || feature === 'ho-so-ung-vien') {
+                    targetId = 'feature-section-staff-ung-vien';
                 } else if (feature === 'lich-phong-van' || feature === 'phong-van' || feature === 'interviews') {
                     targetId = 'feature-section-staff-lich-phong-van';
                 } else if (feature === 'phe-duyet' || feature === 'approvals' || feature === 'offers') {

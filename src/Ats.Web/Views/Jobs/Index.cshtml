@@ -224,21 +224,24 @@
         <div class="row justify-content-center">
             <div class="col-12 col-xl-11">
                 <div class="jobs-filter-card">
-                    <form method="get" asp-controller="Jobs" asp-action="Index">
+                    <form id="jobFilterForm" method="get" asp-controller="Jobs" asp-action="Index">
                         <div class="row g-2 align-items-center">
-                            <!-- Keyword Input -->
+                            <!-- Keyword Input with Instant Clear -->
                             <div class="col-12 col-md-4">
                                 <div class="position-relative">
                                     <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                                    <input type="text" name="search" class="form-control form-control-custom ps-5" 
+                                    <input type="text" id="jobSearchInput" name="search" class="form-control form-control-custom ps-5 pe-5" 
                                            placeholder="Từ khóa: .NET, React, AI, Python, K8s..." 
-                                           value="@Model.SearchKeyword" />
+                                           value="@Model.SearchKeyword" autocomplete="off" />
+                                    <button type="button" id="jobSearchClearBtn" class="btn btn-sm btn-link position-absolute top-50 end-0 translate-middle-y me-2 text-muted @(string.IsNullOrEmpty(Model.SearchKeyword) ? "d-none" : "")" style="text-decoration:none;" title="Xóa từ khóa">
+                                        <i class="bi bi-x-circle-fill"></i>
+                                    </button>
                                 </div>
                             </div>
 
                             <!-- Department Dropdown -->
                             <div class="col-6 col-md-2.5 col-lg-2">
-                                <select name="department" class="form-select form-select-custom">
+                                <select id="jobDeptSelect" name="department" class="form-select form-select-custom">
                                     <option value="all">Tất cả Khối / Phòng</option>
                                     <option value="it" selected="@(Model.SelectedDepartment == "it")">Kỹ thuật & IT</option>
                                     <option value="ai" selected="@(Model.SelectedDepartment == "ai")">AI & Data Lab</option>
@@ -252,7 +255,7 @@
 
                             <!-- Location Dropdown -->
                             <div class="col-6 col-md-2">
-                                <select name="location" class="form-select form-select-custom">
+                                <select id="jobLocationSelect" name="location" class="form-select form-select-custom">
                                     <option value="all">Tất cả địa điểm</option>
                                     <option value="Hà Nội" selected="@(Model.SelectedLocation == "Hà Nội")">Hà Nội</option>
                                     <option value="Hồ Chí Minh" selected="@(Model.SelectedLocation == "Hồ Chí Minh")">TP. Hồ Chí Minh</option>
@@ -262,7 +265,7 @@
 
                             <!-- Level Dropdown -->
                             <div class="col-6 col-md-2">
-                                <select name="level" class="form-select form-select-custom">
+                                <select id="jobLevelSelect" name="level" class="form-select form-select-custom">
                                     <option value="all">Tất cả cấp bậc</option>
                                     <option value="Senior" selected="@(Model.SelectedLevel == "Senior")">Senior</option>
                                     <option value="Lead" selected="@(Model.SelectedLevel == "Lead")">Lead / Principal</option>
@@ -270,17 +273,11 @@
                                 </select>
                             </div>
 
-                            <!-- Submit Buttons -->
+                            <!-- Reset / Action Buttons -->
                             <div class="col-6 col-md-1.5 col-lg-2 d-flex gap-2">
-                                <button type="submit" class="btn-jobs-primary w-100">
-                                    <i class="bi bi-funnel-fill"></i> Lọc
+                                <button type="button" id="btnResetAllJobFilters" class="btn-jobs-outline w-100 px-2" title="Xóa tất cả bộ lọc">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Làm mới
                                 </button>
-                                @if (!string.IsNullOrEmpty(Model.SearchKeyword) || !string.IsNullOrEmpty(Model.SelectedDepartment) || !string.IsNullOrEmpty(Model.SelectedLocation) || !string.IsNullOrEmpty(Model.SelectedLevel))
-                                {
-                                    <a asp-controller="Jobs" asp-action="Index" class="btn-jobs-outline px-2" title="Xóa bộ lọc">
-                                        <i class="bi bi-arrow-counterclockwise"></i>
-                                    </a>
-                                }
                             </div>
                         </div>
                     </form>
@@ -300,11 +297,13 @@
                     Danh sách vị trí đang tuyển dụng
                 </h5>
                 <span class="text-muted small">
-                    Đang hiển thị <strong class="text-dark">@Model.TotalOpenings</strong> vị trí phù hợp
-                    @if (Model.HotOpeningsCount > 0)
-                    {
-                        <span> · Có <strong class="text-danger">@Model.HotOpeningsCount</strong> vị trí tuyển gấp (HOT)</span>
-                    }
+                    Đang hiển thị <strong id="jobResultsCountDisplay" class="text-dark">@Model.TotalOpenings</strong> vị trí phù hợp
+                    <span id="jobHotTagContainer" class="@(Model.HotOpeningsCount > 0 ? "" : "d-none")">
+                        · Có <strong id="jobHotCountDisplay" class="text-danger">@Model.HotOpeningsCount</strong> vị trí tuyển gấp (HOT)
+                    </span>
+                    <span id="jobSearchLatencyBadge" class="badge bg-light text-success border ms-2 py-1 px-2 d-none" style="font-size:0.72rem; font-family: monospace;">
+                        <i class="bi bi-lightning-charge-fill text-warning"></i> <span id="jobSearchLatencyValue">2ms</span>
+                    </span>
                 </span>
             </div>
             <div class="d-flex align-items-center gap-2">
@@ -314,98 +313,105 @@
             </div>
         </div>
 
-        @if (!Model.Jobs.Any())
-        {
-            <!-- Empty State -->
-            <div class="text-center py-5 my-4 bg-white rounded-3 border" style="border-color: var(--color-border) !important; border-radius: var(--radius-card);">
-                <div class="d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px; background: #F1F5F9; border-radius: 50%; color: #64748B;">
-                    <i class="bi bi-search fs-3"></i>
-                </div>
-                <h4 class="fw-bold text-dark mb-2">Chưa tìm thấy vị trí phù hợp</h4>
-                <p class="text-muted small mb-4" style="max-width: 480px; margin: 0 auto;">
-                    Không có kết quả nào khớp với bộ lọc bạn chọn. Bạn có thể xóa bộ lọc tìm kiếm hoặc nộp CV trực tiếp tới Talent Network để được ưu tiên khi có vị trí mới.
-                </p>
-                <div class="d-flex justify-content-center gap-2">
-                    <a asp-controller="Jobs" asp-action="Index" class="btn-jobs-outline">
-                        <i class="bi bi-arrow-counterclockwise"></i> Xem tất cả công việc
-                    </a>
-                    <a asp-controller="Account" asp-action="CandidateAuth" class="btn-jobs-primary">
-                        <i class="bi bi-send-fill"></i> Nộp hồ sơ tự do
-                    </a>
-                </div>
-            </div>
+        @{
+            var displayJobs = (Model.AllJobs != null && Model.AllJobs.Any()) ? Model.AllJobs : Model.Jobs;
         }
-        else
-        {
-            <!-- Job Cards Grid -->
-            <div class="row g-4">
-                @foreach (var job in Model.Jobs)
-                {
-                    <div class="col-12 col-md-6 col-xl-4">
-                        <div class="job-card">
-                            <!-- Header: Dept + Salary -->
-                            <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
-                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                                    <span class="badge-dept">@job.Department</span>
-                                    @if (job.IsHot)
-                                    {
-                                        <span class="badge-hot"><i class="bi bi-fire me-0.5"></i>HOT</span>
-                                    }
-                                </div>
-                                <span class="salary-text flex-shrink-0">@job.SalaryDisplay</span>
-                            </div>
 
-                            <!-- Title Link -->
-                            <h3 class="mb-2">
-                                <a asp-controller="Jobs" asp-action="Detail" asp-route-id="@job.Slug" class="job-title-link">
-                                    @job.Title
-                                </a>
-                            </h3>
+        <!-- Empty State Container (Hidden by default unless 0 results) -->
+        <div id="jobEmptyState" class="text-center py-5 my-4 bg-white rounded-3 border @(displayJobs.Any() ? "d-none" : "")" style="border-color: var(--color-border) !important; border-radius: var(--radius-card);">
+            <div class="d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px; background: #F1F5F9; border-radius: 50%; color: #64748B;">
+                <i class="bi bi-search fs-3"></i>
+            </div>
+            <h4 class="fw-bold text-dark mb-2">Chưa tìm thấy vị trí phù hợp</h4>
+            <p class="text-muted small mb-4" style="max-width: 480px; margin: 0 auto;">
+                Không có kết quả nào khớp với từ khóa hoặc bộ lọc bạn chọn. Bạn có thể làm mới bộ lọc tìm kiếm hoặc nộp CV trực tiếp tới Talent Network để được ưu tiên khi có vị trí mới.
+            </p>
+            <div class="d-flex justify-content-center gap-2">
+                <button type="button" id="btnEmptyStateReset" class="btn-jobs-outline">
+                    <i class="bi bi-arrow-counterclockwise"></i> Xem tất cả công việc
+                </button>
+                <a asp-controller="Account" asp-action="CandidateAuth" class="btn-jobs-primary">
+                    <i class="bi bi-send-fill"></i> Nộp hồ sơ tự do
+                </a>
+            </div>
+        </div>
 
-                            <!-- Meta Details -->
-                            <div class="d-flex flex-wrap gap-3 mb-3">
-                                <span class="meta-item">
-                                    <i class="bi bi-geo-alt text-success"></i> @job.WorkLocation
-                                </span>
-                                <span class="meta-item">
-                                    <i class="bi bi-bar-chart-steps text-primary"></i> @job.ExperienceLevel
-                                </span>
-                                <span class="meta-item">
-                                    <i class="bi bi-clock-history text-muted"></i> @job.EmploymentType
-                                </span>
-                            </div>
-
-                            <!-- Short Summary Description -->
-                            <p class="text-muted small flex-grow-1 mb-3" style="line-height: 1.6;">
-                                @job.ShortSummary
-                            </p>
-
-                            <!-- Tech Stack Badges -->
-                            <div class="d-flex flex-wrap gap-1.5 mb-4">
-                                @foreach (var tech in job.TechStack.Take(5))
+        <!-- Job Cards Grid -->
+        <div id="jobCardsGrid" class="row g-4 @(displayJobs.Any() ? "" : "d-none")">
+            @foreach (var job in displayJobs)
+            {
+                <div class="col-12 col-md-6 col-xl-4 job-item-col"
+                     data-title="@job.Title"
+                     data-dept-category="@job.DepartmentCategory.ToLowerInvariant()"
+                     data-dept-name="@job.Department"
+                     data-location="@job.WorkLocation"
+                     data-level="@job.ExperienceLevel"
+                     data-tech="@string.Join(" ", job.TechStack)"
+                     data-summary="@job.ShortSummary"
+                     data-hot="@(job.IsHot ? "true" : "false")">
+                    <div class="job-card">
+                        <!-- Header: Dept + Salary -->
+                        <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
+                            <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                <span class="badge-dept">@job.Department</span>
+                                @if (job.IsHot)
                                 {
-                                    <span class="tech-tag">@tech</span>
-                                }
-                                @if (job.TechStack.Count > 5)
-                                {
-                                    <span class="tech-tag text-muted">+@(job.TechStack.Count - 5)</span>
+                                    <span class="badge-hot"><i class="bi bi-fire me-0.5"></i>HOT</span>
                                 }
                             </div>
+                            <span class="salary-text flex-shrink-0">@job.SalaryDisplay</span>
+                        </div>
 
-                            <!-- Action Buttons -->
-                            <div class="d-flex gap-2 pt-2 border-top" style="border-color: var(--color-border) !important;">
-                                <a asp-controller="Jobs" asp-action="Detail" asp-route-id="@job.Slug" class="btn-jobs-outline flex-grow-1 text-center py-2">
-                                    Chi tiết JD
-                                </a>
-                                <a asp-controller="Jobs" asp-action="Detail" asp-route-id="@job.Slug" class="btn-jobs-primary flex-grow-1 text-center py-2">
-                                    Ứng tuyển <i class="bi bi-arrow-right"></i>
-                                </a>
-                            </div>
+                        <!-- Title Link -->
+                        <h3 class="mb-2">
+                            <a asp-controller="Jobs" asp-action="Detail" asp-route-id="@job.Slug" class="job-title-link">
+                                @job.Title
+                            </a>
+                        </h3>
+
+                        <!-- Meta Details -->
+                        <div class="d-flex flex-wrap gap-3 mb-3">
+                            <span class="meta-item">
+                                <i class="bi bi-geo-alt text-success"></i> @job.WorkLocation
+                            </span>
+                            <span class="meta-item">
+                                <i class="bi bi-bar-chart-steps text-primary"></i> @job.ExperienceLevel
+                            </span>
+                            <span class="meta-item">
+                                <i class="bi bi-clock-history text-muted"></i> @job.EmploymentType
+                            </span>
+                        </div>
+
+                        <!-- Short Summary Description -->
+                        <p class="text-muted small flex-grow-1 mb-3" style="line-height: 1.6;">
+                            @job.ShortSummary
+                        </p>
+
+                        <!-- Tech Stack Badges -->
+                        <div class="d-flex flex-wrap gap-1.5 mb-4">
+                            @foreach (var tech in job.TechStack.Take(5))
+                            {
+                                <span class="tech-tag">@tech</span>
+                            }
+                            @if (job.TechStack.Count > 5)
+                            {
+                                <span class="tech-tag text-muted">+@(job.TechStack.Count - 5)</span>
+                            }
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-2 pt-2 border-top" style="border-color: var(--color-border) !important;">
+                            <a asp-controller="Jobs" asp-action="Detail" asp-route-id="@job.Slug" class="btn-jobs-outline flex-grow-1 text-center py-2">
+                                Chi tiết JD
+                            </a>
+                            <a asp-controller="Jobs" asp-action="Detail" asp-route-id="@job.Slug" class="btn-jobs-primary flex-grow-1 text-center py-2">
+                                Ứng tuyển <i class="bi bi-arrow-right"></i>
+                            </a>
                         </div>
                     </div>
-                }
-            </div>
-        }
+                </div>
+            }
+        </div>
     </div>
 </section>
 
@@ -458,3 +464,208 @@
         </div>
     </div>
 </section>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('jobSearchInput');
+    const searchClearBtn = document.getElementById('jobSearchClearBtn');
+    const deptSelect = document.getElementById('jobDeptSelect');
+    const locationSelect = document.getElementById('jobLocationSelect');
+    const levelSelect = document.getElementById('jobLevelSelect');
+    const resetBtn = document.getElementById('btnResetAllJobFilters');
+    const emptyStateResetBtn = document.getElementById('btnEmptyStateReset');
+    const filterForm = document.getElementById('jobFilterForm');
+    
+    const countDisplay = document.getElementById('jobResultsCountDisplay');
+    const hotTagContainer = document.getElementById('jobHotTagContainer');
+    const hotCountDisplay = document.getElementById('jobHotCountDisplay');
+    const emptyState = document.getElementById('jobEmptyState');
+    const cardsGrid = document.getElementById('jobCardsGrid');
+    const latencyBadge = document.getElementById('jobSearchLatencyBadge');
+    const latencyValue = document.getElementById('jobSearchLatencyValue');
+
+    const jobCards = Array.from(document.querySelectorAll('.job-item-col'));
+
+    if (filterForm) {
+        filterForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            applyJobFilters(true);
+        });
+    }
+
+    function applyJobFilters(shouldSyncUrl = true) {
+        const startTime = performance.now();
+        const query = (searchInput ? searchInput.value : '').trim();
+        const dept = (deptSelect ? deptSelect.value : 'all').toLowerCase();
+        const loc = (locationSelect ? locationSelect.value : 'all').toLowerCase();
+        const lvl = (levelSelect ? levelSelect.value : 'all').toLowerCase();
+
+        // Toggle clear button
+        if (searchClearBtn) {
+            if (query.length > 0) {
+                searchClearBtn.classList.remove('d-none');
+            } else {
+                searchClearBtn.classList.add('d-none');
+            }
+        }
+
+        let visibleCount = 0;
+        let hotCount = 0;
+
+        jobCards.forEach(card => {
+            const title = card.getAttribute('data-title') || '';
+            const deptCat = card.getAttribute('data-dept-category') || '';
+            const deptName = card.getAttribute('data-dept-name') || '';
+            const location = card.getAttribute('data-location') || '';
+            const level = card.getAttribute('data-level') || '';
+            const tech = card.getAttribute('data-tech') || '';
+            const summary = card.getAttribute('data-summary') || '';
+            const isHot = card.getAttribute('data-hot') === 'true';
+
+            // Text search with Vietnamese tone normalization
+            const combinedText = `${title} ${deptName} ${tech} ${summary} ${location} ${level}`;
+            const matchesQuery = !query || (window.NoveraInstantSearch 
+                ? window.NoveraInstantSearch.matchSearchTokens(combinedText, query)
+                : combinedText.toLowerCase().includes(query.toLowerCase()));
+
+            // Department filter
+            let matchesDept = true;
+            if (dept && dept !== 'all') {
+                const normDept = window.NoveraInstantSearch ? window.NoveraInstantSearch.removeVietnameseTones(dept) : dept;
+                const normDeptCat = window.NoveraInstantSearch ? window.NoveraInstantSearch.removeVietnameseTones(deptCat) : deptCat;
+                const normDeptName = window.NoveraInstantSearch ? window.NoveraInstantSearch.removeVietnameseTones(deptName) : deptName.toLowerCase();
+                matchesDept = (normDeptCat === normDept) || normDeptName.includes(normDept);
+            }
+
+            // Location filter
+            let matchesLoc = true;
+            if (loc && loc !== 'all') {
+                const normLoc = window.NoveraInstantSearch ? window.NoveraInstantSearch.removeVietnameseTones(loc) : loc;
+                const normJobLoc = window.NoveraInstantSearch ? window.NoveraInstantSearch.removeVietnameseTones(location) : location.toLowerCase();
+                matchesLoc = normJobLoc.includes(normLoc);
+            }
+
+            // Level filter
+            let matchesLvl = true;
+            if (lvl && lvl !== 'all') {
+                const normLvl = window.NoveraInstantSearch ? window.NoveraInstantSearch.removeVietnameseTones(lvl) : lvl;
+                const normJobLvl = window.NoveraInstantSearch ? window.NoveraInstantSearch.removeVietnameseTones(level) : level.toLowerCase();
+                matchesLvl = normJobLvl.includes(normLvl);
+            }
+
+            const isMatch = matchesQuery && matchesDept && matchesLoc && matchesLvl;
+            if (isMatch) {
+                card.classList.remove('d-none');
+                visibleCount++;
+                if (isHot) hotCount++;
+            } else {
+                card.classList.add('d-none');
+            }
+        });
+
+        // Update counts
+        if (countDisplay) countDisplay.textContent = visibleCount;
+        if (hotCountDisplay) hotCountDisplay.textContent = hotCount;
+        if (hotTagContainer) {
+            if (hotCount > 0) hotTagContainer.classList.remove('d-none');
+            else hotTagContainer.classList.add('d-none');
+        }
+
+        // Empty state & grid display
+        if (visibleCount === 0) {
+            if (emptyState) emptyState.classList.remove('d-none');
+            if (cardsGrid) cardsGrid.classList.add('d-none');
+        } else {
+            if (emptyState) emptyState.classList.add('d-none');
+            if (cardsGrid) cardsGrid.classList.remove('d-none');
+        }
+
+        // Latency benchmarking
+        const duration = Math.max(0.5, performance.now() - startTime).toFixed(1);
+        if (latencyBadge && latencyValue) {
+            latencyValue.textContent = `${duration}ms`;
+            if (query || dept !== 'all' || loc !== 'all' || lvl !== 'all') {
+                latencyBadge.classList.remove('d-none');
+            } else {
+                latencyBadge.classList.add('d-none');
+            }
+        }
+
+        // Bi-directional URL synchronization
+        if (shouldSyncUrl && window.NoveraInstantSearch) {
+            window.NoveraInstantSearch.syncUrlParams({
+                search: query || null,
+                department: dept !== 'all' ? dept : null,
+                location: loc !== 'all' ? loc : null,
+                level: lvl !== 'all' ? lvl : null
+            });
+        }
+    }
+
+    function resetAllFilters() {
+        if (searchInput) searchInput.value = '';
+        if (deptSelect) deptSelect.value = 'all';
+        if (locationSelect) locationSelect.value = 'all';
+        if (levelSelect) levelSelect.value = 'all';
+        applyJobFilters(true);
+        if (searchInput) searchInput.focus();
+    }
+
+    // Event listeners
+    if (searchInput) {
+        const debouncedFilter = window.NoveraInstantSearch 
+            ? window.NoveraInstantSearch.debounce(() => applyJobFilters(true), 20)
+            : () => applyJobFilters(true);
+        searchInput.addEventListener('input', debouncedFilter);
+    }
+
+    if (searchClearBtn) {
+        searchClearBtn.addEventListener('click', function () {
+            if (searchInput) {
+                searchInput.value = '';
+                applyJobFilters(true);
+                searchInput.focus();
+            }
+        });
+    }
+
+    if (deptSelect) deptSelect.addEventListener('change', () => applyJobFilters(true));
+    if (locationSelect) locationSelect.addEventListener('change', () => applyJobFilters(true));
+    if (levelSelect) levelSelect.addEventListener('change', () => applyJobFilters(true));
+    if (resetBtn) resetBtn.addEventListener('click', resetAllFilters);
+    if (emptyStateResetBtn) emptyStateResetBtn.addEventListener('click', resetAllFilters);
+
+    // Hydrate state from URL
+    function hydrateFromUrl() {
+        if (!window.NoveraInstantSearch) return;
+        const params = window.NoveraInstantSearch.getUrlParams();
+        let changed = false;
+
+        if (searchInput && params.search !== undefined) {
+            searchInput.value = params.search;
+            changed = true;
+        }
+        if (deptSelect && params.department !== undefined) {
+            deptSelect.value = params.department;
+            changed = true;
+        }
+        if (locationSelect && params.location !== undefined) {
+            locationSelect.value = params.location;
+            changed = true;
+        }
+        if (levelSelect && params.level !== undefined) {
+            levelSelect.value = params.level;
+            changed = true;
+        }
+
+        applyJobFilters(false);
+    }
+
+    window.addEventListener('popstate', hydrateFromUrl);
+
+    // Initial hydration if query parameters present
+    hydrateFromUrl();
+});
+</script>
+}

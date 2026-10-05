@@ -23,8 +23,8 @@
     <header>
         <nav class="navbar navbar-expand-lg ats-navbar sticky-top">
             <div class="container-fluid px-3 px-md-4">
-                <!-- Brand with Official Logo -->
-                <a class="navbar-brand d-flex align-items-center gap-2 py-1 ats-brand-logo" asp-controller="Home" asp-action="Landing">
+                <!-- Brand with Official Logo (Kể cả khi đã đăng nhập, click logo vẫn dẫn về /gioi-thieu) -->
+                <a class="navbar-brand d-flex align-items-center gap-2 py-1 ats-brand-logo" href="/gioi-thieu" title="Trang giới thiệu tuyển dụng NoveraTech">
                     <img src="~/img/logo-dark-transparent.png" 
                          alt="NoveraTech" 
                          style="height: 30px; width: auto; max-width: 140px; object-fit: contain;" 
@@ -40,88 +40,10 @@
                 <div class="collapse navbar-collapse" id="atsNavbarContent">
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        <!-- Navigation Links based on Roles -->
-                        <ul class="navbar-nav me-auto mb-2 mb-lg-0 mt-2 mt-lg-0 gap-1">
-                            <li class="nav-item">
-                                <a class="nav-link ats-nav-link" href="/dashboard">
-                                    <i class="bi bi-speedometer2 me-1"></i> Bàn làm việc
-                                </a>
-                            </li>
+                        <!-- Top Bar được tinh gọn hoàn toàn: Không hiển thị menu ngang trên top bar, mọi điều hướng nằm trong User Profile Dropdown -->
+                        <div class="me-auto"></div>
 
-                            <li class="nav-item">
-                                <a class="nav-link ats-nav-link text-primary fw-medium" href="/landing" title="Xem Cổng thông tin Tuyển dụng NoveraTech">
-                                    <i class="bi bi-globe2 me-1"></i> Landing Page
-                                </a>
-                            </li>
-
-                            @* Menu dành cho Ứng viên *@
-                            @if (User.IsInRole(UserRoles.Candidate))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" asp-controller="Jobs" asp-action="Index">
-                                        <i class="bi bi-briefcase me-1"></i> Việc làm NoveraTech
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link text-success fw-medium" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#updateCvModal">
-                                        <i class="bi bi-file-earmark-person me-1"></i> Cập nhật CV
-                                    </a>
-                                </li>
-                            }
-
-                            @* Menu dành cho Admin *@
-                            @if (User.IsInRole(UserRoles.Admin))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" asp-controller="Users" asp-action="Index">
-                                        <i class="bi bi-people-fill me-1"></i> Quản lý tài khoản
-                                    </a>
-                                </li>
-                            }
-
-                            @* Menu dành cho HR Manager & Recruiter *@
-                            @if (User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#createJobModal">
-                                        <i class="bi bi-megaphone me-1"></i> + Đăng tin tuyển dụng
-                                    </a>
-                                </li>
-                            }
-
-                            @* Menu dành cho Hiring Manager *@
-                            @if (User.IsInRole(UserRoles.HiringManager))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#createRequisitionModal">
-                                        <i class="bi bi-file-earmark-plus me-1"></i> + Đề xuất nhân sự
-                                    </a>
-                                </li>
-                            }
-
-                            @* Menu dành cho Interviewer *@
-                            @if (User.IsInRole(UserRoles.Interviewer))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#interviewEvaluationModal">
-                                        <i class="bi bi-clipboard2-check me-1"></i> Đánh giá phỏng vấn
-                                    </a>
-                                </li>
-                            }
-
-                            @* Menu dành cho Approver *@
-                            @if (User.IsInRole(UserRoles.Approver))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" href="/#staff-workspace">
-                                        <i class="bi bi-check2-square me-1"></i> Duyệt Offer
-                                    </a>
-                                </li>
-                            }
-                        </ul>
-
-
-                        <!-- User Profile & Action Dropdown (S1-04, S1-09) -->
+                        <!-- User Profile & Action Dropdown (RULE.MD: Tinh gọn Top Bar, toàn bộ điều hướng nằm trong profile dropdown) -->
                         <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-2 mt-3 mt-lg-0">
                             <!-- Role Badges for Multi-role representation -->
                             <div class="d-flex flex-wrap gap-1 me-lg-2">
@@ -149,7 +71,7 @@
                                 }
                             </div>
 
-                            <!-- Dropdown User (RULE.MD: 8px radius, clean neutral) -->
+                            <!-- Dropdown User (RULE.MD: 8px radius, clean neutral, full navigation inside) -->
                             <div class="dropdown w-100 w-lg-auto">
                                 <button class="btn-user-toggle d-flex align-items-center gap-2 px-3 py-1.5 w-100 w-lg-auto" style="border-radius: 8px; cursor: pointer; border: 1px solid #E2E8F0; background: #F8FAFC;" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <div class="d-flex align-items-center justify-content-center fw-bold rounded-lg" style="width: 26px; height: 26px; font-size: 11px; background: #ECFDF5; color: #059669; border-radius: 6px;">
@@ -160,14 +82,81 @@
                                     </span>
                                     <i class="bi bi-chevron-down small" style="color: #64748B;"></i>
                                 </button>
-                                <ul class="dropdown-menu dropdown-menu-end mt-2 shadow-sm border" style="border-color: #E2E8F0; border-radius: 10px;">
+                                <ul class="dropdown-menu dropdown-menu-end mt-2 shadow-sm border" style="border-color: #E2E8F0; border-radius: 10px; min-width: 240px;">
                                     <li class="px-3 py-2" style="border-bottom: 1px solid #E2E8F0;">
                                         <div class="small fw-bold" style="color: #0F172A;">@User.Identity.Name</div>
                                         <div class="small text-truncate font-mono" style="color: #64748B; font-size: 0.75rem;">@User.FindFirstValue(ClaimTypes.Email)</div>
                                     </li>
                                     <li>
+                                        <a class="dropdown-item py-2 fw-semibold text-success" href="/dashboard">
+                                            <i class="bi bi-speedometer2 me-2"></i> Bàn làm việc
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-2" asp-controller="Jobs" asp-action="Index">
+                                            <i class="bi bi-briefcase me-2 text-muted"></i> Việc làm NoveraTech
+                                        </a>
+                                    </li>
+
+                                    @* Menu chức năng theo Phân quyền *@
+                                    @if (User.IsInRole(UserRoles.Candidate))
+                                    {
+                                        <li>
+                                            <a class="dropdown-item py-2" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#updateCvModal">
+                                                <i class="bi bi-file-earmark-person me-2 text-muted"></i> Cập nhật hồ sơ &amp; CV
+                                            </a>
+                                        </li>
+                                    }
+
+                                    @if (User.IsInRole(UserRoles.Admin))
+                                    {
+                                        <li>
+                                            <a class="dropdown-item py-2" asp-controller="Users" asp-action="Index">
+                                                <i class="bi bi-people-fill me-2 text-muted"></i> Quản lý tài khoản
+                                            </a>
+                                        </li>
+                                    }
+
+                                    @if (User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
+                                    {
+                                        <li>
+                                            <a class="dropdown-item py-2" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#createJobModal">
+                                                <i class="bi bi-megaphone me-2 text-muted"></i> Đăng tin tuyển dụng
+                                            </a>
+                                        </li>
+                                    }
+
+                                    @if (User.IsInRole(UserRoles.HiringManager))
+                                    {
+                                        <li>
+                                            <a class="dropdown-item py-2" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#createRequisitionModal">
+                                                <i class="bi bi-file-earmark-plus me-2 text-muted"></i> Đề xuất nhân sự
+                                            </a>
+                                        </li>
+                                    }
+
+                                    @if (User.IsInRole(UserRoles.Interviewer))
+                                    {
+                                        <li>
+                                            <a class="dropdown-item py-2" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#interviewEvaluationModal">
+                                                <i class="bi bi-clipboard2-check me-2 text-muted"></i> Đánh giá phỏng vấn
+                                            </a>
+                                        </li>
+                                    }
+
+                                    @if (User.IsInRole(UserRoles.Approver))
+                                    {
+                                        <li>
+                                            <a class="dropdown-item py-2" href="/dashboard/phe-duyet">
+                                                <i class="bi bi-check2-square me-2 text-muted"></i> Phê duyệt Offer
+                                            </a>
+                                        </li>
+                                    }
+
+                                    <li><hr class="dropdown-divider my-1"></li>
+                                    <li>
                                         <a class="dropdown-item py-2" asp-controller="Account" asp-action="ChangePassword">
-                                            <i class="bi bi-key me-2 text-success"></i> Đổi mật khẩu
+                                            <i class="bi bi-key me-2 text-muted"></i> Đổi mật khẩu
                                         </a>
                                     </li>
                                     <li><hr class="dropdown-divider my-1"></li>
@@ -187,22 +176,22 @@
                     {
                         <ul class="navbar-nav ms-auto align-items-center gap-1 gap-lg-2 mt-2 mt-lg-0">
                             <li class="nav-item">
-                                <a class="nav-link ats-nav-link" href="/landing#about">
+                                <a class="nav-link ats-nav-link" href="/gioi-thieu#about">
                                     Về NoveraTech
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link ats-nav-link" href="/landing#benefits">
+                                <a class="nav-link ats-nav-link" href="/gioi-thieu#benefits">
                                     Đãi ngộ & Văn hóa
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link ats-nav-link fw-semibold" asp-controller="Jobs" asp-action="Index" style="color: #059669;">
-                                    <i class="bi bi-briefcase me-1"></i> Cơ hội việc làm (12+)
+                                    <i class="bi bi-briefcase me-1"></i> Cơ hội việc làm
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link ats-nav-link" href="/landing#process">
+                                <a class="nav-link ats-nav-link" href="/gioi-thieu#process">
                                     Quy trình tuyển dụng
                                 </a>
                             </li>
@@ -267,7 +256,7 @@
                 <span>Tham gia và làm việc với chúng mình ngay hôm nay!</span>
             </div>
             <div class="d-flex align-items-center gap-3">
-                <a href="/landing" class="text-decoration-none text-muted" style="font-size: 0.8rem;">Cổng Tuyển Dụng</a>
+                <a href="/gioi-thieu" class="text-decoration-none text-muted" style="font-size: 0.8rem;">Cổng Tuyển Dụng</a>
                 <a asp-controller="Account" asp-action="StaffLogin" class="text-decoration-none text-muted" style="font-size: 0.8rem;">Nhân sự</a>
             </div>
         </div>
@@ -276,6 +265,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/instant-search.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

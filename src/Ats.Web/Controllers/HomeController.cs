@@ -76,6 +76,9 @@ public class HomeController : Controller
             .Distinct()
             .ToList();
 
+        // Đồng bộ tổng số vị trí đang mở trên toàn hệ thống cho mọi vai trò
+        model.TotalOpenJobs = await _dbContext.JobPostings.CountAsync(j => j.Status == JobPostingStatus.PUBLISHED);
+
         if (isCandidate)
         {
             // Load hồ sơ của ứng viên hiện tại
@@ -337,6 +340,40 @@ public class HomeController : Controller
                     JobTitle = i.Application?.JobPosting?.Title ?? "Vị trí tuyển dụng"
                 })
                 .ToList();
+
+            // Toàn bộ ứng viên cho Bảng Quản Lý Ứng Viên & Tiến Trình Tuyển Dụng
+            var allApps = await _dbContext.Applications
+                .Include(a => a.Candidate)
+                    .ThenInclude(c => c.Resumes)
+                .Include(a => a.JobPosting)
+                .Include(a => a.CurrentStage)
+                .Where(a => !a.IsDeleted)
+                .OrderByDescending(a => a.AppliedAt)
+                .Take(50)
+                .ToListAsync();
+
+            model.CandidatePipelineItems = allApps.Select(a =>
+            {
+                var candName = $"{a.Candidate.FirstName} {a.Candidate.LastName}".Trim();
+                var primaryResume = a.Candidate.Resumes.FirstOrDefault(r => r.IsPrimary) ?? a.Candidate.Resumes.FirstOrDefault();
+                return new CandidatePipelineItemDto
+                {
+                    ApplicationId = a.Id,
+                    CandidateId = a.CandidateId,
+                    CandidateName = candName,
+                    CandidateEmail = a.Candidate.Email,
+                    CandidatePhone = a.Candidate.Phone ?? "Chưa có",
+                    JobTitle = a.JobPosting.Title,
+                    CurrentStageId = a.CurrentStageId,
+                    CurrentStageName = a.CurrentStage.Name,
+                    CurrentStageOrder = a.CurrentStage.StageOrder,
+                    StageColor = a.CurrentStage.ColorCode ?? "#059669",
+                    AppliedDateDisplay = a.AppliedAt.HasValue ? a.AppliedAt.Value.ToString("dd/MM/yyyy") : a.CreatedAt.ToString("dd/MM/yyyy"),
+                    Status = a.Status.ToString(),
+                    ResumeFileName = primaryResume?.FileName ?? "CV_UngVien.pdf",
+                    ResumeFilePath = primaryResume?.FilePath ?? "#"
+                };
+            }).ToList();
         }
 
         return model;
@@ -344,11 +381,17 @@ public class HomeController : Controller
 
     [HttpGet("/gioi-thieu")]
     [HttpHead("/gioi-thieu")]
+    public async Task<IActionResult> GioiThieu()
+    {
+        ViewBag.TotalOpenJobs = await _dbContext.JobPostings.CountAsync(j => j.Status == JobPostingStatus.PUBLISHED);
+        return View("Landing");
+    }
+
     [HttpGet("/landing")]
     [HttpHead("/landing")]
-    public IActionResult Landing()
+    public IActionResult LegacyLanding()
     {
-        return View("Landing");
+        return RedirectPermanent("/gioi-thieu");
     }
 
     public IActionResult Privacy()

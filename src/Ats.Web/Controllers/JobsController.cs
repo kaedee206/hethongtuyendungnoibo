@@ -1,8 +1,11 @@
 using System.Security.Claims;
+using Ats.Web.Constants;
 using Ats.Web.Data;
 using Ats.Web.Models.Entities;
 using Ats.Web.Models.Enums;
+using Ats.Web.Models.ViewModels.Jobs;
 using Ats.Web.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -240,4 +243,140 @@ public class JobsController : Controller
 
         return RedirectToAction(nameof(Detail), new { id = jobId });
     }
+
+    // GET: /Jobs/Create
+    [HttpGet("Create")]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager}")]
+    public IActionResult Create()
+    {
+        var model = new CreateJobViewModel();
+        return View(model);
+    }
+
+    // POST: /Jobs/Create
+    [HttpPost("Create")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager}")]
+    public async Task<IActionResult> Create([FromForm] CreateJobViewModel model)
+    {
+        if (string.IsNullOrWhiteSpace(model.Title))
+        {
+            ModelState.AddModelError(nameof(model.Title), "Vui lòng nhập tiêu đề vị trí tuyển dụng.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        try
+        {
+            // 1. Tìm hoặc tạo Department
+            var deptName = string.IsNullOrWhiteSpace(model.DepartmentName) ? "Công nghệ Thông tin (IT)" : model.DepartmentName.Trim();
+            var dept = await _dbContext.Departments.FirstOrDefaultAsync(d => d.Name.ToLower() == deptName.ToLower())
+                ?? await _dbContext.Departments.FirstOrDefaultAsync();
+            if (dept == null)
+            {
+                dept = new Department
+                {
+                    Id = Guid.NewGuid(),
+                    Name = deptName,
+                    Code = deptName.Length >= 3 ? deptName.Substring(0, 3).ToUpper() : "DEP",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
+                await _dbContext.Departments.AddAsync(dept);
+                await _dbContext.SaveChangesAsync();
+            }
+
+            // 2. Tìm hoặc tạo JobPosition
+            var jobPos = await _dbContext.JobPositions.FirstOrDefaultAsync(p => p.Title.ToLower() == model.Title.Trim().ToLower() && p.DepartmentId == dept.Id);
+            if (jobPos == null)
+            {
+                jobPos = new JobPosition
+                {
+                    Id = Guid.NewGuid(),
+                    DepartmentId = dept.Id,
+                    Title = model.Title.Trim(),
+                    Code = "POS-" + Guid.NewGuid().ToString("N")[..6].ToUpper(),
+                    JobLevel = model.ExperienceLevel,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
+                await _dbContext.JobPositions.AddAsync(jobPos);
+                await _dbContext.SaveChangesAsync();
+            }
+
+            // 3. Tạo JobRequisition
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+            if (currentUserId == Guid.Empty)
+            {
+                currentUserId = await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync();
+            }
+
+            var req = new JobRequisition
+            {
+                Id = Guid.NewGuid(),
+                DepartmentId = dept.Id,
+                JobPositionId = jobPos.Id,
+                Code = "REQ-" + DateTime.UtcNow.ToString("yyMM") + "-" + Guid.NewGuid().ToString("N")[..4].ToUpper(),
+                Quantity = model.Quantity > 0 ? model.Quantity : 1,
+                HeadcountType = HeadcountType.NEW_HEADCOUNT,
+                Status = RequisitionStatus.APPROVED,
+                HiringManagerId = currentUserId,
+                TargetHireDate = DateOnly.FromDateTime(model.ExpiredDate),
+                Reason = "Mở rộng quy mô và phát triển sản phẩm công nghệ NoveraTech",
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await _dbContext.JobRequisitions.AddAsync(req);
+
+            // 4. Định dạng Requirements kèm [TECHSTACK] và [RESPONSIBILITIES]
+            var techTags = string.IsNullOrWhiteSpace(model.TechStack) ? "" : $"[TECHSTACK]{model.TechStack.Trim()}[/TECHSTACK]\n";
+            var respBlock = string.IsNullOrWhiteSpace(model.Responsibilities) ? "" : $"[RESPONSIBILITIES]{model.Responsibilities.Trim()}[/RESPONSIBILITIES]\n";
+            var combinedReqs = $"{techTags}{respBlock}{model.Requirements ?? ""}".Trim();
+
+            // 5. Sinh Slug thân thiện
+            var cleanTitle = System.Text.RegularExpressions.Regex.Replace(model.Title.ToLower(), @"[^a-z0-9\s-]", "");
+            var baseSlug = cleanTitle.Trim().Replace(" ", "-");
+            if (string.IsNullOrWhiteSpace(baseSlug)) baseSlug = "job";
+            var slug = $"{baseSlug}-{Guid.NewGuid().ToString("N")[..6]}";
+
+            // 6. Tạo JobPosting với Status PUBLISHED
+            var posting = new JobPosting
+            {
+                Id = Guid.NewGuid(),
+                RequisitionId = req.Id,
+                Title = model.Title.Trim(),
+                Slug = slug,
+                WorkLocation = string.IsNullOrWhiteSpace(model.WorkLocation) ? "Hà Nội (Hybrid 2 ngày WFH)" : model.WorkLocation.Trim(),
+                EmploymentType = EmploymentType.FULL_TIME,
+                SalaryDisplay = string.IsNullOrWhiteSpace(model.SalaryDisplay) ? "Thương lượng theo năng lực" : model.SalaryDisplay.Trim(),
+                JobDescription = model.Overview?.Trim(),
+                Requirements = combinedReqs,
+                Benefits = model.Benefits?.Trim(),
+                PublishedAt = DateTimeOffset.UtcNow,
+                ExpiredAt = new DateTimeOffset(model.ExpiredDate, TimeSpan.Zero),
+                Status = JobPostingStatus.PUBLISHED,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await _dbContext.JobPostings.AddAsync(posting);
+            await _dbContext.SaveChangesAsync();
+
+            _logger.LogInformation("Đã xuất bản tin tuyển dụng mới: {Title} (Slug: {Slug}) bởi User {UserId}",
+                posting.Title, posting.Slug, currentUserId);
+
+            TempData["SuccessMessage"] = $"🎉 Vị trí tuyển dụng '{model.Title}' đã được xuất bản trực tiếp lên hệ thống thành công!";
+            return RedirectToAction(nameof(Detail), new { id = posting.Slug });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi tạo tin tuyển dụng mới");
+            ModelState.AddModelError("", "Đã có lỗi xảy ra khi tạo tin tuyển dụng: " + ex.Message);
+            return View(model);
+        }
+    }
 }
+

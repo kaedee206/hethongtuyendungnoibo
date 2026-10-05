@@ -349,3 +349,70 @@ footer {
   animation: none !important;
   box-shadow: none !important;
 }
+
+/* ─── Dropdown Menu Theme (RULE.MD Section 4.3.A) ────────── */
+.dropdown-menu {
+  border-radius: 8px !important;
+  border: 1px solid var(--border-default) !important;
+  background-color: #FFFFFF !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04) !important;
+  padding: 6px !important;
+}
+
+.dropdown-item {
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  color: var(--text-primary) !important;
+  display: flex !important;
+  align-items: center !important;
+  transition: all 0.15s ease !important;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+  background-color: var(--bg-subtle) !important;
+  color: var(--text-primary) !important;
+}
+
+.dropdown-item i {
+  font-size: 16px;
+  color: var(--text-muted);
+  margin-right: 8px;
+}
+
+.dropdown-divider {
+  border-top: 1px solid var(--bg-subtle) !important;
+  margin: 4px 0 !important;
+  opacity: 1 !important;
+}
+
+/* ─── Pop-up Notification / Toast Theme (RULE.MD Section 4.3.B) ── */
+.position-fixed.bottom-0.end-0 {
+  bottom: 24px !important;
+  right: 24px !important;
+  z-index: 1090 !important;
+}
+
+.toast {
+  border-radius: 12px !important;
+  border: 1px solid var(--border-default) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+  background-color: #FFFFFF !important;
+  color: var(--text-primary) !important;
+  overflow: hidden;
+  transition: transform 0.25s ease-out, opacity 0.25s ease-out;
+}
+
+.toast.toast-success {
+  border-left: 4px solid var(--brand-primary) !important;
+}
+
+.toast.toast-error {
+  border-left: 4px solid var(--status-error) !important;
+}
+
+.toast.toast-warning {
+  border-left: 4px solid var(--status-warning) !important;
+}
