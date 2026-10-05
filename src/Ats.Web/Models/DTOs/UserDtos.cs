@@ -70,6 +70,7 @@ public class UpdateProfileRequestDto
     [StringLength(100, ErrorMessage = "Họ tên không được vượt quá 100 ký tự.")]
     public string FullName { get; set; } = default!;
 
+    [RegularExpression(@"^(0|\+84)[3|5|7|8|9][0-9]{8}$", ErrorMessage = "Số điện thoại không hợp lệ.")]
     [RegularExpression(@"^(0|\+84|84)[35789][0-9]{8}$", ErrorMessage = "Số điện thoại không hợp lệ.")]
     public string? PhoneNumber { get; set; }
 
@@ -80,4 +81,18 @@ public class UpdateProfileRequestDto
     public string? Email { get; set; }
     public string? Department { get; set; }
     public string? Role { get; set; }
+}
+
+public class UserProfileResponseDto
+{
+    public string FullName { get; set; } = default!;
+    public string Email { get; set; } = default!;
+    public string? PhoneNumber { get; set; }
+    public string? JobTitle { get; set; }
+    public string? Department { get; set; }
+    public string Role { get; set; } = default!;
+    
+    // Gợi ý: Phân biệt rõ editable vs read-only trong response (vd: metadata/flags) để FE render đúng
+    public List<string> ReadOnlyFields { get; set; } = new List<string> { "email", "department", "role" };
+    public List<string> EditableFields { get; set; } = new List<string> { "fullName", "phoneNumber", "jobTitle" };
 }
