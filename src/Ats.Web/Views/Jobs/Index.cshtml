@@ -231,11 +231,14 @@
                                 <div class="position-relative">
                                     <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
                                     <input type="text" id="jobSearchInput" name="search" class="form-control form-control-custom ps-5 pe-5" 
-                                           placeholder="Từ khóa: .NET, React, AI, Python, K8s..." 
+                                           placeholder="Từ khóa: .NET, React, AI... (từ 3 ký tự)" 
                                            value="@Model.SearchKeyword" autocomplete="off" />
                                     <button type="button" id="jobSearchClearBtn" class="btn btn-sm btn-link position-absolute top-50 end-0 translate-middle-y me-2 text-muted @(string.IsNullOrEmpty(Model.SearchKeyword) ? "d-none" : "")" style="text-decoration:none;" title="Xóa từ khóa">
                                         <i class="bi bi-x-circle-fill"></i>
                                     </button>
+                                    <div id="jobSearchHint" class="text-warning d-none position-absolute" style="top: 100%; left: 0; font-size: 0.72rem; white-space: nowrap; z-index: 10; padding-top: 2px;">
+                                        <i class="bi bi-info-circle me-1"></i>Nhập tối thiểu 3 ký tự để tìm kiếm
+                                    </div>
                                 </div>
                             </div>
 
@@ -412,6 +415,59 @@
                 </div>
             }
         </div>
+
+        <!-- Pagination Controls (RULE.MD Compliant) -->
+        @if (Model.TotalPages > 1)
+        {
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-5 pt-3 gap-3" style="border-top: 1px solid var(--color-border);">
+                <div class="small text-muted">
+                    Hiển thị từ <strong class="text-dark">@((Model.CurrentPage - 1) * Model.PageSize + 1)</strong> đến <strong class="text-dark">@Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalRecords)</strong> trong tổng số <strong class="text-dark">@Model.TotalRecords</strong> vị trí
+                </div>
+                <nav aria-label="Phân trang việc làm">
+                    <ul class="pagination pagination-sm mb-0 gap-1">
+                        <li class="page-item @(Model.CurrentPage <= 1 ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index"
+                               asp-route-page="@(Model.CurrentPage - 1)"
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-search="@Model.SearchKeyword"
+                               asp-route-department="@Model.SelectedDepartment"
+                               asp-route-location="@Model.SelectedLocation"
+                               asp-route-level="@Model.SelectedLevel"
+                               style="border-radius: 6px; border-color: #E2E8F0; color: #0F172A;">
+                                <i class="bi bi-chevron-left me-1"></i> Trước
+                            </a>
+                        </li>
+                        @for (int p = 1; p <= Model.TotalPages; p++)
+                        {
+                            <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                                <a class="page-link" asp-action="Index"
+                                   asp-route-page="@p"
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@Model.SearchKeyword"
+                                   asp-route-department="@Model.SelectedDepartment"
+                                   asp-route-location="@Model.SelectedLocation"
+                                   asp-route-level="@Model.SelectedLevel"
+                                   style="border-radius: 6px; @(p == Model.CurrentPage ? "background: #059669; border-color: #059669; color: #FFF;" : "border-color: #E2E8F0; color: #0F172A;")">
+                                    @p
+                                </a>
+                            </li>
+                        }
+                        <li class="page-item @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index"
+                               asp-route-page="@(Model.CurrentPage + 1)"
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-search="@Model.SearchKeyword"
+                               asp-route-department="@Model.SelectedDepartment"
+                               asp-route-location="@Model.SelectedLocation"
+                               asp-route-level="@Model.SelectedLevel"
+                               style="border-radius: 6px; border-color: #E2E8F0; color: #0F172A;">
+                                Sau <i class="bi bi-chevron-right ms-1"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
     </div>
 </section>
 
@@ -501,12 +557,20 @@ document.addEventListener('DOMContentLoaded', function () {
         const loc = (locationSelect ? locationSelect.value : 'all').toLowerCase();
         const lvl = (levelSelect ? levelSelect.value : 'all').toLowerCase();
 
-        // Toggle clear button
+        // Toggle clear button & 3-character hint
+        const hint = document.getElementById('jobSearchHint');
         if (searchClearBtn) {
             if (query.length > 0) {
                 searchClearBtn.classList.remove('d-none');
             } else {
                 searchClearBtn.classList.add('d-none');
+            }
+        }
+        if (hint) {
+            if (query.length > 0 && query.length < 3) {
+                hint.classList.remove('d-none');
+            } else {
+                hint.classList.add('d-none');
             }
         }
 
@@ -523,9 +587,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const summary = card.getAttribute('data-summary') || '';
             const isHot = card.getAttribute('data-hot') === 'true';
 
-            // Text search with Vietnamese tone normalization
+            // Text search: Chỉ tìm kiếm khi từ khóa có từ 3 ký tự trở lên (>= 3 chars)
             const combinedText = `${title} ${deptName} ${tech} ${summary} ${location} ${level}`;
-            const matchesQuery = !query || (window.NoveraInstantSearch 
+            const matchesQuery = !query || query.length < 3 || (window.NoveraInstantSearch 
                 ? window.NoveraInstantSearch.matchSearchTokens(combinedText, query)
                 : combinedText.toLowerCase().includes(query.toLowerCase()));
 
