@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations.Schema;
 using Ats.Web.Models.Enums;
 
 namespace Ats.Web.Models.Entities;
@@ -11,6 +11,8 @@ public class Department : BaseEntity
     public Guid? ParentId { get; set; }
     public Guid? ManagerId { get; set; }
     public bool IsActive { get; set; } = true;
+    public int Level { get; set; } = 1;
+    public string Path { get; set; } = string.Empty;
     
     public Department? Parent { get; set; }
     public ICollection<Department> Children { get; set; } = new List<Department>();
