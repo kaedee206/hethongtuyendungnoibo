@@ -59,7 +59,7 @@ public class RequisitionsController(
             return View(model);
         }
 
-        var (success, message, requisitionId) = await _requisitionService.CreateRequisitionAsync(model, userId, cancellationToken);
+        var (success, message, requisitionId, code) = await _requisitionService.SaveOrUpdateRequisitionAsync(model, userId, cancellationToken);
 
         if (!success)
         {
@@ -69,7 +69,161 @@ public class RequisitionsController(
         }
 
         TempData["SuccessMessage"] = message;
+
+        if (model.IsDraft && requisitionId.HasValue)
+        {
+            return RedirectToAction(nameof(Edit), new { id = requisitionId.Value });
+        }
+
         return RedirectToAction(nameof(Create));
+    }
+
+    /// <summary>
+    /// GET: /yeu-cau-tuyen-dung/ban-nhap hoặc /requisitions/drafts
+    /// Hiển thị danh sách "Yêu cầu tuyển dụng nháp" của Trưởng bộ phận để xem lại và tiếp tục chỉnh sửa.
+    /// </summary>
+    [HttpGet("ban-nhap")]
+    [HttpGet("drafts")]
+    public async Task<IActionResult> Drafts(CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        var drafts = await _requisitionService.GetDraftsByManagerAsync(userId, cancellationToken);
+        return View(drafts);
+    }
+
+    /// <summary>
+    /// GET: /yeu-cau-tuyen-dung/chinh-sua/{id} hoặc /requisitions/edit/{id}
+    /// Mở lại bản nháp yêu cầu tuyển dụng để tiếp tục chỉnh sửa hoặc hoàn thiện gửi duyệt.
+    /// </summary>
+    [HttpGet("chinh-sua/{id:guid}")]
+    [HttpGet("edit/{id:guid}")]
+    public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        var model = await _requisitionService.GetDraftByIdAsync(id, userId, cancellationToken);
+
+        if (model == null)
+        {
+            TempData["ErrorMessage"] = "Không tìm thấy bản nháp yêu cầu tuyển dụng hoặc bạn không có quyền truy cập.";
+            return RedirectToAction(nameof(Drafts));
+        }
+
+        return View(model);
+    }
+
+    /// <summary>
+    /// POST: /yeu-cau-tuyen-dung/chinh-sua/{id} hoặc /requisitions/edit/{id}
+    /// Cập nhật bản nháp hoặc hoàn tất gửi duyệt từ trang chỉnh sửa.
+    /// </summary>
+    [HttpPost("chinh-sua/{id:guid}")]
+    [HttpPost("edit/{id:guid}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(
+        Guid id,
+        RequisitionCreateViewModel model,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        model.Id = id;
+
+        if (!ModelState.IsValid)
+        {
+            await _requisitionService.PopulateOptionsAsync(model, userId, cancellationToken);
+            return View(model);
+        }
+
+        var (success, message, requisitionId, code) = await _requisitionService.SaveOrUpdateRequisitionAsync(model, userId, cancellationToken);
+
+        if (!success)
+        {
+            ModelState.AddModelError(string.Empty, message);
+            await _requisitionService.PopulateOptionsAsync(model, userId, cancellationToken);
+            return View(model);
+        }
+
+        TempData["SuccessMessage"] = message;
+
+        if (model.IsDraft)
+        {
+            return RedirectToAction(nameof(Edit), new { id });
+        }
+
+        return RedirectToAction(nameof(Drafts));
+    }
+
+    /// <summary>
+    /// POST: /yeu-cau-tuyen-dung/xoa-nhap/{id} hoặc /requisitions/delete-draft/{id}
+    /// Xóa một bản nháp yêu cầu tuyển dụng không còn nhu cầu sử dụng.
+    /// </summary>
+    [HttpPost("xoa-nhap/{id:guid}")]
+    [HttpPost("delete-draft/{id:guid}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteDraft(Guid id, CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        var (success, message) = await _requisitionService.DeleteDraftAsync(id, userId, cancellationToken);
+
+        if (success)
+        {
+            TempData["SuccessMessage"] = message;
+        }
+        else
+        {
+            TempData["ErrorMessage"] = message;
+        }
+
+        return RedirectToAction(nameof(Drafts));
+    }
+
+    /// <summary>
+    /// POST: /yeu-cau-tuyen-dung/api/auto-save
+    /// Endpoint AJAX chuyên trách Auto-Save định kỳ 30s ngầm từ Client.
+    /// </summary>
+    [HttpPost("api/auto-save")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AutoSaveDraft(
+        [FromForm] RequisitionCreateViewModel model,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        model.IsDraft = true;
+
+        var (success, message, requisitionId, code) = await _requisitionService.SaveOrUpdateRequisitionAsync(model, userId, cancellationToken);
+
+        if (!success)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message
+            });
+        }
+
+        return Ok(new
+        {
+            success = true,
+            message,
+            requisitionId,
+            code,
+            savedAt = DateTime.Now.ToString("HH:mm:ss")
+        });
+    }
+
+    /// <summary>
+    /// GET: /yeu-cau-tuyen-dung/api/drafts/count
+    /// Lấy tổng số lượng bản nháp hiện tại của người dùng.
+    /// </summary>
+    [HttpGet("api/drafts/count")]
+    public async Task<IActionResult> GetDraftCountApi(CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        var count = await _requisitionService.GetDraftCountAsync(userId, cancellationToken);
+
+        return Ok(new
+        {
+            success = true,
+            count
+        });
     }
 
     /// <summary>
@@ -99,7 +253,7 @@ public class RequisitionsController(
             });
         }
 
-        var (success, message, requisitionId) = await _requisitionService.CreateRequisitionAsync(model, userId, cancellationToken);
+        var (success, message, requisitionId, code) = await _requisitionService.SaveOrUpdateRequisitionAsync(model, userId, cancellationToken);
 
         if (!success)
         {
@@ -115,6 +269,7 @@ public class RequisitionsController(
             success = true,
             message,
             requisitionId,
+            code,
             isDraft = model.IsDraft
         });
     }
