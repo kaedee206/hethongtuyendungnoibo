@@ -10,7 +10,11 @@
             <h1 class="h3 fw-bold text-dark mb-1">Quản trị người dùng & Phân quyền</h1>
             <p class="text-muted small mb-0">Quản lý danh sách tài khoản nội bộ NoveraTech, phân quyền đa vai trò và kiểm soát bảo mật.</p>
         </div>
-        <div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-success d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm bg-white" data-bs-toggle="modal" data-bs-target="#importUsersModal">
+                <i class="bi bi-file-earmark-spreadsheet"></i>
+                <span class="fw-semibold">Nhập nhân sự hàng loạt</span>
+            </button>
             <a asp-action="Create" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm">
                 <i class="bi bi-person-plus-fill"></i>
                 <span class="fw-semibold">Thêm tài khoản mới</span>
@@ -329,6 +333,35 @@
     </div>
 </div>
 
+<!-- Modal Nhập Nhân Sự Hàng Loạt -->
+<div class="modal fade" id="importUsersModal" tabindex="-1" aria-labelledby="importUsersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold" id="importUsersModalLabel">
+                    <i class="bi bi-file-earmark-spreadsheet me-2"></i> Nhập nhân sự hàng loạt
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <p class="mb-4 text-muted">
+                    Vui lòng tải tệp mẫu dưới đây, điền danh sách nhân sự cần nhập theo đúng định dạng và tải lên lại hệ thống.
+                </p>
+                <div class="d-flex flex-column align-items-center mb-2">
+                    <button id="btnDownloadTemplate" class="btn btn-outline-success d-inline-flex align-items-center gap-2 px-4 py-2 mb-2" style="border-radius: 8px;">
+                        <span id="downloadSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        <span id="downloadText"><i class="bi bi-download me-1"></i> Tải tệp mẫu</span>
+                    </button>
+                    <div id="downloadMessage" class="small mt-1" style="min-height: 20px;"></div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px;">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         const lockModal = document.getElementById('lockModal');
@@ -354,6 +387,61 @@
                 const form = document.getElementById('unlockForm');
                 form.action = '/users/unlock/' + userId;
                 document.getElementById('unlockTargetUserName').textContent = userName;
+            });
+        }
+
+        // Script tải tệp mẫu
+        const btnDownloadTemplate = document.getElementById('btnDownloadTemplate');
+        if (btnDownloadTemplate) {
+            btnDownloadTemplate.addEventListener('click', async function () {
+                const textSpan = document.getElementById('downloadText');
+                const spinner = document.getElementById('downloadSpinner');
+                const messageDiv = document.getElementById('downloadMessage');
+                
+                // Hiển thị trạng thái loading
+                btnDownloadTemplate.disabled = true;
+                textSpan.textContent = 'Đang tải...';
+                spinner.classList.remove('d-none');
+                messageDiv.textContent = '';
+                messageDiv.className = 'small mt-1';
+                
+                try {
+                    const response = await fetch('/api/tai-khoan/tai-tep-mau', {
+                        method: 'GET'
+                    });
+                    
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'Mau_Nhap_Nhan_Su.xlsx';
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        window.URL.revokeObjectURL(url);
+                        
+                        messageDiv.textContent = 'Tải tệp mẫu thành công!';
+                        messageDiv.classList.add('text-success');
+                    } else {
+                        let errorMsg = 'Tải thất bại. Vui lòng thử lại.';
+                        try {
+                            const errorData = await response.json();
+                            if (errorData.message) errorMsg = errorData.message;
+                        } catch(e) {}
+                        messageDiv.textContent = errorMsg;
+                        messageDiv.classList.add('text-danger');
+                    }
+                } catch (error) {
+                    console.error('Lỗi khi tải tệp:', error);
+                    messageDiv.textContent = 'Lỗi kết nối. Vui lòng kiểm tra mạng.';
+                    messageDiv.classList.add('text-danger');
+                } finally {
+                    // Khôi phục trạng thái nút
+                    btnDownloadTemplate.disabled = false;
+                    textSpan.innerHTML = '<i class="bi bi-download me-1"></i> Tải tệp mẫu';
+                    spinner.classList.add('d-none');
+                }
             });
         }
     </script>

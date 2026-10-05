@@ -138,4 +138,28 @@ public class UserController : ControllerBase
 
         return Ok(new { isSuccess = true, message = "Cập nhật thông tin tài khoản thành công." });
     }
+
+    /// <summary>
+    /// API Tải tệp mẫu nhập nhân sự hàng loạt (GET: /api/tai-khoan/tai-tep-mau)
+    /// </summary>
+    [HttpGet("tai-tep-mau")]
+    public IActionResult DownloadTemplate()
+    {
+        try
+        {
+            var userIdString = HttpContext.Session.GetString("UserId");
+            if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out _))
+            {
+                return Unauthorized(new { isSuccess = false, message = "Vui lòng đăng nhập để thực hiện chức năng này." });
+            }
+
+            // Tạo nội dung file Excel mẫu cơ bản (dummy content)
+            byte[] fileBytes = new byte[] { 0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x00, 0x00, 0x08, 0x00 }; // ZIP magic number for valid basic structure simulation
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Mau_Nhap_Nhan_Su.xlsx");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { isSuccess = false, message = "Đã xảy ra lỗi khi tải tệp mẫu: " + ex.Message });
+        }
+    }
 }
