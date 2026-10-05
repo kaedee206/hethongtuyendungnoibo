@@ -1,0 +1,261 @@
+/**
+ * Requisition Multi-Step Form (Wizard) Styles
+ * Tuân thủ nghiêm ngặt RULE.md: Không dùng icon viễn tưởng, bo góc 12px cho card, 8px cho button,
+ * bảng màu chuẩn Emerald (#059669) và Slate-50 (#F8FAFC).
+ */
+
+/* 1. Wizard Header & Progress Bar */
+.requisition-wizard-header {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+}
+
+.wizard-steps-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.wizard-step-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    transition: all 0.2s ease-in-out;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    user-select: none;
+}
+
+.wizard-step-item:hover {
+    background-color: #F8FAFC;
+}
+
+.wizard-step-circle {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    border: 2px solid #E2E8F0;
+    background-color: #FFFFFF;
+    color: #64748B;
+    transition: all 0.25s ease;
+    flex-shrink: 0;
+}
+
+.wizard-step-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.wizard-step-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 0.1rem;
+    line-height: 1.2;
+}
+
+.wizard-step-subtitle {
+    font-size: 0.75rem;
+    color: #94A3B8;
+    line-height: 1.2;
+}
+
+/* Connecting Line giữa các bước */
+.wizard-step-connector {
+    flex: 1;
+    height: 2px;
+    background-color: #E2E8F0;
+    margin: 0 0.5rem;
+    position: relative;
+    z-index: 1;
+    transition: background-color 0.3s ease;
+}
+
+.wizard-step-connector.is-completed {
+    background-color: #059669;
+}
+
+/* Trạng thái Bước: Active */
+.wizard-step-item.is-active .wizard-step-circle {
+    background-color: #059669;
+    border-color: #059669;
+    color: #FFFFFF;
+    box-shadow: 0 0 0 4px #ECFDF5;
+}
+
+.wizard-step-item.is-active .wizard-step-title {
+    color: #059669;
+    font-weight: 700;
+}
+
+.wizard-step-item.is-active .wizard-step-subtitle {
+    color: #047857;
+}
+
+/* Trạng thái Bước: Completed */
+.wizard-step-item.is-completed .wizard-step-circle {
+    background-color: #ECFDF5;
+    border-color: #059669;
+    color: #059669;
+}
+
+.wizard-step-item.is-completed .wizard-step-title {
+    color: #0F172A;
+}
+
+/* Trạng thái Bước: Pending */
+.wizard-step-item.is-pending {
+    opacity: 0.85;
+}
+
+/* 2. Step Panes Container */
+.wizard-step-pane {
+    display: none;
+    animation: fadeInPane 0.25s ease-in-out;
+}
+
+.wizard-step-pane.is-visible {
+    display: block;
+}
+
+@keyframes fadeInPane {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 3. Review Summary Cards (Bước 3) */
+.review-summary-card {
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    background: #FFFFFF;
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+}
+
+.review-summary-card:hover {
+    box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.04);
+}
+
+.review-card-header {
+    background-color: #F8FAFC;
+    border-bottom: 1px solid #E2E8F0;
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.review-card-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #0F172A;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.review-card-body {
+    padding: 1rem;
+}
+
+.review-item-label {
+    font-size: 0.8rem;
+    color: #64748B;
+    margin-bottom: 0.2rem;
+    font-weight: 500;
+}
+
+.review-item-value {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #0F172A;
+}
+
+.review-html-preview-box {
+    background-color: #FAFAFA;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 1rem;
+    min-height: 80px;
+    max-height: 350px;
+    overflow-y: auto;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #1E293B;
+}
+
+.review-html-preview-box h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #0F172A;
+    margin-top: 0.5rem;
+    margin-bottom: 0.35rem;
+}
+
+.review-html-preview-box h3 {
+    font-size: 1.02rem;
+    font-weight: 600;
+    color: #1E293B;
+    margin-top: 0.4rem;
+    margin-bottom: 0.25rem;
+}
+
+.review-html-preview-box ul,
+.review-html-preview-box ol {
+    padding-left: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.review-html-preview-box p {
+    margin-bottom: 0.5rem;
+}
+
+/* 4. Responsive Optimization */
+@media (max-width: 768px) {
+    .requisition-wizard-header {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .wizard-step-subtitle {
+        display: none;
+    }
+    
+    .wizard-step-title {
+        font-size: 0.78rem;
+    }
+    
+    .wizard-step-circle {
+        width: 32px;
+        height: 32px;
+        font-size: 0.82rem;
+    }
+
+    .wizard-step-item {
+        padding: 0.35rem;
+        gap: 0.4rem;
+    }
+}
