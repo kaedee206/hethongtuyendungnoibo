@@ -596,6 +596,7 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
 
             // Validate Phone Number
             if (!string.IsNullOrEmpty(phoneNumber) && !System.Text.RegularExpressions.Regex.IsMatch(phoneNumber, @"^(0|\+84)[3|5|7|8|9][0-9]{8}$"))
+            if (!string.IsNullOrEmpty(phoneNumber) && !System.Text.RegularExpressions.Regex.IsMatch(phoneNumber, @"^(0|\+84|84)[35789][0-9]{8}$"))
             {
                 errors.Add(new ImportExcelErrorDetailDto { ColumnName = "Số điện thoại", ErrorMessage = "Không đúng định dạng" });
             }
