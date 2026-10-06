@@ -1,0 +1,245 @@
+@model Ats.Web.Models.ViewModels.Requisitions.RequisitionDetailViewModel
+@using Ats.Web.Models.Enums
+@{
+    ViewData["Title"] = $"Chi tiết Yêu cầu Tuyển dụng - {Model.Code}";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/requisition-list.css" asp-append-version="true" />
+}
+
+<div class="requisition-list-container">
+    <div class="container-fluid px-0 px-md-2" style="max-width: 1040px; margin: 0 auto;">
+
+        <!-- ── Header & Action Card ── -->
+        <div class="req-header-card">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small text-muted">
+                    <li class="breadcrumb-item">
+                        <a href="/dashboard" class="text-decoration-none text-muted">Bàn làm việc</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a asp-action="Index" class="text-decoration-none text-muted">Yêu cầu tuyển dụng</a>
+                    </li>
+                    <li class="breadcrumb-item active text-dark fw-medium" aria-current="page">@Model.Code</li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mt-2">
+                <div class="d-flex align-items-center gap-3">
+                    <a asp-action="Index" class="btn btn-sm btn-light border text-secondary px-2.5 py-1.5" style="border-radius: 8px;" title="Quay lại danh sách">
+                        <i class="bi bi-arrow-left"></i>
+                    </a>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="req-code-badge" style="font-size: 0.9rem;">
+                                <i class="bi bi-hash text-muted"></i>@Model.Code
+                            </span>
+                            <span class="@Model.StatusBadgeClass d-inline-flex align-items-center gap-1.5" style="font-size: 0.8rem;">
+                                @if (Model.Status == RequisitionStatus.DRAFT)
+                                {
+                                    <i class="bi bi-pencil-fill" style="font-size: 0.65rem;"></i>
+                                }
+                                else if (Model.Status == RequisitionStatus.PENDING_APPROVAL)
+                                {
+                                    <i class="bi bi-hourglass-split" style="font-size: 0.65rem;"></i>
+                                }
+                                else if (Model.Status == RequisitionStatus.APPROVED)
+                                {
+                                    <i class="bi bi-check-circle-fill" style="font-size: 0.65rem;"></i>
+                                }
+                                else if (Model.Status == RequisitionStatus.REJECTED)
+                                {
+                                    <i class="bi bi-x-circle-fill" style="font-size: 0.65rem;"></i>
+                                }
+                                else if (Model.Status == RequisitionStatus.IN_PROGRESS)
+                                {
+                                    <i class="bi bi-broadcast" style="font-size: 0.65rem;"></i>
+                                }
+                                <span>@Model.StatusDisplayName</span>
+                            </span>
+                        </div>
+                        <h4 class="fw-bold text-dark mb-0">@Model.JobPositionTitle</h4>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <a asp-action="Index" class="btn btn-outline-secondary px-3 py-2 fw-medium" style="border-radius: 8px; font-size: 0.875rem;">
+                        <i class="bi bi-arrow-left me-1"></i> Quay lại
+                    </a>
+                    @if (Model.CanEdit)
+                    {
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary px-3 py-2 fw-semibold" style="border-radius: 8px; font-size: 0.875rem; background-color: #059669; border-color: #059669;">
+                            <i class="bi bi-pencil-square me-1"></i> Chỉnh sửa nháp
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Section 1: Thông số cơ bản của Yêu cầu Tuyển dụng ── -->
+        <div class="req-detail-section-card">
+            <div class="req-detail-header">
+                <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle text-primary"></i>
+                    <span>Thông tin cơ bản &amp; Chỉ tiêu tuyển dụng</span>
+                </h6>
+                <span class="text-muted small">
+                    Khởi tạo ngày @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                </span>
+            </div>
+            <div class="req-detail-body">
+                <div class="row g-4">
+                    <div class="col-12 col-md-4">
+                        <div class="req-info-label">Chức danh tuyển dụng</div>
+                        <div class="req-info-value fw-bold text-dark">
+                            @Model.JobPositionTitle
+                            @if (!string.IsNullOrEmpty(Model.JobPositionCode))
+                            {
+                                <span class="badge bg-light text-secondary border font-monospace ms-1">@Model.JobPositionCode</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <div class="req-info-label">Phòng ban đề xuất</div>
+                        <div class="req-info-value">
+                            <i class="bi bi-building me-1 text-muted"></i>@Model.DepartmentName
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <div class="req-info-label">Người đề xuất (Trưởng bộ phận)</div>
+                        <div class="req-info-value">
+                            <i class="bi bi-person-circle me-1 text-muted"></i>@Model.HiringManagerName
+                            @if (!string.IsNullOrEmpty(Model.HiringManagerEmail))
+                            {
+                                <span class="text-secondary small d-block font-monospace">@Model.HiringManagerEmail</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-md-3">
+                        <div class="req-info-label">Số lượng cần tuyển</div>
+                        <div class="req-info-value fs-5 fw-bold text-success font-monospace">
+                            @Model.Quantity <span class="fs-6 fw-normal text-muted">nhân sự</span>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-md-3">
+                        <div class="req-info-label">Loại chỉ tiêu (Headcount)</div>
+                        <div class="req-info-value">
+                            <span class="badge bg-light text-dark border px-2 py-1" style="border-radius: 6px;">
+                                @Model.HeadcountTypeName
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-3">
+                        <div class="req-info-label">Dải lương dự kiến</div>
+                        <div class="req-info-value fw-bold text-dark font-monospace">
+                            @Model.SalaryDisplay
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-3">
+                        <div class="req-info-label">Ngày cần người (Target Hire Date)</div>
+                        <div class="req-info-value">
+                            @if (Model.TargetHireDate.HasValue)
+                            {
+                                <i class="bi bi-calendar-check me-1 text-muted"></i>
+                                <span>@Model.TargetHireDate.Value.ToString("dd/MM/yyyy")</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Chưa xác định</span>
+                            }
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.Reason))
+                    {
+                        <div class="col-12">
+                            <div class="req-info-label">Lý do &amp; Căn cứ đề xuất tuyển dụng</div>
+                            <div class="req-info-value p-2.5 bg-light rounded border text-secondary" style="border-radius: 8px !important;">
+                                @Model.Reason
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.SalaryBandExplanation))
+                    {
+                        <div class="col-12">
+                            <div class="req-info-label text-warning">Giải trình đề xuất vượt dải lương chuẩn</div>
+                            <div class="req-info-value p-2.5 bg-warning-subtle rounded border border-warning text-dark" style="border-radius: 8px !important;">
+                                <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>@Model.SalaryBandExplanation
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Section 2: Mô tả công việc (Rich Text HTML) ── -->
+        <div class="req-detail-section-card">
+            <div class="req-detail-header">
+                <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-file-text text-success"></i>
+                    <span>Mô tả công việc (Job Description)</span>
+                </h6>
+            </div>
+            <div class="req-detail-body">
+                @if (!string.IsNullOrWhiteSpace(Model.JobDescription))
+                {
+                    <div class="req-rich-content-box">
+                        @Html.Raw(Model.JobDescription)
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted fst-italic mb-0">Chưa có nội dung mô tả công việc được lưu.</p>
+                }
+            </div>
+        </div>
+
+        <!-- ── Section 3: Yêu cầu ứng viên (Rich Text HTML) ── -->
+        <div class="req-detail-section-card">
+            <div class="req-detail-header">
+                <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-person-check text-info"></i>
+                    <span>Yêu cầu ứng viên (Candidate Requirements)</span>
+                </h6>
+            </div>
+            <div class="req-detail-body">
+                @if (!string.IsNullOrWhiteSpace(Model.Requirements))
+                {
+                    <div class="req-rich-content-box">
+                        @Html.Raw(Model.Requirements)
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted fst-italic mb-0">Chưa có nội dung yêu cầu ứng viên được lưu.</p>
+                }
+            </div>
+        </div>
+
+        <!-- ── Footer Action Bar ── -->
+        <div class="d-flex justify-content-between align-items-center p-3 bg-white border rounded-3 shadow-sm mb-4" style="border-radius: 12px !important; border-color: #E2E8F0 !important;">
+            <div class="text-muted small">
+                <i class="bi bi-shield-check text-success me-1"></i>Hệ thống Quản trị Tuyển dụng Nội bộ NoveraTech ATS
+            </div>
+            <div class="d-flex gap-2">
+                <a asp-action="Index" class="btn btn-outline-secondary px-3 py-1.5" style="border-radius: 8px;">
+                    <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
+                </a>
+                @if (Model.CanEdit)
+                {
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary px-3 py-1.5 fw-semibold" style="border-radius: 8px; background-color: #059669; border-color: #059669;">
+                        <i class="bi bi-pencil me-1"></i> Sửa bản nháp
+                    </a>
+                }
+            </div>
+        </div>
+
+    </div>
+</div>

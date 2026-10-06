@@ -1,0 +1,353 @@
+/* ==========================================================================
+   REQUISITION LIST & DETAILS STYLESHEET (RULE.MD COMPLIANT)
+   Palette: Emerald #059669, Slate-50 #F8FAFC, Slate-200 #E2E8F0, Slate-900 #0F172A
+   Radius: Cards 12px, Buttons/Inputs 8px, Badges 6px
+   ========================================================================== */
+
+/* ── Container & Background ── */
+.requisition-list-container {
+    background-color: #F8FAFC;
+    min-height: calc(100vh - 70px);
+    padding: 1.5rem 1rem 3rem 1rem;
+}
+
+/* ── Header & Breadcrumb Card ── */
+.req-header-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    margin-bottom: 1.25rem;
+}
+
+/* ── Quick Filter Tabs Bar ── */
+.req-quick-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.req-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #475569;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+}
+
+.req-tab-btn:hover {
+    background: #F1F5F9;
+    color: #0F172A;
+    border-color: #CBD5E1;
+}
+
+.req-tab-btn.is-active {
+    background: #059669;
+    color: #FFFFFF;
+    border-color: #059669;
+    box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
+}
+
+.req-tab-btn .tab-count {
+    font-size: 0.75rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.06);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.req-tab-btn.is-active .tab-count {
+    background: rgba(255, 255, 255, 0.25);
+    color: #FFFFFF;
+}
+
+/* ── Filter Bar Card ── */
+.req-filter-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    margin-bottom: 1.25rem;
+}
+
+.req-filter-card .form-control,
+.req-filter-card .form-select {
+    border-radius: 8px;
+    border: 1px solid #CBD5E1;
+    font-size: 0.875rem;
+    padding: 0.45rem 0.75rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.req-filter-card .form-control:focus,
+.req-filter-card .form-select:focus {
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+}
+
+/* ── Data Table & Card ── */
+.req-table-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+.req-table {
+    margin-bottom: 0;
+    vertical-align: middle;
+}
+
+.req-table thead th {
+    background-color: #F8FAFC;
+    color: #475569;
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 1px solid #E2E8F0;
+    padding: 0.85rem 1rem;
+    white-space: nowrap;
+}
+
+.req-table tbody td {
+    padding: 0.95rem 1rem;
+    border-bottom: 1px solid #F1F5F9;
+    font-size: 0.875rem;
+}
+
+/* Row clickable styling */
+.req-table tbody tr.req-row-clickable {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.req-table tbody tr.req-row-clickable:hover {
+    background-color: #F8FAFC;
+}
+
+/* Prevent triggering row click on action buttons */
+.req-actions-cell {
+    position: relative;
+    z-index: 2;
+}
+
+/* ── Semantic Status Badges (RULE.MD 4.2) ── */
+.badge-status-draft {
+    background-color: #F1F5F9;
+    color: #475569;
+    border: 1px solid #CBD5E1;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+}
+
+.badge-status-pending {
+    background-color: #FEF3C7;
+    color: #B45309;
+    border: 1px solid #FDE68A;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+}
+
+.badge-status-approved {
+    background-color: #ECFDF5;
+    color: #047857;
+    border: 1px solid #A7F3D0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+}
+
+.badge-status-rejected {
+    background-color: #FEE2E2;
+    color: #B91C1C;
+    border: 1px solid #FECACA;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+}
+
+.badge-status-in-progress {
+    background-color: #EFF6FF;
+    color: #1D4ED8;
+    border: 1px solid #BFDBFE;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+}
+
+.badge-status-fulfilled {
+    background-color: #F5F3FF;
+    color: #6D28D9;
+    border: 1px solid #DDD6FE;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+}
+
+.badge-status-cancelled {
+    background-color: #F3F4F6;
+    color: #4B5563;
+    border: 1px solid #E5E7EB;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+}
+
+/* ── Code / Monospace Badges ── */
+.req-code-badge {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #0F172A;
+    background: #F1F5F9;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    padding: 0.2rem 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+/* ── Date Highlights ── */
+.req-date-urgent {
+    color: #B45309;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.req-date-normal {
+    color: #334155;
+    font-weight: 500;
+}
+
+/* ── Pagination ── */
+.req-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    background: #FFFFFF;
+    border-top: 1px solid #E2E8F0;
+    font-size: 0.85rem;
+}
+
+.req-pagination .page-link {
+    border-radius: 6px;
+    margin: 0 2px;
+    color: #475569;
+    border: 1px solid #E2E8F0;
+    font-size: 0.85rem;
+    padding: 0.35rem 0.7rem;
+}
+
+.req-pagination .page-link:hover {
+    background: #F1F5F9;
+    color: #0F172A;
+}
+
+.req-pagination .page-item.active .page-link {
+    background: #059669;
+    border-color: #059669;
+    color: #FFFFFF;
+}
+
+/* ── Empty State ── */
+.req-empty-state {
+    padding: 4rem 1.5rem;
+    text-align: center;
+}
+
+.req-empty-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #F1F5F9;
+    color: #94A3B8;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+}
+
+/* ── Details Page Specific Styles ── */
+.req-detail-section-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.req-detail-header {
+    padding: 1rem 1.5rem;
+    background: #FFFFFF;
+    border-bottom: 1px solid #F1F5F9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.req-detail-body {
+    padding: 1.5rem;
+}
+
+.req-info-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #64748B;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.req-info-value {
+    font-size: 0.95rem;
+    color: #0F172A;
+    font-weight: 500;
+}
+
+.req-rich-content-box {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    color: #1E293B;
+    line-height: 1.7;
+    font-size: 0.925rem;
+}
+
+.req-rich-content-box ul,
+.req-rich-content-box ol {
+    padding-left: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.req-rich-content-box p {
+    margin-bottom: 0.75rem;
+}
