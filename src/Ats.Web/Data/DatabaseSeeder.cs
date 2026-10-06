@@ -741,6 +741,43 @@ public static class DatabaseSeeder
             await context.SaveChangesAsync();
         }
 
+        // 12. Seed Danh mục dùng chung (RecruitmentCatalogs: LOCATION, WORK_TYPE, SOURCE, REJECTION_REASON)
+        if (!await context.RecruitmentCatalogs.AnyAsync())
+        {
+            var defaultCatalogs = new List<RecruitmentCatalog>
+            {
+                // Địa điểm làm việc (LOCATION)
+                new() { CatalogType = "LOCATION", Code = "HN_HQ", Name = "Hà Nội — Trụ sở chính", Description = "Tòa nhà Novera Tower, Cầu Giấy, Hà Nội", DisplayOrder = 1, IsActive = true, IsSystem = true },
+                new() { CatalogType = "LOCATION", Code = "HCM_BRANCH", Name = "TP. Hồ Chí Minh — Chi nhánh", Description = "Tòa nhà Bitexco / Quận 1, TP. HCM", DisplayOrder = 2, IsActive = true, IsSystem = true },
+                new() { CatalogType = "LOCATION", Code = "DN_HUB", Name = "Đà Nẵng — R&D Hub", Description = "Công viên phần mềm Đà Nẵng", DisplayOrder = 3, IsActive = true, IsSystem = true },
+                new() { CatalogType = "LOCATION", Code = "REMOTE_VN", Name = "Remote toàn quốc (Việt Nam)", Description = "Làm việc từ xa mọi nơi tại Việt Nam", DisplayOrder = 4, IsActive = true, IsSystem = true },
+
+                // Hình thức làm việc (WORK_TYPE)
+                new() { CatalogType = "WORK_TYPE", Code = "FULL_TIME", Name = "Toàn thời gian (Full-time)", Description = "40 giờ/tuần, hưởng đầy đủ chế độ", DisplayOrder = 1, IsActive = true, IsSystem = true },
+                new() { CatalogType = "WORK_TYPE", Code = "HYBRID", Name = "Hybrid (2 ngày WFH/tuần)", Description = "Linh hoạt giữa văn phòng và từ xa", DisplayOrder = 2, IsActive = true, IsSystem = true },
+                new() { CatalogType = "WORK_TYPE", Code = "PART_TIME", Name = "Bán thời gian (Part-time)", Description = "20-25 giờ/tuần", DisplayOrder = 3, IsActive = true, IsSystem = true },
+                new() { CatalogType = "WORK_TYPE", Code = "CONTRACT", Name = "Hợp đồng dự án (Contractor)", Description = "Theo tiến độ dự án 6-12 tháng", DisplayOrder = 4, IsActive = true, IsSystem = true },
+
+                // Nguồn ứng viên (SOURCE)
+                new() { CatalogType = "SOURCE", Code = "LINKEDIN", Name = "LinkedIn Recruiter", Description = "Mạng xã hội nghề nghiệp LinkedIn", DisplayOrder = 1, IsActive = true, IsSystem = true },
+                new() { CatalogType = "SOURCE", Code = "TOPCV", Name = "TopCV Platform", Description = "Cổng thông tin việc làm TopCV", DisplayOrder = 2, IsActive = true, IsSystem = true },
+                new() { CatalogType = "SOURCE", Code = "INTERNAL_REFERRAL", Name = "Nội bộ giới thiệu", Description = "Ứng viên do nhân sự NoveraTech giới thiệu", DisplayOrder = 3, IsActive = true, IsSystem = true },
+
+                // Lý do từ chối (REJECTION_REASON)
+                new() { CatalogType = "REJECTION_REASON", Code = "SKILL_MISMATCH", Name = "Chuyên môn chưa phù hợp", Description = "Kỹ năng thực tế chưa đáp ứng yêu cầu vị trí", DisplayOrder = 1, IsActive = true, IsSystem = true },
+                new() { CatalogType = "REJECTION_REASON", Code = "SALARY_OVER_BAND", Name = "Kỳ vọng lương vượt khung", Description = "Mức lương mong muốn vượt quá dải lương quy định", DisplayOrder = 2, IsActive = true, IsSystem = true }
+            };
+
+            foreach (var cat in defaultCatalogs)
+            {
+                cat.CreatedAt = DateTimeOffset.UtcNow;
+                cat.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+
+            await context.RecruitmentCatalogs.AddRangeAsync(defaultCatalogs);
+            await context.SaveChangesAsync();
+        }
+
         await context.SaveChangesAsync();
     }
 }

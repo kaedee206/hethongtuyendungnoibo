@@ -86,6 +86,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(jr => jr.AssignedRecruiterId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        modelBuilder.Entity<JobRequisition>()
+            .HasOne(jr => jr.Location)
+            .WithMany()
+            .HasForeignKey(jr => jr.LocationId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<JobRequisition>()
+            .HasOne(jr => jr.WorkType)
+            .WithMany()
+            .HasForeignKey(jr => jr.WorkTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // Cascade delete behavior adjustments
         modelBuilder.Entity<RequisitionApproval>()
             .HasOne(ra => ra.Approver)

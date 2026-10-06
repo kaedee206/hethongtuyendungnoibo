@@ -33,8 +33,20 @@ public class JobRequisition : BaseEntity
     /// </summary>
     public string? Requirements { get; set; }
 
+    /// <summary>
+    /// Địa điểm làm việc từ danh mục dùng chung (RecruitmentCatalog, CatalogType = LOCATION).
+    /// </summary>
+    public Guid? LocationId { get; set; }
+
+    /// <summary>
+    /// Hình thức làm việc từ danh mục dùng chung (RecruitmentCatalog, CatalogType = WORK_TYPE).
+    /// </summary>
+    public Guid? WorkTypeId { get; set; }
+
     public JobPosition? JobPosition { get; set; }
     public Department? Department { get; set; }
+    public RecruitmentCatalog? Location { get; set; }
+    public RecruitmentCatalog? WorkType { get; set; }
     public User HiringManager { get; set; } = null!;
     public User? AssignedRecruiter { get; set; }
     public ICollection<RequisitionApproval> Approvals { get; set; } = new List<RequisitionApproval>();
