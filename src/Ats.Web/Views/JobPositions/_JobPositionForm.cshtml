@@ -221,6 +221,31 @@
         <div class="card-body p-4">
             <div class="row g-3">
                 <div class="col-12">
+                    <label asp-for="CompetencyFrameworkId" class="form-label fw-semibold small text-dark">
+                        Khung năng lực tiêu chuẩn áp dụng
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 8px 0 0 8px;">
+                            <i class="bi bi-award"></i>
+                        </span>
+                        <select asp-for="CompetencyFrameworkId" 
+                                id="posCompetencyFramework" 
+                                class="form-select" 
+                                style="border-radius: 0 8px 8px 0;">
+                            <option value="">-- Chưa gán khung năng lực (Chọn sau) --</option>
+                            @foreach (var fw in Model.AvailableCompetencyFrameworks)
+                            {
+                                <option value="@fw.Value" selected="@fw.Selected">@fw.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-text small text-muted">
+                        Liên kết chức danh với bộ khung tiêu chí đánh giá chuẩn để tự động đồng bộ khi tạo phiếu phỏng vấn.
+                    </div>
+                    <span asp-validation-for="CompetencyFrameworkId" class="invalid-feedback d-block fw-medium"></span>
+                </div>
+
+                <div class="col-12">
                     <label asp-for="StandardCompetencies" class="form-label fw-semibold small text-dark">
                         Kỹ năng & Năng lực tiêu chuẩn
                     </label>

@@ -35,7 +35,14 @@ public static class Permissions
     {
         var normalizedRoles = roles.Select(UserRoles.NormalizeRole).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        // Admin có toàn quyền
+        // Phân quyền bảo mật dải lương: BẢO MẬT TUYỆT ĐỐI - Chỉ duy nhất Trưởng phòng Nhân sự (HRManager) mới có quyền xem.
+        // Admin và các vai trò khác không có quyền xem thông tin này (kể cả Admin cũng bị ẩn).
+        if (permission == SalaryView)
+        {
+            return normalizedRoles.Contains(UserRoles.HRManager);
+        }
+
+        // Admin có toàn quyền các chức năng khác
         if (normalizedRoles.Contains(UserRoles.Admin)) return true;
 
         return permission switch
@@ -44,7 +51,7 @@ public static class Permissions
                 normalizedRoles.Contains(UserRoles.Admin),
 
             SalaryView =>
-                normalizedRoles.Contains(UserRoles.Admin) || normalizedRoles.Contains(UserRoles.HRManager),
+                normalizedRoles.Contains(UserRoles.HRManager),
 
             CandidatesViewAll =>
                 normalizedRoles.Contains(UserRoles.Admin) || normalizedRoles.Contains(UserRoles.HRManager),

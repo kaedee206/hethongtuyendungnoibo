@@ -27,7 +27,6 @@ public class JobPositionPermissionTests
     [InlineData("HRManager")]
     [InlineData("Trưởng phòng nhân sự")]
     [InlineData("Trưởng phòng Nhân sự")]
-    [InlineData("Admin")]
     public void CanUserViewSalary_AuthorizedRoles_ReturnsTrue(string role)
     {
         var principal = CreatePrincipal(role);
@@ -38,6 +37,7 @@ public class JobPositionPermissionTests
     }
 
     [Theory]
+    [InlineData("Admin")] // Admin bị ẩn dải lương theo quy định bảo mật
     [InlineData("Interviewer")]
     [InlineData("Recruiter")]
     [InlineData("HiringManager")]
@@ -193,6 +193,130 @@ public class JobPositionPermissionTests
         model.Positions[0].MaxSalary.Should().BeNull();
         model.Positions[0].MinSalaryFormatted.Should().Be("---");
         model.Positions[0].MaxSalaryFormatted.Should().Be("---");
+    }
+
+    [Fact]
+    public async Task Index_WhenAdminUser_HidesSalaryAndSetsNullInViewModel()
+    {
+        using var context = TestDbContextFactory.CreateInMemoryDbContext();
+        var dept = new Department { Id = Guid.NewGuid(), Code = "HR", Name = "Nhân sự", IsActive = true };
+        context.Departments.Add(dept);
+        var pos = new JobPosition
+        {
+            Id = Guid.NewGuid(),
+            Code = "HR-01",
+            Title = "HR Executive",
+            DepartmentId = dept.Id,
+            JobLevel = "JUNIOR",
+            MinSalary = 15000000m,
+            MaxSalary = 22000000m,
+            IsActive = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+        context.JobPositions.Add(pos);
+        await context.SaveChangesAsync();
+
+        var controller = new JobPositionsController(context, _loggerMock.Object)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = CreatePrincipal("Admin")
+                }
+            }
+        };
+
+        var actionResult = await controller.Index(null, null, null);
+
+        var viewResult = actionResult.Should().BeOfType<ViewResult>().Subject;
+        var model = viewResult.Model.Should().BeOfType<JobPositionListViewModel>().Subject;
+        model.CanViewSalary.Should().BeFalse();
+        model.Positions.Should().HaveCount(1);
+        model.Positions[0].MinSalary.Should().BeNull();
+        model.Positions[0].MaxSalary.Should().BeNull();
+        model.Positions[0].MinSalaryFormatted.Should().Be("---");
+        model.Positions[0].MaxSalaryFormatted.Should().Be("---");
+    }
+
+    [Fact]
+    public async Task Index_WhenHRManagerUser_ShowsSalaryInViewModel()
+    {
+        using var context = TestDbContextFactory.CreateInMemoryDbContext();
+        var dept = new Department { Id = Guid.NewGuid(), Code = "HR", Name = "Nhân sự", IsActive = true };
+        context.Departments.Add(dept);
+        var pos = new JobPosition
+        {
+            Id = Guid.NewGuid(),
+            Code = "HR-02",
+            Title = "HR Leader",
+            DepartmentId = dept.Id,
+            JobLevel = "SENIOR",
+            MinSalary = 30000000m,
+            MaxSalary = 45000000m,
+            IsActive = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+        context.JobPositions.Add(pos);
+        await context.SaveChangesAsync();
+
+        var controller = new JobPositionsController(context, _loggerMock.Object)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = CreatePrincipal("HRManager")
+                }
+            }
+        };
+
+        var actionResult = await controller.Index(null, null, null);
+
+        var viewResult = actionResult.Should().BeOfType<ViewResult>().Subject;
+        var model = viewResult.Model.Should().BeOfType<JobPositionListViewModel>().Subject;
+        model.CanViewSalary.Should().BeTrue();
+        model.Positions.Should().HaveCount(1);
+        model.Positions[0].MinSalary.Should().Be(30000000m);
+        model.Positions[0].MaxSalary.Should().Be(45000000m);
+    }
+
+    [Fact]
+    public async Task Index_WhenJsonRequestedAndAdmin_ReturnsUnifiedNullSalaryJson()
+    {
+        using var context = TestDbContextFactory.CreateInMemoryDbContext();
+        var dept = new Department { Id = Guid.NewGuid(), Code = "HR", Name = "Nhân sự", IsActive = true };
+        context.Departments.Add(dept);
+        var pos = new JobPosition
+        {
+            Id = Guid.NewGuid(),
+            Code = "HR-03",
+            Title = "HR Specialist",
+            DepartmentId = dept.Id,
+            JobLevel = "MIDDLE",
+            MinSalary = 20000000m,
+            MaxSalary = 30000000m,
+            IsActive = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+        context.JobPositions.Add(pos);
+        await context.SaveChangesAsync();
+
+        var httpContext = new DefaultHttpContext { User = CreatePrincipal("Admin") };
+        httpContext.Request.QueryString = new QueryString("?json=true");
+
+        var controller = new JobPositionsController(context, _loggerMock.Object)
+        {
+            ControllerContext = new ControllerContext { HttpContext = httpContext }
+        };
+
+        var actionResult = await controller.Index(null, null, null);
+
+        var okResult = actionResult.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.Value.Should().NotBeNull();
     }
 
     [Fact]

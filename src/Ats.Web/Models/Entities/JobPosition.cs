@@ -15,6 +15,10 @@ public class JobPosition : BaseEntity
     public string? StandardCompetencies { get; set; }
     public bool IsActive { get; set; } = true;
     
+    // FK đến Khung năng lực (SCRUM-222): nullable — một chức danh có thể chưa gán khung
+    public Guid? CompetencyFrameworkId { get; set; }
+    public CompetencyFramework? CompetencyFramework { get; set; }
+
     public Department Department { get; set; } = null!;
 
     [NotMapped]

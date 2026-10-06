@@ -195,4 +195,61 @@ public class CompetencyFrameworkServiceTests
         var jsonResult = actionResult.Should().BeOfType<JsonResult>().Subject;
         jsonResult.Value.Should().NotBeNull();
     }
+
+    [Fact]
+    public async Task GetByPositionAsync_ValidPositionWithFramework_ReturnsFrameworkDetail()
+    {
+        using var context = TestDbContextFactory.CreateInMemoryDbContext();
+        await SeedSampleJobPositionsAsync(context);
+
+        var service = new CompetencyFrameworkService(context);
+        await service.GetFrameworksAsync(null, null, 1, 10); // Ensure seed
+
+        var position = context.JobPositions.First(p => p.CompetencyFrameworkId != null);
+        var detail = await service.GetByPositionAsync(position.Id);
+
+        detail.Should().NotBeNull();
+        detail!.Id.Should().Be(position.CompetencyFrameworkId!.Value);
+        detail.Criteria.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task CloneAsync_ValidFramework_CreatesIndependentCopy()
+    {
+        using var context = TestDbContextFactory.CreateInMemoryDbContext();
+        await SeedSampleJobPositionsAsync(context);
+
+        var service = new CompetencyFrameworkService(context);
+        var list = await service.GetFrameworksAsync(null, null, 1, 10);
+        var source = list.Frameworks.First();
+
+        var (success, message, newId) = await service.CloneAsync(source.Id);
+
+        success.Should().BeTrue();
+        newId.Should().NotBeNull();
+        newId.Should().NotBe(source.Id);
+
+        var clonedDetail = await service.GetDetailAsync(newId!.Value);
+        clonedDetail.Should().NotBeNull();
+        clonedDetail!.Name.Should().Contain(source.Name);
+        clonedDetail.Code.Should().NotBe(source.Code);
+        clonedDetail.Criteria.Should().HaveCount(source.CompetenciesCount);
+    }
+
+    [Fact]
+    public async Task CompetencyFrameworksController_GetByPosition_ReturnsOkWithData()
+    {
+        using var context = TestDbContextFactory.CreateInMemoryDbContext();
+        await SeedSampleJobPositionsAsync(context);
+
+        var service = new CompetencyFrameworkService(context);
+        var controller = new CompetencyFrameworksController(service, _controllerLoggerMock.Object);
+        await service.GetFrameworksAsync(null, null, 1, 10);
+
+        var position = context.JobPositions.First(p => p.CompetencyFrameworkId != null);
+        var actionResult = await controller.GetByPosition(position.Id);
+
+        var okResult = actionResult.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.Value.Should().NotBeNull();
+    }
 }

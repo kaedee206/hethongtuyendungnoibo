@@ -493,6 +493,82 @@ public class RequisitionService(
         return await query.CountAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Nhân bản một yêu cầu tuyển dụng đã có thành bản nháp mới (SCRUM-274).
+    /// Mã yêu cầu mới được sinh tự động; TargetHireDate được reset về hôm nay + 30 ngày
+    /// nếu ngày gốc đã qua hoặc chưa được chọn.
+    /// </summary>
+    public async Task<(bool Success, string Message, Guid? NewRequisitionId, string? NewCode)> DuplicateRequisitionAsync(
+        Guid sourceId,
+        Guid currentUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var source = await _dbContext.JobRequisitions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Id == sourceId && !r.IsDeleted, cancellationToken);
+
+        if (source == null)
+        {
+            return (false, "Không tìm thấy yêu cầu tuyển dụng nguồn để sao chép.", null, null);
+        }
+
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == currentUserId, cancellationToken);
+        var userRole = user?.Role ?? string.Empty;
+        var isAdminOrHR = userRole.Equals(UserRoles.Admin, StringComparison.OrdinalIgnoreCase) ||
+                          userRole.Equals(UserRoles.HRManager, StringComparison.OrdinalIgnoreCase);
+
+        // Chỉ Admin, HRManager hoặc chính Hiring Manager mới được sao chép
+        if (!isAdminOrHR && source.HiringManagerId != currentUserId)
+        {
+            return (false, "Bạn không có quyền sao chép yêu cầu tuyển dụng này.", null, null);
+        }
+
+        // Sinh mã mới theo chuẩn REQ-yyyyMMdd-XXXX
+        var datePrefix = DateTime.UtcNow.ToString("yyyyMMdd");
+        var randomSuffix = Guid.NewGuid().ToString("N")[..4].ToUpperInvariant();
+        var newCode = $"REQ-{datePrefix}-{randomSuffix}";
+
+        // Reset TargetHireDate nếu đã qua hoặc chưa có
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var newTargetHireDate = (source.TargetHireDate.HasValue && source.TargetHireDate.Value >= today)
+            ? source.TargetHireDate
+            : today.AddDays(30);
+
+        var duplicate = new JobRequisition
+        {
+            Id = Guid.NewGuid(),
+            Code = newCode,
+            JobPositionId = source.JobPositionId,
+            DepartmentId = source.DepartmentId,
+            HiringManagerId = currentUserId,
+            Quantity = source.Quantity,
+            HeadcountType = source.HeadcountType,
+            Reason = source.Reason,
+            MinSalary = source.MinSalary,
+            MaxSalary = source.MaxSalary,
+            SalaryBandExplanation = null,       // Không sao chép giải trình ngoại lệ
+            Currency = source.Currency ?? "VND",
+            TargetHireDate = newTargetHireDate,
+            JobDescription = source.JobDescription,
+            Requirements = source.Requirements,
+            Status = Models.Enums.RequisitionStatus.DRAFT,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+
+        await _dbContext.JobRequisitions.AddAsync(duplicate, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Người dùng {UserId} đã sao chép yêu cầu tuyển dụng {SourceCode} → bản nháp mới {NewCode}",
+            currentUserId, source.Code, newCode);
+
+        return (true,
+            $"Đã sao chép thành công yêu cầu tuyển dụng '{source.Code}' thành bản nháp mới '{newCode}'.",
+            duplicate.Id,
+            newCode);
+    }
+
     private static string StripHtml(string? html)
     {
         if (string.IsNullOrWhiteSpace(html)) return string.Empty;

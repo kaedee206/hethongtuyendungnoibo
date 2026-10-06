@@ -11,7 +11,7 @@ public class AuthorizationRoleTests
         // Assert
         Permissions.HasPermission(UserRoles.Admin, Permissions.UsersView).Should().BeTrue();
         Permissions.HasPermission(UserRoles.Admin, Permissions.UsersLock).Should().BeTrue();
-        Permissions.HasPermission(UserRoles.Admin, Permissions.SalaryView).Should().BeTrue();
+        Permissions.HasPermission(UserRoles.Admin, Permissions.SalaryView).Should().BeFalse(); // Dải lương bảo mật: chỉ HRManager xem được
         Permissions.HasPermission(UserRoles.Admin, Permissions.CandidatesViewAll).Should().BeTrue();
     }
 

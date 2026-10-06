@@ -163,10 +163,16 @@ using (var scope = app.Services.CreateScope())
 
             CREATE TABLE IF NOT EXISTS competency_criteria (
                 id UUID PRIMARY KEY,
-                framework_id UUID NOT NULL REFERENCES competency_frameworks(id) ON DELETE CASCADE,
+                competency_framework_id UUID REFERENCES competency_frameworks(id) ON DELETE CASCADE,
+                framework_id UUID,
                 name TEXT NOT NULL,
                 description TEXT,
                 weight INTEGER NOT NULL DEFAULT 1,
+                rubric1 TEXT,
+                rubric2 TEXT,
+                rubric3 TEXT,
+                rubric4 TEXT,
+                rubric5 TEXT,
                 rubric_level1 TEXT,
                 rubric_level2 TEXT,
                 rubric_level3 TEXT,
@@ -180,6 +186,21 @@ using (var scope = app.Services.CreateScope())
                 is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
                 deleted_at TIMESTAMPTZ
             );
+            ALTER TABLE competency_criteria ADD COLUMN IF NOT EXISTS competency_framework_id UUID;
+            ALTER TABLE competency_criteria ADD COLUMN IF NOT EXISTS rubric1 TEXT;
+            ALTER TABLE competency_criteria ADD COLUMN IF NOT EXISTS rubric2 TEXT;
+            ALTER TABLE competency_criteria ADD COLUMN IF NOT EXISTS rubric3 TEXT;
+            ALTER TABLE competency_criteria ADD COLUMN IF NOT EXISTS rubric4 TEXT;
+            ALTER TABLE competency_criteria ADD COLUMN IF NOT EXISTS rubric5 TEXT;
+            DO $$ 
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'competency_criteria' AND column_name = 'framework_id' AND is_nullable = 'NO'
+                ) THEN
+                    ALTER TABLE competency_criteria ALTER COLUMN framework_id DROP NOT NULL;
+                END IF;
+            END $$;
 
             CREATE TABLE IF NOT EXISTS interview_question_banks (
                 id UUID PRIMARY KEY,

@@ -51,7 +51,7 @@
                         <!-- Top Bar được tinh gọn hoàn toàn: Không hiển thị menu ngang trên top bar, mọi điều hướng nằm trong User Profile Dropdown -->
                         <div class="me-auto"></div>
 
-                        <!-- User Profile & Action Dropdown (RULE.MD: Tinh gọn Top Bar, toàn bộ điều hướng nằm trong profile dropdown) -->
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0 d-none">
                             @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager))
                             {
                                 <li class="nav-item">

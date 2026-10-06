@@ -88,7 +88,7 @@
                                         <th class="py-3 text-center" style="width: 90px;">Số lượng</th>
                                         <th class="py-3" style="width: 190px;">Dải lương dự kiến</th>
                                         <th class="py-3" style="width: 170px;">Cập nhật lần cuối</th>
-                                        <th class="pe-4 py-3 text-end" style="width: 200px;">Thao tác</th>
+                                        <th class="pe-4 py-3 text-end" style="width: 240px;">Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -151,16 +151,29 @@
                                             </td>
                                             <td class="pe-4 text-end">
                                                 <div class="d-inline-flex align-items-center gap-1">
-                                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1" style="border-radius: 6px;" title="Tiếp tục chỉnh sửa">
+                                                    <a asp-action="Edit" asp-route-id="@item.Id"
+                                                       class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1"
+                                                       style="border-radius: 6px;" title="Tiếp tục chỉnh sửa">
                                                         <i class="bi bi-pencil-square"></i>
                                                         <span>Chỉnh sửa</span>
                                                     </a>
-                                                    <button type="button" 
-                                                            class="btn btn-sm btn-outline-danger d-inline-flex align-items-center btn-delete-draft" 
-                                                            style="border-radius: 6px;" 
-                                                            data-bs-toggle="modal" 
-                                                            data-bs-target="#deleteDraftModal" 
-                                                            data-draft-id="@item.Id" 
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-outline-primary d-inline-flex align-items-center btn-duplicate-draft"
+                                                            style="border-radius: 6px;"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#duplicateDraftModal"
+                                                            data-draft-id="@item.Id"
+                                                            data-draft-code="@item.Code"
+                                                            data-draft-title="@(item.JobPositionTitle ?? "Bản nháp " + item.Code)"
+                                                            title="Sao chép thành bản nháp mới">
+                                                        <i class="bi bi-copy"></i>
+                                                    </button>
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-outline-danger d-inline-flex align-items-center btn-delete-draft"
+                                                            style="border-radius: 6px;"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#deleteDraftModal"
+                                                            data-draft-id="@item.Id"
                                                             data-draft-code="@item.Code"
                                                             data-draft-title="@(item.JobPositionTitle ?? "Bản nháp " + item.Code)"
                                                             title="Xóa bản nháp">
@@ -196,6 +209,43 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+</div>
+
+<!-- Modal xác nhận sao chép bản nháp -->
+<div class="modal fade" id="duplicateDraftModal" tabindex="-1" aria-labelledby="duplicateDraftModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header border-bottom py-3 px-4" style="background: #EFF6FF; color: #1D4ED8;">
+                <h6 class="modal-title fw-bold d-flex align-items-center gap-2" id="duplicateDraftModalLabel">
+                    <i class="bi bi-copy"></i>
+                    <span>Xác nhận sao chép yêu cầu tuyển dụng</span>
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="duplicateDraftForm" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4">
+                    <p class="mb-2 text-dark">
+                        Bạn muốn tạo bản sao từ yêu cầu: <strong id="duplicateDraftTitle" class="text-primary"></strong>?
+                    </p>
+                    <ul class="text-muted small mb-0 ps-3">
+                        <li>Bản sao sẽ được tạo ở trạng thái <strong>Nháp</strong> với mã mới.</li>
+                        <li>Tất cả nội dung (chức danh, phòng ban, JD, yêu cầu) được sao chép nguyên vẹn.</li>
+                        <li>Ngày cần người sẽ được tự động cập nhật nếu ngày cũ đã qua.</li>
+                    </ul>
+                </div>
+                <div class="modal-footer border-top py-2 px-4 bg-light">
+                    <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal" style="border-radius: 8px;">
+                        Hủy bỏ
+                    </button>
+                    <button type="submit" class="btn btn-primary px-3 d-inline-flex align-items-center gap-1 fw-semibold" style="border-radius: 8px;">
+                        <i class="bi bi-copy"></i>
+                        <span>Xác nhận sao chép</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -238,6 +288,7 @@
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // --- Delete draft modal handler ---
             const deleteModal = document.getElementById('deleteDraftModal');
             if (deleteModal) {
                 deleteModal.addEventListener('show.bs.modal', function (event) {
@@ -254,6 +305,27 @@
                     const form = deleteModal.querySelector('#deleteDraftForm');
                     if (form && draftId) {
                         form.action = `/yeu-cau-tuyen-dung/xoa-nhap/${draftId}`;
+                    }
+                });
+            }
+
+            // --- Duplicate draft modal handler (SCRUM-274) ---
+            const duplicateModal = document.getElementById('duplicateDraftModal');
+            if (duplicateModal) {
+                duplicateModal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    const draftId = button.getAttribute('data-draft-id');
+                    const draftTitle = button.getAttribute('data-draft-title');
+                    const draftCode = button.getAttribute('data-draft-code');
+
+                    const titleSpan = duplicateModal.querySelector('#duplicateDraftTitle');
+                    if (titleSpan) {
+                        titleSpan.textContent = `${draftCode} - ${draftTitle}`;
+                    }
+
+                    const form = duplicateModal.querySelector('#duplicateDraftForm');
+                    if (form && draftId) {
+                        form.action = `/yeu-cau-tuyen-dung/sao-chep/${draftId}`;
                     }
                 });
             }

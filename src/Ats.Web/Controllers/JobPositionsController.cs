@@ -154,6 +154,16 @@ public class JobPositionsController(
             CanManage = canManage
         };
 
+        if (Request?.Headers.Accept.Any(h => h?.Contains("application/json") == true) == true ||
+            Request?.Query.ContainsKey("json") == true)
+        {
+            return Ok(new
+            {
+                success = true,
+                data = model
+            });
+        }
+
         return View(model);
     }
 
@@ -219,6 +229,7 @@ public class JobPositionsController(
                 Title = model.Title.Trim(),
                 DepartmentId = model.DepartmentId,
                 JobLevel = model.JobLevel.Trim().ToUpperInvariant(),
+                CompetencyFrameworkId = model.CompetencyFrameworkId,
                 Description = model.Description?.Trim(),
                 IsActive = model.IsActive,
                 MinSalary = model.MinSalary,
@@ -271,6 +282,7 @@ public class JobPositionsController(
             MinSalary = position.MinSalary,
             MaxSalary = position.MaxSalary,
             Description = position.Description,
+            CompetencyFrameworkId = position.CompetencyFrameworkId,
             IsActive = position.IsActive
         };
 
@@ -330,6 +342,7 @@ public class JobPositionsController(
             position.IsActive = model.IsActive;
             position.MinSalary = model.MinSalary;
             position.MaxSalary = model.MaxSalary;
+            position.CompetencyFrameworkId = model.CompetencyFrameworkId;
             position.UpdatedAt = DateTimeOffset.UtcNow;
 
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -389,5 +402,61 @@ public class JobPositionsController(
             .ToListAsync(cancellationToken);
 
         model.AvailableJobLevels = JobPositionFormViewModel.GetDefaultJobLevels(model.JobLevel);
+
+        model.AvailableCompetencyFrameworks = await _dbContext.CompetencyFrameworks
+            .AsNoTracking()
+            .Where(f => !f.IsDeleted && f.IsActive)
+            .OrderBy(f => f.Name)
+            .Select(f => new SelectListItem
+            {
+                Value = f.Id.ToString(),
+                Text = $"[{f.Code}] {f.Name}",
+                Selected = f.Id == model.CompetencyFrameworkId
+            })
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// GET: /job-positions/api/dropdown
+    /// API lightweight phục vụ autocomplete / dropdown chức danh ở các phân hệ khác
+    /// (SCRUM-220). Tuyệt đối KHÔNG trả về MinSalary / MaxSalary — bảo toàn phân quyền SCRUM-214.
+    /// Kết quả tối đa 50 chức danh đang hoạt động, lọc theo keyword (mã hoặc tên).
+    /// </summary>
+    [HttpGet("api/dropdown")]
+    public async Task<IActionResult> GetDropdownList(
+        [FromQuery] string? keyword,
+        [FromQuery] Guid? departmentId,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.JobPositions
+            .AsNoTracking()
+            .Where(p => !p.IsDeleted && p.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var kw = keyword.Trim().ToLower();
+            query = query.Where(p => p.Code.ToLower().Contains(kw) || p.Title.ToLower().Contains(kw));
+        }
+
+        if (departmentId.HasValue && departmentId.Value != Guid.Empty)
+        {
+            query = query.Where(p => p.DepartmentId == departmentId.Value);
+        }
+
+        var result = await query
+            .OrderBy(p => p.Title)
+            .Select(p => new
+            {
+                p.Id,
+                p.Code,
+                p.Title,
+                p.JobLevel
+                // MinSalary / MaxSalary intentionally omitted — security boundary SCRUM-214
+            })
+            .Take(50)
+            .ToListAsync(cancellationToken);
+
+        return Ok(new { success = true, data = result });
     }
 }
+

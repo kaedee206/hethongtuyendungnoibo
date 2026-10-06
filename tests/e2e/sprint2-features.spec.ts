@@ -47,13 +47,25 @@ test.describe('Sprint 2 End-to-End Features Suite', () => {
     await expect(page.locator('.dept-card-item, #deptTreeRoot li').first()).toBeVisible({ timeout: 15000 });
   });
 
-  test('S2-05 & S2-10: Job Positions & Salary Bands', async ({ page }) => {
+  test('S2-05 & S2-10: Job Positions & Salary Bands (Hidden for Admin, Visible for HR Manager)', async ({ page }) => {
+    // 1. Logged in as Admin: Salary columns must be hidden
     await page.goto('/job-positions');
     await expect(page.locator('h1').filter({ hasText: /Danh mục Chức danh/i })).toBeVisible();
+    const adminSalaryHeader = page.locator('th').filter({ hasText: /Dải lương/i });
+    await expect(adminSalaryHeader).toHaveCount(0);
 
-    // Check salary column exists (take first to satisfy strict mode)
-    const salaryHeader = page.locator('th').filter({ hasText: /Dải lương/i }).first();
-    await expect(salaryHeader).toBeVisible();
+    // 2. Log in as HR Manager: Salary columns must be visible
+    await page.goto('/Account/Logout');
+    await page.goto('/dang-nhap');
+    await page.fill('input[name="LoginInput.Email"]', 'phuong.nguyen@noveratech.digital');
+    await page.fill('input[name="LoginInput.Password"]', '123456@@');
+    await page.click('form[action*="StaffLogin"] button[type="submit"]');
+    await page.waitForURL(url => !url.pathname.includes('/dang-nhap'), { timeout: 15000 });
+
+    await page.goto('/job-positions');
+    await expect(page.locator('h1').filter({ hasText: /Danh mục Chức danh/i })).toBeVisible();
+    const hrSalaryHeader = page.locator('th').filter({ hasText: /Dải lương/i }).first();
+    await expect(hrSalaryHeader).toBeVisible();
   });
 
   test('S2-07: Interview Question Bank', async ({ page }) => {
