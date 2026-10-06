@@ -41,6 +41,8 @@ public class RequisitionValidationTests
         {
             JobPositionId = Guid.NewGuid(),
             DepartmentId = Guid.NewGuid(),
+            LocationId = Guid.NewGuid(),
+            WorkTypeId = Guid.NewGuid(),
             Quantity = 2,
             HeadcountType = HeadcountType.NEW_HEADCOUNT,
             ReasonDetail = "Mở rộng team Backend cho dự án Core Banking",
@@ -311,8 +313,26 @@ public class RequisitionValidationTests
         };
         var managerId = Guid.NewGuid();
 
+        var loc = new RecruitmentCatalog
+        {
+            Id = Guid.NewGuid(),
+            CatalogType = "LOCATION",
+            Code = "HN_HQ",
+            Name = "Hà Nội - Trụ sở chính",
+            IsActive = true
+        };
+        var wt = new RecruitmentCatalog
+        {
+            Id = Guid.NewGuid(),
+            CatalogType = "WORK_TYPE",
+            Code = "FULL_TIME",
+            Name = "Toàn thời gian (Full-time)",
+            IsActive = true
+        };
+
         context.Departments.Add(department);
         context.JobPositions.Add(position);
+        context.RecruitmentCatalogs.AddRange(loc, wt);
         await context.SaveChangesAsync();
 
         var service = new RequisitionService(context, _serviceLoggerMock.Object);
@@ -321,6 +341,8 @@ public class RequisitionValidationTests
         {
             JobPositionId = position.Id,
             DepartmentId = department.Id,
+            LocationId = loc.Id,
+            WorkTypeId = wt.Id,
             Quantity = 3,
             HeadcountType = HeadcountType.NEW_HEADCOUNT,
             ReasonDetail = "Tuyển gấp cho dự án hạ tầng Microservices",
@@ -431,8 +453,26 @@ public class RequisitionValidationTests
         };
         var managerId = Guid.NewGuid();
 
+        var loc = new RecruitmentCatalog
+        {
+            Id = Guid.NewGuid(),
+            CatalogType = "LOCATION",
+            Code = "HN_HQ",
+            Name = "Hà Nội",
+            IsActive = true
+        };
+        var wt = new RecruitmentCatalog
+        {
+            Id = Guid.NewGuid(),
+            CatalogType = "WORK_TYPE",
+            Code = "FULL_TIME",
+            Name = "Toàn thời gian",
+            IsActive = true
+        };
+
         context.Departments.Add(department);
         context.JobPositions.Add(position);
+        context.RecruitmentCatalogs.AddRange(loc, wt);
         await context.SaveChangesAsync();
 
         var service = new RequisitionService(context, _serviceLoggerMock.Object);
@@ -441,6 +481,8 @@ public class RequisitionValidationTests
         {
             JobPositionId = position.Id,
             DepartmentId = department.Id,
+            LocationId = loc.Id,
+            WorkTypeId = wt.Id,
             Quantity = 1,
             HeadcountType = HeadcountType.NEW_HEADCOUNT,
             MinSalary = 20_000_000,
