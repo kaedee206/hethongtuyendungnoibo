@@ -48,10 +48,8 @@
                 <div class="collapse navbar-collapse" id="atsNavbarContent">
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        <!-- Top Bar được tinh gọn hoàn toàn: Không hiển thị menu ngang trên top bar, mọi điều hướng nằm trong User Profile Dropdown -->
-                        <div class="me-auto"></div>
-
-                        <!-- User Profile & Action Dropdown (RULE.MD: Tinh gọn Top Bar, toàn bộ điều hướng nằm trong profile dropdown) -->
+                        <!-- Navigation Links based on Roles -->
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0 mt-2 mt-lg-0 gap-1">
                             @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager))
                             {
                                 <li class="nav-item">
@@ -70,8 +68,8 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" asp-controller="Requisitions" asp-action="Create">
-                                        <i class="bi bi-file-earmark-plus me-1"></i> Yêu cầu tuyển dụng
+                                    <a class="nav-link ats-nav-link" asp-controller="Requisitions" asp-action="Index">
+                                        <i class="bi bi-file-earmark-ruled me-1"></i> Yêu cầu tuyển dụng
                                     </a>
                                 </li>
                                 <li class="nav-item">
@@ -99,6 +97,11 @@
                             @* Menu dành cho Hiring Manager *@
                             @if (User.IsInRole(UserRoles.HiringManager))
                             {
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" asp-controller="Requisitions" asp-action="Index">
+                                        <i class="bi bi-file-earmark-ruled me-1"></i> Yêu cầu tuyển dụng
+                                    </a>
+                                </li>
                                 <li class="nav-item">
                                     <a class="nav-link ats-nav-link" asp-controller="Requisitions" asp-action="Create">
                                         <i class="bi bi-file-earmark-plus me-1"></i> + Đề xuất nhân sự
@@ -223,6 +226,11 @@
 
                                     @if (User.IsInRole(UserRoles.HiringManager))
                                     {
+                                        <li>
+                                            <a class="dropdown-item py-2" asp-controller="Requisitions" asp-action="Index">
+                                                <i class="bi bi-file-earmark-ruled me-2 text-muted"></i> Yêu cầu tuyển dụng
+                                            </a>
+                                        </li>
                                         <li>
                                             <a class="dropdown-item py-2" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#createRequisitionModal">
                                                 <i class="bi bi-file-earmark-plus me-2 text-muted"></i> Đề xuất nhân sự
