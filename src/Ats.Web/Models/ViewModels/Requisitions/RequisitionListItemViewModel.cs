@@ -12,6 +12,8 @@ public class RequisitionListItemViewModel
     public string? JobPositionTitle { get; set; }
     public string? JobPositionCode { get; set; }
     public string? DepartmentName { get; set; }
+    public string? LocationName { get; set; }
+    public string? WorkTypeName { get; set; }
     public int Quantity { get; set; }
     public HeadcountType HeadcountType { get; set; }
     public string HeadcountTypeName { get; set; } = string.Empty;

@@ -26,6 +26,12 @@ public class RequisitionDetailViewModel
     public string HeadcountTypeName { get; set; } = string.Empty;
     public string? Reason { get; set; }
 
+    // Danh mục dùng chung (SCRUM-173)
+    public Guid? LocationId { get; set; }
+    public string? LocationName { get; set; }
+    public Guid? WorkTypeId { get; set; }
+    public string? WorkTypeName { get; set; }
+
     // Đãi ngộ & Mục tiêu
     public decimal? MinSalary { get; set; }
     public decimal? MaxSalary { get; set; }

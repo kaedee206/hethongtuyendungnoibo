@@ -52,6 +52,37 @@ public class RequisitionService(
             MaxSalary = p.MaxSalary
         }).ToList();
 
+        // 1b. Tải danh mục dùng chung (SCRUM-173: RecruitmentCatalog - LOCATION & WORK_TYPE)
+        var locations = await _dbContext.RecruitmentCatalogs
+            .Where(c => c.CatalogType == "LOCATION" && c.IsActive)
+            .OrderBy(c => c.DisplayOrder)
+            .ThenBy(c => c.Name)
+            .ToListAsync(cancellationToken);
+
+        model.LocationOptions = locations.Select(c => new CatalogOptionViewModel
+        {
+            Id = c.Id,
+            Code = c.Code,
+            Name = c.Name,
+            Description = c.Description,
+            DisplayOrder = c.DisplayOrder
+        }).ToList();
+
+        var workTypes = await _dbContext.RecruitmentCatalogs
+            .Where(c => c.CatalogType == "WORK_TYPE" && c.IsActive)
+            .OrderBy(c => c.DisplayOrder)
+            .ThenBy(c => c.Name)
+            .ToListAsync(cancellationToken);
+
+        model.WorkTypeOptions = workTypes.Select(c => new CatalogOptionViewModel
+        {
+            Id = c.Id,
+            Code = c.Code,
+            Name = c.Name,
+            Description = c.Description,
+            DisplayOrder = c.DisplayOrder
+        }).ToList();
+
         // 2. Tải thông tin người dùng đang đăng nhập
         var user = await _dbContext.Users
             .Include(u => u.DepartmentEntity)
@@ -190,6 +221,34 @@ public class RequisitionService(
                 return (false, "Số lượng tuyển dụng phải từ 1 người trở lên.", null, null);
             }
 
+            // Gửi duyệt: Bắt buộc địa điểm làm việc (SCRUM-173)
+            if (!model.LocationId.HasValue || model.LocationId.Value == Guid.Empty)
+            {
+                return (false, "Vui lòng chọn địa điểm làm việc từ danh mục dùng chung.", null, null);
+            }
+
+            var location = await _dbContext.RecruitmentCatalogs
+                .FirstOrDefaultAsync(c => c.Id == model.LocationId.Value && c.CatalogType == "LOCATION" && c.IsActive, cancellationToken);
+
+            if (location == null)
+            {
+                return (false, "Địa điểm làm việc được chọn không tồn tại hoặc đã ngừng hoạt động.", null, null);
+            }
+
+            // Gửi duyệt: Bắt buộc hình thức làm việc (SCRUM-173)
+            if (!model.WorkTypeId.HasValue || model.WorkTypeId.Value == Guid.Empty)
+            {
+                return (false, "Vui lòng chọn hình thức làm việc từ danh mục dùng chung.", null, null);
+            }
+
+            var workType = await _dbContext.RecruitmentCatalogs
+                .FirstOrDefaultAsync(c => c.Id == model.WorkTypeId.Value && c.CatalogType == "WORK_TYPE" && c.IsActive, cancellationToken);
+
+            if (workType == null)
+            {
+                return (false, "Hình thức làm việc được chọn không tồn tại hoặc đã ngừng hoạt động.", null, null);
+            }
+
             // Gửi duyệt: Bắt buộc dải lương
             if (!model.MinSalary.HasValue || !model.MaxSalary.HasValue)
             {
@@ -249,6 +308,30 @@ public class RequisitionService(
                 }
             }
 
+            // Lưu nháp: Nếu người dùng đã chọn Địa điểm thì kiểm tra tính hợp lệ
+            if (model.LocationId.HasValue && model.LocationId.Value != Guid.Empty)
+            {
+                var location = await _dbContext.RecruitmentCatalogs
+                    .FirstOrDefaultAsync(c => c.Id == model.LocationId.Value && c.CatalogType == "LOCATION" && c.IsActive, cancellationToken);
+
+                if (location == null)
+                {
+                    return (false, "Địa điểm làm việc được chọn không tồn tại hoặc đã ngừng hoạt động.", null, null);
+                }
+            }
+
+            // Lưu nháp: Nếu người dùng đã chọn Hình thức làm việc thì kiểm tra tính hợp lệ
+            if (model.WorkTypeId.HasValue && model.WorkTypeId.Value != Guid.Empty)
+            {
+                var workType = await _dbContext.RecruitmentCatalogs
+                    .FirstOrDefaultAsync(c => c.Id == model.WorkTypeId.Value && c.CatalogType == "WORK_TYPE" && c.IsActive, cancellationToken);
+
+                if (workType == null)
+                {
+                    return (false, "Hình thức làm việc được chọn không tồn tại hoặc đã ngừng hoạt động.", null, null);
+                }
+            }
+
             // Lưu nháp: Nếu nhập cả 2 mức lương thì kiểm tra Max >= Min
             if (model.MinSalary.HasValue && model.MaxSalary.HasValue && model.MaxSalary.Value < model.MinSalary.Value)
             {
@@ -289,6 +372,8 @@ public class RequisitionService(
 
             existing.JobPositionId = (model.JobPositionId.HasValue && model.JobPositionId.Value != Guid.Empty) ? model.JobPositionId : null;
             existing.DepartmentId = (model.DepartmentId.HasValue && model.DepartmentId.Value != Guid.Empty) ? model.DepartmentId : null;
+            existing.LocationId = (model.LocationId.HasValue && model.LocationId.Value != Guid.Empty) ? model.LocationId : null;
+            existing.WorkTypeId = (model.WorkTypeId.HasValue && model.WorkTypeId.Value != Guid.Empty) ? model.WorkTypeId : null;
             existing.Quantity = model.Quantity < 1 ? 1 : model.Quantity;
             existing.HeadcountType = model.HeadcountType;
             existing.Reason = reasonText;
@@ -326,6 +411,8 @@ public class RequisitionService(
                 Code = requisitionCode,
                 JobPositionId = (model.JobPositionId.HasValue && model.JobPositionId.Value != Guid.Empty) ? model.JobPositionId : null,
                 DepartmentId = (model.DepartmentId.HasValue && model.DepartmentId.Value != Guid.Empty) ? model.DepartmentId : null,
+                LocationId = (model.LocationId.HasValue && model.LocationId.Value != Guid.Empty) ? model.LocationId : null,
+                WorkTypeId = (model.WorkTypeId.HasValue && model.WorkTypeId.Value != Guid.Empty) ? model.WorkTypeId : null,
                 HiringManagerId = currentUserId,
                 Quantity = model.Quantity < 1 ? 1 : model.Quantity,
                 HeadcountType = model.HeadcountType,
@@ -423,6 +510,8 @@ public class RequisitionService(
             Code = requisition.Code,
             JobPositionId = requisition.JobPositionId,
             DepartmentId = requisition.DepartmentId,
+            LocationId = requisition.LocationId,
+            WorkTypeId = requisition.WorkTypeId,
             Quantity = requisition.Quantity,
             HeadcountType = requisition.HeadcountType,
             ReasonDetail = requisition.Reason,
@@ -508,6 +597,8 @@ public class RequisitionService(
             .Include(r => r.JobPosition)
             .Include(r => r.Department)
             .Include(r => r.HiringManager)
+            .Include(r => r.Location)
+            .Include(r => r.WorkType)
             .Where(r => !r.IsDeleted);
 
         // Trưởng bộ phận chỉ thấy yêu cầu do chính mình tạo
@@ -576,6 +667,8 @@ public class RequisitionService(
             JobPositionTitle = r.JobPosition != null ? r.JobPosition.Title : "Chưa gắn chức danh",
             JobPositionCode = r.JobPosition != null ? r.JobPosition.Code : null,
             DepartmentName = r.Department != null ? r.Department.Name : null,
+            LocationName = r.Location != null ? r.Location.Name : null,
+            WorkTypeName = r.WorkType != null ? r.WorkType.Name : null,
             Quantity = r.Quantity,
             HeadcountType = r.HeadcountType,
             HeadcountTypeName = r.HeadcountType switch
@@ -674,6 +767,8 @@ public class RequisitionService(
             .Include(r => r.JobPosition)
             .Include(r => r.Department)
             .Include(r => r.HiringManager)
+            .Include(r => r.Location)
+            .Include(r => r.WorkType)
             .FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted, cancellationToken);
 
         if (requisition == null) return null;
@@ -696,6 +791,10 @@ public class RequisitionService(
             JobPositionTitle = requisition.JobPosition != null ? requisition.JobPosition.Title : "Chưa gắn chức danh",
             JobPositionCode = requisition.JobPosition != null ? requisition.JobPosition.Code : null,
             DepartmentName = requisition.Department != null ? requisition.Department.Name : "Chưa phân bổ",
+            LocationId = requisition.LocationId,
+            LocationName = requisition.Location != null ? requisition.Location.Name : null,
+            WorkTypeId = requisition.WorkTypeId,
+            WorkTypeName = requisition.WorkType != null ? requisition.WorkType.Name : null,
             HiringManagerId = requisition.HiringManagerId,
             HiringManagerName = requisition.HiringManager?.FullName ?? "Chưa rõ",
             HiringManagerEmail = requisition.HiringManager?.Email,

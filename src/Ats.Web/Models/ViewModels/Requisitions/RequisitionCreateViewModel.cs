@@ -23,6 +23,15 @@ public class DepartmentOptionViewModel
     public bool IsUserDepartment { get; set; }
 }
 
+public class CatalogOptionViewModel
+{
+    public Guid Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public int DisplayOrder { get; set; }
+}
+
 public class RequisitionCreateViewModel : IValidatableObject
 {
     /// <summary>
@@ -38,6 +47,16 @@ public class RequisitionCreateViewModel : IValidatableObject
     public Guid? JobPositionId { get; set; }
 
     public Guid? DepartmentId { get; set; }
+
+    /// <summary>
+    /// Địa điểm làm việc từ danh mục dùng chung (SCRUM-173: CatalogType = LOCATION).
+    /// </summary>
+    public Guid? LocationId { get; set; }
+
+    /// <summary>
+    /// Hình thức làm việc từ danh mục dùng chung (SCRUM-173: CatalogType = WORK_TYPE).
+    /// </summary>
+    public Guid? WorkTypeId { get; set; }
 
     public int Quantity { get; set; } = 1;
 
@@ -77,6 +96,8 @@ public class RequisitionCreateViewModel : IValidatableObject
     // Dữ liệu hỗ trợ giao diện Dropdown
     public List<JobPositionOptionViewModel> JobPositionOptions { get; set; } = [];
     public List<DepartmentOptionViewModel> DepartmentOptions { get; set; } = [];
+    public List<CatalogOptionViewModel> LocationOptions { get; set; } = [];
+    public List<CatalogOptionViewModel> WorkTypeOptions { get; set; } = [];
 
     // Cờ phân quyền hiển thị
     public bool CanChangeDepartment { get; set; } = true;
@@ -130,6 +151,20 @@ public class RequisitionCreateViewModel : IValidatableObject
                 yield return new ValidationResult(
                     "Vui lòng chọn phòng ban phụ trách yêu cầu tuyển dụng.",
                     [nameof(DepartmentId)]);
+            }
+
+            if (!LocationId.HasValue || LocationId.Value == Guid.Empty)
+            {
+                yield return new ValidationResult(
+                    "Vui lòng chọn địa điểm làm việc từ danh mục dùng chung.",
+                    [nameof(LocationId)]);
+            }
+
+            if (!WorkTypeId.HasValue || WorkTypeId.Value == Guid.Empty)
+            {
+                yield return new ValidationResult(
+                    "Vui lòng chọn hình thức làm việc từ danh mục dùng chung.",
+                    [nameof(WorkTypeId)]);
             }
 
             if (Quantity < 1 || Quantity > 100)
