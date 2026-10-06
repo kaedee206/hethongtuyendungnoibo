@@ -4,6 +4,7 @@ using Ats.Web.Models.Entities;
 using Ats.Web.Models.Enums;
 using Ats.Web.Models.ViewModels.Requisitions;
 using Ats.Web.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -491,6 +492,273 @@ public class RequisitionService(
         }
 
         return await query.CountAsync(cancellationToken);
+    }
+
+    public async Task<RequisitionListViewModel> GetRequisitionsListAsync(
+        RequisitionListFilterInputModel filter,
+        Guid currentUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == currentUserId, cancellationToken);
+        var userRole = user?.Role ?? string.Empty;
+        var isAdminOrHR = userRole.Equals(UserRoles.Admin, StringComparison.OrdinalIgnoreCase) ||
+                          userRole.Equals(UserRoles.HRManager, StringComparison.OrdinalIgnoreCase);
+
+        var baseQuery = _dbContext.JobRequisitions
+            .Include(r => r.JobPosition)
+            .Include(r => r.Department)
+            .Include(r => r.HiringManager)
+            .Where(r => !r.IsDeleted);
+
+        // Trưởng bộ phận chỉ thấy yêu cầu do chính mình tạo
+        if (!isAdminOrHR)
+        {
+            baseQuery = baseQuery.Where(r => r.HiringManagerId == currentUserId);
+        }
+
+        // 1. Thống kê số lượng cho Quick Filter Tabs
+        var totalCount = await baseQuery.CountAsync(cancellationToken);
+        var draftCount = await baseQuery.CountAsync(r => r.Status == RequisitionStatus.DRAFT, cancellationToken);
+        var pendingCount = await baseQuery.CountAsync(r => r.Status == RequisitionStatus.PENDING_APPROVAL, cancellationToken);
+        var approvedCount = await baseQuery.CountAsync(r => r.Status == RequisitionStatus.APPROVED, cancellationToken);
+        var rejectedCount = await baseQuery.CountAsync(r => r.Status == RequisitionStatus.REJECTED, cancellationToken);
+
+        // 2. Lọc dữ liệu theo điều kiện
+        var filteredQuery = baseQuery;
+
+        if (filter.Status.HasValue)
+        {
+            filteredQuery = filteredQuery.Where(r => r.Status == filter.Status.Value);
+        }
+
+        if (filter.JobPositionId.HasValue && filter.JobPositionId.Value != Guid.Empty)
+        {
+            filteredQuery = filteredQuery.Where(r => r.JobPositionId == filter.JobPositionId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+        {
+            var searchLower = filter.Search.Trim().ToLower();
+            filteredQuery = filteredQuery.Where(r =>
+                r.Code.ToLower().Contains(searchLower) ||
+                (r.JobPosition != null && r.JobPosition.Title.ToLower().Contains(searchLower)));
+        }
+
+        // 3. Sắp xếp
+        filteredQuery = filter.SortBy switch
+        {
+            "created_asc" => filteredQuery.OrderBy(r => r.CreatedAt),
+            "target_date_asc" => filteredQuery
+                .OrderBy(r => r.TargetHireDate == null)
+                .ThenBy(r => r.TargetHireDate)
+                .ThenByDescending(r => r.CreatedAt),
+            "target_date_desc" => filteredQuery
+                .OrderBy(r => r.TargetHireDate == null)
+                .ThenByDescending(r => r.TargetHireDate)
+                .ThenByDescending(r => r.CreatedAt),
+            _ => filteredQuery.OrderByDescending(r => r.CreatedAt) // "created_desc"
+        };
+
+        // 4. Phân trang
+        var totalItems = await filteredQuery.CountAsync(cancellationToken);
+        var page = Math.Max(1, filter.Page);
+        var pageSize = filter.PageSize is 10 or 20 or 50 ? filter.PageSize : 10;
+
+        var pagedEntities = await filteredQuery
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        var items = pagedEntities.Select(r => new RequisitionListItemViewModel
+        {
+            Id = r.Id,
+            Code = r.Code,
+            JobPositionTitle = r.JobPosition != null ? r.JobPosition.Title : "Chưa gắn chức danh",
+            JobPositionCode = r.JobPosition != null ? r.JobPosition.Code : null,
+            DepartmentName = r.Department != null ? r.Department.Name : null,
+            Quantity = r.Quantity,
+            HeadcountType = r.HeadcountType,
+            HeadcountTypeName = r.HeadcountType switch
+            {
+                HeadcountType.NEW_HEADCOUNT => "Tạo mới",
+                HeadcountType.REPLACEMENT => "Thay thế",
+                _ => "Mới"
+            },
+            Status = r.Status,
+            StatusDisplayName = r.Status switch
+            {
+                RequisitionStatus.DRAFT => "Nháp",
+                RequisitionStatus.PENDING_APPROVAL => "Chờ duyệt",
+                RequisitionStatus.APPROVED => "Đã duyệt",
+                RequisitionStatus.REJECTED => "Từ chối",
+                RequisitionStatus.IN_PROGRESS => "Đang tuyển",
+                RequisitionStatus.FULFILLED => "Đã tuyển đủ",
+                RequisitionStatus.CANCELLED => "Đã hủy",
+                _ => r.Status.ToString()
+            },
+            StatusBadgeClass = r.Status switch
+            {
+                RequisitionStatus.DRAFT => "badge-status-draft",
+                RequisitionStatus.PENDING_APPROVAL => "badge-status-pending",
+                RequisitionStatus.APPROVED => "badge-status-approved",
+                RequisitionStatus.REJECTED => "badge-status-rejected",
+                RequisitionStatus.IN_PROGRESS => "badge-status-in-progress",
+                RequisitionStatus.FULFILLED => "badge-status-fulfilled",
+                RequisitionStatus.CANCELLED => "badge-status-cancelled",
+                _ => "badge-status-draft"
+            },
+            MinSalary = r.MinSalary,
+            MaxSalary = r.MaxSalary,
+            SalaryDisplay = FormatSalaryDisplay(r.MinSalary, r.MaxSalary),
+            CreatedAt = r.CreatedAt,
+            TargetHireDate = r.TargetHireDate
+        }).ToList();
+
+        // 5. Dropdown options
+        var jobPositions = await _dbContext.JobPositions
+            .Where(jp => jp.IsActive)
+            .OrderBy(jp => jp.Title)
+            .Select(jp => new SelectListItem
+            {
+                Value = jp.Id.ToString(),
+                Text = jp.Title,
+                Selected = filter.JobPositionId.HasValue && filter.JobPositionId.Value == jp.Id
+            })
+            .ToListAsync(cancellationToken);
+
+        var statusOptions = new List<SelectListItem>
+        {
+            new("Tất cả trạng thái", "", !filter.Status.HasValue),
+            new("Bản nháp", RequisitionStatus.DRAFT.ToString(), filter.Status == RequisitionStatus.DRAFT),
+            new("Chờ duyệt", RequisitionStatus.PENDING_APPROVAL.ToString(), filter.Status == RequisitionStatus.PENDING_APPROVAL),
+            new("Đã duyệt", RequisitionStatus.APPROVED.ToString(), filter.Status == RequisitionStatus.APPROVED),
+            new("Từ chối", RequisitionStatus.REJECTED.ToString(), filter.Status == RequisitionStatus.REJECTED),
+            new("Đang tuyển", RequisitionStatus.IN_PROGRESS.ToString(), filter.Status == RequisitionStatus.IN_PROGRESS)
+        };
+
+        var sortOptions = new List<SelectListItem>
+        {
+            new("Ngày tạo: Mới nhất", "created_desc", filter.SortBy == "created_desc"),
+            new("Ngày tạo: Cũ nhất", "created_asc", filter.SortBy == "created_asc"),
+            new("Ngày cần người: Gần nhất", "target_date_asc", filter.SortBy == "target_date_asc"),
+            new("Ngày cần người: Xa nhất", "target_date_desc", filter.SortBy == "target_date_desc")
+        };
+
+        return new RequisitionListViewModel
+        {
+            Items = items,
+            Search = filter.Search,
+            Status = filter.Status,
+            JobPositionId = filter.JobPositionId,
+            SortBy = filter.SortBy,
+            CurrentPage = page,
+            PageSize = pageSize,
+            TotalItems = totalItems,
+            TotalCount = totalCount,
+            DraftCount = draftCount,
+            PendingCount = pendingCount,
+            ApprovedCount = approvedCount,
+            RejectedCount = rejectedCount,
+            JobPositionOptions = jobPositions,
+            StatusOptions = statusOptions,
+            SortOptions = sortOptions
+        };
+    }
+
+    public async Task<RequisitionDetailViewModel?> GetRequisitionDetailAsync(
+        Guid id,
+        Guid currentUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var requisition = await _dbContext.JobRequisitions
+            .Include(r => r.JobPosition)
+            .Include(r => r.Department)
+            .Include(r => r.HiringManager)
+            .FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted, cancellationToken);
+
+        if (requisition == null) return null;
+
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == currentUserId, cancellationToken);
+        var userRole = user?.Role ?? string.Empty;
+        var isAdminOrHR = userRole.Equals(UserRoles.Admin, StringComparison.OrdinalIgnoreCase) ||
+                          userRole.Equals(UserRoles.HRManager, StringComparison.OrdinalIgnoreCase);
+
+        // Trưởng bộ phận chỉ có quyền xem yêu cầu do chính mình tạo
+        if (!isAdminOrHR && requisition.HiringManagerId != currentUserId)
+        {
+            return null;
+        }
+
+        return new RequisitionDetailViewModel
+        {
+            Id = requisition.Id,
+            Code = requisition.Code,
+            JobPositionTitle = requisition.JobPosition != null ? requisition.JobPosition.Title : "Chưa gắn chức danh",
+            JobPositionCode = requisition.JobPosition != null ? requisition.JobPosition.Code : null,
+            DepartmentName = requisition.Department != null ? requisition.Department.Name : "Chưa phân bổ",
+            HiringManagerId = requisition.HiringManagerId,
+            HiringManagerName = requisition.HiringManager?.FullName ?? "Chưa rõ",
+            HiringManagerEmail = requisition.HiringManager?.Email,
+            Quantity = requisition.Quantity,
+            HeadcountType = requisition.HeadcountType,
+            HeadcountTypeName = requisition.HeadcountType switch
+            {
+                HeadcountType.NEW_HEADCOUNT => "Tạo mới vị trí",
+                HeadcountType.REPLACEMENT => "Tuyển dụng thay thế",
+                _ => "Mới"
+            },
+            Reason = requisition.Reason,
+            MinSalary = requisition.MinSalary,
+            MaxSalary = requisition.MaxSalary,
+            SalaryBandExplanation = requisition.SalaryBandExplanation,
+            Currency = requisition.Currency,
+            SalaryDisplay = FormatSalaryDisplay(requisition.MinSalary, requisition.MaxSalary),
+            TargetHireDate = requisition.TargetHireDate,
+            Status = requisition.Status,
+            StatusDisplayName = requisition.Status switch
+            {
+                RequisitionStatus.DRAFT => "Bản nháp",
+                RequisitionStatus.PENDING_APPROVAL => "Chờ duyệt",
+                RequisitionStatus.APPROVED => "Đã duyệt",
+                RequisitionStatus.REJECTED => "Từ chối",
+                RequisitionStatus.IN_PROGRESS => "Đang tuyển",
+                RequisitionStatus.FULFILLED => "Đã tuyển đủ",
+                RequisitionStatus.CANCELLED => "Đã hủy",
+                _ => requisition.Status.ToString()
+            },
+            StatusBadgeClass = requisition.Status switch
+            {
+                RequisitionStatus.DRAFT => "badge-status-draft",
+                RequisitionStatus.PENDING_APPROVAL => "badge-status-pending",
+                RequisitionStatus.APPROVED => "badge-status-approved",
+                RequisitionStatus.REJECTED => "badge-status-rejected",
+                RequisitionStatus.IN_PROGRESS => "badge-status-in-progress",
+                RequisitionStatus.FULFILLED => "badge-status-fulfilled",
+                RequisitionStatus.CANCELLED => "badge-status-cancelled",
+                _ => "badge-status-draft"
+            },
+            JobDescription = requisition.JobDescription,
+            Requirements = requisition.Requirements,
+            CreatedAt = requisition.CreatedAt,
+            UpdatedAt = requisition.UpdatedAt
+        };
+    }
+
+    private static string FormatSalaryDisplay(decimal? min, decimal? max)
+    {
+        if (min.HasValue && max.HasValue)
+        {
+            return $"{min.Value:N0} - {max.Value:N0} ₫";
+        }
+        if (min.HasValue)
+        {
+            return $"Từ {min.Value:N0} ₫";
+        }
+        if (max.HasValue)
+        {
+            return $"Lên đến {max.Value:N0} ₫";
+        }
+        return "Thỏa thuận";
     }
 
     private static string StripHtml(string? html)

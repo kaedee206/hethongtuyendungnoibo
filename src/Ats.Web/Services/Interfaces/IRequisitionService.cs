@@ -35,4 +35,14 @@ public interface IRequisitionService
     Task<int> GetDraftCountAsync(
         Guid currentUserId,
         CancellationToken cancellationToken = default);
+
+    Task<RequisitionListViewModel> GetRequisitionsListAsync(
+        RequisitionListFilterInputModel filter,
+        Guid currentUserId,
+        CancellationToken cancellationToken = default);
+
+    Task<RequisitionDetailViewModel?> GetRequisitionDetailAsync(
+        Guid id,
+        Guid currentUserId,
+        CancellationToken cancellationToken = default);
 }

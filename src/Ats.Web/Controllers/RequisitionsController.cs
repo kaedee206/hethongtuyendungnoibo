@@ -28,6 +28,42 @@ public class RequisitionsController(
     }
 
     /// <summary>
+    /// GET: /yeu-cau-tuyen-dung hoặc /requisitions
+    /// Hiển thị danh sách tất cả yêu cầu tuyển dụng của Trưởng bộ phận (kèm lọc trạng thái, chức danh, sắp xếp ngày tạo, ngày cần người).
+    /// </summary>
+    [HttpGet("")]
+    [HttpGet("danh-sach")]
+    [HttpGet("index")]
+    public async Task<IActionResult> Index(
+        [FromQuery] RequisitionListFilterInputModel filter,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        var model = await _requisitionService.GetRequisitionsListAsync(filter, userId, cancellationToken);
+        return View(model);
+    }
+
+    /// <summary>
+    /// GET: /yeu-cau-tuyen-dung/chi-tiet/{id} hoặc /requisitions/details/{id}
+    /// Xem chi tiết đầy đủ một yêu cầu tuyển dụng (khi nhấp vào yêu cầu đã gửi duyệt/đã duyệt/từ chối).
+    /// </summary>
+    [HttpGet("chi-tiet/{id:guid}")]
+    [HttpGet("details/{id:guid}")]
+    public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        var model = await _requisitionService.GetRequisitionDetailAsync(id, userId, cancellationToken);
+
+        if (model == null)
+        {
+            TempData["ErrorMessage"] = "Không tìm thấy yêu cầu tuyển dụng hoặc bạn không có quyền truy cập thông tin này.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        return View(model);
+    }
+
+    /// <summary>
     /// GET: /yeu-cau-tuyen-dung/tao-moi hoặc /requisitions/create
     /// Hiển thị giao diện Form khai báo thông tin cơ bản yêu cầu tuyển dụng.
     /// </summary>
