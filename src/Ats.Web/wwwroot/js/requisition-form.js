@@ -21,6 +21,8 @@ function initRequisitionForms() {
 function setupRequisitionForm(form) {
     const positionSelect = form.querySelector('.req-position-select');
     const deptSelect = form.querySelector('.req-dept-select');
+    const locationSelect = form.querySelector('.req-location-select');
+    const workTypeSelect = form.querySelector('.req-worktype-select');
     const minSalaryInput = form.querySelector('.req-min-salary');
     const maxSalaryInput = form.querySelector('.req-max-salary');
     const minSalaryHint = form.querySelector('.req-min-salary-hint');
@@ -61,6 +63,8 @@ function setupRequisitionForm(form) {
     // Các phần tử Review ở Bước 3
     const reviewPositionTitle = form.querySelector('#reviewPositionTitle');
     const reviewDepartmentName = form.querySelector('#reviewDepartmentName');
+    const reviewLocationName = form.querySelector('#reviewLocationName');
+    const reviewWorkTypeName = form.querySelector('#reviewWorkTypeName');
     const reviewQuantity = form.querySelector('#reviewQuantity');
     const reviewHireDate = form.querySelector('#reviewHireDate');
     const reviewSalaryRange = form.querySelector('#reviewSalaryRange');
@@ -409,6 +413,28 @@ function setupRequisitionForm(form) {
             }
         }
 
+        // Địa điểm làm việc (SCRUM-173)
+        if (reviewLocationName) {
+            if (locationSelect && locationSelect.selectedIndex > 0) {
+                reviewLocationName.textContent = locationSelect.options[locationSelect.selectedIndex].text;
+                reviewLocationName.classList.remove('text-muted', 'fst-italic');
+            } else {
+                reviewLocationName.textContent = '(Chưa chọn địa điểm)';
+                reviewLocationName.classList.add('text-muted', 'fst-italic');
+            }
+        }
+
+        // Hình thức làm việc (SCRUM-173)
+        if (reviewWorkTypeName) {
+            if (workTypeSelect && workTypeSelect.selectedIndex > 0) {
+                reviewWorkTypeName.textContent = workTypeSelect.options[workTypeSelect.selectedIndex].text;
+                reviewWorkTypeName.classList.remove('text-muted', 'fst-italic');
+            } else {
+                reviewWorkTypeName.textContent = '(Chưa chọn hình thức)';
+                reviewWorkTypeName.classList.add('text-muted', 'fst-italic');
+            }
+        }
+
         // Số lượng
         if (reviewQuantity) {
             const qty = quantityInput && quantityInput.value ? quantityInput.value : '1';
@@ -534,6 +560,8 @@ function setupRequisitionForm(form) {
     function hasAnyFormData() {
         if (positionSelect && positionSelect.value) return true;
         if (deptSelect && deptSelect.value) return true;
+        if (locationSelect && locationSelect.value) return true;
+        if (workTypeSelect && workTypeSelect.value) return true;
         if (minSalaryInput && minSalaryInput.value) return true;
         if (maxSalaryInput && maxSalaryInput.value) return true;
         const reasonDetail = form.querySelector('[name="ReasonDetail"]');
@@ -684,6 +712,22 @@ function setupRequisitionForm(form) {
             isStep1Valid = false;
         } else if (deptSelect) {
             deptSelect.classList.remove('is-invalid');
+        }
+
+        // Kiểm tra Địa điểm làm việc (SCRUM-173)
+        if (locationSelect && (!locationSelect.value || locationSelect.value === '')) {
+            locationSelect.classList.add('is-invalid');
+            isStep1Valid = false;
+        } else if (locationSelect) {
+            locationSelect.classList.remove('is-invalid');
+        }
+
+        // Kiểm tra Hình thức làm việc (SCRUM-173)
+        if (workTypeSelect && (!workTypeSelect.value || workTypeSelect.value === '')) {
+            workTypeSelect.classList.add('is-invalid');
+            isStep1Valid = false;
+        } else if (workTypeSelect) {
+            workTypeSelect.classList.remove('is-invalid');
         }
 
         if (!validateSalaryRange()) {

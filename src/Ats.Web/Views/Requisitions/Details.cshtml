@@ -118,6 +118,22 @@
                         </div>
                     </div>
 
+                    <div class="col-12 col-md-3">
+                        <div class="req-info-label">Địa điểm làm việc</div>
+                        <div class="req-info-value">
+                            <i class="bi bi-geo-alt me-1 text-muted"></i>
+                            @(Model.LocationName ?? "Chưa xác định")
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-3">
+                        <div class="req-info-label">Hình thức làm việc</div>
+                        <div class="req-info-value">
+                            <i class="bi bi-clock-history me-1 text-muted"></i>
+                            @(Model.WorkTypeName ?? "Chưa xác định")
+                        </div>
+                    </div>
+
                     <div class="col-6 col-md-3">
                         <div class="req-info-label">Số lượng cần tuyển</div>
                         <div class="req-info-value fs-5 fw-bold text-success font-monospace">
@@ -134,14 +150,14 @@
                         </div>
                     </div>
 
-                    <div class="col-12 col-md-3">
+                    <div class="col-12 col-md-6">
                         <div class="req-info-label">Dải lương dự kiến</div>
                         <div class="req-info-value fw-bold text-dark font-monospace">
                             @Model.SalaryDisplay
                         </div>
                     </div>
 
-                    <div class="col-12 col-md-3">
+                    <div class="col-12 col-md-6">
                         <div class="req-info-label">Ngày cần người (Target Hire Date)</div>
                         <div class="req-info-value">
                             @if (Model.TargetHireDate.HasValue)

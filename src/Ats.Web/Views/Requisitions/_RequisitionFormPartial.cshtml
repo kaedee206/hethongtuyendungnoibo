@@ -144,7 +144,56 @@
             }
         </div>
 
-        <!-- 3. Số lượng cần tuyển & Ngày cần người -->
+        <!-- 3. Địa điểm làm việc & Hình thức làm việc (SCRUM-173) -->
+        <div class="row g-3 mb-3">
+            <div class="col-12 col-md-6">
+                <label asp-for="LocationId" class="form-label fw-bold text-dark small mb-1">
+                    Địa điểm làm việc <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 8px 0 0 8px;">
+                        <i class="bi bi-geo-alt"></i>
+                    </span>
+                    <select asp-for="LocationId" id="reqLocationSelect" class="form-select req-location-select border-start-0" style="border-radius: 0 8px 8px 0;">
+                        <option value="">-- Chọn địa điểm làm việc --</option>
+                        @if (Model.LocationOptions != null)
+                        {
+                            foreach (var loc in Model.LocationOptions)
+                            {
+                                <option value="@loc.Id" selected="@(Model.LocationId == loc.Id)">@loc.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <span asp-validation-for="LocationId" class="text-danger small mt-1 d-block req-location-error"></span>
+                <div class="form-text text-muted small mt-1">Danh mục địa điểm làm việc dùng chung</div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <label asp-for="WorkTypeId" class="form-label fw-bold text-dark small mb-1">
+                    Hình thức làm việc <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 8px 0 0 8px;">
+                        <i class="bi bi-clock-history"></i>
+                    </span>
+                    <select asp-for="WorkTypeId" id="reqWorkTypeSelect" class="form-select req-worktype-select border-start-0" style="border-radius: 0 8px 8px 0;">
+                        <option value="">-- Chọn hình thức làm việc --</option>
+                        @if (Model.WorkTypeOptions != null)
+                        {
+                            foreach (var wt in Model.WorkTypeOptions)
+                            {
+                                <option value="@wt.Id" selected="@(Model.WorkTypeId == wt.Id)">@wt.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <span asp-validation-for="WorkTypeId" class="text-danger small mt-1 d-block req-worktype-error"></span>
+                <div class="form-text text-muted small mt-1">Full-time, Part-time, Remote, Hybrid...</div>
+            </div>
+        </div>
+
+        <!-- 4. Số lượng cần tuyển & Ngày cần người -->
         <div class="row g-3 mb-3">
             <div class="col-12 col-md-5">
                 <label asp-for="Quantity" class="form-label fw-bold text-dark small mb-1">
@@ -541,6 +590,14 @@
                     <div class="col-12 col-md-6">
                         <div class="review-item-label">Phòng ban phụ trách</div>
                         <div class="review-item-value" id="reviewDepartmentName">--</div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="review-item-label">Địa điểm làm việc</div>
+                        <div class="review-item-value" id="reviewLocationName">--</div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="review-item-label">Hình thức làm việc</div>
+                        <div class="review-item-value" id="reviewWorkTypeName">--</div>
                     </div>
                     <div class="col-6 col-md-3">
                         <div class="review-item-label">Số lượng tuyển</div>

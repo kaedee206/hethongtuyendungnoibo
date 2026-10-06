@@ -197,10 +197,20 @@
                                         <div class="fw-semibold text-dark" style="font-size: 0.925rem;">
                                             @item.JobPositionTitle
                                         </div>
-                                        <div class="text-secondary small d-flex align-items-center gap-2 mt-0.5">
+                                        <div class="text-secondary small d-flex align-items-center flex-wrap gap-2 mt-0.5">
                                             @if (!string.IsNullOrEmpty(item.DepartmentName))
                                             {
                                                 <span><i class="bi bi-building me-1"></i>@item.DepartmentName</span>
+                                            }
+                                            @if (!string.IsNullOrEmpty(item.LocationName))
+                                            {
+                                                <span class="text-muted">&bull;</span>
+                                                <span><i class="bi bi-geo-alt me-0.5"></i>@item.LocationName</span>
+                                            }
+                                            @if (!string.IsNullOrEmpty(item.WorkTypeName))
+                                            {
+                                                <span class="text-muted">&bull;</span>
+                                                <span class="badge bg-light text-secondary border" style="font-size: 0.725rem; border-radius: 4px;">@item.WorkTypeName</span>
                                             }
                                             <span class="text-muted">&bull;</span>
                                             <span class="text-muted font-monospace" style="font-size: 0.8rem;">@item.SalaryDisplay</span>
