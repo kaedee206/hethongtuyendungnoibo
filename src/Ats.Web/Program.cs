@@ -312,7 +312,14 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine($"[DB_MIGRATION_WARN] {ex.Message}");
     }
 
-    await DatabaseSeeder.SeedAsync(dbContext);
+    try
+    {
+        await DatabaseSeeder.SeedAsync(dbContext);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[DB_SEED_WARN] Không thể kết nối hoặc seed database: {ex.Message}");
+    }
 }
 
 app.Run();
