@@ -52,6 +52,9 @@
   --dt-shadow-card:   0 1px 3px rgba(15, 23, 42, 0.05);
   --dt-shadow-glow:   0 4px 12px rgba(5, 150, 105, 0.12);
   --dt-shadow-mint:   0 2px 8px rgba(5, 150, 105, 0.20);
+
+  /* Layout dimensions */
+  --navbar-height:    56px;
 }
 
 /* ─── Base Styles ───────────────────────────────────────── */
@@ -68,11 +71,27 @@ body {
 main { flex: 1 0 auto; }
 footer { flex-shrink: 0; }
 
-/* ─── Navbar ────────────────────────────────────────────── */
+/* ─── Sticky Header & Navbar ───────────────────────────── */
+header.sticky-top {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  background-color: #FFFFFF;
+}
+
 .ats-navbar {
+  height: var(--navbar-height, 56px);
+  min-height: var(--navbar-height, 56px);
+  max-height: var(--navbar-height, 56px);
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   background-color: #FFFFFF !important;
   border-bottom: 1px solid var(--border-default) !important;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+}
+
+.ats-navbar > .container-fluid {
+  height: 100%;
 }
 
 .ats-brand-logo {
@@ -350,6 +369,274 @@ footer {
   box-shadow: none !important;
 }
 
+/* ─── Dropdown Menu Theme (RULE.MD Section 4.3.A) ────────── */
+.dropdown-menu {
+  border-radius: 8px !important;
+  border: 1px solid var(--border-default) !important;
+  background-color: #FFFFFF !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04) !important;
+  padding: 6px !important;
+}
+
+.dropdown-item {
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  color: var(--text-primary) !important;
+  display: flex !important;
+  align-items: center !important;
+  transition: all 0.15s ease !important;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+  background-color: var(--bg-subtle) !important;
+  color: var(--text-primary) !important;
+}
+
+.dropdown-item i {
+  font-size: 16px;
+  color: var(--text-muted);
+  margin-right: 8px;
+}
+
+.dropdown-divider {
+  border-top: 1px solid var(--bg-subtle) !important;
+  margin: 4px 0 !important;
+  opacity: 1 !important;
+}
+
+/* ─── Pop-up Notification / Toast Theme (RULE.MD Section 4.3.B) ── */
+.position-fixed.bottom-0.end-0 {
+  bottom: 24px !important;
+  right: 24px !important;
+  z-index: 1090 !important;
+}
+
+.toast {
+  border-radius: 12px !important;
+  border: 1px solid var(--border-default) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+  background-color: #FFFFFF !important;
+  color: var(--text-primary) !important;
+  overflow: hidden;
+  transition: transform 0.25s ease-out, opacity 0.25s ease-out;
+}
+
+.toast.toast-success {
+  border-left: 4px solid var(--brand-primary) !important;
+}
+
+.toast.toast-error {
+  border-left: 4px solid var(--status-error) !important;
+}
+
+.toast.toast-warning {
+  border-left: 4px solid var(--status-warning) !important;
+}
+
+/* ─── Global Button Standardization (RULE.MD: 8px radius) ─ */
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.18s ease;
+}
+
+.btn-primary,
+.bg-primary {
+  background-color: var(--brand-primary) !important;
+  border-color: var(--brand-primary) !important;
+  color: #FFFFFF !important;
+  font-weight: 600;
+}
+
+.btn-primary:hover,
+.bg-primary:hover {
+  background-color: var(--brand-hover) !important;
+  border-color: var(--brand-hover) !important;
+  color: #FFFFFF !important;
+}
+
+.btn-outline-primary {
+  border-color: var(--border-strong) !important;
+  color: var(--text-primary) !important;
+}
+
+.btn-outline-primary:hover {
+  border-color: var(--brand-primary) !important;
+  background-color: var(--brand-surface) !important;
+  color: var(--brand-primary) !important;
+}
+
+.text-primary { color: var(--brand-primary) !important; }
+
+/* DT Utility Buttons */
+.btn-dt-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--brand-primary);
+  color: #FFFFFF !important;
+  border: none;
+  border-radius: 8px !important;
+  font-weight: 600;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.btn-dt-primary:hover {
+  background: var(--brand-hover);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+}
+
+.btn-dt-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px !important;
+  font-weight: 500;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.btn-dt-outline:hover {
+  border-color: var(--brand-primary);
+  color: var(--brand-primary) !important;
+  background: var(--brand-surface);
+}
+
+/* ─── Badge Standardization (RULE.MD: 6px radius) ───────── */
+.badge,
+.rounded-pill {
+  border-radius: 6px !important;
+}
+
+.dt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--brand-surface);
+  color: var(--brand-primary);
+  border: 1px solid var(--brand-border);
+  border-radius: 6px !important;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Role Badges — Clean, muted contrast */
+.badge-admin         { background-color: #FEF2F2 !important; color: #DC2626 !important; border: 1px solid #FEE2E2; }
+.badge-hrmanager     { background-color: #EFF6FF !important; color: #2563EB !important; border: 1px solid #DBEAFE; }
+.badge-recruiter     { background-color: #EEF2FF !important; color: #4F46E5 !important; border: 1px solid #E0E7FF; }
+.badge-hiringmanager { background-color: #FFFBEB !important; color: #D97706 !important; border: 1px solid #FEF3C7; }
+.badge-interviewer   { background-color: #ECFDF5 !important; color: #059669 !important; border: 1px solid #D1FAE5; }
+.badge-approver      { background-color: #FAF5FF !important; color: #9333EA !important; border: 1px solid #F3E8FF; }
+
+/* ─── Card Standardization (RULE.MD: 12px radius) ───────── */
+.card,
+.dt-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-default) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.card-header {
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--border-default);
+}
+
+/* ─── KPI Metric Cards (RULE.MD Section 5.2) ────────────── */
+.kpi-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-default);
+  border-radius: 12px !important;
+  padding: 1.25rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-card:hover {
+  border-color: rgba(5, 150, 105, 0.4);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+}
+
+/* ─── Table Modernization (RULE.MD Section 5.3) ─────────── */
+.table {
+  color: var(--text-primary);
+  margin-bottom: 0;
+}
+
+.table thead th {
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.table tbody td {
+  padding: 0.85rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #F1F5F9;
+  font-size: 0.875rem;
+}
+
+.table tbody tr:hover td {
+  background-color: #F8FAFC;
+}
+
+/* ─── Form Inputs ───────────────────────────────────────── */
+.form-control,
+.form-select {
+  border-radius: 8px;
+  border: 1px solid var(--border-default);
+  background-color: #FFFFFF;
+  color: var(--text-primary);
+  padding: 0.55rem 0.85rem;
+  font-size: 0.875rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+}
+
+/* ─── Footer ────────────────────────────────────────────── */
+footer.ats-footer,
+footer {
+  background: #FFFFFF !important;
+  border-top: 1px solid var(--border-default) !important;
+  color: var(--text-muted) !important;
+  font-size: 0.82rem;
+}
+
+/* ─── Utilities ─────────────────────────────────────────── */
+.font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.text-xs { font-size: 0.75rem; }
+.tracking-tight { letter-spacing: -0.025em; }
+
+/* ─── Anti-Slop Cleanups: Disable pulse glow and orbs ───── */
+.dt-orb,
+.animate-pulse-glow {
+  animation: none !important;
+  box-shadow: none !important;
+}
+
 .form-control.is-invalid,
 .form-select.is-invalid {
   border-color: var(--status-error) !important;
@@ -376,4 +663,697 @@ footer {
 
 .animate-shake {
   animation: shake 0.4s ease-in-out;
-}
+}
+
+
+/* ─── Collapsible Sidebar System (RULE.MD Compliant) ────── */
+
+/* Layout Container */
+.ats-layout-container {
+  display: flex;
+  min-height: calc(100vh - var(--navbar-height, 56px));
+  position: relative;
+  width: 100%;
+}
+
+/* Sidebar base */
+.ats-sidebar {
+  width: 260px;
+  background-color: #FFFFFF;
+  border-right: 1px solid var(--border-default);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem 0.65rem;
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              padding 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1020;
+  position: relative;
+  overflow: visible;
+}
+
+/* Desktop sticky */
+@media (min-width: 992px) {
+  .ats-sidebar {
+    position: sticky;
+    top: var(--navbar-height, 56px);
+    height: calc(100vh - var(--navbar-height, 56px));
+    overflow: visible;
+  }
+  .ats-main-area {
+    flex: 1 1 auto;
+    min-width: 0;
+    background-color: var(--bg-canvas);
+    display: flex;
+    flex-direction: column;
+    transition: margin-left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* ── Collapsed state on desktop ── */
+  .ats-sidebar.collapsed {
+    width: 60px;
+    padding: 0.6rem 0.35rem;
+  }
+
+  /* Header bar in collapsed state */
+  .ats-sidebar.collapsed .sidebar-header-bar {
+    justify-content: center !important;
+    padding-bottom: 0.45rem !important;
+    margin-bottom: 0.15rem !important;
+  }
+
+  .ats-sidebar.collapsed .sidebar-header-bar .sidebar-nav-link-text {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Hide text labels & badges when collapsed */
+  .ats-sidebar.collapsed .sidebar-nav-link-text,
+  .ats-sidebar.collapsed .sidebar-footer-info,
+  .ats-sidebar.collapsed .sidebar-nav-link .sidebar-badge {
+    opacity: 0;
+    visibility: hidden;
+    width: 0;
+    overflow: hidden;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+  }
+
+  /* Triệt tiêu hoàn toàn nhãn danh mục khi thu nhỏ (Xóa sạch khoảng trắng thừa) */
+  .ats-sidebar.collapsed .sidebar-category-label {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+
+  /* Khi thu nhỏ menu (mini icon mode), toàn bộ các nhóm tính năng luôn hiển thị đầy đủ icon */
+  .ats-sidebar.collapsed .sidebar-section {
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  .ats-sidebar.collapsed .sidebar-section.collapsed-group {
+    max-height: none !important;
+    height: auto !important;
+    display: block !important;
+  }
+
+  /* Căn chỉnh icon thành các ô vuông thanh thoát (38px x 38px) căn giữa */
+  .ats-sidebar.collapsed .sidebar-nav-link {
+    justify-content: center;
+    padding: 0;
+    width: 38px;
+    height: 38px;
+    margin: 0.15rem auto;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+  }
+
+  .ats-sidebar.collapsed .sidebar-nav-link-content {
+    gap: 0;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+  }
+
+  .ats-sidebar.collapsed .sidebar-nav-link i {
+    width: auto;
+    font-size: 1.15rem;
+    margin: 0;
+  }
+
+  /* Active state still visible when collapsed */
+  .ats-sidebar.collapsed .sidebar-nav-link.active {
+    border-left: none;
+    border-radius: 8px;
+    justify-content: center;
+    background: #ECFDF5;
+    color: #059669;
+  }
+
+  /* Tooltip on hover when collapsed */
+  .ats-sidebar.collapsed .sidebar-nav-link {
+    position: relative;
+  }
+
+  .ats-sidebar.collapsed .sidebar-nav-link::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: #0F172A;
+    color: #F8FAFC;
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 0.3rem 0.65rem;
+    border-radius: 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .ats-sidebar.collapsed .sidebar-nav-link:hover::after {
+    opacity: 1;
+  }
+
+  /* Sidebar group collapse chevron */
+  .sidebar-group-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+
+  .ats-sidebar.collapsed .sidebar-group-toggle {
+    justify-content: center;
+  }
+
+  .ats-sidebar.collapsed .sidebar-group-chevron {
+    display: none !important;
+  }
+
+  /* Đường phân cách mảnh và gọn khi thu nhỏ menu */
+  .ats-sidebar.collapsed .sidebar-section-divider {
+    margin: 0.35rem auto !important;
+    width: 24px !important;
+    height: 1px !important;
+    background: var(--border-default) !important;
+    border: none !important;
+    opacity: 0.6 !important;
+    display: block !important;
+  }
+
+  .ats-sidebar.collapsed .sidebar-section-divider + .sidebar-section-divider {
+    display: none !important;
+  }
+
+  .ats-sidebar.collapsed .sidebar-footer-container {
+    padding-top: 0.35rem !important;
+    margin-top: 0.35rem !important;
+  }
+}
+
+/* Mobile overlay */
+@media (max-width: 991.98px) {
+  .ats-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100vh;
+    z-index: 1050;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+    transform: translateX(-100%);
+  }
+
+  .ats-sidebar.show {
+    transform: translateX(0);
+  }
+
+  .ats-sidebar-backdrop {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 1040;
+    display: none;
+  }
+
+  .ats-sidebar-backdrop.show { display: block; }
+
+  .ats-main-area {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* No collapse toggle on mobile (only slide drawer) */
+  #btnToggleSidebarCollapse { display: none !important; }
+}
+
+/* ── Sidebar Toggle Button (Desktop Collapse) ── */
+.sidebar-collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.sidebar-collapse-btn:hover {
+  background: var(--border-default);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+/* Sidebar header bar */
+.sidebar-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.6rem;
+  margin-bottom: 0.2rem;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.ats-sidebar.collapsed .sidebar-header-bar {
+  justify-content: center;
+}
+
+/* ── Section Group Collapsible ── */
+.sidebar-section {
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+}
+
+.sidebar-section.collapsed-group {
+  max-height: 0 !important;
+}
+
+.sidebar-category-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 0.65rem 0.65rem 0.3rem 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: default;
+  user-select: none;
+}
+
+.sidebar-category-label .sidebar-group-chevron {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.sidebar-category-label.group-collapsed .sidebar-group-chevron {
+  transform: rotate(-90deg);
+}
+
+.sidebar-section-divider {
+  height: 1px;
+  background: var(--border-default);
+  margin: 0.5rem 0.65rem;
+  border: none;
+  opacity: 0.7;
+}
+
+/* ── Nav Link base ── */
+.sidebar-nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.48rem 0.65rem;
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-radius: 8px;
+  margin-bottom: 1px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar-nav-link-content {
+  display: flex;
+  align-items: center;
+  gap: 0.62rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Icon styling */
+.sidebar-nav-link i {
+  font-size: 1rem;
+  color: #64748B;
+  transition: color 0.15s ease;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Hover state */
+.sidebar-nav-link:hover {
+  background-color: #F8FAFC;
+  color: var(--brand-primary);
+}
+
+.sidebar-nav-link:hover i {
+  color: var(--brand-primary);
+}
+
+/* Active state */
+.sidebar-nav-link.active {
+  background-color: #ECFDF5;
+  color: #047857;
+  font-weight: 600;
+  border-left: 3px solid #059669;
+  padding-left: calc(0.65rem - 3px);
+}
+
+.sidebar-nav-link.active i {
+  color: #059669;
+}
+
+/* Text span inside link */
+.sidebar-nav-link-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity 0.2s ease, max-width 0.25s ease;
+  max-width: 200px;
+}
+
+/* Badge */
+.sidebar-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+
+/* ── Sidebar Footer User Card ── */
+.sidebar-footer-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.5rem;
+  border-radius: 8px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  transition: padding 0.25s ease;
+}
+
+.sidebar-footer-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: white;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  background: #059669;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.sidebar-footer-info {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: 0.5rem;
+  line-height: 1.25;
+  overflow: hidden;
+  transition: opacity 0.2s ease, max-width 0.25s ease;
+  max-width: 150px;
+}
+
+
+/* -- Collapsed sidebar: override group max-height to show all icons -- */
+@media (min-width: 992px) {
+  .ats-sidebar.collapsed .sidebar-section-divider {
+    margin: 0.35rem auto;
+    width: 28px;
+    opacity: 0.4;
+  }
+  .ats-sidebar.collapsed .sidebar-section {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .ats-sidebar.collapsed {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  .ats-sidebar.collapsed::-webkit-scrollbar { display: none !important; width: 0 !important; }
+  
+  /* Footer User Card khi thu nhỏ: xếp dọc avatar + icon logout, không tràn mép */
+  .ats-sidebar.collapsed .sidebar-footer-card {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0.45rem 0.2rem !important;
+    gap: 0.45rem !important;
+    width: 100% !important;
+    overflow: hidden !important;
+    background: transparent !important;
+  }
+  .ats-sidebar.collapsed .sidebar-footer-avatar {
+    margin: 0 !important;
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 0.85rem !important;
+    flex-shrink: 0 !important;
+  }
+  .ats-sidebar.collapsed .sidebar-footer-info {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    max-width: 0 !important;
+    opacity: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+  .ats-sidebar.collapsed .sidebar-footer-logout {
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    width: 100% !important;
+  }
+  .ats-sidebar.collapsed .sidebar-footer-logout button {
+    width: 28px !important;
+    height: 28px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 6px !important;
+    margin: 0 auto !important;
+  }
+
+  /* Triệt tiêu thanh scroll khi collapsed */
+  .ats-sidebar.collapsed .sidebar-nav-body,
+  .ats-sidebar.collapsed .overflow-auto {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    overflow-x: hidden !important;
+  }
+  .ats-sidebar.collapsed .sidebar-nav-body::-webkit-scrollbar,
+  .ats-sidebar.collapsed .overflow-auto::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+  }
+}
+
+/* ── Scrollbar thông minh cho Sidebar: Ẩn mặc định, hiện thanh mỏng khi hover ── */
+.ats-sidebar .sidebar-nav-body,
+.ats-sidebar .overflow-auto {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.ats-sidebar .sidebar-nav-body::-webkit-scrollbar,
+.ats-sidebar .overflow-auto::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+@media (min-width: 992px) {
+  .ats-sidebar:hover:not(.collapsed) .sidebar-nav-body,
+  .ats-sidebar:hover:not(.collapsed) .overflow-auto {
+    scrollbar-width: thin;
+    scrollbar-color: #CBD5E1 transparent;
+  }
+  .ats-sidebar:hover:not(.collapsed) .sidebar-nav-body::-webkit-scrollbar,
+  .ats-sidebar:hover:not(.collapsed) .overflow-auto::-webkit-scrollbar {
+    display: block;
+    width: 4px;
+  }
+  .ats-sidebar:hover:not(.collapsed) .sidebar-nav-body::-webkit-scrollbar-track,
+  .ats-sidebar:hover:not(.collapsed) .overflow-auto::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .ats-sidebar:hover:not(.collapsed) .sidebar-nav-body::-webkit-scrollbar-thumb,
+  .ats-sidebar:hover:not(.collapsed) .overflow-auto::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 4px;
+  }
+}
+
+/* ── Desktop Resizer Bar (Kéo rộng/hẹp Sidebar) ── */
+.sidebar-resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 1030;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+.sidebar-resizer:hover,
+body.sidebar-resizing .sidebar-resizer {
+  background: rgba(16, 185, 129, 0.5);
+}
+body.sidebar-resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+body.sidebar-resizing .ats-sidebar {
+  transition: none !important;
+}
+body.sidebar-resizing .ats-main-area {
+  transition: none !important;
+}
+
+/* ── Modernized Candidate Actions Table & Filter Pills ── */
+.candidate-stage-pill {
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 0.32rem 0.8rem;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.18s ease;
+  cursor: pointer;
+}
+.candidate-stage-pill:hover {
+  border-color: #059669;
+  color: #059669;
+  background: #F0FDF4;
+}
+.candidate-stage-pill.active {
+  background: #059669 !important;
+  border-color: #059669 !important;
+  color: #FFFFFF !important;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
+}
+.candidate-stage-pill .pill-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 10px;
+  background: #F1F5F9;
+  color: #64748B;
+  transition: all 0.18s ease;
+}
+.candidate-stage-pill.active .pill-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+}
+
+.candidate-action-btn-primary {
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.32rem 0.75rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+.candidate-action-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.candidate-dropdown-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: #64748B;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  transition: all 0.15s ease;
+}
+.candidate-dropdown-toggle:hover {
+  background: #F8FAFC;
+  color: #0F172A;
+  border-color: #CBD5E1;
+}
+.candidate-dropdown-menu {
+  border-radius: 8px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  font-size: 0.8rem;
+  min-width: 185px;
+  padding: 0.35rem;
+}
+.candidate-dropdown-menu .dropdown-item {
+  border-radius: 5px;
+  padding: 0.42rem 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+}
+.candidate-dropdown-menu .dropdown-item:hover {
+  background-color: #F8FAFC;
+}
+.candidate-cv-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #DC2626;
+  background: #FEF2F2;
+  border: 1px solid #FEE2E2;
+  padding: 0.18rem 0.5rem;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.candidate-cv-pill:hover {
+  background: #FEE2E2;
+  color: #B91C1C;
+  border-color: #FECACA;
+}

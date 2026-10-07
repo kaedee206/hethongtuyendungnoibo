@@ -26,8 +26,8 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
             .AsNoTracking()
             .AsQueryable();
 
-        // 1. Tìm kiếm theo tên, email, phòng ban (case-insensitive, partial match - AC S1-08)
-        if (!string.IsNullOrWhiteSpace(keyword))
+        // 1. Tìm kiếm theo tên, email, phòng ban (chỉ lọc khi từ khóa có từ 3 ký tự trở lên - AC S1-08)
+        if (!string.IsNullOrWhiteSpace(keyword) && keyword.Trim().Length >= 3)
         {
             var term = keyword.Trim().ToLower();
             query = query.Where(u =>

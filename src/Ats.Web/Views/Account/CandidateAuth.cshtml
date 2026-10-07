@@ -19,13 +19,13 @@
 *@
 
 <section
-    class="min-h-screen flex flex-col lg:flex-row"
+    class="h-screen w-full flex flex-col lg:flex-row overflow-hidden"
     aria-label="Cổng Tuyển dụng Ứng viên Novera Tech">
 
     @* ─────────────────────────────────────────────────────────────
        PANEL TRÁI: Ambient Career Visual (Hidden mobile, 50% desktop)
     ───────────────────────────────────────────────────────────── *@
-    <div class="hidden lg:flex lg:w-1/2 relative flex-col justify-between overflow-hidden bg-[#0D5C4D]"
+    <div class="hidden lg:flex lg:w-1/2 relative flex-col justify-between h-full overflow-hidden bg-[#0D5C4D]"
          aria-hidden="true">
 
         @* Background geometric composition *@
@@ -46,9 +46,9 @@
             </svg>
         </div>
 
-        <div class="relative z-10 flex flex-col justify-between h-full p-10">
+        <div class="relative z-10 flex flex-col justify-between h-full p-8 lg:p-10">
             @* Header Brand - Link về Landing Page *@
-            <a href="/landing" class="flex items-center gap-3 text-decoration-none group cursor-pointer" title="Quay lại Trang chủ NoveraTech">
+            <a href="/gioi-thieu" class="flex items-center gap-3 text-decoration-none group cursor-pointer" title="Quay lại Trang chủ NoveraTech">
                 <div class="w-8 h-8 flex items-center justify-center border border-white/20 bg-white/10 rounded-lg group-hover:border-white/40 transition-colors">
                     <img src="~/img/logo-icon-dark-transparent.png"
                          alt="Novera Tech Icon"
@@ -61,13 +61,13 @@
             </a>
 
             @* Center Content *@
-            <div class="space-y-6">
+            <div class="space-y-5 my-auto">
                 <div>
-                    <span class="inline-flex items-center gap-2 border border-white/20 px-2 py-1 rounded-none mb-4">
+                    <span class="inline-flex items-center gap-2 border border-white/20 px-2 py-1 rounded-none mb-3">
                         <span class="w-1.5 h-1.5 bg-[#10B981] rounded-none animate-pulse"></span>
                         <span class="font-mono text-[9px] tracking-[0.25em] uppercase text-white/60">NOVERA TECH TALENT NETWORK</span>
                     </span>
-                    <h1 class="text-4xl font-semibold text-white leading-tight tracking-tight">
+                    <h1 class="text-3xl lg:text-4xl font-semibold text-white leading-tight tracking-tight">
                         Build Your<br/>
                         <span class="text-[#10B981]">Future</span><br/>
                         With Us
@@ -78,7 +78,7 @@
                 </p>
 
                 @* Core Values *@
-                <div class="flex flex-col gap-3">
+                <div class="flex flex-col gap-2.5">
                     @foreach (var item in new[] { ("Innovation First", "Công nghệ tiên phong"), ("Remote Friendly", "Làm việc linh hoạt"), ("Growth Culture", "Phát triển liên tục") })
                     {
                         <div class="flex items-center gap-3">
@@ -93,11 +93,11 @@
             </div>
 
             @* Footer *@
-            <div class="border-t border-white/10 pt-6">
+            <div class="border-t border-white/10 pt-4">
                 <p class="font-mono text-[9px] tracking-[0.3em] uppercase text-white/25">
                     NOVERA TECH TALENT NETWORK · CAREERS
                 </p>
-                <p class="font-mono text-[8px] tracking-widest uppercase text-white/15 mt-1">
+                <p class="font-mono text-[8px] tracking-widest uppercase text-white/15 mt-0.5">
                     &copy; @DateTime.Now.Year · OPEN POSITIONS AVAILABLE
                 </p>
             </div>
@@ -107,17 +107,17 @@
     @* ─────────────────────────────────────────────────────────────
        PANEL PHẢI: Multi-State Slider (100% mobile, 50% desktop)
     ───────────────────────────────────────────────────────────── *@
-    <div class="w-full lg:w-1/2 flex flex-col min-h-screen bg-white dark:bg-[#111827]">
+    <div class="w-full lg:w-1/2 flex flex-col h-full overflow-hidden bg-white dark:bg-[#111827]">
 
         @* Mobile Brand (visible only mobile) *@
-        <div class="lg:hidden flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0] dark:border-[#1E293B]">
-            <a href="/landing" title="Quay lại Trang chủ NoveraTech" class="inline-block">
+        <div class="lg:hidden flex items-center justify-between px-6 py-3 border-b border-[#E2E8F0] dark:border-[#1E293B] flex-shrink-0">
+            <a href="/gioi-thieu" title="Quay lại Trang chủ NoveraTech" class="inline-block">
                 <img src="~/img/logo-dark-transparent.png"
                      alt="Novera Tech ATS"
-                     class="h-7 object-contain dark:brightness-0 dark:invert" />
+                     class="h-6 object-contain dark:brightness-0 dark:invert" />
             </a>
-            <a href="/landing" class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0D5C4D] dark:text-[#10B981] hover:underline" title="Quay lại Trang chủ">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <a href="/gioi-thieu" class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0D5C4D] dark:text-[#10B981] hover:underline" title="Quay lại Trang chủ">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
                 <span>Trang chủ</span>
@@ -134,527 +134,564 @@
 
                 @* ─── SLIDE 1: Sign In ─── *@
                 <div id="panelSignin"
-                     class="w-1/3 flex flex-col justify-center px-8 py-10 lg:px-12 overflow-y-auto"
+                     class="w-1/3 flex flex-col justify-center px-6 py-4 lg:px-12 overflow-y-auto"
                      role="region"
                      aria-label="Đăng nhập ứng viên"
                      aria-hidden="@(activePanel == "signin" ? "false" : "true")">
 
-                    @* Portal Switcher Header *@
-                    <div class="flex items-center justify-between mb-6 pb-3 border-b border-[#E2E8F0] dark:border-[#1E293B]">
-                        <div class="flex items-center gap-2.5">
-                            <a href="/landing" class="inline-flex items-center gap-1 text-xs font-semibold text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors" title="Quay lại Trang chủ">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                                </svg>
-                                <span>Trang chủ</span>
-                            </a>
-                            <span class="text-[#CBD5E1] dark:text-[#334155]">·</span>
-                            <span class="text-xs font-mono tracking-widest uppercase text-[#0D5C4D] dark:text-[#10B981] font-semibold">
-                                Cổng Ứng Viên
-                            </span>
-                        </div>
-                        <a asp-controller="Account" asp-action="StaffLogin"
-                           class="inline-flex items-center gap-1 text-xs font-medium text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] hover:underline underline-offset-4 transition-colors">
-                            <span>Nhân sự Nội bộ &rarr;</span>
-                        </a>
-                    </div>
-
-                    <div class="mb-7">
-                        <a href="/landing" class="inline-block mb-5 group cursor-pointer" title="Quay lại Trang chủ NoveraTech">
-                            <img src="~/img/logo-dark-transparent.png"
-                                 alt="Novera Tech ATS"
-                                 class="h-8 object-contain dark:brightness-0 dark:invert transition-opacity group-hover:opacity-80" />
-                        </a>
-                        <h2 class="text-[#0F172A] dark:text-[#F8FAFC] text-2xl font-semibold tracking-tight">Chào mừng trở lại</h2>
-                        <p class="text-[#64748B] dark:text-[#94A3B8] text-sm mt-1">Đăng nhập để theo dõi hồ sơ ứng tuyển.</p>
-                    </div>
-
-                    @* Validation Summary *@
-                    @if (!ViewData.ModelState.IsValid && ViewData.ModelState.TryGetValue(string.Empty, out var candidateErrors) && candidateErrors.Errors.Count > 0)
-                    {
-                        <div asp-validation-summary="ModelOnly"
-                             class="mb-4 px-3 py-2.5 border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-sm rounded-none"
-                             role="alert" aria-live="polite"></div>
-                    }
-
-                    @if (TempData["SuccessMessage"] != null)
-                    {
-                        <div class="mb-4 px-3 py-2.5 border border-[#10B981]/40 bg-[#10B981]/5 text-[#047857] dark:text-[#10B981] text-sm rounded-none" role="status">@TempData["SuccessMessage"]</div>
-                    }
-
-                    <div id="signinDynamicSuccess"
-                         class="mb-4 px-3 py-2.5 border border-[#10B981]/40 bg-[#10B981]/5 text-[#047857] dark:text-[#10B981] text-sm rounded-none @(activePanel == "signin" && Model.IsSuccess && !string.IsNullOrWhiteSpace(Model.StatusMessage) ? "" : "hidden")"
-                         role="status">
-                        @(activePanel == "signin" && Model.IsSuccess ? Model.StatusMessage : "")
-                    </div>
-
-                    @* Google SSO Button *@
-                    <a href="/Account/ExternalLogin?provider=Google&userType=candidate&returnUrl=@Model.LoginInput?.ReturnUrl"
-                       class="flex items-center justify-center gap-3 w-full py-2.5 px-4 border border-[#E2E8F0] dark:border-[#1E293B] bg-white dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm font-medium rounded-none hover:border-[#0D5C4D] dark:hover:border-[#10B981] transition-colors mb-4">
-                        <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                        </svg>
-                        <span>Tiếp tục với Google</span>
-                    </a>
-
-                    @* Divider *@
-                    <div class="flex items-center gap-3 mb-4">
-                        <div class="flex-1 h-px bg-[#E2E8F0] dark:bg-[#1E293B]"></div>
-                        <span class="font-mono text-[9px] tracking-[0.2em] uppercase text-[#94A3B8] dark:text-[#475569] whitespace-nowrap">OR SIGN IN WITH EMAIL</span>
-                        <div class="flex-1 h-px bg-[#E2E8F0] dark:bg-[#1E293B]"></div>
-                    </div>
-
-                    <form asp-controller="Account" asp-action="CandidateLogin" method="post" novalidate autocomplete="on" class="space-y-4">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" asp-for="LoginInput.ReturnUrl" />
-                        <input type="hidden" name="ActivePanel" value="signin" />
-
-                        <div>
-                            <label asp-for="LoginInput.Email" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1.5">Email</label>
-                            <input asp-for="LoginInput.Email" id="candLoginEmailInput" type="email" autocomplete="username" placeholder="your@email.com"
-                                   class="w-full px-3 py-2.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm placeholder-[#94A3B8] rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
-                            <span asp-validation-for="LoginInput.Email" class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
-                        </div>
-
-                        <div>
-                            <label asp-for="LoginInput.Password" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1.5">Mật Khẩu</label>
-                            <div class="relative">
-                                <input asp-for="LoginInput.Password" type="password" id="candPasswordInput" autocomplete="current-password"
-                                       class="w-full px-3 py-2.5 pr-10 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
-                                <button type="button" id="candEyeToggle" aria-label="Hiện hoặc ẩn mật khẩu" aria-pressed="false"
-                                        class="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors p-0.5">
-                                    <svg id="candEyeOpen" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                                        <path stroke-linecap="square" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                        <circle cx="12" cy="12" r="3" stroke-linecap="square"/>
-                                        <line x1="3" y1="3" x2="21" y2="21"/>
+                    <div class="w-full max-w-md mx-auto my-auto">
+                        @* Portal Switcher Header *@
+                        <div class="flex items-center justify-between mb-4 pb-2.5 border-b border-[#E2E8F0] dark:border-[#1E293B]">
+                            <div class="flex items-center gap-2">
+                                <a href="/gioi-thieu" class="inline-flex items-center gap-1 text-xs font-semibold text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors" title="Quay lại Trang chủ">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                                     </svg>
-                                    <svg id="candEyeClosed" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                                        <path stroke-linecap="square" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                        <circle cx="12" cy="12" r="3" stroke-linecap="square"/>
-                                    </svg>
-                                </button>
+                                    <span>Trang chủ</span>
+                                </a>
+                                <span class="text-[#CBD5E1] dark:text-[#334155]">·</span>
+                                <span class="text-xs font-mono tracking-widest uppercase text-[#0D5C4D] dark:text-[#10B981] font-semibold">
+                                    Cổng Ứng Viên
+                                </span>
                             </div>
-                            <span asp-validation-for="LoginInput.Password" class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
-                        </div>
-
-                        <div class="flex items-center justify-between">
-                            <label class="flex items-center gap-2 cursor-pointer select-none">
-                                <div class="relative">
-                                    <input asp-for="LoginInput.RememberMe" type="checkbox" class="peer sr-only" />
-                                    <div class="w-4 h-4 border border-[#CBD5E1] dark:border-[#334155] rounded-none peer-checked:bg-[#0D5C4D] peer-checked:border-[#0D5C4D] transition-colors"></div>
-                                </div>
-                                <span class="text-xs text-[#64748B] dark:text-[#94A3B8]">Ghi nhớ đăng nhập</span>
-                            </label>
-                            <button type="button" id="btnGoToReset"
-                                    class="font-mono text-[10px] tracking-wider uppercase text-[#0D5C4D] dark:text-[#10B981] hover:underline underline-offset-2">
-                                Quên mật khẩu?
-                            </button>
-                        </div>
-
-                        <button type="submit"
-                                class="w-full py-2.5 px-4 bg-[#0D5C4D] hover:bg-[#047857] text-white text-sm font-medium tracking-wide rounded-none border border-[#0D5C4D] transition-colors active:translate-y-[1px] duration-100">
-                            Đăng Nhập
-                        </button>
-
-                        <p class="text-center text-xs text-[#64748B] dark:text-[#94A3B8]">
-                            Chưa có tài khoản?
-                            <button type="button" id="btnGoToSignup1"
-                                    class="font-mono text-[10px] tracking-wider uppercase text-[#0D5C4D] dark:text-[#10B981] hover:underline underline-offset-2 ml-1">
-                                Đăng ký ngay
-                            </button>
-                        </p>
-
-                        @* Switcher to Staff Portal *@
-                        <div class="pt-2 text-center border-t border-[#E2E8F0] dark:border-[#1E293B]">
                             <a asp-controller="Account" asp-action="StaffLogin"
-                               class="text-xs text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors">
-                                Bạn là nhân sự NoveraTech? <span class="font-medium text-[#0D5C4D] dark:text-[#10B981] underline underline-offset-2">Đăng nhập Cổng Nội bộ &rarr;</span>
+                               class="inline-flex items-center gap-1 text-xs font-medium text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] hover:underline underline-offset-4 transition-colors">
+                                <span>Nhân sự Nội bộ &rarr;</span>
                             </a>
                         </div>
-                    </form>
-                </div>
 
-                @* ─── SLIDE 2: Sign Up ─── *@
-                <div id="panelSignup"
-                     class="w-1/3 flex flex-col justify-center px-8 py-10 lg:px-12 overflow-y-auto"
-                     role="region"
-                     aria-label="Đăng ký tài khoản ứng viên"
-                     aria-hidden="@(activePanel == "signup" ? "false" : "true")">
-
-                    @* Portal Switcher Header *@
-                    <div class="flex items-center justify-between mb-4 pb-2 border-b border-[#E2E8F0] dark:border-[#1E293B]">
-                        <span class="text-xs font-mono tracking-widest uppercase text-[#0D5C4D] dark:text-[#10B981] font-semibold">
-                            Cổng Ứng Viên
-                        </span>
-                        <a asp-controller="Account" asp-action="StaffLogin"
-                           class="inline-flex items-center gap-1 text-xs font-medium text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] hover:underline underline-offset-4 transition-colors">
-                            <span>Nhân sự Nội bộ &rarr;</span>
-                        </a>
-                    </div>
-
-                    @{
-                        var isSignupVerifyStep = activePanel == "signup" && Model.OtpStep == "verify";
-                        var pendingSignupEmail = Model.PendingEmail ?? Model.VerifyRegisterOtpInput?.Email ?? Model.RegisterInput?.Email ?? "";
-                    }
-
-                    @* ═══ BƯỚC 1: NHẬP THÔNG TIN ĐĂNG KÝ ═══ *@
-                    <div id="signupStepInput" class="@(isSignupVerifyStep ? "hidden" : "")">
-                        <div class="mb-6">
-                            <a href="/landing" class="inline-block mb-5 group cursor-pointer" title="Quay lại Trang chủ NoveraTech">
+                        <div class="mb-4">
+                            <a href="/gioi-thieu" class="inline-block mb-3 group cursor-pointer" title="Quay lại Trang chủ NoveraTech">
                                 <img src="~/img/logo-dark-transparent.png"
                                      alt="Novera Tech ATS"
-                                     class="h-8 object-contain dark:brightness-0 dark:invert transition-opacity group-hover:opacity-80" />
+                                     class="h-7 object-contain dark:brightness-0 dark:invert transition-opacity group-hover:opacity-80" />
                             </a>
-                            <h2 class="text-[#0F172A] dark:text-[#F8FAFC] text-2xl font-semibold tracking-tight">Tạo tài khoản</h2>
-                            <p class="text-[#64748B] dark:text-[#94A3B8] text-sm mt-1">Đăng ký để ứng tuyển vào Novera Tech.</p>
+                            <h2 class="text-[#0F172A] dark:text-[#F8FAFC] text-2xl font-semibold tracking-tight">Chào mừng trở lại</h2>
+                            <p class="text-[#64748B] dark:text-[#94A3B8] text-xs mt-1">Đăng nhập để theo dõi hồ sơ ứng tuyển.</p>
                         </div>
 
-                        <div id="signupInputError"
-                             class="mb-4 px-3 py-2.5 border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-sm rounded-none @(activePanel == "signup" && !isSignupVerifyStep && !Model.IsSuccess && !string.IsNullOrWhiteSpace(Model.StatusMessage) ? "" : "hidden")"
-                             role="alert" aria-live="polite">
-                            @(activePanel == "signup" && !isSignupVerifyStep && !Model.IsSuccess ? Model.StatusMessage : "")
+                        @* Validation Summary *@
+                        @if (!ViewData.ModelState.IsValid && ViewData.ModelState.TryGetValue(string.Empty, out var candidateErrors) && candidateErrors.Errors.Count > 0)
+                        {
+                            <div asp-validation-summary="ModelOnly"
+                                 class="mb-3 px-3 py-2 border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-xs rounded-none"
+                                 role="alert" aria-live="polite"></div>
+                        }
+
+                        @if (TempData["SuccessMessage"] != null)
+                        {
+                            <div class="mb-3 px-3 py-2 border border-[#10B981]/40 bg-[#10B981]/5 text-[#047857] dark:text-[#10B981] text-xs rounded-none" role="status">@TempData["SuccessMessage"]</div>
+                        }
+
+                        <div id="signinDynamicSuccess"
+                             class="mb-3 px-3 py-2 border border-[#10B981]/40 bg-[#10B981]/5 text-[#047857] dark:text-[#10B981] text-xs rounded-none @(activePanel == "signin" && Model.IsSuccess && !string.IsNullOrWhiteSpace(Model.StatusMessage) ? "" : "hidden")"
+                             role="status">
+                            @(activePanel == "signin" && Model.IsSuccess ? Model.StatusMessage : "")
                         </div>
 
-                        @* Google Sign Up Button *@
-                        <a href="/Account/ExternalLogin?provider=Google&userType=candidate&returnUrl=@Model.RegisterInput?.ReturnUrl"
-                           class="flex items-center justify-center gap-3 w-full py-2.5 px-4 border border-[#E2E8F0] dark:border-[#1E293B] bg-white dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm font-medium rounded-none hover:border-[#0D5C4D] dark:hover:border-[#10B981] transition-colors mb-4">
-                            <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        @* Google SSO Button *@
+                        <a href="/Account/ExternalLogin?provider=Google&userType=candidate&returnUrl=@Model.LoginInput?.ReturnUrl"
+                           class="flex items-center justify-center gap-2.5 w-full py-2 px-3 border border-[#E2E8F0] dark:border-[#1E293B] bg-white dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-xs font-medium rounded-none hover:border-[#0D5C4D] dark:hover:border-[#10B981] transition-colors mb-3">
+                            <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
                                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                             </svg>
-                            <span>Đăng ký nhanh bằng Google</span>
+                            <span>Tiếp tục với Google</span>
                         </a>
 
                         @* Divider *@
-                        <div class="flex items-center gap-3 mb-4">
+                        <div class="flex items-center gap-3 mb-3">
                             <div class="flex-1 h-px bg-[#E2E8F0] dark:bg-[#1E293B]"></div>
-                            <span class="font-mono text-[9px] tracking-[0.2em] uppercase text-[#94A3B8] dark:text-[#475569] whitespace-nowrap">
-                                HOẶC ĐĂNG KÝ BẰNG EMAIL
-                            </span>
+                            <span class="font-mono text-[9px] tracking-[0.2em] uppercase text-[#94A3B8] dark:text-[#475569] whitespace-nowrap">OR SIGN IN WITH EMAIL</span>
                             <div class="flex-1 h-px bg-[#E2E8F0] dark:bg-[#1E293B]"></div>
                         </div>
 
-                        <form id="formCandidateRegister" asp-controller="Account" asp-action="CandidateRegister" method="post" novalidate autocomplete="on" class="space-y-3.5">
+                        <form asp-controller="Account" asp-action="CandidateLogin" method="post" novalidate autocomplete="on" class="space-y-3">
                             @Html.AntiForgeryToken()
-                            <input type="hidden" asp-for="RegisterInput.ReturnUrl" />
-                            <input type="hidden" name="ActivePanel" value="signup" />
+                            <input type="hidden" asp-for="LoginInput.ReturnUrl" />
+                            <input type="hidden" name="ActivePanel" value="signin" />
 
                             <div>
-                                <label asp-for="RegisterInput.FullName" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1.5">Họ Và Tên</label>
-                                <input asp-for="RegisterInput.FullName" id="candRegisterFullName" type="text" autocomplete="name" placeholder="Nguyễn Văn A"
-                                       class="w-full px-3 py-2.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm placeholder-[#94A3B8] rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
-                                <span asp-validation-for="RegisterInput.FullName" class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                                <label asp-for="LoginInput.Email" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1">Email</label>
+                                <input asp-for="LoginInput.Email" id="candLoginEmailInput" type="email" autocomplete="username" placeholder="your@email.com"
+                                       class="w-full px-3 py-2 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm placeholder-[#94A3B8] rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
+                                <span asp-validation-for="LoginInput.Email" class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
                             </div>
 
                             <div>
-                                <label asp-for="RegisterInput.Email" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1.5">Email Cá Nhân</label>
-                                <input asp-for="RegisterInput.Email" id="candRegisterEmail" type="email" autocomplete="email" placeholder="your@email.com"
-                                       class="w-full px-3 py-2.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm placeholder-[#94A3B8] rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
-                                <span asp-validation-for="RegisterInput.Email" class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                                <label asp-for="LoginInput.Password" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1">Mật Khẩu</label>
+                                <div class="relative">
+                                    <input asp-for="LoginInput.Password" type="password" id="candPasswordInput" autocomplete="current-password"
+                                           class="w-full px-3 py-2 pr-10 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
+                                    <button type="button" id="candEyeToggle" aria-label="Hiện hoặc ẩn mật khẩu" aria-pressed="false"
+                                            class="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors p-0.5">
+                                        <svg id="candEyeOpen" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                            <path stroke-linecap="square" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                            <circle cx="12" cy="12" r="3" stroke-linecap="square"/>
+                                            <line x1="3" y1="3" x2="21" y2="21"/>
+                                        </svg>
+                                        <svg id="candEyeClosed" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                            <path stroke-linecap="square" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                            <circle cx="12" cy="12" r="3" stroke-linecap="square"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <span asp-validation-for="LoginInput.Password" class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
                             </div>
 
-                            <div>
-                                <label asp-for="RegisterInput.Password" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1.5">Mật Khẩu</label>
-                                <input asp-for="RegisterInput.Password" id="candRegisterPassword" type="password" autocomplete="new-password"
-                                       class="w-full px-3 py-2.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
-                                <span asp-validation-for="RegisterInput.Password" class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
-                            </div>
-
-                            <div>
-                                <label asp-for="RegisterInput.ConfirmPassword" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1.5">Xác Nhận Mật Khẩu</label>
-                                <input asp-for="RegisterInput.ConfirmPassword" id="candRegisterConfirmPassword" type="password" autocomplete="new-password"
-                                       class="w-full px-3 py-2.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
-                                <span asp-validation-for="RegisterInput.ConfirmPassword" class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
-                            </div>
-
-                            @* Terms & Conditions Checkbox - State Gating *@
-                            <div class="pt-1">
-                                <label class="flex items-start gap-3 cursor-pointer select-none" for="agreeTerms">
-                                    <div class="relative flex-shrink-0 mt-0.5">
-                                        <input asp-for="RegisterInput.AgreeToTerms"
-                                               type="checkbox"
-                                               id="agreeTerms"
-                                               class="peer sr-only" />
-                                        <div id="termsCheckboxVisual"
-                                             class="w-4 h-4 border border-[#CBD5E1] dark:border-[#334155] bg-[#F8FAFC] dark:bg-[#0B0F17] rounded-none peer-checked:bg-[#0D5C4D] peer-checked:border-[#0D5C4D] transition-colors flex items-center justify-center">
-                                            <svg id="termsCheckIcon" xmlns="http://www.w3.org/2000/svg" class="w-2.5 h-2.5 text-white @(Model.RegisterInput?.AgreeToTerms == true ? "" : "hidden")" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true">
-                                                <path stroke-linecap="square" stroke-linejoin="miter" d="M5 13l4 4L19 7"/>
-                                            </svg>
-                                        </div>
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center gap-2 cursor-pointer select-none">
+                                    <div class="relative">
+                                        <input asp-for="LoginInput.RememberMe" type="checkbox" class="peer sr-only" />
+                                        <div class="w-4 h-4 border border-[#CBD5E1] dark:border-[#334155] rounded-none peer-checked:bg-[#0D5C4D] peer-checked:border-[#0D5C4D] transition-colors"></div>
                                     </div>
-                                    <span class="text-xs text-[#64748B] dark:text-[#94A3B8] leading-relaxed">
-                                        Tôi đã đọc và đồng ý với
-                                        <a href="/terms" target="_blank" class="text-[#0D5C4D] dark:text-[#10B981] underline underline-offset-2">Điều khoản dịch vụ</a>
-                                        và
-                                        <a href="/privacy" target="_blank" class="text-[#0D5C4D] dark:text-[#10B981] underline underline-offset-2">Chính sách quyền riêng tư</a>.
-                                    </span>
+                                    <span class="text-xs text-[#64748B] dark:text-[#94A3B8]">Ghi nhớ đăng nhập</span>
                                 </label>
-                                <span asp-validation-for="RegisterInput.AgreeToTerms" class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                                <button type="button" id="btnGoToReset"
+                                        class="font-mono text-[10px] tracking-wider uppercase text-[#0D5C4D] dark:text-[#10B981] hover:underline underline-offset-2">
+                                    Quên mật khẩu?
+                                </button>
                             </div>
 
-                            @* Submit — State Gated *@
                             <button type="submit"
-                                    id="btnRegisterSubmit"
-                                    disabled
-                                    class="w-full py-2.5 px-4 bg-[#0D5C4D] text-white text-sm font-medium tracking-wide rounded-none border border-[#0D5C4D] transition-all duration-100 active:translate-y-[1px] opacity-40 cursor-not-allowed pointer-events-none"
-                                    aria-describedby="termsRequiredHint">
-                                Tiếp Tục Nhận Mã OTP
+                                    class="w-full py-2.5 px-4 bg-[#0D5C4D] hover:bg-[#047857] text-white text-sm font-medium tracking-wide rounded-none border border-[#0D5C4D] transition-colors active:translate-y-[1px] duration-100">
+                                Đăng Nhập
                             </button>
-                            <p id="termsRequiredHint" class="text-[9px] font-mono tracking-wider uppercase text-[#94A3B8] dark:text-[#475569] text-center">
-                                Bạn phải đồng ý với điều khoản để tiếp tục
-                            </p>
 
                             <p class="text-center text-xs text-[#64748B] dark:text-[#94A3B8]">
-                                Đã có tài khoản?
-                                <button type="button" id="btnGoToSignin"
+                                Chưa có tài khoản?
+                                <button type="button" id="btnGoToSignup1"
                                         class="font-mono text-[10px] tracking-wider uppercase text-[#0D5C4D] dark:text-[#10B981] hover:underline underline-offset-2 ml-1">
-                                    Đăng nhập
+                                    Đăng ký ngay
                                 </button>
                             </p>
 
                             @* Switcher to Staff Portal *@
-                            <div class="pt-2 text-center border-t border-[#E2E8F0] dark:border-[#1E293B]">
+                            <div class="pt-1.5 text-center border-t border-[#E2E8F0] dark:border-[#1E293B]">
                                 <a asp-controller="Account" asp-action="StaffLogin"
                                    class="text-xs text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors">
-                                    Bạn là nhân sự NoveraTech? <span class="font-medium text-[#0D5C4D] dark:text-[#10B981] underline underline-offset-2">Đăng nhập Cổng Nội bộ &rarr;</span>
+                                    Bạn là nhân sự NoveraTech? <span class="font-medium text-[#0D5C4D] dark:text-[#10B981] underline underline-offset-2">Cổng Nội bộ &rarr;</span>
                                 </a>
                             </div>
                         </form>
                     </div>
+                </div>
 
-                    @* ═══ BƯỚC 2: XÁC THỰC MÃ OTP ĐĂNG KÝ ═══ *@
-                    <div id="signupStepVerify" class="@(isSignupVerifyStep ? "" : "hidden")">
-                        <div class="mb-6">
-                            <div class="w-10 h-10 border border-[#0D5C4D]/30 dark:border-[#10B981]/30 bg-[#0D5C4D]/5 dark:bg-[#10B981]/10 flex items-center justify-center mb-4">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[#0D5C4D] dark:text-[#10B981]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="1.8" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                @* ─── SLIDE 2: Sign Up ─── *@
+                <div id="panelSignup"
+                     class="w-1/3 flex flex-col justify-center px-6 py-4 lg:px-12 overflow-y-auto"
+                     role="region"
+                     aria-label="Đăng ký tài khoản ứng viên"
+                     aria-hidden="@(activePanel == "signup" ? "false" : "true")">
+
+                    <div class="w-full max-w-md mx-auto my-auto">
+                        @* Portal Switcher Header *@
+                        <div class="flex items-center justify-between mb-3 pb-2 border-b border-[#E2E8F0] dark:border-[#1E293B]">
+                            <span class="text-xs font-mono tracking-widest uppercase text-[#0D5C4D] dark:text-[#10B981] font-semibold">
+                                Cổng Ứng Viên
+                            </span>
+                            <a asp-controller="Account" asp-action="StaffLogin"
+                               class="inline-flex items-center gap-1 text-xs font-medium text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] hover:underline underline-offset-4 transition-colors">
+                                <span>Nhân sự Nội bộ &rarr;</span>
+                            </a>
+                        </div>
+
+                        @{
+                            var isSignupVerifyStep = activePanel == "signup" && Model.OtpStep == "verify";
+                            var pendingSignupEmail = Model.PendingEmail ?? Model.VerifyRegisterOtpInput?.Email ?? Model.RegisterInput?.Email ?? "";
+                        }
+
+                        @* ═══ BƯỚC 1: NHẬP THÔNG TIN ĐĂNG KÝ ═══ *@
+                        <div id="signupStepInput" class="@(isSignupVerifyStep ? "hidden" : "")">
+                            <div class="mb-3">
+                                <a href="/gioi-thieu" class="inline-block mb-2 group cursor-pointer" title="Quay lại Trang chủ NoveraTech">
+                                    <img src="~/img/logo-dark-transparent.png"
+                                         alt="Novera Tech ATS"
+                                         class="h-7 object-contain dark:brightness-0 dark:invert transition-opacity group-hover:opacity-80" />
+                                </a>
+                                <h2 class="text-[#0F172A] dark:text-[#F8FAFC] text-2xl font-semibold tracking-tight">Tạo tài khoản</h2>
+                                <p class="text-[#64748B] dark:text-[#94A3B8] text-xs mt-0.5">Đăng ký để ứng tuyển vào Novera Tech.</p>
+                            </div>
+
+                            <div id="signupInputError"
+                                 class="mb-3 px-3 py-2 border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-xs rounded-none @(activePanel == "signup" && !isSignupVerifyStep && !Model.IsSuccess && !string.IsNullOrWhiteSpace(Model.StatusMessage) ? "" : "hidden")"
+                                 role="alert" aria-live="polite">
+                                @(activePanel == "signup" && !isSignupVerifyStep && !Model.IsSuccess ? Model.StatusMessage : "")
+                            </div>
+
+                            @* Google Sign Up Button *@
+                            <a href="/Account/ExternalLogin?provider=Google&userType=candidate&returnUrl=@Model.RegisterInput?.ReturnUrl"
+                               class="flex items-center justify-center gap-2.5 w-full py-2 px-3 border border-[#E2E8F0] dark:border-[#1E293B] bg-white dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-xs font-medium rounded-none hover:border-[#0D5C4D] dark:hover:border-[#10B981] transition-colors mb-2.5">
+                                <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                                 </svg>
-                            </div>
-                            <h2 class="text-[#0F172A] dark:text-[#F8FAFC] text-2xl font-semibold tracking-tight">Xác thực tài khoản</h2>
-                            <p class="text-[#64748B] dark:text-[#94A3B8] text-sm mt-1.5 leading-relaxed">
-                                Mã OTP 6 chữ số đã được gửi tới email <br/>
-                                <strong id="signupVerifyEmailDisplay" class="text-[#0D5C4D] dark:text-[#10B981] font-semibold break-all">@pendingSignupEmail</strong>.
-                            </p>
-                        </div>
+                                <span>Đăng ký nhanh bằng Google</span>
+                            </a>
 
-                        <div id="signupVerifyAlert"
-                             class="mb-4 px-3 py-2.5 border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-sm rounded-none @(isSignupVerifyStep && !Model.IsSuccess && !string.IsNullOrWhiteSpace(Model.StatusMessage) ? "" : "hidden")"
-                             role="alert" aria-live="polite">
-                            @(isSignupVerifyStep && !Model.IsSuccess ? Model.StatusMessage : "")
-                        </div>
-
-                        <form id="formVerifyRegisterOtp" asp-controller="Account" asp-action="CandidateVerifyRegisterOtp" method="post" novalidate class="space-y-4">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" asp-for="VerifyRegisterOtpInput.Email" id="signupVerifyEmailInput" value="@pendingSignupEmail" />
-                            <input type="hidden" asp-for="VerifyRegisterOtpInput.ReturnUrl" />
-                            <input type="hidden" name="ActivePanel" value="signup" />
-                            <input type="hidden" name="OtpStep" value="verify" />
-
-                            <div>
-                                <label asp-for="VerifyRegisterOtpInput.OtpCode" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1.5">
-                                    Mã xác thực OTP (6 chữ số)
-                                </label>
-                                <input asp-for="VerifyRegisterOtpInput.OtpCode"
-                                       id="signupOtpCodeInput"
-                                       type="text"
-                                       maxlength="6"
-                                       inputmode="numeric"
-                                       pattern="[0-9]{6}"
-                                       autocomplete="one-time-code"
-                                       placeholder="••••••"
-                                       class="w-full px-4 py-3 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0D5C4D] dark:text-[#10B981] text-center font-mono text-3xl font-bold tracking-[0.4em] placeholder-[#94A3B8]/40 rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] transition-colors" />
-                                <span asp-validation-for="VerifyRegisterOtpInput.OtpCode" id="signupOtpErrorSpan" class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                            @* Divider *@
+                            <div class="flex items-center gap-3 mb-2.5">
+                                <div class="flex-1 h-px bg-[#E2E8F0] dark:bg-[#1E293B]"></div>
+                                <span class="font-mono text-[9px] tracking-[0.2em] uppercase text-[#94A3B8] dark:text-[#475569] whitespace-nowrap">
+                                    HOẶC ĐĂNG KÝ BẰNG EMAIL
+                                </span>
+                                <div class="flex-1 h-px bg-[#E2E8F0] dark:bg-[#1E293B]"></div>
                             </div>
 
-                            <button type="submit"
-                                    id="btnVerifyRegisterSubmit"
-                                    class="w-full py-2.5 px-4 bg-[#0D5C4D] hover:bg-[#047857] text-white text-sm font-medium tracking-wide rounded-none border border-[#0D5C4D] transition-colors active:translate-y-[1px] duration-100">
-                                Xác Nhận & Hoàn Tất
-                            </button>
+                            <form id="formCandidateRegister" asp-controller="Account" asp-action="CandidateRegister" method="post" novalidate autocomplete="on" class="space-y-2.5">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" asp-for="RegisterInput.ReturnUrl" />
+                                <input type="hidden" name="ActivePanel" value="signup" />
 
-                            <div class="flex items-center justify-between text-xs text-[#64748B] dark:text-[#94A3B8] pt-1">
-                                <span>Chưa nhận được mã?</span>
-                                <button type="button"
-                                        id="btnResendRegisterOtp"
-                                        class="font-mono text-[11px] tracking-wider uppercase text-[#0D5C4D] dark:text-[#10B981] hover:underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline font-semibold">
-                                    Gửi lại mã (<span id="resendRegisterTimer">60</span>s)
+                                <div>
+                                    <label asp-for="RegisterInput.FullName" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1">Họ Và Tên</label>
+                                    <input asp-for="RegisterInput.FullName" id="candRegisterFullName" type="text" autocomplete="name" placeholder="Nguyễn Văn A"
+                                           class="w-full px-3 py-1.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm placeholder-[#94A3B8] rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
+                                    <span asp-validation-for="RegisterInput.FullName" class="block mt-0.5 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                                </div>
+
+                                <div>
+                                    <label asp-for="RegisterInput.Email" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1">Email Cá Nhân</label>
+                                    <input asp-for="RegisterInput.Email" id="candRegisterEmail" type="email" autocomplete="email" placeholder="your@email.com"
+                                           class="w-full px-3 py-1.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm placeholder-[#94A3B8] rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
+                                    <span asp-validation-for="RegisterInput.Email" class="block mt-0.5 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                                </div>
+
+                                <div>
+                                    <label asp-for="RegisterInput.Password" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1">Mật Khẩu</label>
+                                    <input asp-for="RegisterInput.Password" id="candRegisterPassword" type="password" autocomplete="new-password"
+                                           class="w-full px-3 py-1.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
+                                    <!-- 4-Level Strength Meter for Candidate Register -->
+                                    <div class="mt-1 p-1.5 bg-[#F1F5F9] dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] rounded text-[10px]">
+                                        <div class="flex justify-between items-center mb-0.5 text-[10px] font-mono">
+                                            <span class="text-[#64748B] dark:text-[#94A3B8]">Độ mạnh:</span>
+                                            <span id="candRegBadge" class="font-bold text-[#64748B]">Chưa nhập</span>
+                                        </div>
+                                        <div class="w-full bg-[#E2E8F0] dark:bg-[#334155] h-1 rounded-full overflow-hidden mb-1">
+                                            <div id="candRegBar" class="h-full w-0 transition-all duration-300"></div>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-0.5 text-[9px] text-[#64748B] dark:text-[#94A3B8]">
+                                            <div id="cr-len" class="flex items-center gap-1"><i class="bi bi-circle"></i> 8+ ký tự</div>
+                                            <div id="cr-case" class="flex items-center gap-1"><i class="bi bi-circle"></i> Hoa &amp; Thường</div>
+                                            <div id="cr-num" class="flex items-center gap-1"><i class="bi bi-circle"></i> Chữ số (0-9)</div>
+                                            <div id="cr-spec" class="flex items-center gap-1"><i class="bi bi-circle"></i> Ký tự đặc biệt</div>
+                                        </div>
+                                    </div>
+                                    <span asp-validation-for="RegisterInput.Password" class="block mt-0.5 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                                </div>
+
+                                <div>
+                                    <label asp-for="RegisterInput.ConfirmPassword" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1">Xác Nhận Mật Khẩu</label>
+                                    <input asp-for="RegisterInput.ConfirmPassword" id="candRegisterConfirmPassword" type="password" autocomplete="new-password"
+                                           class="w-full px-3 py-1.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
+                                    <span asp-validation-for="RegisterInput.ConfirmPassword" class="block mt-0.5 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                                </div>
+
+                                @* Terms & Conditions Checkbox - State Gating *@
+                                <div class="pt-0.5">
+                                    <label class="flex items-start gap-2.5 cursor-pointer select-none" for="agreeTerms">
+                                        <div class="relative flex-shrink-0 mt-0.5">
+                                            <input asp-for="RegisterInput.AgreeToTerms"
+                                                   type="checkbox"
+                                                   id="agreeTerms"
+                                                   class="peer sr-only" />
+                                            <div id="termsCheckboxVisual"
+                                                 class="w-3.5 h-3.5 border border-[#CBD5E1] dark:border-[#334155] bg-[#F8FAFC] dark:bg-[#0B0F17] rounded-none peer-checked:bg-[#0D5C4D] peer-checked:border-[#0D5C4D] transition-colors flex items-center justify-center">
+                                                <svg id="termsCheckIcon" xmlns="http://www.w3.org/2000/svg" class="w-2.5 h-2.5 text-white @(Model.RegisterInput?.AgreeToTerms == true ? "" : "hidden")" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true">
+                                                    <path stroke-linecap="square" stroke-linejoin="miter" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <span class="text-[11px] text-[#64748B] dark:text-[#94A3B8] leading-tight">
+                                            Tôi đồng ý với
+                                            <a href="/terms" target="_blank" class="text-[#0D5C4D] dark:text-[#10B981] underline underline-offset-2">Điều khoản dịch vụ</a>
+                                            và
+                                            <a href="/privacy" target="_blank" class="text-[#0D5C4D] dark:text-[#10B981] underline underline-offset-2">Quyền riêng tư</a>.
+                                        </span>
+                                    </label>
+                                    <span asp-validation-for="RegisterInput.AgreeToTerms" class="block mt-0.5 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                                </div>
+
+                                @* Submit — State Gated *@
+                                <button type="submit"
+                                        id="btnRegisterSubmit"
+                                        disabled
+                                        class="w-full py-2 px-4 bg-[#0D5C4D] text-white text-sm font-medium tracking-wide rounded-none border border-[#0D5C4D] transition-all duration-100 active:translate-y-[1px] opacity-40 cursor-not-allowed pointer-events-none"
+                                        aria-describedby="termsRequiredHint">
+                                    Đăng Ký
                                 </button>
+                                <p id="termsRequiredHint" class="text-[8px] font-mono tracking-wider uppercase text-[#94A3B8] dark:text-[#475569] text-center">
+                                    Bạn phải đồng ý với điều khoản để tiếp tục
+                                </p>
+
+                                <p class="text-center text-xs text-[#64748B] dark:text-[#94A3B8]">
+                                    Đã có tài khoản?
+                                    <button type="button" id="btnGoToSignin"
+                                            class="font-mono text-[10px] tracking-wider uppercase text-[#0D5C4D] dark:text-[#10B981] hover:underline underline-offset-2 ml-1">
+                                        Đăng nhập
+                                    </button>
+                                </p>
+
+                                @* Switcher to Staff Portal *@
+                                <div class="pt-1.5 text-center border-t border-[#E2E8F0] dark:border-[#1E293B]">
+                                    <a asp-controller="Account" asp-action="StaffLogin"
+                                       class="text-xs text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors">
+                                        Bạn là nhân sự NoveraTech? <span class="font-medium text-[#0D5C4D] dark:text-[#10B981] underline underline-offset-2">Cổng Nội bộ &rarr;</span>
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+
+                        @* ═══ BƯỚC 2: XÁC THỰC MÃ OTP ĐĂNG KÝ ═══ *@
+                        <div id="signupStepVerify" class="@(isSignupVerifyStep ? "" : "hidden")">
+                            <div class="mb-4">
+                                <div class="w-8 h-8 border border-[#0D5C4D]/30 dark:border-[#10B981]/30 bg-[#0D5C4D]/5 dark:bg-[#10B981]/10 flex items-center justify-center mb-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-[#0D5C4D] dark:text-[#10B981]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="1.8" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    </svg>
+                                </div>
+                                <h2 class="text-[#0F172A] dark:text-[#F8FAFC] text-2xl font-semibold tracking-tight">Xác thực tài khoản</h2>
+                                <p class="text-[#64748B] dark:text-[#94A3B8] text-xs mt-1 leading-relaxed">
+                                    Mã OTP 6 chữ số đã được gửi tới email <br/>
+                                    <strong id="signupVerifyEmailDisplay" class="text-[#0D5C4D] dark:text-[#10B981] font-semibold break-all">@pendingSignupEmail</strong>.
+                                </p>
                             </div>
 
-                            <button type="button"
-                                    id="btnBackToSignupInput"
-                                    class="w-full py-2 px-3 border border-[#E2E8F0] dark:border-[#1E293B] bg-transparent text-[#64748B] dark:text-[#94A3B8] text-xs font-medium rounded-none hover:border-[#0D5C4D] dark:hover:border-[#10B981] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors">
-                                ← Quay lại chỉnh sửa thông tin
-                            </button>
-                        </form>
+                            <div id="signupVerifyAlert"
+                                 class="mb-3 px-3 py-2 border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-xs rounded-none @(isSignupVerifyStep && !Model.IsSuccess && !string.IsNullOrWhiteSpace(Model.StatusMessage) ? "" : "hidden")"
+                                 role="alert" aria-live="polite">
+                                @(isSignupVerifyStep && !Model.IsSuccess ? Model.StatusMessage : "")
+                            </div>
+
+                            <form id="formVerifyRegisterOtp" asp-controller="Account" asp-action="CandidateVerifyRegisterOtp" method="post" novalidate class="space-y-3">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" asp-for="VerifyRegisterOtpInput.Email" id="signupVerifyEmailInput" value="@pendingSignupEmail" />
+                                <input type="hidden" asp-for="VerifyRegisterOtpInput.ReturnUrl" />
+                                <input type="hidden" name="ActivePanel" value="signup" />
+                                <input type="hidden" name="OtpStep" value="verify" />
+
+                                <div>
+                                    <label asp-for="VerifyRegisterOtpInput.OtpCode" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1">
+                                        Mã xác thực OTP (6 chữ số)
+                                    </label>
+                                    <input asp-for="VerifyRegisterOtpInput.OtpCode"
+                                           id="signupOtpCodeInput"
+                                           type="text"
+                                           maxlength="6"
+                                           inputmode="numeric"
+                                           pattern="[0-9]{6}"
+                                           autocomplete="one-time-code"
+                                           placeholder="••••••"
+                                           class="w-full px-4 py-2.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0D5C4D] dark:text-[#10B981] text-center font-mono text-2xl font-bold tracking-[0.4em] placeholder-[#94A3B8]/40 rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] transition-colors" />
+                                    <span asp-validation-for="VerifyRegisterOtpInput.OtpCode" id="signupOtpErrorSpan" class="block mt-0.5 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                                </div>
+
+                                <button type="submit"
+                                        id="btnVerifyRegisterSubmit"
+                                        class="w-full py-2.5 px-4 bg-[#0D5C4D] hover:bg-[#047857] text-white text-sm font-medium tracking-wide rounded-none border border-[#0D5C4D] transition-colors active:translate-y-[1px] duration-100">
+                                    Xác Nhận & Hoàn Tất
+                                </button>
+
+                                <div class="flex items-center justify-between text-xs text-[#64748B] dark:text-[#94A3B8] pt-1">
+                                    <span>Chưa nhận được mã?</span>
+                                    <button type="button"
+                                            id="btnResendRegisterOtp"
+                                            class="font-mono text-[11px] tracking-wider uppercase text-[#0D5C4D] dark:text-[#10B981] hover:underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline font-semibold">
+                                        Gửi lại mã (<span id="resendRegisterTimer">60</span>s)
+                                    </button>
+                                </div>
+
+                                <button type="button"
+                                        id="btnBackToSignupInput"
+                                        class="w-full py-2 px-3 border border-[#E2E8F0] dark:border-[#1E293B] bg-transparent text-[#64748B] dark:text-[#94A3B8] text-xs font-medium rounded-none hover:border-[#0D5C4D] dark:hover:border-[#10B981] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors">
+                                    ← Quay lại chỉnh sửa thông tin
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
 
                 @* ─── SLIDE 3: Reset Password ─── *@
                 <div id="panelReset"
-                     class="w-1/3 flex flex-col justify-center px-8 py-10 lg:px-12 overflow-y-auto"
+                     class="w-1/3 flex flex-col justify-center px-6 py-4 lg:px-12 overflow-y-auto"
                      role="region"
                      aria-label="Quên mật khẩu ứng viên"
                      aria-hidden="@(activePanel == "reset" ? "false" : "true")">
 
-                    @* Portal Switcher Header *@
-                    <div class="flex items-center justify-between mb-6 pb-3 border-b border-[#E2E8F0] dark:border-[#1E293B]">
-                        <span class="text-xs font-mono tracking-widest uppercase text-[#0D5C4D] dark:text-[#10B981] font-semibold">
-                            Cổng Ứng Viên
-                        </span>
-                        <a asp-controller="Account" asp-action="StaffLogin"
-                           class="inline-flex items-center gap-1 text-xs font-medium text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] hover:underline underline-offset-4 transition-colors">
-                            <span>Nhân sự Nội bộ &rarr;</span>
-                        </a>
-                    </div>
-
-                    @{
-                        var isResetVerifyStep = activePanel == "reset" && Model.OtpStep == "verify";
-                        var pendingResetEmail = Model.PendingEmail ?? Model.ResetPasswordOtpInput?.Email ?? Model.ForgotPasswordInput?.Email ?? "";
-                    }
-
-                    @* ═══ BƯỚC 1: NHẬP EMAIL YÊU CẦU ĐẶT LẠI ═══ *@
-                    <div id="resetStepInput" class="@(isResetVerifyStep ? "hidden" : "")">
-                        <div class="mb-8">
-                            <a href="/landing" class="inline-block mb-5 group cursor-pointer" title="Quay lại Trang chủ NoveraTech">
-                                <img src="~/img/logo-dark-transparent.png"
-                                     alt="Novera Tech ATS"
-                                     class="h-8 object-contain dark:brightness-0 dark:invert transition-opacity group-hover:opacity-80" />
+                    <div class="w-full max-w-md mx-auto my-auto">
+                        @* Portal Switcher Header *@
+                        <div class="flex items-center justify-between mb-4 pb-2 border-b border-[#E2E8F0] dark:border-[#1E293B]">
+                            <span class="text-xs font-mono tracking-widest uppercase text-[#0D5C4D] dark:text-[#10B981] font-semibold">
+                                Cổng Ứng Viên
+                            </span>
+                            <a asp-controller="Account" asp-action="StaffLogin"
+                               class="inline-flex items-center gap-1 text-xs font-medium text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] hover:underline underline-offset-4 transition-colors">
+                                <span>Nhân sự Nội bộ &rarr;</span>
                             </a>
-                            <h2 class="text-[#0F172A] dark:text-[#F8FAFC] text-2xl font-semibold tracking-tight">Quên mật khẩu?</h2>
-                            <p class="text-[#64748B] dark:text-[#94A3B8] text-sm mt-1">Nhập email đã đăng ký, chúng tôi sẽ gửi mã OTP để đặt lại mật khẩu.</p>
                         </div>
 
-                        <div id="resetInputAlert"
-                             class="mb-4 px-3 py-2.5 border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-sm rounded-none @(activePanel == "reset" && !isResetVerifyStep && !Model.IsSuccess && !string.IsNullOrWhiteSpace(Model.StatusMessage) ? "" : "hidden")"
-                             role="alert" aria-live="polite">
-                            @(activePanel == "reset" && !isResetVerifyStep && !Model.IsSuccess ? Model.StatusMessage : "")
-                        </div>
+                        @{
+                            var isResetVerifyStep = activePanel == "reset" && Model.OtpStep == "verify";
+                            var pendingResetEmail = Model.PendingEmail ?? Model.ResetPasswordOtpInput?.Email ?? Model.ForgotPasswordInput?.Email ?? "";
+                        }
 
-                        <form id="formCandidateForgotPassword" asp-controller="Account" asp-action="CandidateForgotPassword" method="post" novalidate class="space-y-4">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" asp-for="ForgotPasswordInput.ReturnUrl" />
-                            <input type="hidden" name="ActivePanel" value="reset" />
-
-                            <div>
-                                <label asp-for="ForgotPasswordInput.Email" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1.5">Địa Chỉ Email</label>
-                                <input asp-for="ForgotPasswordInput.Email" id="candForgotEmail" type="email" autocomplete="email" placeholder="your@email.com"
-                                       class="w-full px-3 py-2.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm placeholder-[#94A3B8] rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
-                                <span asp-validation-for="ForgotPasswordInput.Email" class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
-                            </div>
-
-                            <button type="submit"
-                                    id="btnForgotSubmit"
-                                    class="w-full py-2.5 px-4 bg-[#0D5C4D] hover:bg-[#047857] text-white text-sm font-medium tracking-wide rounded-none border border-[#0D5C4D] transition-colors active:translate-y-[1px] duration-100">
-                                Gửi Mã Xác Thực OTP
-                            </button>
-
-                            <button type="button" id="btnResetBackToSignin"
-                                    class="w-full py-2.5 px-4 border border-[#E2E8F0] dark:border-[#1E293B] bg-transparent text-[#64748B] dark:text-[#94A3B8] text-sm font-medium rounded-none hover:border-[#0D5C4D] dark:hover:border-[#10B981] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors">
-                                ← Quay lại Đăng nhập
-                            </button>
-
-                            @* Switcher to Staff Portal *@
-                            <div class="pt-2 text-center border-t border-[#E2E8F0] dark:border-[#1E293B]">
-                                <a asp-controller="Account" asp-action="StaffLogin"
-                                   class="text-xs text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors">
-                                    Bạn là nhân sự NoveraTech? <span class="font-medium text-[#0D5C4D] dark:text-[#10B981] underline underline-offset-2">Đăng nhập Cổng Nội bộ &rarr;</span>
+                        @* ═══ BƯỚC 1: NHẬP EMAIL YÊU CẦU ĐẶT LẠI ═══ *@
+                        <div id="resetStepInput" class="@(isResetVerifyStep ? "hidden" : "")">
+                            <div class="mb-4">
+                                <a href="/gioi-thieu" class="inline-block mb-3 group cursor-pointer" title="Quay lại Trang chủ NoveraTech">
+                                    <img src="~/img/logo-dark-transparent.png"
+                                         alt="Novera Tech ATS"
+                                         class="h-7 object-contain dark:brightness-0 dark:invert transition-opacity group-hover:opacity-80" />
                                 </a>
-                            </div>
-                        </form>
-                    </div>
-
-                    @* ═══ BƯỚC 2: NHẬP OTP VÀ ĐẶT LẠI MẬT KHẨU MỚI ═══ *@
-                    <div id="resetStepVerify" class="@(isResetVerifyStep ? "" : "hidden")">
-                        <div class="mb-6">
-                            <div class="w-10 h-10 border border-[#0D5C4D]/30 dark:border-[#10B981]/30 bg-[#0D5C4D]/5 dark:bg-[#10B981]/10 flex items-center justify-center mb-4">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[#0D5C4D] dark:text-[#10B981]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                                </svg>
-                            </div>
-                            <h2 class="text-[#0F172A] dark:text-[#F8FAFC] text-2xl font-semibold tracking-tight">Đặt lại mật khẩu</h2>
-                            <p class="text-[#64748B] dark:text-[#94A3B8] text-sm mt-1.5 leading-relaxed">
-                                Nhập mã OTP đã được gửi đến <br/>
-                                <strong id="resetVerifyEmailDisplay" class="text-[#0D5C4D] dark:text-[#10B981] font-semibold break-all">@pendingResetEmail</strong> và tạo mật khẩu mới.
-                            </p>
-                        </div>
-
-                        <div id="resetVerifyAlert"
-                             class="mb-4 px-3 py-2.5 border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-sm rounded-none @(isResetVerifyStep && !Model.IsSuccess && !string.IsNullOrWhiteSpace(Model.StatusMessage) ? "" : "hidden")"
-                             role="alert" aria-live="polite">
-                            @(isResetVerifyStep && !Model.IsSuccess ? Model.StatusMessage : "")
-                        </div>
-
-                        <form id="formResetPasswordWithOtp" asp-controller="Account" asp-action="CandidateResetPasswordWithOtp" method="post" novalidate class="space-y-3.5">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" asp-for="ResetPasswordOtpInput.Email" id="resetVerifyEmailInput" value="@pendingResetEmail" />
-                            <input type="hidden" asp-for="ResetPasswordOtpInput.ReturnUrl" />
-                            <input type="hidden" name="ActivePanel" value="reset" />
-                            <input type="hidden" name="OtpStep" value="verify" />
-
-                            <div>
-                                <label asp-for="ResetPasswordOtpInput.OtpCode" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1.5">
-                                    Mã xác thực OTP (6 chữ số)
-                                </label>
-                                <input asp-for="ResetPasswordOtpInput.OtpCode"
-                                       id="resetOtpCodeInput"
-                                       type="text"
-                                       maxlength="6"
-                                       inputmode="numeric"
-                                       pattern="[0-9]{6}"
-                                       autocomplete="one-time-code"
-                                       placeholder="••••••"
-                                       class="w-full px-4 py-3 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0D5C4D] dark:text-[#10B981] text-center font-mono text-3xl font-bold tracking-[0.4em] placeholder-[#94A3B8]/40 rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] transition-colors" />
-                                <span asp-validation-for="ResetPasswordOtpInput.OtpCode" id="resetOtpErrorSpan" class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                                <h2 class="text-[#0F172A] dark:text-[#F8FAFC] text-xl lg:text-2xl font-semibold tracking-tight">Quên mật khẩu?</h2>
+                                <p class="text-[#64748B] dark:text-[#94A3B8] text-xs mt-1">Nhập email đã đăng ký, chúng tôi sẽ gửi mã OTP để đặt lại mật khẩu.</p>
                             </div>
 
-                            <div>
-                                <label asp-for="ResetPasswordOtpInput.NewPassword" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1.5">Mật Khẩu Mới</label>
-                                <input asp-for="ResetPasswordOtpInput.NewPassword" id="candResetNewPassword" type="password" autocomplete="new-password"
-                                       class="w-full px-3 py-2.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
-                                <span asp-validation-for="ResetPasswordOtpInput.NewPassword" class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                            <div id="resetInputAlert"
+                                 class="mb-3 px-3 py-2 border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-xs rounded-none @(activePanel == "reset" && !isResetVerifyStep && !Model.IsSuccess && !string.IsNullOrWhiteSpace(Model.StatusMessage) ? "" : "hidden")"
+                                 role="alert" aria-live="polite">
+                                @(activePanel == "reset" && !isResetVerifyStep && !Model.IsSuccess ? Model.StatusMessage : "")
                             </div>
 
-                            <div>
-                                <label asp-for="ResetPasswordOtpInput.ConfirmNewPassword" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1.5">Xác Nhận Mật Khẩu Mới</label>
-                                <input asp-for="ResetPasswordOtpInput.ConfirmNewPassword" id="candResetConfirmPassword" type="password" autocomplete="new-password"
-                                       class="w-full px-3 py-2.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
-                                <span asp-validation-for="ResetPasswordOtpInput.ConfirmNewPassword" class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
-                            </div>
+                            <form id="formCandidateForgotPassword" asp-controller="Account" asp-action="CandidateForgotPassword" method="post" novalidate class="space-y-3">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" asp-for="ForgotPasswordInput.ReturnUrl" />
+                                <input type="hidden" name="ActivePanel" value="reset" />
 
-                            <button type="submit"
-                                    id="btnResetPasswordSubmit"
-                                    class="w-full py-2.5 px-4 bg-[#0D5C4D] hover:bg-[#047857] text-white text-sm font-medium tracking-wide rounded-none border border-[#0D5C4D] transition-colors active:translate-y-[1px] duration-100">
-                                Xác Nhận Đổi Mật Khẩu
-                            </button>
+                                <div>
+                                    <label asp-for="ForgotPasswordInput.Email" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1">Địa Chỉ Email</label>
+                                    <input asp-for="ForgotPasswordInput.Email" id="candForgotEmail" type="email" autocomplete="email" placeholder="your@email.com"
+                                           class="w-full px-3 py-2 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm placeholder-[#94A3B8] rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
+                                    <span asp-validation-for="ForgotPasswordInput.Email" class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                                </div>
 
-                            <div class="flex items-center justify-between text-xs text-[#64748B] dark:text-[#94A3B8] pt-1">
-                                <span>Chưa nhận được mã?</span>
-                                <button type="button"
-                                        id="btnResendResetOtp"
-                                        class="font-mono text-[11px] tracking-wider uppercase text-[#0D5C4D] dark:text-[#10B981] hover:underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline font-semibold">
-                                    Gửi lại mã (<span id="resendResetTimer">60</span>s)
+                                <button type="submit"
+                                        id="btnForgotSubmit"
+                                        class="w-full py-2.5 px-4 bg-[#0D5C4D] hover:bg-[#047857] text-white text-sm font-medium tracking-wide rounded-none border border-[#0D5C4D] transition-colors active:translate-y-[1px] duration-100">
+                                    Gửi Mã Xác Thực OTP
                                 </button>
+
+                                <button type="button" id="btnResetBackToSignin"
+                                        class="w-full py-2 px-4 border border-[#E2E8F0] dark:border-[#1E293B] bg-transparent text-[#64748B] dark:text-[#94A3B8] text-xs font-medium rounded-none hover:border-[#0D5C4D] dark:hover:border-[#10B981] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors">
+                                    ← Quay lại Đăng nhập
+                                </button>
+
+                                @* Switcher to Staff Portal *@
+                                <div class="pt-2 text-center border-t border-[#E2E8F0] dark:border-[#1E293B]">
+                                    <a asp-controller="Account" asp-action="StaffLogin"
+                                       class="text-xs text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors">
+                                        Bạn là nhân sự NoveraTech? <span class="font-medium text-[#0D5C4D] dark:text-[#10B981] underline underline-offset-2">Đăng nhập Cổng Nội bộ &rarr;</span>
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+
+                        @* ═══ BƯỚC 2: NHẬP OTP VÀ ĐẶT LẠI MẬT KHẨU MỚI ═══ *@
+                        <div id="resetStepVerify" class="@(isResetVerifyStep ? "" : "hidden")">
+                            <div class="mb-3">
+                                <div class="w-8 h-8 border border-[#0D5C4D]/30 dark:border-[#10B981]/30 bg-[#0D5C4D]/5 dark:bg-[#10B981]/10 flex items-center justify-center mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-[#0D5C4D] dark:text-[#10B981]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                    </svg>
+                                </div>
+                                <h2 class="text-[#0F172A] dark:text-[#F8FAFC] text-xl font-semibold tracking-tight">Đặt lại mật khẩu</h2>
+                                <p class="text-[#64748B] dark:text-[#94A3B8] text-xs mt-1 leading-relaxed">
+                                    Nhập mã OTP đã được gửi đến <strong id="resetVerifyEmailDisplay" class="text-[#0D5C4D] dark:text-[#10B981] font-semibold break-all">@pendingResetEmail</strong> và tạo mật khẩu mới.
+                                </p>
                             </div>
 
-                            <button type="button"
-                                    id="btnBackToResetInput"
-                                    class="w-full py-2 px-3 border border-[#E2E8F0] dark:border-[#1E293B] bg-transparent text-[#64748B] dark:text-[#94A3B8] text-xs font-medium rounded-none hover:border-[#0D5C4D] dark:hover:border-[#10B981] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors">
-                                ← Quay lại nhập email khác
-                            </button>
-                        </form>
+                            <div id="resetVerifyAlert"
+                                 class="mb-3 px-3 py-2 border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-xs rounded-none @(isResetVerifyStep && !Model.IsSuccess && !string.IsNullOrWhiteSpace(Model.StatusMessage) ? "" : "hidden")"
+                                 role="alert" aria-live="polite">
+                                @(isResetVerifyStep && !Model.IsSuccess ? Model.StatusMessage : "")
+                            </div>
+
+                            <form id="formResetPasswordWithOtp" asp-controller="Account" asp-action="CandidateResetPasswordWithOtp" method="post" novalidate class="space-y-2.5">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" asp-for="ResetPasswordOtpInput.Email" id="resetVerifyEmailInput" value="@pendingResetEmail" />
+                                <input type="hidden" asp-for="ResetPasswordOtpInput.ReturnUrl" />
+                                <input type="hidden" name="ActivePanel" value="reset" />
+                                <input type="hidden" name="OtpStep" value="verify" />
+
+                                <div>
+                                    <label asp-for="ResetPasswordOtpInput.OtpCode" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1">
+                                        Mã xác thực OTP (6 chữ số)
+                                    </label>
+                                    <input asp-for="ResetPasswordOtpInput.OtpCode"
+                                           id="resetOtpCodeInput"
+                                           type="text"
+                                           maxlength="6"
+                                           inputmode="numeric"
+                                           pattern="[0-9]{6}"
+                                           autocomplete="one-time-code"
+                                           placeholder="••••••"
+                                           class="w-full px-3 py-2 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0D5C4D] dark:text-[#10B981] text-center font-mono text-2xl font-bold tracking-[0.3em] placeholder-[#94A3B8]/40 rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] transition-colors" />
+                                    <span asp-validation-for="ResetPasswordOtpInput.OtpCode" id="resetOtpErrorSpan" class="block mt-0.5 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                                </div>
+
+                                <div>
+                                    <label asp-for="ResetPasswordOtpInput.NewPassword" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1">Mật Khẩu Mới</label>
+                                    <input asp-for="ResetPasswordOtpInput.NewPassword" id="candResetNewPassword" type="password" autocomplete="new-password"
+                                           class="w-full px-3 py-1.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
+                                    <!-- 4-Level Strength Meter for Candidate Reset -->
+                                    <div class="mt-1 p-1.5 bg-[#F1F5F9] dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] rounded">
+                                        <div class="flex justify-between items-center mb-0.5 text-[10px] font-mono">
+                                            <span class="text-[#64748B] dark:text-[#94A3B8]">Độ mạnh mật khẩu:</span>
+                                            <span id="candResetBadge" class="font-bold text-[#64748B]">Chưa nhập</span>
+                                        </div>
+                                        <div class="w-full bg-[#E2E8F0] dark:bg-[#334155] h-1 rounded-full overflow-hidden mb-1">
+                                            <div id="candResetBar" class="h-full w-0 transition-all duration-300"></div>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[9px] text-[#64748B] dark:text-[#94A3B8]">
+                                            <div id="crst-len" class="flex items-center gap-1"><i class="bi bi-circle"></i> 8+ ký tự</div>
+                                            <div id="crst-case" class="flex items-center gap-1"><i class="bi bi-circle"></i> Hoa &amp; Thường</div>
+                                            <div id="crst-num" class="flex items-center gap-1"><i class="bi bi-circle"></i> Chữ số (0-9)</div>
+                                            <div id="crst-spec" class="flex items-center gap-1"><i class="bi bi-circle"></i> Ký tự đặc biệt</div>
+                                        </div>
+                                    </div>
+                                    <span asp-validation-for="ResetPasswordOtpInput.NewPassword" class="block mt-0.5 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                                </div>
+
+                                <div>
+                                    <label asp-for="ResetPasswordOtpInput.ConfirmNewPassword" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1">Xác Nhận Mật Khẩu Mới</label>
+                                    <input asp-for="ResetPasswordOtpInput.ConfirmNewPassword" id="candResetConfirmPassword" type="password" autocomplete="new-password"
+                                           class="w-full px-3 py-1.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
+                                    <span asp-validation-for="ResetPasswordOtpInput.ConfirmNewPassword" class="block mt-0.5 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                                </div>
+
+                                <button type="submit"
+                                        id="btnResetPasswordSubmit"
+                                        class="w-full py-2.5 px-4 bg-[#0D5C4D] hover:bg-[#047857] text-white text-sm font-medium tracking-wide rounded-none border border-[#0D5C4D] transition-colors active:translate-y-[1px] duration-100">
+                                    Xác Nhận Đổi Mật Khẩu
+                                </button>
+
+                                <div class="flex items-center justify-between text-xs text-[#64748B] dark:text-[#94A3B8] pt-1">
+                                    <span>Chưa nhận được mã?</span>
+                                    <button type="button"
+                                            id="btnResendResetOtp"
+                                            class="font-mono text-[11px] tracking-wider uppercase text-[#0D5C4D] dark:text-[#10B981] hover:underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline font-semibold">
+                                        Gửi lại mã (<span id="resendResetTimer">60</span>s)
+                                    </button>
+                                </div>
+
+                                <button type="button"
+                                        id="btnBackToResetInput"
+                                        class="w-full py-2 px-3 border border-[#E2E8F0] dark:border-[#1E293B] bg-transparent text-[#64748B] dark:text-[#94A3B8] text-xs font-medium rounded-none hover:border-[#0D5C4D] dark:hover:border-[#10B981] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors">
+                                    ← Quay lại nhập email khác
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>@* end sliderTrack *@
         </div>
 
         @* Footer *@
-        <div class="px-8 py-4 lg:px-12 border-t border-[#E2E8F0] dark:border-[#1E293B]">
+        <div class="px-6 py-2.5 lg:px-12 shrink-0 border-t border-[#E2E8F0] dark:border-[#1E293B]">
             <p class="font-mono text-[9px] tracking-widest uppercase text-[#94A3B8] dark:text-[#475569]">
                 &copy; @DateTime.Now.Year Novera Tech · Cổng Tuyển dụng Ứng viên
             </p>
@@ -1182,6 +1219,84 @@
             }
 
             setPanel(finalPanel);
+
+            // ─── Realtime 4-Level Password Strength Evaluator Helper ──────────
+            function bindStrengthMeter(inputId, barId, badgeId, lenId, caseId, numId, specId) {
+                var input = document.getElementById(inputId);
+                var bar = document.getElementById(barId);
+                var badge = document.getElementById(badgeId);
+                var elLen = document.getElementById(lenId);
+                var elCase = document.getElementById(caseId);
+                var elNum = document.getElementById(numId);
+                var elSpec = document.getElementById(specId);
+
+                if (!input || !bar || !badge) return;
+
+                function updateRule(elem, ok) {
+                    if (!elem) return;
+                    var icon = elem.querySelector('i');
+                    if (ok) {
+                        elem.className = 'flex items-center gap-1 text-emerald-600 font-medium';
+                        if (icon) icon.className = 'bi bi-check-circle-fill text-emerald-600';
+                    } else {
+                        elem.className = 'flex items-center gap-1 text-[#64748B] dark:text-[#94A3B8]';
+                        if (icon) icon.className = 'bi bi-circle';
+                    }
+                }
+
+                input.addEventListener('input', function() {
+                    var val = this.value || '';
+                    if (!val) {
+                        bar.style.width = '0%';
+                        bar.style.backgroundColor = '#E2E8F0';
+                        badge.textContent = 'Chưa nhập';
+                        badge.style.color = '#64748B';
+                        [elLen, elCase, elNum, elSpec].forEach(function(e) { updateRule(e, false); });
+                        return;
+                    }
+
+                    var hasLen = val.length >= 8;
+                    var hasCase = /[a-z]/.test(val) && /[A-Z]/.test(val);
+                    var hasNum = /[0-9]/.test(val);
+                    var hasSpec = /[@@$!%*?&_\-#]/.test(val);
+
+                    updateRule(elLen, hasLen);
+                    updateRule(elCase, hasCase);
+                    updateRule(elNum, hasNum);
+                    updateRule(elSpec, hasSpec);
+
+                    var score = 0;
+                    if (hasLen) score++;
+                    if (hasCase) score++;
+                    if (hasNum) score++;
+                    if (hasSpec) score++;
+
+                    if (score <= 1) {
+                        bar.style.width = '25%';
+                        bar.style.backgroundColor = '#EF4444';
+                        badge.textContent = 'Yếu';
+                        badge.style.color = '#EF4444';
+                    } else if (score === 2) {
+                        bar.style.width = '50%';
+                        bar.style.backgroundColor = '#F59E0B';
+                        badge.textContent = 'Vừa';
+                        badge.style.color = '#F59E0B';
+                    } else if (score === 3) {
+                        bar.style.width = '75%';
+                        bar.style.backgroundColor = '#10B981';
+                        badge.textContent = 'Mạnh';
+                        badge.style.color = '#10B981';
+                    } else {
+                        bar.style.width = '100%';
+                        bar.style.backgroundColor = '#059669';
+                        badge.textContent = 'Siêu mạnh';
+                        badge.style.color = '#059669';
+                    }
+                });
+            }
+
+            bindStrengthMeter('candRegisterPassword', 'candRegBar', 'candRegBadge', 'cr-len', 'cr-case', 'cr-num', 'cr-spec');
+            bindStrengthMeter('candResetNewPassword', 'candResetBar', 'candResetBadge', 'crst-len', 'crst-case', 'crst-num', 'crst-spec');
 
         })();
     </script>

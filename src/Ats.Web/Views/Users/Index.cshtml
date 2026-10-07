@@ -10,8 +10,12 @@
             <h1 class="h3 fw-bold text-dark mb-1">Quản trị người dùng & Phân quyền</h1>
             <p class="text-muted small mb-0">Quản lý danh sách tài khoản nội bộ NoveraTech, phân quyền đa vai trò và kiểm soát bảo mật.</p>
         </div>
-        <div>
-            <a asp-action="Create" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm">
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#importUserModal" style="border-radius: 8px;">
+                <i class="bi bi-file-earmark-arrow-up"></i>
+                <span class="fw-semibold">Nhập Excel</span>
+            </button>
+            <a asp-action="Create" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" style="border-radius: 8px;">
                 <i class="bi bi-person-plus-fill"></i>
                 <span class="fw-semibold">Thêm tài khoản mới</span>
             </a>
@@ -21,20 +25,26 @@
     <!-- Filter Card -->
     <div class="card border-0 shadow-sm rounded-3 mb-4">
         <div class="card-body p-3 p-md-4">
-            <form method="get" asp-action="Index" class="row g-3 align-items-end">
+            <form id="userFilterForm" method="get" asp-action="Index" class="row g-3 align-items-end">
                 <div class="col-12 col-md-4">
                     <label class="form-label small fw-semibold text-muted">Từ khóa tìm kiếm</label>
-                    <div class="input-group">
+                    <div class="input-group position-relative">
                         <span class="input-group-text bg-light border-end-0 text-muted">
                             <i class="bi bi-search"></i>
                         </span>
-                        <input type="text" name="keyword" value="@Model.Keyword" class="form-control bg-light border-start-0" placeholder="Tên, email (@@noveratech.digital), phòng ban..." />
+                        <input type="text" id="userKeywordInput" name="keyword" value="@Model.Keyword" class="form-control bg-light border-start-0 pe-4" placeholder="Tên, email, phòng ban... (từ 3 ký tự)" autocomplete="off" />
+                        <button type="button" id="userKeywordClearBtn" class="btn btn-sm btn-link position-absolute top-50 end-0 translate-middle-y me-1 text-muted @(string.IsNullOrEmpty(Model.Keyword) ? "d-none" : "")" style="text-decoration:none; z-index: 5;" title="Xóa từ khóa">
+                            <i class="bi bi-x-circle-fill"></i>
+                        </button>
+                        <div id="userSearchHint" class="text-warning d-none position-absolute" style="top: 100%; left: 0; font-size: 0.72rem; white-space: nowrap; z-index: 10; padding-top: 2px;">
+                            <i class="bi bi-info-circle me-1"></i>Nhập tối thiểu 3 ký tự để tìm kiếm
+                        </div>
                     </div>
                 </div>
 
                 <div class="col-6 col-md-3">
                     <label class="form-label small fw-semibold text-muted">Vai trò</label>
-                    <select name="role" class="form-select bg-light">
+                    <select id="userRoleSelect" name="role" class="form-select bg-light">
                         <option value="">-- Tất cả vai trò --</option>
                         <option value="Admin" selected="@(Model.RoleFilter == "Admin")">Quản trị viên (Admin)</option>
                         <option value="HRManager" selected="@(Model.RoleFilter == "HRManager")">Quản lý nhân sự (HR Manager)</option>
@@ -47,7 +57,7 @@
 
                 <div class="col-6 col-md-3">
                     <label class="form-label small fw-semibold text-muted">Trạng thái</label>
-                    <select name="status" class="form-select bg-light">
+                    <select id="userStatusSelect" name="status" class="form-select bg-light">
                         <option value="">-- Tất cả trạng thái --</option>
                         <option value="ACTIVE" selected="@(Model.StatusFilter == "ACTIVE")">Đang hoạt động</option>
                         <option value="LOCKED" selected="@(Model.StatusFilter == "LOCKED")">Đang bị khóa</option>
@@ -57,12 +67,9 @@
                 </div>
 
                 <div class="col-12 col-md-2 d-flex gap-2">
-                    <button type="submit" class="btn btn-dark w-100 fw-semibold">
-                        <i class="bi bi-funnel me-1"></i> Lọc
+                    <button type="button" id="btnResetUserFilters" class="btn btn-outline-secondary w-100" title="Đặt lại bộ lọc">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Đặt lại
                     </button>
-                    <a asp-action="Index" class="btn btn-outline-secondary" title="Đặt lại bộ lọc">
-                        <i class="bi bi-arrow-counterclockwise"></i>
-                    </a>
                 </div>
             </form>
         </div>
@@ -103,7 +110,12 @@
                     {
                         @foreach (var user in Model.Users)
                         {
-                            <tr>
+                            <tr class="user-data-row" 
+                                data-name="@(user.FullName ?? "")" 
+                                data-email="@(user.Email ?? "")" 
+                                data-department="@(user.Department ?? "")" 
+                                data-roles="@string.Join(",", user.Roles)" 
+                                data-status="@user.Status">
                                 <td class="ps-4">
                                     <div class="d-flex align-items-center">
                                         <div class="avatar-initials bg-primary-subtle text-primary fw-bold rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; min-width: 40px;">
@@ -327,10 +339,213 @@
             </form>
         </div>
     </div>
+<!-- Modal Nhập Danh Sách Nhân Sự Bằng Excel (S2-01) -->
+<div class="modal fade" id="importUserModal" tabindex="-1" aria-labelledby="importUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="importUserModalLabel">
+                    <i class="bi bi-file-earmark-spreadsheet me-2"></i> Nhập danh sách nhân sự từ Excel
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-info d-flex align-items-center justify-content-between mb-4" style="border-radius: 8px;">
+                    <div>
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <span>Vui lòng sử dụng tệp mẫu chuẩn để hệ thống tự động kiểm tra định dạng.</span>
+                    </div>
+                    <a href="/users/import-template" class="btn btn-sm btn-outline-primary bg-white text-primary fw-semibold" style="border-radius: 6px;">
+                        <i class="bi bi-download me-1"></i> Tải file mẫu (.xlsx)
+                    </a>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold text-dark">Chọn tệp Excel (.xlsx, .xls - tối đa 5MB)</label>
+                    <input type="file" id="excelFileInput" class="form-control" accept=".xlsx, .xls" style="border-radius: 8px;" />
+                </div>
+
+                <!-- Preview Area -->
+                <div id="importPreviewArea" class="d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold mb-0 text-dark">Kết quả kiểm tra dữ liệu</h6>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-success" id="badgeValidCount" style="border-radius: 6px;">0 dòng hợp lệ</span>
+                            <span class="badge bg-danger" id="badgeErrorCount" style="border-radius: 6px;">0 dòng lỗi</span>
+                        </div>
+                    </div>
+
+                    <!-- Error details if any -->
+                    <div id="importErrorAlert" class="alert alert-warning p-2 small mb-3 d-none" style="border-radius: 8px; max-height: 120px; overflow-y: auto;">
+                        <ul id="importErrorList" class="mb-0 ps-3"></ul>
+                    </div>
+
+                    <div class="table-responsive border rounded mb-3" style="max-height: 240px; overflow-y: auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Họ và tên</th>
+                                    <th>Email</th>
+                                    <th>Số điện thoại</th>
+                                    <th>Phòng ban</th>
+                                    <th>Vai trò</th>
+                                </tr>
+                            </thead>
+                            <tbody id="importPreviewTbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy</button>
+                <button type="button" id="btnUploadAndValidate" class="btn btn-primary" style="border-radius: 8px;">
+                    <i class="bi bi-check2-circle me-1"></i> Kiểm tra tệp
+                </button>
+                <button type="button" id="btnExecuteImport" class="btn btn-success d-none" style="border-radius: 8px;">
+                    <i class="bi bi-cloud-arrow-up-fill me-1"></i> <span id="executeImportBtnText">Nhập vào hệ thống</span>
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
     <script>
+        // Excel Import Handlers
+        let cachedValidRows = [];
+        const excelFileInput = document.getElementById('excelFileInput');
+        const btnUploadAndValidate = document.getElementById('btnUploadAndValidate');
+        const btnExecuteImport = document.getElementById('btnExecuteImport');
+        const importPreviewArea = document.getElementById('importPreviewArea');
+        const importPreviewTbody = document.getElementById('importPreviewTbody');
+        const badgeValidCount = document.getElementById('badgeValidCount');
+        const badgeErrorCount = document.getElementById('badgeErrorCount');
+        const importErrorAlert = document.getElementById('importErrorAlert');
+        const importErrorList = document.getElementById('importErrorList');
+        const executeImportBtnText = document.getElementById('executeImportBtnText');
+
+        if (btnUploadAndValidate) {
+            btnUploadAndValidate.addEventListener('click', async function () {
+                if (!excelFileInput || !excelFileInput.files || excelFileInput.files.length === 0) {
+                    if (window.NoveraToast) window.NoveraToast.show('Vui lòng chọn tệp Excel trước khi kiểm tra.', 'warning');
+                    else alert('Vui lòng chọn tệp Excel.');
+                    return;
+                }
+
+                const file = excelFileInput.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+
+                btnUploadAndValidate.disabled = true;
+                btnUploadAndValidate.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang kiểm tra...';
+
+                try {
+                    const response = await fetch('/users/import-excel', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const errText = await response.text();
+                        throw new Error(errText || 'Không thể kiểm tra tệp.');
+                    }
+
+                    const data = await response.json();
+                    cachedValidRows = data.validRows || [];
+                    const errorRows = data.errorRows || [];
+
+                    badgeValidCount.textContent = `${cachedValidRows.length} dòng hợp lệ`;
+                    badgeErrorCount.textContent = `${errorRows.length} dòng lỗi`;
+                    badgeErrorCount.className = errorRows.length > 0 ? 'badge bg-danger' : 'badge bg-secondary';
+
+                    // Errors render
+                    if (errorRows.length > 0) {
+                        importErrorList.innerHTML = '';
+                        errorRows.forEach(err => {
+                            const errMsgs = err.errors.map(e => `${e.columnName}: ${e.errorMessage}`).join(', ');
+                            const li = document.createElement('li');
+                            li.textContent = `Dòng ${err.rowIndex}: ${errMsgs}`;
+                            importErrorList.appendChild(li);
+                        });
+                        importErrorAlert.classList.remove('d-none');
+                    } else {
+                        importErrorAlert.classList.add('d-none');
+                    }
+
+                    // Render preview rows
+                    importPreviewTbody.innerHTML = '';
+                    cachedValidRows.forEach(r => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${r.rowIndex}</td>
+                            <td class="fw-semibold">${r.fullName}</td>
+                            <td><code>${r.email}</code></td>
+                            <td>${r.phoneNumber || '—'}</td>
+                            <td>${r.department || '—'}</td>
+                            <td><span class="badge bg-light text-dark border">${r.roles}</span></td>
+                        `;
+                        importPreviewTbody.appendChild(tr);
+                    });
+
+                    importPreviewArea.classList.remove('d-none');
+
+                    if (cachedValidRows.length > 0) {
+                        btnExecuteImport.classList.remove('d-none');
+                        executeImportBtnText.textContent = `Nhập ${cachedValidRows.length} tài khoản`;
+                    } else {
+                        btnExecuteImport.classList.add('d-none');
+                    }
+
+                    if (window.NoveraToast) {
+                        window.NoveraToast.show(`Đã kiểm tra xong: ${cachedValidRows.length} dòng hợp lệ, ${errorRows.length} dòng lỗi.`, errorRows.length > 0 ? 'warning' : 'success');
+                    }
+                } catch (err) {
+                    if (window.NoveraToast) window.NoveraToast.show(err.message, 'error');
+                    else alert(err.message);
+                } finally {
+                    btnUploadAndValidate.disabled = false;
+                    btnUploadAndValidate.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Kiểm tra lại tệp';
+                }
+            });
+        }
+
+        if (btnExecuteImport) {
+            btnExecuteImport.addEventListener('click', async function () {
+                if (!cachedValidRows || cachedValidRows.length === 0) return;
+
+                btnExecuteImport.disabled = true;
+                btnExecuteImport.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang nhập...';
+
+                try {
+                    const response = await fetch('/users/execute-import', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ validRows: cachedValidRows })
+                    });
+
+                    if (!response.ok) {
+                        const errText = await response.text();
+                        throw new Error(errText || 'Lỗi khi nhập dữ liệu.');
+                    }
+
+                    const res = await response.json();
+                    if (window.NoveraToast) {
+                        window.NoveraToast.show(`Nhập thành công ${res.totalSuccess} tài khoản!`, 'success');
+                    }
+                    setTimeout(() => window.location.reload(), 1200);
+                } catch (err) {
+                    if (window.NoveraToast) window.NoveraToast.show(err.message, 'error');
+                    else alert(err.message);
+                    btnExecuteImport.disabled = false;
+                    btnExecuteImport.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-1"></i> Thử lại';
+                }
+            });
+        }
+
+        // Modal handlers
         const lockModal = document.getElementById('lockModal');
         if (lockModal) {
             lockModal.addEventListener('show.bs.modal', function (event) {
@@ -356,5 +571,142 @@
                 document.getElementById('unlockTargetUserName').textContent = userName;
             });
         }
+
+        // Instant Search & Real-Time Filtering (<100ms) with URL Synchronization
+        document.addEventListener('DOMContentLoaded', function () {
+            const keywordInput = document.getElementById('userKeywordInput');
+            const clearBtn = document.getElementById('userKeywordClearBtn');
+            const roleSelect = document.getElementById('userRoleSelect');
+            const statusSelect = document.getElementById('userStatusSelect');
+            const resetBtn = document.getElementById('btnResetUserFilters');
+            const filterForm = document.getElementById('userFilterForm');
+
+            if (filterForm) {
+                filterForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    applyUserFilters(true);
+                });
+            }
+
+            function applyUserFilters(shouldSyncUrl = true) {
+                const keyword = (keywordInput ? keywordInput.value : '').trim();
+                const role = (roleSelect ? roleSelect.value : '').trim();
+                const status = (statusSelect ? statusSelect.value : '').trim();
+
+                if (clearBtn) {
+                    if (keyword.length > 0) clearBtn.classList.remove('d-none');
+                    else clearBtn.classList.add('d-none');
+                }
+
+                const hint = document.getElementById('userSearchHint');
+                if (hint) {
+                    if (keyword.length > 0 && keyword.length < 3) hint.classList.remove('d-none');
+                    else hint.classList.add('d-none');
+                }
+
+                const rows = document.querySelectorAll('.user-data-row');
+                let visibleCount = 0;
+
+                rows.forEach(r => {
+                    const name = r.getAttribute('data-name') || '';
+                    const email = r.getAttribute('data-email') || '';
+                    const department = r.getAttribute('data-department') || '';
+                    const roles = r.getAttribute('data-roles') || '';
+                    const rowStatus = r.getAttribute('data-status') || '';
+
+                    // Keyword match: Chỉ lọc khi từ khóa có từ 3 ký tự trở lên (>= 3 chars)
+                    const combined = `${name} ${email} ${department} ${roles}`;
+                    const matchesKeyword = !keyword || keyword.length < 3 || (window.NoveraInstantSearch
+                        ? window.NoveraInstantSearch.matchSearchTokens(combined, keyword)
+                        : combined.toLowerCase().includes(keyword.toLowerCase()));
+
+                    // Role match
+                    const matchesRole = !role || roles.split(',').map(s => s.trim()).includes(role);
+
+                    // Status match
+                    const matchesStatus = !status || rowStatus === status;
+
+                    if (matchesKeyword && matchesRole && matchesStatus) {
+                        r.style.display = '';
+                        visibleCount++;
+                    } else {
+                        r.style.display = 'none';
+                    }
+                });
+
+                // Empty state handling in table body
+                const tbody = document.querySelector('table tbody');
+                let emptyRow = document.getElementById('userEmptyRow');
+                if (visibleCount === 0 && rows.length > 0) {
+                    if (!emptyRow && tbody) {
+                        emptyRow = document.createElement('tr');
+                        emptyRow.id = 'userEmptyRow';
+                        emptyRow.innerHTML = '<td colspan="6" class="text-center py-4 text-muted"><i class="bi bi-search me-1"></i> Không tìm thấy tài khoản người dùng nào phù hợp với bộ lọc.</td>';
+                        tbody.appendChild(emptyRow);
+                    }
+                } else if (emptyRow) {
+                    emptyRow.remove();
+                }
+
+                // Sync URL query
+                if (shouldSyncUrl && window.NoveraInstantSearch) {
+                    window.NoveraInstantSearch.syncUrlParams({
+                        keyword: keyword || null,
+                        role: role || null,
+                        status: status || null
+                    });
+                }
+            }
+
+            function resetFilters() {
+                if (keywordInput) keywordInput.value = '';
+                if (roleSelect) roleSelect.value = '';
+                if (statusSelect) statusSelect.value = '';
+                applyUserFilters(true);
+                if (keywordInput) keywordInput.focus();
+            }
+
+            if (keywordInput) {
+                const debouncedFilter = window.NoveraInstantSearch
+                    ? window.NoveraInstantSearch.debounce(() => applyUserFilters(true), 15)
+                    : () => applyUserFilters(true);
+                keywordInput.addEventListener('input', debouncedFilter);
+                keywordInput.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') e.preventDefault();
+                });
+            }
+
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function () {
+                    if (keywordInput) {
+                        keywordInput.value = '';
+                        applyUserFilters(true);
+                        keywordInput.focus();
+                    }
+                });
+            }
+
+            if (roleSelect) roleSelect.addEventListener('change', () => applyUserFilters(true));
+            if (statusSelect) statusSelect.addEventListener('change', () => applyUserFilters(true));
+            if (resetBtn) resetBtn.addEventListener('click', resetFilters);
+
+            function hydrateFromUrl() {
+                if (!window.NoveraInstantSearch) return;
+                const params = window.NoveraInstantSearch.getUrlParams();
+                if (keywordInput && params.keyword !== undefined) {
+                    keywordInput.value = params.keyword;
+                }
+                if (roleSelect && params.role !== undefined) {
+                    roleSelect.value = params.role;
+                }
+                if (statusSelect && params.status !== undefined) {
+                    statusSelect.value = params.status;
+                }
+                applyUserFilters(false);
+            }
+
+            window.addEventListener('popstate', hydrateFromUrl);
+            hydrateFromUrl();
+        });
     </script>
 }

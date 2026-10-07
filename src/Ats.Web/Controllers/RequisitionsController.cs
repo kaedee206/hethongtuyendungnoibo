@@ -275,7 +275,7 @@ public class RequisitionsController(
     }
 
     /// <summary>
-    /// GET: /yeu-cau-tuyen-dung/api/form-options
+    /// POST: /yeu-cau-tuyen-dung/api/form-options
     /// Cung cấp dữ liệu khởi tạo dropdown chức danh và phòng ban cho Modal phía client.
     /// </summary>
     [HttpGet("api/form-options")]
@@ -297,4 +297,41 @@ public class RequisitionsController(
             }
         });
     }
+
+    /// <summary>
+    /// POST: /yeu-cau-tuyen-dung/sao-chep/{id} hoặc /requisitions/duplicate/{id}
+    /// Nhân bản một yêu cầu tuyển dụng thành bản nháp mới (SCRUM-274).
+    /// Hỗ trợ cả form POST thông thường và AJAX (header Accept: application/json).
+    /// </summary>
+    [HttpPost("sao-chep/{id:guid}")]
+    [HttpPost("duplicate/{id:guid}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Duplicate(Guid id, CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        var (success, message, newRequisitionId, newCode) =
+            await _requisitionService.DuplicateRequisitionAsync(id, userId, cancellationToken);
+
+        var isAjax = Request.Headers.Accept.Any(h => h?.Contains("application/json") == true);
+
+        if (!success)
+        {
+            if (isAjax)
+            {
+                return BadRequest(new { success = false, message });
+            }
+
+            TempData["ErrorMessage"] = message;
+            return RedirectToAction(nameof(Drafts));
+        }
+
+        if (isAjax)
+        {
+            return Ok(new { success = true, message, newRequisitionId, newCode });
+        }
+
+        TempData["SuccessMessage"] = message;
+        return RedirectToAction(nameof(Edit), new { id = newRequisitionId!.Value });
+    }
 }
+

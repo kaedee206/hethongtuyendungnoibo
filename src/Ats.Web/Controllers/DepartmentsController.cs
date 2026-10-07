@@ -8,13 +8,27 @@ namespace Ats.Web.Controllers;
 
 [ApiController]
 [Route("api/phong-ban")]
-public class DepartmentsController : ControllerBase
+public class DepartmentsController : Controller
 {
     private readonly ApplicationDbContext _dbContext;
 
     public DepartmentsController(ApplicationDbContext dbContext)
     {
         _dbContext = dbContext;
+    }
+
+    [HttpGet("/phong-ban")]
+    [HttpGet("/departments")]
+    public async Task<IActionResult> Index()
+    {
+        var users = await _dbContext.Users
+            .Where(u => u.Status == "ACTIVE")
+            .OrderBy(u => u.FullName)
+            .Select(u => new { u.Id, u.FullName, u.Email, u.Role })
+            .ToListAsync();
+            
+        ViewBag.ActiveUsers = users;
+        return View("~/Views/Departments/Index.cshtml");
     }
 
     [HttpPost]
@@ -290,7 +304,7 @@ public class DepartmentsController : ControllerBase
         dept.ManagerId = request.ManagerId;
         dept.UpdatedAt = DateTimeOffset.UtcNow;
         
-        var currentUserIdString = HttpContext.Session.GetString("UserId");
+        var currentUserIdString = HttpContext?.Session?.GetString("UserId");
         Guid? currentUserId = null;
         if (!string.IsNullOrEmpty(currentUserIdString) && Guid.TryParse(currentUserIdString, out var parsedId))
         {
@@ -327,7 +341,7 @@ public class DepartmentsController : ControllerBase
         // Kiểm tra có yêu cầu tuyển dụng đang mở (status APPROVED / IN_PROGRESS)
         var activeReqsCount = await _dbContext.JobRequisitions
             .Include(r => r.Department)
-            .Where(r => r.Department.Path.StartsWith(dept.Path) && !r.Department.IsDeleted && !r.IsDeleted 
+            .Where(r => r.Department != null && r.Department.Path.StartsWith(dept.Path) && !r.Department.IsDeleted && !r.IsDeleted 
                      && (r.Status == Ats.Web.Models.Enums.RequisitionStatus.APPROVED || r.Status == Ats.Web.Models.Enums.RequisitionStatus.IN_PROGRESS))
             .CountAsync();
 
@@ -341,7 +355,7 @@ public class DepartmentsController : ControllerBase
             .Where(d => d.Path.StartsWith(dept.Path) && !d.IsDeleted)
             .ToListAsync();
 
-        var currentUserIdString = HttpContext.Session.GetString("UserId");
+        var currentUserIdString = HttpContext?.Session?.GetString("UserId");
         Guid? currentUserId = null;
         if (!string.IsNullOrEmpty(currentUserIdString) && Guid.TryParse(currentUserIdString, out var parsedId))
             currentUserId = parsedId;
@@ -370,7 +384,7 @@ public class DepartmentsController : ControllerBase
             .Where(d => d.Path.StartsWith(dept.Path) && !d.IsDeleted && d.IsActive)
             .ToListAsync();
 
-        var currentUserIdString = HttpContext.Session.GetString("UserId");
+        var currentUserIdString = HttpContext?.Session?.GetString("UserId");
         Guid? currentUserId = null;
         if (!string.IsNullOrEmpty(currentUserIdString) && Guid.TryParse(currentUserIdString, out var parsedId))
             currentUserId = parsedId;

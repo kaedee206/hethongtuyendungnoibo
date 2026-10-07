@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Danh mục Khung năng lực chuẩn";
     var isFiltered = !string.IsNullOrWhiteSpace(Model.Keyword) || (!string.IsNullOrWhiteSpace(Model.StatusFilter) && Model.StatusFilter != "ALL");
+    var canManage = (bool)(ViewBag.CanManage ?? false);
 }
 
 <div class="container-fluid px-3 px-md-4 py-4">
@@ -23,17 +24,41 @@
             <p class="text-muted small mb-0 ms-md-5">Quản lý hệ thống tiêu chuẩn năng lực, kỹ năng chuyên môn và các chức danh vị trí áp dụng.</p>
         </div>
 
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
             <a href="/job-positions" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-xs" style="border-radius: 8px;">
                 <i class="bi bi-person-badge"></i>
                 <span class="fw-semibold">Danh mục Chức danh</span>
             </a>
+            @if (canManage)
+            {
+                <a asp-action="Create" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-xs fw-semibold" style="border-radius: 8px; background-color: #059669; border-color: #059669;">
+                    <i class="bi bi-plus-lg"></i>
+                    <span>Tạo mới Khung năng lực</span>
+                </a>
+            }
         </div>
     </div>
 
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm d-flex align-items-center gap-2 mb-4" style="border-radius: 12px; background-color: #ECFDF5; color: #065F46;">
+            <i class="bi bi-check-circle-fill fs-5 text-success"></i>
+            <div>@TempData["SuccessMessage"]</div>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm d-flex align-items-center gap-2 mb-4" style="border-radius: 12px;">
+            <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
+            <div>@TempData["ErrorMessage"]</div>
+        </div>
+    }
+
+    <!-- Summary KPI cards -->
     <div class="row g-3 mb-4">
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100">
+            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100" style="border-radius: 12px !important;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <span class="text-muted small fw-medium">Tổng số khung năng lực</span>
@@ -47,7 +72,7 @@
         </div>
 
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100">
+            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100" style="border-radius: 12px !important;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <span class="text-muted small fw-medium">Đang sử dụng</span>
@@ -61,7 +86,7 @@
         </div>
 
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100">
+            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100" style="border-radius: 12px !important;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <span class="text-muted small fw-medium">Ngừng sử dụng</span>
@@ -75,7 +100,7 @@
         </div>
 
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100">
+            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100" style="border-radius: 12px !important;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <span class="text-muted small fw-medium">Chức danh đang áp dụng</span>
@@ -89,7 +114,8 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-3 mb-4">
+    <!-- Filter Form -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4" style="border-radius: 12px !important;">
         <div class="card-body p-3 p-md-4">
             <form id="frameworkFilterForm" method="get" asp-action="Index" class="row g-3 align-items-end">
                 <div class="col-12 col-md-5">
@@ -98,26 +124,21 @@
                         <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 8px 0 0 8px;">
                             <i class="bi bi-search"></i>
                         </span>
-                        <input type="text" 
-                               name="keyword" 
-                               value="@Model.Keyword" 
-                               class="form-control bg-light border-start-0" 
-                               style="border-radius: 0 8px 8px 0;"
-                               placeholder="Tìm theo mã (CF-TECH-001) hoặc tên khung..." />
+                        <input type="text" name="keyword" value="@Model.Keyword" class="form-control bg-light border-start-0" placeholder="Nhập mã hoặc tên khung năng lực..." style="border-radius: 0 8px 8px 0;">
                     </div>
                 </div>
 
-                <div class="col-6 col-md-3">
-                    <label class="form-label small fw-semibold text-muted">Trạng thái áp dụng</label>
+                <div class="col-12 col-sm-6 col-md-3">
+                    <label class="form-label small fw-semibold text-muted">Trạng thái</label>
                     <select name="status" class="form-select bg-light" style="border-radius: 8px;">
-                        <option value="" selected="@(string.IsNullOrEmpty(Model.StatusFilter) || Model.StatusFilter == "ALL")">-- Tất cả trạng thái --</option>
-                        <option value="ACTIVE" selected="@(Model.StatusFilter?.ToUpper() == "ACTIVE")">Đang sử dụng</option>
-                        <option value="INACTIVE" selected="@(Model.StatusFilter?.ToUpper() == "INACTIVE")">Ngừng sử dụng</option>
+                        <option value="ALL" selected="@(Model.StatusFilter == "ALL" || string.IsNullOrEmpty(Model.StatusFilter))">Tất cả trạng thái</option>
+                        <option value="ACTIVE" selected="@(Model.StatusFilter == "ACTIVE")">Đang sử dụng</option>
+                        <option value="INACTIVE" selected="@(Model.StatusFilter == "INACTIVE")">Ngừng sử dụng</option>
                     </select>
                 </div>
 
-                <div class="col-6 col-md-2">
-                    <label class="form-label small fw-semibold text-muted">Số lượng / trang</label>
+                <div class="col-12 col-sm-6 col-md-2">
+                    <label class="form-label small fw-semibold text-muted">Hiển thị</label>
                     <select name="pageSize" class="form-select bg-light" style="border-radius: 8px;">
                         <option value="15" selected="@(Model.PageSize == 15)">15 bản ghi</option>
                         <option value="25" selected="@(Model.PageSize == 25)">25 bản ghi</option>
@@ -138,7 +159,8 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-3 position-relative overflow-hidden">
+    <!-- Table Card -->
+    <div class="card border-0 shadow-sm rounded-3 position-relative overflow-hidden" style="border-radius: 12px !important;">
         <div id="tableLoadingState" class="position-absolute top-0 start-0 w-100 h-100 d-none flex-column align-items-center justify-content-center" style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(2px); z-index: 15; min-height: 220px;" role="status" aria-live="polite">
             <div class="spinner-border text-success mb-2" role="status" style="width: 2.2rem; height: 2.2rem; color: #059669 !important;"></div>
             <div class="fw-semibold text-dark small">Đang tải dữ liệu khung năng lực...</div>
@@ -161,11 +183,11 @@
                     <tr>
                         <th class="ps-4" style="min-width: 140px;">Mã khung</th>
                         <th style="min-width: 280px;">Tên khung năng lực</th>
-                        <th style="min-width: 180px;">Nhóm chuyên môn</th>
+                        <th style="min-width: 180px;">Mô tả / Nhóm</th>
                         <th class="text-center" style="min-width: 110px;">Tiêu chí</th>
                         <th class="text-center" style="min-width: 180px;">Chức danh đang dùng</th>
                         <th style="min-width: 130px;">Trạng thái</th>
-                        <th class="text-end pe-4" style="min-width: 130px;">Thao tác</th>
+                        <th class="text-end pe-4" style="min-width: 180px;">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -206,12 +228,12 @@
                             var serializedPositions = System.Text.Json.JsonSerializer.Serialize(fw.AssociatedJobPositions);
                             <tr>
                                 <td class="ps-4">
-                                    <span class="badge bg-light text-dark border font-monospace px-2 py-1" style="border-radius: 6px; font-size: 0.82rem;">
+                                    <a asp-action="Details" asp-route-id="@fw.Id" class="badge bg-light text-dark border font-monospace px-2 py-1 text-decoration-none" style="border-radius: 6px; font-size: 0.82rem;" title="Xem chi tiết">
                                         @fw.Code
-                                    </span>
+                                    </a>
                                 </td>
                                 <td>
-                                    <div class="fw-semibold text-dark">@fw.Name</div>
+                                    <a asp-action="Details" asp-route-id="@fw.Id" class="fw-semibold text-dark text-decoration-none d-block">@fw.Name</a>
                                     @if (!string.IsNullOrWhiteSpace(fw.Description))
                                     {
                                         <div class="text-muted small text-truncate" style="max-width: 320px;" title="@fw.Description">
@@ -221,7 +243,7 @@
                                 </td>
                                 <td>
                                     <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1" style="border-radius: 6px; font-weight: 500;">
-                                        @fw.Category
+                                        @(string.IsNullOrWhiteSpace(fw.Category) ? "Tiêu chuẩn" : fw.Category)
                                     </span>
                                 </td>
                                 <td class="text-center font-monospace">
@@ -266,17 +288,43 @@
                                     }
                                 </td>
                                 <td class="text-end pe-4">
-                                    <button type="button" 
-                                            class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 view-positions-btn px-2 py-1" 
-                                            style="border-radius: 6px; font-size: 0.82rem;"
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#frameworkPositionsModal"
-                                            data-framework-code="@fw.Code"
-                                            data-framework-name="@fw.Name"
-                                            data-positions='@serializedPositions'>
-                                        <i class="bi bi-eye"></i>
-                                        <span>Xem chức danh</span>
-                                    </button>
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <a asp-action="Details" asp-route-id="@fw.Id"
+                                           class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 px-2 py-1"
+                                           style="border-radius: 6px; font-size: 0.82rem;" title="Xem chi tiết">
+                                            <i class="bi bi-eye"></i>
+                                            <span>Chi tiết</span>
+                                        </a>
+
+                                        @if (canManage)
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@fw.Id"
+                                               class="btn btn-sm btn-outline-primary d-inline-flex align-items-center px-2 py-1"
+                                               style="border-radius: 6px; font-size: 0.82rem;" title="Chỉnh sửa">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <form asp-action="Clone" asp-route-id="@fw.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn nhân bản khung năng lực [@fw.Code] @fw.Name không?');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center px-2 py-1"
+                                                        style="border-radius: 6px; font-size: 0.82rem;"
+                                                        title="Nhân bản khung năng lực">
+                                                    <i class="bi bi-copy"></i>
+                                                </button>
+                                            </form>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger d-inline-flex align-items-center px-2 py-1 btn-delete-fw"
+                                                    style="border-radius: 6px; font-size: 0.82rem;"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#deleteFrameworkModal"
+                                                    data-fw-id="@fw.Id"
+                                                    data-fw-code="@fw.Code"
+                                                    data-fw-name="@fw.Name"
+                                                    title="Xóa">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        }
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -343,6 +391,7 @@
     </div>
 </div>
 
+<!-- Modal xem danh sách chức danh -->
 <div class="modal fade" id="frameworkPositionsModal" tabindex="-1" aria-labelledby="frameworkPositionsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
@@ -393,6 +442,42 @@
     </div>
 </div>
 
+<!-- Modal xác nhận xóa khung năng lực -->
+@if (canManage)
+{
+    <div class="modal fade" id="deleteFrameworkModal" tabindex="-1" aria-labelledby="deleteFrameworkModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
+                <div class="modal-header border-bottom py-3 px-4 bg-danger-subtle text-danger">
+                    <h6 class="modal-title fw-bold d-flex align-items-center gap-2" id="deleteFrameworkModalLabel">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span>Xác nhận xóa Khung năng lực</span>
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="deleteFrameworkForm" method="post" asp-action="Delete">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-body p-4">
+                        <p class="mb-2 text-dark">
+                            Bạn có chắc chắn muốn xóa khung năng lực: <strong id="deleteFrameworkTitle" class="text-danger"></strong>?
+                        </p>
+                        <p class="text-muted small mb-0">
+                            Các chức danh công việc đang liên kết với khung năng lực này sẽ được tự động gỡ bỏ liên kết. Thao tác này có thể ảnh hưởng đến các phiếu đánh giá chưa hoàn thành.
+                        </p>
+                    </div>
+                    <div class="modal-footer border-top py-2 px-4 bg-light">
+                        <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy bỏ</button>
+                        <button type="submit" class="btn btn-danger px-3 d-inline-flex align-items-center gap-1 fw-semibold" style="border-radius: 8px;">
+                            <i class="bi bi-trash"></i>
+                            <span>Xác nhận xóa</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
 <style>
     .pagination-ats .page-link {
         color: #334155;
@@ -422,4 +507,27 @@
 
 @section Scripts {
     <script src="~/js/competency-framework-list.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const deleteModal = document.getElementById('deleteFrameworkModal');
+            if (deleteModal) {
+                deleteModal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    const fwId = button.getAttribute('data-fw-id');
+                    const fwCode = button.getAttribute('data-fw-code');
+                    const fwName = button.getAttribute('data-fw-name');
+
+                    const titleSpan = deleteModal.querySelector('#deleteFrameworkTitle');
+                    if (titleSpan) {
+                        titleSpan.textContent = `${fwCode} - ${fwName}`;
+                    }
+
+                    const form = deleteModal.querySelector('#deleteFrameworkForm');
+                    if (form && fwId) {
+                        form.action = `/competency-frameworks/delete/${fwId}`;
+                    }
+                });
+            }
+        });
+    </script>
 }

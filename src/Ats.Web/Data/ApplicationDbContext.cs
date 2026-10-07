@@ -39,6 +39,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<EmailLog> EmailLogs { get; set; }
     public DbSet<Notification> Notifications { get; set; }
 
+    public DbSet<CompetencyFramework> CompetencyFrameworks { get; set; }
+    public DbSet<CompetencyCriterion> CompetencyCriteria { get; set; }
+    public DbSet<InterviewQuestionBank> InterviewQuestionBanks { get; set; }
+    public DbSet<RecruitmentCatalog> RecruitmentCatalogs { get; set; }
+    public DbSet<CompanyProfile> CompanyProfiles { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -201,5 +207,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<JobPosition>().HasIndex(p => p.Code).IsUnique();
         modelBuilder.Entity<Role>().HasIndex(r => r.Code).IsUnique();
         modelBuilder.Entity<Permission>().HasIndex(p => p.Code).IsUnique();
+
+        // CompetencyFramework: unique code + relationship to JobPosition (SCRUM-222)
+        modelBuilder.Entity<CompetencyFramework>().HasIndex(cf => cf.Code).IsUnique();
+
+        modelBuilder.Entity<JobPosition>()
+            .HasOne(jp => jp.CompetencyFramework)
+            .WithMany(cf => cf.AssignedPositions)
+            .HasForeignKey(jp => jp.CompetencyFrameworkId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

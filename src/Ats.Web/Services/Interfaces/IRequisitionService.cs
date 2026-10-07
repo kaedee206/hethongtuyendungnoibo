@@ -35,4 +35,9 @@ public interface IRequisitionService
     Task<int> GetDraftCountAsync(
         Guid currentUserId,
         CancellationToken cancellationToken = default);
+
+    Task<(bool Success, string Message, Guid? NewRequisitionId, string? NewCode)> DuplicateRequisitionAsync(
+        Guid sourceId,
+        Guid currentUserId,
+        CancellationToken cancellationToken = default);
 }

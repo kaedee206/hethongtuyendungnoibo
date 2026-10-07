@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Ats.Web.Models.Entities;

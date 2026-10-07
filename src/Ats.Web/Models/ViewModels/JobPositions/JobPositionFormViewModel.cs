@@ -49,8 +49,12 @@ public class JobPositionFormViewModel : IValidatableObject
     [Display(Name = "Kích hoạt chức danh")]
     public bool IsActive { get; set; } = true;
 
+    [Display(Name = "Khung năng lực tiêu chuẩn")]
+    public Guid? CompetencyFrameworkId { get; set; }
+
     public List<SelectListItem> AvailableDepartments { get; set; } = [];
     public List<SelectListItem> AvailableJobLevels { get; set; } = [];
+    public List<SelectListItem> AvailableCompetencyFrameworks { get; set; } = [];
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

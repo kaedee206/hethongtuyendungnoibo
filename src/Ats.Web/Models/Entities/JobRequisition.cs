@@ -17,6 +17,7 @@ public class JobRequisition : BaseEntity
     
     public decimal? MinSalary { get; set; }
     public decimal? MaxSalary { get; set; }
+    public string? SalaryBandExplanation { get; set; }
     public string Currency { get; set; } = "VND";
     
     public DateOnly? TargetHireDate { get; set; }
