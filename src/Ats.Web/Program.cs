@@ -143,6 +143,8 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE departments ADD COLUMN IF NOT EXISTS path TEXT NOT NULL DEFAULT '';
             UPDATE departments SET path = '/' || id || '/' WHERE path = '' OR path IS NULL;
             ALTER TABLE job_requisitions ADD COLUMN IF NOT EXISTS salary_band_explanation TEXT;
+            ALTER TABLE job_requisitions ADD COLUMN IF NOT EXISTS location_id UUID;
+            ALTER TABLE job_requisitions ADD COLUMN IF NOT EXISTS work_type_id UUID;
             ALTER TABLE job_positions ADD COLUMN IF NOT EXISTS competency_framework_id UUID;
 
             CREATE TABLE IF NOT EXISTS competency_frameworks (
