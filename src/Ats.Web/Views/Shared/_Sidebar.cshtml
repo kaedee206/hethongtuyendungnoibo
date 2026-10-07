@@ -19,11 +19,10 @@
 
         <!-- ── Sidebar Header Bar ── -->
         <div class="sidebar-header-bar">
-            <!-- Logo + ATS badge (hidden when collapsed) -->
-            <div class="d-flex align-items-center gap-2 sidebar-nav-link-text" style="overflow:hidden;">
+            <!-- Logo (hidden when collapsed) -->
+            <div class="d-flex align-items-center sidebar-nav-link-text" style="overflow:hidden;">
                 <img src="~/img/logo-dark-transparent.png" alt="NoveraTech"
-                     style="height: 22px; width: auto; flex-shrink:0;" asp-append-version="true" />
-                <span class="badge fw-semibold px-2" style="font-size:0.68rem; border-radius:6px; background:#ECFDF5; color:#059669; border:1px solid #D1FAE5;">ATS</span>
+                     style="height: 24px; width: auto; max-width: 140px; flex-shrink:0;" asp-append-version="true" />
             </div>
             <!-- Collapse toggle (desktop only) -->
             <button type="button"
@@ -43,7 +42,7 @@
         </div>
 
         <!-- ── Navigation Scrollable Body ── -->
-        <div class="flex-grow-1 overflow-auto pe-1 mt-1" style="scrollbar-width: thin;">
+        <div class="flex-grow-1 overflow-auto sidebar-nav-body pe-1 mt-1">
 
             @if (isCandidate)
             {
@@ -141,15 +140,6 @@
                         <span class="sidebar-nav-link-content">
                             <i class="bi bi-speedometer2"></i>
                             <span class="sidebar-nav-link-text">Tổng quan</span>
-                        </span>
-                    </a>
-                    <a href="/dashboard/tuyen-dung"
-                       class="sidebar-nav-link"
-                       data-path="/dashboard/tuyen-dung"
-                       data-tooltip="Phễu tuyển dụng">
-                        <span class="sidebar-nav-link-content">
-                            <i class="bi bi-funnel"></i>
-                            <span class="sidebar-nav-link-text">Phễu tuyển dụng</span>
                         </span>
                     </a>
                     <a href="/dashboard/ung-vien"
@@ -333,7 +323,7 @@
         </div>
 
         <!-- ── Sidebar Footer: Compact User Card ── -->
-        <div class="pt-2 border-top mt-2">
+        <div class="pt-2 border-top mt-2 sidebar-footer-container">
             <div class="sidebar-footer-card">
                 <!-- Avatar -->
                 <div class="sidebar-footer-avatar">@userInitial</div>
@@ -343,7 +333,7 @@
                     <div class="text-muted text-truncate font-mono" style="font-size:0.7rem;">@userEmail</div>
                 </div>
                 <!-- Logout button -->
-                <form asp-controller="Account" asp-action="Logout" method="post" class="m-0 p-0 ms-1" style="flex-shrink:0;">
+                <form asp-controller="Account" asp-action="Logout" method="post" class="m-0 p-0 ms-1 sidebar-footer-logout" style="flex-shrink:0;">
                     @Html.AntiForgeryToken()
                     <button type="submit"
                             class="btn btn-sm btn-light border text-danger p-1"
@@ -355,5 +345,7 @@
             </div>
         </div>
     </div>
+    <!-- ── Sidebar Resizer (Desktop drag handle) ── -->
+    <div class="sidebar-resizer d-none d-lg-block" id="sidebarResizer" title="Kéo để điều chỉnh độ rộng menu" aria-hidden="true"></div>
 </aside>
 <div class="ats-sidebar-backdrop" id="atsSidebarBackdrop"></div>

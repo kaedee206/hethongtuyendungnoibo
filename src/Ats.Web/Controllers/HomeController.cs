@@ -48,6 +48,10 @@ public class HomeController : Controller
         }
 
         var normalizedFeature = string.IsNullOrWhiteSpace(feature) ? "tong-quan" : feature.Trim().ToLowerInvariant();
+        if (normalizedFeature == "tuyen-dung" || normalizedFeature == "pipeline")
+        {
+            normalizedFeature = "ung-vien";
+        }
         ViewBag.ActiveFeature = normalizedFeature;
 
         var model = await BuildWorkspaceDashboardViewModelAsync();

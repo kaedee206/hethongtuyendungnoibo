@@ -6,7 +6,18 @@ using Microsoft.EntityFrameworkCore;
 DotNetEnv.Env.TraversePath().Load();
 if (File.Exists(".env")) DotNetEnv.Env.Load(".env");
 if (File.Exists("src/Ats.Web/.env")) DotNetEnv.Env.Load("src/Ats.Web/.env");
-var builder = WebApplication.CreateBuilder(args);
+
+var contentRoot = Directory.GetCurrentDirectory();
+if (!Directory.Exists(Path.Combine(contentRoot, "Views")) && Directory.Exists(Path.Combine(contentRoot, "src", "Ats.Web", "Views")))
+{
+    contentRoot = Path.Combine(contentRoot, "src", "Ats.Web");
+}
+
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = contentRoot
+});
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();

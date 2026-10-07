@@ -20,8 +20,8 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-lg ats-navbar sticky-top">
+    <header class="sticky-top" style="z-index: 1030;">
+        <nav class="navbar navbar-expand-lg ats-navbar">
             <div class="container-fluid px-3 px-md-4">
                 <div class="d-flex align-items-center gap-2">
                     @if (User.Identity?.IsAuthenticated == true)
@@ -358,7 +358,7 @@
                             <span style="font-weight: 600; color: #0F172A;"><i class="bi bi-hexagon-fill text-success me-1"></i>NoveraTech</span>
                             <span>&copy; @DateTime.UtcNow.Year</span>
                             <span>&middot;</span>
-                            <span>Hệ thống Quản trị Tuyển dụng Nội bộ (ATS)</span>
+                            <span>Hệ thống Quản trị Tuyển dụng Nội bộ</span>
                         </div>
                         <div class="d-flex align-items-center gap-3">
                             <a href="/gioi-thieu" class="text-decoration-none text-muted" style="font-size: 0.8rem;">Cổng Tuyển Dụng</a>

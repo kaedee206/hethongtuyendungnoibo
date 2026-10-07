@@ -40,14 +40,21 @@
         window.closeAtsSidebar = closeSidebar;
 
         /* ─────────────────────────────────────────
-           2. DESKTOP: Collapse / Expand sidebar
+           2. DESKTOP: Collapse / Expand & Drag Resize
         ───────────────────────────────────────── */
+        var STORAGE_KEY_WIDTH = 'ats_sidebar_width';
+        var DEFAULT_WIDTH     = 260;
+        var MIN_WIDTH         = 200;
+        var MAX_WIDTH         = 450;
+
         var btnCollapse  = document.getElementById('btnToggleSidebarCollapse');
         var collapseIcon = document.getElementById('sidebarCollapseIcon');
+        var resizer      = document.getElementById('sidebarResizer');
 
         function setSidebarCollapsed(collapsed) {
             if (collapsed) {
                 sidebar.classList.add('collapsed');
+                sidebar.style.width = ''; // Để CSS .collapsed định hình width: 60px
                 if (collapseIcon) {
                     collapseIcon.classList.remove('bi-layout-sidebar-reverse');
                     collapseIcon.classList.add('bi-layout-sidebar');
@@ -55,19 +62,44 @@
                 localStorage.setItem(STORAGE_KEY_COLLAPSED, '1');
             } else {
                 sidebar.classList.remove('collapsed');
+                var savedWidth = parseInt(localStorage.getItem(STORAGE_KEY_WIDTH), 10) || DEFAULT_WIDTH;
+                savedWidth = Math.min(Math.max(savedWidth, MIN_WIDTH), MAX_WIDTH);
+                sidebar.style.width = savedWidth + 'px';
                 if (collapseIcon) {
                     collapseIcon.classList.remove('bi-layout-sidebar');
                     collapseIcon.classList.add('bi-layout-sidebar-reverse');
                 }
                 localStorage.setItem(STORAGE_KEY_COLLAPSED, '0');
+
+                // Recalculate max-height on open sections when expanded
+                var labels = sidebar.querySelectorAll('.sidebar-category-label[data-group]');
+                labels.forEach(function (label) {
+                    var groupId = label.getAttribute('data-group');
+                    var section = document.getElementById('section-' + groupId);
+                    if (!section) return;
+                    if (savedGroups[groupId] === '1') {
+                        label.classList.add('group-collapsed');
+                        section.style.maxHeight = '0';
+                        section.style.overflow = 'hidden';
+                    } else {
+                        label.classList.remove('group-collapsed');
+                        section.style.maxHeight = section.scrollHeight + 'px';
+                        section.style.overflow = '';
+                    }
+                });
             }
         }
 
-        // Restore collapse state from localStorage (desktop only)
+        // Restore collapse state & width from localStorage (desktop only)
         if (window.innerWidth >= 992) {
-            var stored = localStorage.getItem(STORAGE_KEY_COLLAPSED);
-            if (stored === '1') {
+            var storedCollapsed = localStorage.getItem(STORAGE_KEY_COLLAPSED);
+            if (storedCollapsed === '1') {
                 setSidebarCollapsed(true);
+            } else {
+                var storedWidth = parseInt(localStorage.getItem(STORAGE_KEY_WIDTH), 10);
+                if (storedWidth && storedWidth >= MIN_WIDTH && storedWidth <= MAX_WIDTH) {
+                    sidebar.style.width = storedWidth + 'px';
+                }
             }
         }
 
@@ -75,6 +107,70 @@
             btnCollapse.addEventListener('click', function () {
                 var isNowCollapsed = !sidebar.classList.contains('collapsed');
                 setSidebarCollapsed(isNowCollapsed);
+            });
+        }
+
+        // Kéo chuột co giãn độ rộng Sidebar (Desktop Resizer)
+        if (resizer) {
+            resizer.addEventListener('mousedown', function (e) {
+                if (window.innerWidth < 992) return;
+                e.preventDefault();
+
+                var startX = e.clientX;
+                var startWidth = sidebar.getBoundingClientRect().width;
+                document.body.classList.add('sidebar-resizing');
+
+                function onMouseMove(moveEvent) {
+                    var delta = moveEvent.clientX - startX;
+                    var newWidth = startWidth + delta;
+
+                    // Nếu kéo quá hẹp dưới 110px -> Snap sang thu gọn (collapsed)
+                    if (newWidth < 110) {
+                        if (!sidebar.classList.contains('collapsed')) {
+                            setSidebarCollapsed(true);
+                        }
+                        return;
+                    }
+
+                    // Nếu đang thu nhỏ mà kéo ra > 150px -> Mở rộng trở lại
+                    if (sidebar.classList.contains('collapsed') && newWidth >= 150) {
+                        sidebar.classList.remove('collapsed');
+                        if (collapseIcon) {
+                            collapseIcon.classList.remove('bi-layout-sidebar');
+                            collapseIcon.classList.add('bi-layout-sidebar-reverse');
+                        }
+                        localStorage.setItem(STORAGE_KEY_COLLAPSED, '0');
+                    }
+
+                    if (!sidebar.classList.contains('collapsed')) {
+                        var clampedWidth = Math.min(Math.max(newWidth, MIN_WIDTH), MAX_WIDTH);
+                        sidebar.style.width = clampedWidth + 'px';
+                    }
+                }
+
+                function onMouseUp() {
+                    document.body.classList.remove('sidebar-resizing');
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+
+                    if (!sidebar.classList.contains('collapsed')) {
+                        var finalWidth = Math.round(sidebar.getBoundingClientRect().width);
+                        localStorage.setItem(STORAGE_KEY_WIDTH, finalWidth.toString());
+                    }
+                }
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+
+            // Double click vào thanh resizer để reset về độ rộng chuẩn 260px
+            resizer.addEventListener('dblclick', function () {
+                if (window.innerWidth < 992) return;
+                if (sidebar.classList.contains('collapsed')) {
+                    setSidebarCollapsed(false);
+                }
+                sidebar.style.width = DEFAULT_WIDTH + 'px';
+                localStorage.setItem(STORAGE_KEY_WIDTH, DEFAULT_WIDTH.toString());
             });
         }
 

@@ -107,74 +107,6 @@
             </div>
         </div>
 
-        <!-- ── DASHBOARD FEATURE SUB-NAVIGATION BAR (URL SPECIFIC: /dashboard/{ten-tinh-nang}) ── -->
-        <div class="dashboard-feature-nav mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2 p-2 bg-white shadow-sm"
-             style="border: 1px solid #E2E8F0; border-radius: 12px;">
-            <div class="d-flex align-items-center gap-1.5 flex-wrap" id="dashboardFeatureTabs">
-                @if (Model.IsCandidate)
-                {
-                    <a href="/dashboard/tong-quan" class="dashboard-feature-tab @((ViewBag.ActiveFeature == "tong-quan" || string.IsNullOrWhiteSpace(ViewBag.ActiveFeature)) ? "active" : "")"
-                       data-feature="tong-quan" onclick="switchDashboardFeature('tong-quan', event)">
-                        <i class="bi bi-grid-1x2"></i> Tổng quan
-                    </a>
-                    <a href="/dashboard/ho-so" class="dashboard-feature-tab @(ViewBag.ActiveFeature == "ho-so" ? "active" : "")"
-                       data-feature="ho-so" onclick="switchDashboardFeature('ho-so', event)">
-                        <i class="bi bi-person-vcard"></i> Hồ sơ & CV
-                    </a>
-                    <a href="/dashboard/tien-do" class="dashboard-feature-tab @(ViewBag.ActiveFeature == "tien-do" ? "active" : "")"
-                       data-feature="tien-do" onclick="switchDashboardFeature('tien-do', event)">
-                        <i class="bi bi-calendar2-check"></i> Tiến độ & Phỏng vấn
-                    </a>
-                    <a href="/dashboard/viec-lam" class="dashboard-feature-tab @(ViewBag.ActiveFeature == "viec-lam" ? "active" : "")"
-                       data-feature="viec-lam" onclick="switchDashboardFeature('viec-lam', event)">
-                        <i class="bi bi-briefcase"></i> Khám phá việc làm
-                        <span class="badge bg-light text-dark ms-1" style="border: 1px solid #E2E8F0;">@Model.CandidateOpenJobs.Count</span>
-                    </a>
-                }
-                else
-                {
-                    <a href="/dashboard/tong-quan" class="dashboard-feature-tab @((ViewBag.ActiveFeature == "tong-quan" || string.IsNullOrWhiteSpace(ViewBag.ActiveFeature)) ? "active" : "")"
-                       data-feature="tong-quan" onclick="switchDashboardFeature('tong-quan', event)">
-                        <i class="bi bi-speedometer2"></i> Tổng quan
-                    </a>
-                    <a href="/dashboard/tuyen-dung" class="dashboard-feature-tab @(ViewBag.ActiveFeature == "tuyen-dung" ? "active" : "")"
-                       data-feature="tuyen-dung" onclick="switchDashboardFeature('tuyen-dung', event)">
-                        <i class="bi bi-funnel"></i> Phễu tuyển dụng
-                    </a>
-                    <a href="/dashboard/ung-vien" class="dashboard-feature-tab @(ViewBag.ActiveFeature == "ung-vien" ? "active" : "")"
-                       data-feature="ung-vien" onclick="switchDashboardFeature('ung-vien', event)">
-                        <i class="bi bi-people"></i> Hồ sơ ứng viên
-                        <span class="badge ms-1" style="background:#ECFDF5; color:#047857; border:1px solid #A7F3D0;">@Model.CandidatePipelineItems.Count</span>
-                    </a>
-                    <a href="/dashboard/lich-phong-van" class="dashboard-feature-tab @(ViewBag.ActiveFeature == "lich-phong-van" ? "active" : "")"
-                       data-feature="lich-phong-van" onclick="switchDashboardFeature('lich-phong-van', event)">
-                        <i class="bi bi-calendar3"></i> Lịch phỏng vấn
-                        @if (Model.UpcomingInterviews.Any())
-                        {
-                            <span class="badge ms-1" style="background:#ECFDF5; color:#047857; border:1px solid #A7F3D0;">@Model.UpcomingInterviews.Count</span>
-                        }
-                    </a>
-                    <a href="/dashboard/phe-duyet" class="dashboard-feature-tab @(ViewBag.ActiveFeature == "phe-duyet" ? "active" : "")"
-                       data-feature="phe-duyet" onclick="switchDashboardFeature('phe-duyet', event)">
-                        <i class="bi bi-patch-check"></i> Phê duyệt
-                        @if (Model.PendingOffers.Any())
-                        {
-                            <span class="badge ms-1" style="background:#FEF3C7; color:#92400E; border:1px solid #FDE68A;">@Model.PendingOffers.Count</span>
-                        }
-                    </a>
-                    <a href="/dashboard/tac-vu" class="dashboard-feature-tab @(ViewBag.ActiveFeature == "tac-vu" ? "active" : "")"
-                       data-feature="tac-vu" onclick="switchDashboardFeature('tac-vu', event)">
-                        <i class="bi bi-lightning-charge"></i> Tác vụ nhanh
-                    </a>
-                }
-            </div>
-            <div class="d-none d-md-flex align-items-center gap-2">
-                <span class="badge bg-light text-secondary border px-2.5 py-1.5" style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;" id="currentFeatureUrlBadge">
-                    <i class="bi bi-link-45deg me-1"></i>/dashboard/@(ViewBag.ActiveFeature ?? "tong-quan")
-                </span>
-            </div>
-        </div>
-
         @if (Model.IsCandidate)
         {
             <!-- ========================================== -->
@@ -707,8 +639,8 @@
                                         </h5>
                                         <small class="text-muted">Tổng quan luồng hồ sơ qua từng giai đoạn tuyển chọn</small>
                                     </div>
-                                    <button type="button" class="btn btn-outline-success btn-sm fw-semibold" style="border-radius: 6px; font-size: 0.75rem;" onclick="switchDashboardFeature('tuyen-dung', event)">
-                                        <i class="bi bi-funnel me-1"></i> Xem chi tiết phễu &rarr;
+                                    <button type="button" class="btn btn-outline-success btn-sm fw-semibold" style="border-radius: 6px; font-size: 0.75rem;" onclick="switchDashboardFeature('ung-vien', event)">
+                                        <i class="bi bi-people me-1"></i> Quản lý hồ sơ ứng viên &rarr;
                                     </button>
                                 </div>
                                 <div class="row g-2">
@@ -892,74 +824,7 @@
                     </div>
                 </div>
 
-                <!-- ============================================================== -->
-                <!-- 2. TÍNH NĂNG PHỄU TUYỂN DỤNG RIÊNG BIỆT (TUYEN-DUNG: FULL WIDTH) -->
-                <!-- ============================================================== -->
-                <div class="staff-feature-panel @(activeFeature == "tuyen-dung" ? "" : "d-none")" data-feature-panel="tuyen-dung">
-                    <div id="feature-section-staff-tuyen-dung" class="card border-0 shadow-sm p-4 bg-white mb-4 scroll-margin-nav" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
-                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 pb-2 gap-2" style="border-bottom: 1px solid #F1F5F9;">
-                            <div>
-                                <h5 class="fw-bold text-dark mb-0" style="font-size: 1.15rem;">
-                                    <i class="bi bi-funnel text-success me-2"></i>Phễu Tuyển Dụng & Tiến Độ Hồ Sơ (Recruitment Pipeline)
-                                </h5>
-                                <small class="text-muted">Phân tích tỷ lệ chuyển đổi và lưu lượng hồ sơ thực tế đang lưu hành qua 6 giai đoạn tuyển chọn</small>
-                            </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" style="border-radius: 6px; font-size: 0.75rem;" onclick="switchDashboardFeature('ung-vien', event); filterCandidates('ALL');">
-                                    <i class="bi bi-people me-1"></i> Xem danh sách ứng viên
-                                </button>
-                                <span style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; font-weight:600; color:#475569; background:#F1F5F9; padding:0.25rem 0.65rem; border-radius:6px; border: 1px solid #E2E8F0;">
-                                    Tháng @DateTime.UtcNow.Month/@DateTime.UtcNow.Year
-                                </span>
-                            </div>
-                        </div>
 
-                        <!-- Unified Pipeline Progression Track -->
-                        <div class="row g-3 mb-4">
-                            @for (int i = 0; i < Model.PipelineFunnel.Count; i++)
-                            {
-                                var stage = Model.PipelineFunnel[i];
-                                <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
-                                    <div class="p-3.5 h-100 cursor-pointer" style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; transition:all .2s;"
-                                         onclick="switchDashboardFeature('ung-vien', event); setTimeout(function() { filterCandidates('@stage.StageOrder'); }, 100);"
-                                         onmouseover="this.style.borderColor='#059669'; this.style.background='#FFFFFF'; this.style.transform='translateY(-2px)';"
-                                         onmouseout="this.style.borderColor='#E2E8F0'; this.style.background='#F8FAFC'; this.style.transform='none';">
-                                        <div class="d-flex align-items-center justify-content-between mb-1.5">
-                                            <span style="font-size:0.72rem; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.04em;">
-                                                @stage.StageOrder.ToString("D2"). @stage.StageName
-                                            </span>
-                                        </div>
-                                        <div class="d-flex align-items-baseline gap-1.5 my-2">
-                                            <span style="font-size:1.8rem; font-weight:700; font-family:'JetBrains Mono',monospace; color:#0F172A; line-height:1;">
-                                                @stage.Count
-                                            </span>
-                                            <span style="font-size:0.75rem; color:#64748B;">hồ sơ</span>
-                                        </div>
-                                        <div class="d-flex align-items-center justify-content-between pt-2" style="border-top: 1px solid #E2E8F0;">
-                                            <span style="font-size:0.72rem; color:#94A3B8;">Tỷ lệ:</span>
-                                            <span style="font-size:0.75rem; font-weight:700; color:#059669; font-family:'JetBrains Mono',monospace;">
-                                                @stage.Percentage%
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-
-                        <!-- Bảng Thống Kê & Hành Động Khuyến Nghị Cho Từng Giai Đoạn -->
-                        <div class="p-3.5 rounded-3 mb-2" style="background: #F8FAFC; border: 1px solid #E2E8F0;">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <span class="fw-bold text-dark small"><i class="bi bi-info-circle text-primary me-1.5"></i>Hướng dẫn vận hành phễu</span>
-                                <button type="button" class="btn btn-sm btn-success fw-semibold" style="font-size: 0.78rem; border-radius: 6px;" onclick="switchDashboardFeature('ung-vien', event)">
-                                    <i class="bi bi-arrow-right-circle me-1"></i> Chuyển sang bảng xử lý ứng viên
-                                </button>
-                            </div>
-                            <p class="text-muted small mb-0">
-                                Nhấp chọn bất kỳ giai đoạn nào ở trên để xem danh sách hồ sơ tương ứng. Các hồ sơ tồn đọng quá 3 ngày tại giai đoạn sàng lọc sẽ được hệ thống gắn nhãn cảnh báo cần xúc tiến phỏng vấn.
-                            </p>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- ============================================================== -->
                 <!-- 3. TÍNH NĂNG QUẢN LÝ ỨNG VIÊN RIÊNG BIỆT (UNG-VIEN: FULL WIDTH) -->
@@ -987,28 +852,28 @@
                             </div>
                         </div>
 
-                        <!-- Filter Stage Buttons -->
-                        <div class="d-flex flex-wrap gap-1.5 mb-3" id="candidateStageFilterGroup">
-                            <button type="button" class="btn btn-sm btn-outline-success active" style="border-radius: 6px; font-size: 0.78rem;" onclick="filterPipelineCandidates('ALL', this)">
-                                Tất cả (@Model.CandidatePipelineItems.Count)
+                        <!-- Filter Stage Pills (Segmented Chips) -->
+                        <div class="d-flex flex-wrap gap-2 mb-3" id="candidateStageFilterGroup">
+                            <button type="button" class="candidate-stage-pill active" onclick="filterPipelineCandidates('ALL', this)">
+                                Tất cả <span class="pill-count">@Model.CandidatePipelineItems.Count</span>
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius: 6px; font-size: 0.78rem;" onclick="filterPipelineCandidates('1', this)">
-                                01. Ứng tuyển mới (@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 1))
+                            <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('1', this)">
+                                01. Ứng tuyển mới <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 1)</span>
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius: 6px; font-size: 0.78rem;" onclick="filterPipelineCandidates('2', this)">
-                                02. Sàng lọc CV (@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 2))
+                            <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('2', this)">
+                                02. Sàng lọc CV <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 2)</span>
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius: 6px; font-size: 0.78rem;" onclick="filterPipelineCandidates('4', this)">
-                                04. Phỏng vấn (@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 4))
+                            <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('4', this)">
+                                04. Phỏng vấn <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 4)</span>
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius: 6px; font-size: 0.78rem;" onclick="filterPipelineCandidates('5', this)">
-                                05. Đề xuất Offer (@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 5))
+                            <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('5', this)">
+                                05. Đề xuất Offer <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 5)</span>
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius: 6px; font-size: 0.78rem;" onclick="filterPipelineCandidates('6', this)">
-                                06. Đã Onboard (@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 6))
+                            <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('6', this)">
+                                06. Đã Onboard <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 6)</span>
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius: 6px; font-size: 0.78rem;" onclick="filterPipelineCandidates('REJECTED', this)">
-                                Đã từ chối (@Model.CandidatePipelineItems.Count(x => x.Status == "REJECTED"))
+                            <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('REJECTED', this)">
+                                Đã từ chối <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.Status == "REJECTED")</span>
                             </button>
                         </div>
 
@@ -1051,6 +916,12 @@
                                                                     <span>•</span>
                                                                     <span>@cand.CandidatePhone</span>
                                                                 }
+                                                                @if (!string.IsNullOrEmpty(cand.ResumeFilePath))
+                                                                {
+                                                                    <a href="@cand.ResumeFilePath" target="_blank" class="candidate-cv-pill ms-1" title="Xem CV đính kèm">
+                                                                        <i class="bi bi-file-earmark-pdf"></i> CV
+                                                                    </a>
+                                                                }
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1076,84 +947,41 @@
                                                     @cand.AppliedDateDisplay
                                                 </td>
                                                 <td class="py-3 px-3 text-end">
-                                                    <div class="d-flex justify-content-end align-items-center gap-1.5 flex-wrap">
-                                                        @if (!string.IsNullOrEmpty(cand.ResumeFilePath))
-                                                        {
-                                                            <a href="@cand.ResumeFilePath" target="_blank" class="btn btn-sm btn-light"
-                                                               style="border-radius:6px; font-size:0.75rem; font-weight:600; border:1px solid #E2E8F0; padding:0.25rem 0.6rem;"
-                                                               title="Xem CV Ứng viên">
-                                                                <i class="bi bi-file-earmark-pdf text-danger me-1"></i>CV
-                                                            </a>
-                                                        }
-
+                                                    <div class="d-flex justify-content-end align-items-center gap-2">
                                                         @if (cand.Status == "REJECTED")
                                                         {
-                                                            <span class="text-muted small fst-italic">Hồ sơ đã lưu trữ</span>
+                                                            <span class="badge bg-light text-muted border" style="border-radius:6px; font-size:0.72rem;">Đã lưu trữ</span>
                                                         }
                                                         else if (cand.CurrentStageOrder == 1)
                                                         {
                                                             <!-- Ứng tuyển mới -> Duyệt sơ loại -->
-                                                            <button type="button" class="btn btn-sm btn-outline-success"
-                                                                    style="border-radius:6px; font-size:0.75rem; font-weight:600; padding:0.25rem 0.65rem;"
+                                                            <button type="button" class="btn btn-sm btn-outline-success candidate-action-btn-primary"
                                                                     onclick="advanceStageQuick('@cand.ApplicationId', 'Sàng lọc CV', '@cand.CandidateName')">
-                                                                <i class="bi bi-arrow-right-circle me-1"></i>Duyệt Sơ Loại
-                                                            </button>
-                                                            <button type="button" class="btn btn-sm btn-outline-danger"
-                                                                    style="border-radius:6px; font-size:0.75rem; font-weight:600; padding:0.25rem 0.5rem;"
-                                                                    title="Từ chối hồ sơ"
-                                                                    onclick="openRejectModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
-                                                                <i class="bi bi-x-circle"></i>
+                                                                <i class="bi bi-arrow-right-circle"></i> Duyệt Sơ Loại
                                                             </button>
                                                         }
                                                         else if (cand.CurrentStageOrder == 2)
                                                         {
                                                             <!-- Sàng lọc CV -> Lên lịch phỏng vấn -->
-                                                            <button type="button" class="btn btn-sm btn-primary"
-                                                                    style="border-radius:6px; font-size:0.75rem; font-weight:600; padding:0.25rem 0.65rem;"
+                                                            <button type="button" class="btn btn-sm btn-primary candidate-action-btn-primary" style="background:#0284C7; border-color:#0284C7;"
                                                                     onclick="openScheduleModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
-                                                                <i class="bi bi-calendar-plus me-1"></i>Lên Lịch PV
-                                                            </button>
-                                                            <button type="button" class="btn btn-sm btn-outline-danger"
-                                                                    style="border-radius:6px; font-size:0.75rem; font-weight:600; padding:0.25rem 0.5rem;"
-                                                                    title="Từ chối hồ sơ"
-                                                                    onclick="openRejectModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
-                                                                <i class="bi bi-x-circle"></i>
+                                                                <i class="bi bi-calendar-plus"></i> Lên Lịch PV
                                                             </button>
                                                         }
                                                         else if (cand.CurrentStageOrder == 4)
                                                         {
-                                                            <!-- Phỏng vấn -> Thêm lịch hoặc Đề xuất Offer -->
-                                                            <button type="button" class="btn btn-sm btn-outline-primary"
-                                                                    style="border-radius:6px; font-size:0.75rem; font-weight:600; padding:0.25rem 0.55rem;"
-                                                                    title="Lên lịch phỏng vấn vòng kế tiếp"
-                                                                    onclick="openScheduleModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
-                                                                <i class="bi bi-calendar-event me-1"></i>Lịch PV
-                                                            </button>
-                                                            <button type="button" class="btn btn-sm btn-warning text-dark fw-semibold"
-                                                                    style="border-radius:6px; font-size:0.75rem; padding:0.25rem 0.65rem;"
+                                                            <!-- Phỏng vấn -> Đề xuất Offer -->
+                                                            <button type="button" class="btn btn-sm btn-warning text-dark candidate-action-btn-primary fw-semibold"
                                                                     onclick="openCreateOfferModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
-                                                                <i class="bi bi-envelope-paper-fill me-1"></i>Đề Xuất Offer
-                                                            </button>
-                                                            <button type="button" class="btn btn-sm btn-outline-danger"
-                                                                    style="border-radius:6px; font-size:0.75rem; font-weight:600; padding:0.25rem 0.5rem;"
-                                                                    title="Từ chối hồ sơ"
-                                                                    onclick="openRejectModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
-                                                                <i class="bi bi-x-circle"></i>
+                                                                <i class="bi bi-envelope-paper-heart-fill"></i> Đề Xuất Offer
                                                             </button>
                                                         }
                                                         else if (cand.CurrentStageOrder == 5)
                                                         {
                                                             <!-- Đề xuất Offer -> Xác nhận Onboard -->
-                                                            <button type="button" class="btn btn-sm btn-success"
-                                                                    style="border-radius:6px; font-size:0.75rem; font-weight:600; padding:0.25rem 0.65rem;"
+                                                            <button type="button" class="btn btn-sm btn-success candidate-action-btn-primary"
                                                                     onclick="advanceStageQuick('@cand.ApplicationId', 'Đã Onboard', '@cand.CandidateName')">
-                                                                <i class="bi bi-check2-all me-1"></i>Xác Nhận Onboard
-                                                            </button>
-                                                            <button type="button" class="btn btn-sm btn-outline-danger"
-                                                                    style="border-radius:6px; font-size:0.75rem; font-weight:600; padding:0.25rem 0.5rem;"
-                                                                    title="Từ chối hồ sơ"
-                                                                    onclick="openRejectModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
-                                                                <i class="bi bi-x-circle"></i>
+                                                                <i class="bi bi-check2-all"></i> Xác Nhận Onboard
                                                             </button>
                                                         }
                                                         else if (cand.CurrentStageOrder == 6)
@@ -1163,13 +991,46 @@
                                                             </span>
                                                         }
 
-                                                        <!-- Chi tiết hồ sơ -->
-                                                        <button type="button" class="btn btn-sm btn-light"
-                                                                style="border-radius:6px; font-size:0.75rem; border:1px solid #E2E8F0; padding:0.25rem 0.5rem;"
-                                                                title="Xem chi tiết & Lịch sử tuyển dụng"
-                                                                onclick="openCandidateDetailModal('@cand.ApplicationId')">
-                                                            <i class="bi bi-eye text-muted"></i>
-                                                        </button>
+                                                        <!-- Dropdown Thao tác mở rộng (...) -->
+                                                        <div class="dropdown d-inline-block">
+                                                            <button type="button" class="candidate-dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="Thao tác khác">
+                                                                <i class="bi bi-three-dots-vertical"></i>
+                                                            </button>
+                                                            <ul class="dropdown-menu dropdown-menu-end candidate-dropdown-menu shadow-sm">
+                                                                <li>
+                                                                    <a class="dropdown-item" href="javascript:void(0)" onclick="openCandidateDetailModal('@cand.ApplicationId')">
+                                                                        <i class="bi bi-eye text-primary"></i> Xem chi tiết hồ sơ
+                                                                    </a>
+                                                                </li>
+                                                                @if (!string.IsNullOrEmpty(cand.ResumeFilePath))
+                                                                {
+                                                                    <li>
+                                                                        <a class="dropdown-item" href="@cand.ResumeFilePath" target="_blank">
+                                                                            <i class="bi bi-file-earmark-pdf text-danger"></i> Xem file CV
+                                                                        </a>
+                                                                    </li>
+                                                                }
+                                                                @if (cand.CurrentStageOrder == 4)
+                                                                {
+                                                                    <li>
+                                                                        <a class="dropdown-item" href="javascript:void(0)" onclick="openScheduleModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
+                                                                            <i class="bi bi-calendar-event text-info"></i> Lên lịch phỏng vấn tiếp
+                                                                        </a>
+                                                                    </li>
+                                                                }
+                                                                @if (cand.Status != "REJECTED" && cand.CurrentStageOrder != 6)
+                                                                {
+                                                                    <li><hr class="dropdown-divider my-1"></li>
+                                                                    <li>
+                                                                        <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="openRejectModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
+                                                                            <i class="bi bi-x-circle text-danger"></i> Từ chối hồ sơ
+                                                                        </a>
+                                                                    </li>
+                                                                }
+                                                            </ul>
+                                                        </div>
+
+
                                                     </div>
                                                 </td>
                                             </tr>
@@ -2789,15 +2650,9 @@
             window.currentPipelineStage = stageOrder || 'ALL';
             window.candCurrentPage = 1;
             if (btnElement) {
-                const group = btnElement.parentElement.querySelectorAll('button');
-                group.forEach(b => {
-                    b.classList.remove('active');
-                    b.classList.remove('btn-outline-success');
-                    b.classList.add('btn-outline-secondary');
-                });
+                const group = btnElement.parentElement.querySelectorAll('.candidate-stage-pill');
+                group.forEach(b => b.classList.remove('active'));
                 btnElement.classList.add('active');
-                btnElement.classList.remove('btn-outline-secondary');
-                btnElement.classList.add('btn-outline-success');
             }
             applyPipelineFilters(true, true);
         }
@@ -2842,16 +2697,12 @@
                 }
                 if (params.cand_stage !== undefined) {
                     window.currentPipelineStage = params.cand_stage;
-                    const stageButtons = document.querySelectorAll('#candidateStageFilterGroup button');
+                    const stageButtons = document.querySelectorAll('#candidateStageFilterGroup .candidate-stage-pill');
                     stageButtons.forEach(btn => {
                         const onclickAttr = btn.getAttribute('onclick') || '';
                         if (onclickAttr.includes(`'${params.cand_stage}'`)) {
-                            stageButtons.forEach(b => {
-                                b.classList.remove('active', 'btn-outline-success');
-                                b.classList.add('btn-outline-secondary');
-                            });
-                            btn.classList.add('active', 'btn-outline-success');
-                            btn.classList.remove('btn-outline-secondary');
+                            stageButtons.forEach(b => b.classList.remove('active'));
+                            btn.classList.add('active');
                         }
                     });
                 }
@@ -3177,7 +3028,7 @@
 
             var cleanFeature = (featureName || 'tong-quan').toLowerCase().trim();
             if (cleanFeature === 'overview') cleanFeature = 'tong-quan';
-            if (cleanFeature === 'pipeline') cleanFeature = 'tuyen-dung';
+            if (cleanFeature === 'pipeline' || cleanFeature === 'tuyen-dung') cleanFeature = 'ung-vien';
             if (cleanFeature === 'candidates' || cleanFeature === 'ho-so-ung-vien') cleanFeature = 'ung-vien';
             if (cleanFeature === 'interviews' || cleanFeature === 'phong-van') cleanFeature = 'lich-phong-van';
             if (cleanFeature === 'approvals' || cleanFeature === 'offers') cleanFeature = 'phe-duyet';
@@ -3269,9 +3120,7 @@
                     targetId = 'feature-section-candidate-viec-lam';
                 }
             } else {
-                if (feature === 'tuyen-dung' || feature === 'pipeline') {
-                    targetId = 'feature-section-staff-tuyen-dung';
-                } else if (feature === 'ung-vien' || feature === 'candidates' || feature === 'ho-so-ung-vien') {
+                if (feature === 'ung-vien' || feature === 'candidates' || feature === 'ho-so-ung-vien' || feature === 'tuyen-dung' || feature === 'pipeline') {
                     targetId = 'feature-section-staff-ung-vien';
                 } else if (feature === 'lich-phong-van' || feature === 'phong-van' || feature === 'interviews') {
                     targetId = 'feature-section-staff-lich-phong-van';
