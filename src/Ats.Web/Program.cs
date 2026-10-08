@@ -22,6 +22,12 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+// Cấu hình Antiforgery cho cả Form body và HTTP Header (RequestVerificationToken)
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "RequestVerificationToken";
+});
+
 // 2. Lấy thông tin CSDL từ biến môi trường
 var dbHost = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
 var dbPort = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
@@ -134,6 +140,9 @@ app.UseAuthorization();
 
 // Kích hoạt Middleware gia hạn phiên tự động
 app.UseMiddleware<Ats.Web.Middlewares.SessionActivityMiddleware>();
+
+// Hỗ trợ phục vụ các file và ảnh tải lên ở runtime (/uploads/avatars, /uploads/resumes...)
+app.UseStaticFiles();
 
 app.MapStaticAssets();
 
