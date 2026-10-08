@@ -174,6 +174,36 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE job_requisitions ADD COLUMN IF NOT EXISTS salary_band_explanation TEXT;
             ALTER TABLE job_positions ADD COLUMN IF NOT EXISTS competency_framework_id UUID;
 
+            CREATE TABLE IF NOT EXISTS approval_rules (
+                id UUID PRIMARY KEY,
+                name TEXT NOT NULL,
+                department_id UUID,
+                min_salary NUMERIC NOT NULL,
+                max_salary NUMERIC,
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+
+            CREATE TABLE IF NOT EXISTS approval_rule_steps (
+                id UUID PRIMARY KEY,
+                approval_rule_id UUID NOT NULL REFERENCES approval_rules(id) ON DELETE CASCADE,
+                step_order INTEGER NOT NULL,
+                approver_role_id UUID,
+                approver_user_id UUID,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+
+
             CREATE TABLE IF NOT EXISTS competency_frameworks (
                 id UUID PRIMARY KEY,
                 code TEXT NOT NULL,
