@@ -1490,6 +1490,7 @@
             </div>
             <div class="modal-body py-3">
                 <form id="jobCreateForm" onsubmit="handleJobCreateSubmit(event)">
+                    @Html.AntiForgeryToken()
                     <div class="row g-3">
                         <div class="col-12 col-md-8">
                             <label class="form-label small fw-semibold text-dark">Tiêu đề vị trí tuyển dụng</label>
@@ -2101,12 +2102,23 @@
             try {
                 var res = await fetch('/Workspace/CreateJobPosting', {
                     method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': getCsrfToken()
+                    },
                     body: formData
                 });
-                var data = await res.json();
+                var data = {};
+                try {
+                    data = await res.json();
+                } catch (jsonErr) {
+                    data = { success: false, message: 'Phản hồi từ máy chủ không hợp lệ (Mã: ' + res.status + ')' };
+                }
                 if (data.success) {
                     var modalEl = document.getElementById('createJobModal');
-                    bootstrap.Modal.getInstance(modalEl).hide();
+                    if (modalEl) {
+                        var modalInst = bootstrap.Modal.getInstance(modalEl);
+                        if (modalInst) modalInst.hide();
+                    }
                     showToast(data.message, true);
                     var kpiJobs = document.getElementById('kpiOpenJobs');
                     if (kpiJobs) {
