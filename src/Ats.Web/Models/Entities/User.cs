@@ -17,6 +17,9 @@ public class User
 
     // SCRUM-129: Phòng ban (dạng chuỗi phục vụ quản trị và tìm kiếm)
     public string? Department { get; set; }
+    
+    // SCRUM-187: Cập nhật hồ sơ
+    public string? JobTitle { get; set; }
 
     public Guid? DepartmentId { get; set; }
     public Department? DepartmentEntity { get; set; }

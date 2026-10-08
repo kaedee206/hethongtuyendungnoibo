@@ -1,0 +1,328 @@
+@model Ats.Web.Models.ViewModels.CompetencyFrameworks.CompetencyFrameworkFormViewModel
+@{
+    ViewData["Title"] = $"Chỉnh sửa Khung năng lực {Model.Code}";
+}
+
+<div class="container-fluid px-3 px-md-4 py-4" style="max-width: 1200px;">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none text-muted">Bàn làm việc</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-muted">Khung năng lực</a></li>
+            <li class="breadcrumb-item active fw-medium text-dark" aria-current="page">Chỉnh sửa</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <div class="p-2 bg-white rounded-3 shadow-xs border d-inline-flex align-items-center justify-content-center text-primary" style="border-radius: 8px !important; width: 42px; height: 42px;">
+                    <i class="bi bi-pencil-square fs-5" style="color: #059669;"></i>
+                </div>
+                <h1 class="h3 fw-bold text-dark mb-0">Chỉnh sửa Khung năng lực</h1>
+                <span class="badge bg-light text-dark border font-monospace ms-2" style="border-radius: 6px;">@Model.Code</span>
+            </div>
+            <p class="text-muted small mb-0 ms-md-5">Cập nhật tiêu chí đánh giá, ma trận rubric 5 mức độ và danh sách chức danh áp dụng.</p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2" style="border-radius: 8px;">
+                <i class="bi bi-eye"></i>
+                <span class="fw-semibold">Xem chi tiết</span>
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2" style="border-radius: 8px;">
+                <i class="bi bi-arrow-left"></i>
+                <span class="fw-semibold">Danh sách</span>
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm d-flex align-items-center gap-2 mb-4" style="border-radius: 12px;">
+            <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
+            <div>@TempData["ErrorMessage"]</div>
+        </div>
+    }
+
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post" id="frameworkForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+
+        <!-- Card Thông tin cơ bản -->
+        <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+            <div class="card-header bg-white border-bottom py-3 px-4">
+                <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle text-primary"></i>
+                    <span>Thông tin chung Khung năng lực</span>
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                        <label asp-for="Code" class="form-label small fw-semibold text-dark">Mã khung năng lực <span class="text-danger">*</span></label>
+                        <input asp-for="Code" class="form-control font-monospace" placeholder="Ví dụ: CF-TECH-001" style="border-radius: 8px;" required />
+                        <span asp-validation-for="Code" class="text-danger small"></span>
+                        <div class="form-text small text-muted">Mã định danh duy nhất trong hệ thống.</div>
+                    </div>
+
+                    <div class="col-12 col-md-8">
+                        <label asp-for="Name" class="form-label small fw-semibold text-dark">Tên khung năng lực <span class="text-danger">*</span></label>
+                        <input asp-for="Name" class="form-control" placeholder="Ví dụ: Khung năng lực Kỹ sư Backend C# / .NET Core" style="border-radius: 8px;" required />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Description" class="form-label small fw-semibold text-dark">Mô tả mục đích & phạm vi áp dụng</label>
+                        <textarea asp-for="Description" class="form-control" rows="2" placeholder="Tóm tắt phạm vi, đối tượng và mục đích đánh giá của bộ khung năng lực này..." style="border-radius: 8px;"></textarea>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch" id="isActiveSwitch">
+                            <label class="form-check-label fw-semibold text-dark small" for="isActiveSwitch">
+                                Đang sử dụng (Áp dụng trong các đợt đánh giá tuyển dụng)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Gán chức danh áp dụng -->
+        <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+            <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-briefcase text-success"></i>
+                    <span>Chức danh công việc áp dụng</span>
+                </h5>
+                <span class="badge bg-light text-muted border font-monospace" id="selectedPositionsCount">0 chức danh được chọn</span>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-muted small mb-3">Chọn các vị trí chức danh công việc trong tổ chức sẽ sử dụng bộ khung năng lực này để phỏng vấn và đánh giá.</p>
+                
+                <div class="row g-2" style="max-height: 260px; overflow-y: auto;">
+                    @if (Model.AllPositions != null && Model.AllPositions.Any())
+                    {
+                        @foreach (var pos in Model.AllPositions)
+                        {
+                            var isChecked = Model.AssignedPositionIds.Contains(pos.Id);
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div class="form-check p-2 border rounded-3 position-item @(isChecked ? "border-success bg-success-subtle bg-opacity-10" : "bg-light")" style="border-radius: 8px !important;">
+                                    <input class="form-check-input ms-1 me-2 position-checkbox" type="checkbox" name="AssignedPositionIds" value="@pos.Id" id="pos_@pos.Id" @(isChecked ? "checked" : "")>
+                                    <label class="form-check-label small text-dark fw-medium d-block cursor-pointer" for="pos_@pos.Id">
+                                        <div class="text-truncate fw-semibold">@pos.Title</div>
+                                        <div class="text-muted text-truncate" style="font-size: 0.78rem;">
+                                            <span class="font-monospace">@pos.Code</span> • @pos.DepartmentName
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="col-12 text-center py-3 text-muted small">
+                            Chưa có danh mục chức danh công việc trong hệ thống.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Tiêu chí & Ma trận Rubric -->
+        <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+            <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-list-check text-primary"></i>
+                        <span>Danh sách Tiêu chí Đánh giá & Ma trận Rubric</span>
+                    </h5>
+                    <span class="text-muted small">Tổng trọng số các tiêu chí bắt buộc phải bằng <strong>100%</strong></span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge font-monospace px-3 py-2 fw-bold" id="totalWeightBadge" style="border-radius: 8px; font-size: 0.9rem; background-color: #ECFDF5; color: #059669; border: 1px solid #A7F3D0;">
+                        Tổng: 100%
+                    </span>
+                    <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" id="addCriterionBtn" style="border-radius: 8px;">
+                        <i class="bi bi-plus-lg"></i>
+                        <span>Thêm tiêu chí</span>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <div id="criteriaContainer">
+                    @for (int i = 0; i < Model.Criteria.Count; i++)
+                    {
+                        var c = Model.Criteria[i];
+                        <div class="criterion-item border rounded-3 p-3 mb-3 bg-light position-relative" data-index="@i" style="border-radius: 10px !important;">
+                            <input type="hidden" name="Criteria[@i].Id" value="@c.Id" />
+                            <input type="hidden" name="Criteria[@i].IsMarkedForDeletion" value="false" class="deletion-flag" />
+
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-secondary font-monospace" style="border-radius: 6px;">Tiêu chí #@(i + 1)</span>
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 remove-criterion-btn" style="border-radius: 6px;" title="Xóa tiêu chí này">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+
+                            <div class="row g-2 mb-2">
+                                <div class="col-12 col-md-8">
+                                    <label class="form-label small fw-semibold text-dark mb-1">Tên tiêu chí <span class="text-danger">*</span></label>
+                                    <input type="text" name="Criteria[@i].Name" value="@c.Name" class="form-control form-control-sm" placeholder="Ví dụ: Kỹ năng Clean Architecture & Design Patterns" style="border-radius: 6px;" required />
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label small fw-semibold text-dark mb-1">Trọng số (%) <span class="text-danger">*</span></label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" name="Criteria[@i].Weight" value="@c.Weight" class="form-control criterion-weight" min="1" max="100" style="border-radius: 6px 0 0 6px;" required />
+                                        <span class="input-group-text bg-white" style="border-radius: 0 6px 6px 0;">%</span>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-semibold text-dark mb-1">Mô tả tiêu chí</label>
+                                    <input type="text" name="Criteria[@i].Description" value="@c.Description" class="form-control form-control-sm" placeholder="Mô tả ngắn gọn về tiêu chí đánh giá này..." style="border-radius: 6px;" />
+                                </div>
+                            </div>
+
+                            <!-- Thang điểm Rubric 1-5 -->
+                            <div class="accordion accordion-flush mt-2" id="rubricAccordion_@i">
+                                <div class="accordion-item bg-white border rounded-3" style="border-radius: 8px !important; overflow: hidden;">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed py-2 px-3 small fw-semibold text-dark bg-white" type="button" data-bs-toggle="collapse" data-bs-target="#rubricCollapse_@i">
+                                            <i class="bi bi-sliders me-2 text-primary"></i> Chi tiết Rubric đánh giá 5 mức độ (Tùy chọn)
+                                        </button>
+                                    </h2>
+                                    <div id="rubricCollapse_@i" class="accordion-collapse collapse p-3 border-top">
+                                        <div class="row g-2">
+                                            <div class="col-12">
+                                                <label class="form-label small text-muted mb-0"><strong class="text-danger">Mức 1 (Kém/Cơ bản):</strong></label>
+                                                <input type="text" name="Criteria[@i].Rubric1" value="@c.Rubric1" class="form-control form-control-sm" placeholder="Hành vi mức 1..." style="border-radius: 6px;" />
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small text-muted mb-0"><strong class="text-warning">Mức 2 (Trung bình/Khá):</strong></label>
+                                                <input type="text" name="Criteria[@i].Rubric2" value="@c.Rubric2" class="form-control form-control-sm" placeholder="Hành vi mức 2..." style="border-radius: 6px;" />
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small text-muted mb-0"><strong class="text-info">Mức 3 (Thành thạo):</strong></label>
+                                                <input type="text" name="Criteria[@i].Rubric3" value="@c.Rubric3" class="form-control form-control-sm" placeholder="Hành vi mức 3..." style="border-radius: 6px;" />
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small text-muted mb-0"><strong class="text-primary">Mức 4 (Nâng cao):</strong></label>
+                                                <input type="text" name="Criteria[@i].Rubric4" value="@c.Rubric4" class="form-control form-control-sm" placeholder="Hành vi mức 4..." style="border-radius: 6px;" />
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small text-muted mb-0"><strong class="text-success">Mức 5 (Chuyên gia/Dẫn dắt):</strong></label>
+                                                <input type="text" name="Criteria[@i].Rubric5" value="@c.Rubric5" class="form-control form-control-sm" placeholder="Hành vi mức 5..." style="border-radius: 6px;" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end align-items-center gap-2 mb-5">
+            <a asp-action="Index" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 8px;">Hủy bỏ</a>
+            <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2 px-4 py-2 fw-semibold shadow-xs" id="submitBtn" style="border-radius: 8px; background-color: #059669; border-color: #059669;">
+                <i class="bi bi-check-lg"></i>
+                <span>Cập nhật Khung năng lực</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const container = document.getElementById('criteriaContainer');
+            const totalWeightBadge = document.getElementById('totalWeightBadge');
+            const addBtn = document.getElementById('addCriterionBtn');
+
+            function calculateTotalWeight() {
+                let total = 0;
+                const weights = container.querySelectorAll('.criterion-item:not(.d-none) .criterion-weight');
+                weights.forEach(w => {
+                    const val = parseInt(w.value, 10);
+                    if (!isNaN(val)) total += val;
+                });
+
+                totalWeightBadge.textContent = `Tổng: ${total}%`;
+                if (total === 100) {
+                    totalWeightBadge.style.backgroundColor = '#ECFDF5';
+                    totalWeightBadge.style.color = '#059669';
+                    totalWeightBadge.style.borderColor = '#A7F3D0';
+                } else {
+                    totalWeightBadge.style.backgroundColor = '#FEF2F2';
+                    totalWeightBadge.style.color = '#DC2626';
+                    totalWeightBadge.style.borderColor = '#FECACA';
+                }
+                return total;
+            }
+
+            container.addEventListener('input', function (e) {
+                if (e.target.classList.contains('criterion-weight')) {
+                    calculateTotalWeight();
+                }
+            });
+
+            container.addEventListener('click', function (e) {
+                const removeBtn = e.target.closest('.remove-criterion-btn');
+                if (!removeBtn) return;
+
+                const item = removeBtn.closest('.criterion-item');
+                const deletionFlag = item.querySelector('.deletion-flag');
+                if (deletionFlag) deletionFlag.value = 'true';
+                item.classList.add('d-none');
+                calculateTotalWeight();
+            });
+
+            addBtn.addEventListener('click', function () {
+                const count = container.querySelectorAll('.criterion-item').length;
+                const html = `
+                    <div class="criterion-item border rounded-3 p-3 mb-3 bg-light position-relative" data-index="${count}" style="border-radius: 10px !important;">
+                        <input type="hidden" name="Criteria[${count}].IsMarkedForDeletion" value="false" class="deletion-flag" />
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-secondary font-monospace" style="border-radius: 6px;">Tiêu chí mới</span>
+                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 remove-criterion-btn" style="border-radius: 6px;">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-12 col-md-8">
+                                <label class="form-label small fw-semibold text-dark mb-1">Tên tiêu chí <span class="text-danger">*</span></label>
+                                <input type="text" name="Criteria[${count}].Name" class="form-control form-control-sm" placeholder="Nhập tên tiêu chí..." style="border-radius: 6px;" required />
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-semibold text-dark mb-1">Trọng số (%) <span class="text-danger">*</span></label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" name="Criteria[${count}].Weight" value="0" class="form-control criterion-weight" min="1" max="100" style="border-radius: 6px 0 0 6px;" required />
+                                    <span class="input-group-text bg-white" style="border-radius: 0 6px 6px 0;">%</span>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold text-dark mb-1">Mô tả tiêu chí</label>
+                                <input type="text" name="Criteria[${count}].Description" class="form-control form-control-sm" placeholder="Mô tả tiêu chí..." style="border-radius: 6px;" />
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+                calculateTotalWeight();
+            });
+
+            const posCheckboxes = document.querySelectorAll('.position-checkbox');
+            const posCountBadge = document.getElementById('selectedPositionsCount');
+            function updatePositionCount() {
+                const checked = document.querySelectorAll('.position-checkbox:checked').length;
+                posCountBadge.textContent = `${checked} chức danh được chọn`;
+            }
+            posCheckboxes.forEach(cb => cb.addEventListener('change', updatePositionCount));
+            updatePositionCount();
+
+            calculateTotalWeight();
+        });
+    </script>
+}

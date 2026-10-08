@@ -16,10 +16,52 @@ namespace Ats.Web.Controllers;
 /// </summary>
 public class AccountController(
     IAuthService authService,
+    IEmailService emailService,
     ILogger<AccountController> logger) : Controller
 {
     private readonly IAuthService _authService = authService;
+    private readonly IEmailService _emailService = emailService;
     private readonly ILogger<AccountController> _logger = logger;
+
+    private string GetClientIp()
+    {
+        var forwarded = Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(forwarded))
+        {
+            var ip = forwarded.Split(',')[0].Trim();
+            if (!string.IsNullOrWhiteSpace(ip)) return ip;
+        }
+        return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+    }
+
+    private string GetClientDevice()
+    {
+        var userAgent = Request.Headers.UserAgent.ToString();
+        return string.IsNullOrWhiteSpace(userAgent) ? "Trình duyệt Web (Không xác định)" : userAgent;
+    }
+
+    private void DispatchLoginSuccessAlert(string email, string fullName)
+    {
+        var ip = GetClientIp();
+        var userAgent = GetClientDevice();
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _emailService.SendLoginSuccessAlertAsync(
+                    email,
+                    fullName,
+                    ip,
+                    "Việt Nam",
+                    userAgent,
+                    DateTimeOffset.UtcNow);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Không thể gửi email cảnh báo đăng nhập cho {Email}: {Msg}", email, ex.Message);
+            }
+        });
+    }
 
     #region S1-01: Đăng nhập
 
@@ -113,6 +155,7 @@ public class AccountController(
         await HttpContext.SignInAsync("AtsCookieScheme", new ClaimsPrincipal(claimsIdentity), authProperties);
 
         _logger.LogInformation("Người dùng {Email} đăng nhập thành công từ IP {Ip}.", model.Email, ip);
+        DispatchLoginSuccessAlert(userInfo.Email, userInfo.FullName);
 
         if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
         {
@@ -373,6 +416,7 @@ public class AccountController(
         await HttpContext.SignInAsync("AtsCookieScheme", new ClaimsPrincipal(claimsIdentity), authProperties);
 
         _logger.LogInformation("Nhân sự {Email} đăng nhập qua StaffPortal từ IP {Ip}.", model.LoginInput.Email, ip);
+        DispatchLoginSuccessAlert(userInfo.Email, userInfo.FullName);
 
         if (!string.IsNullOrEmpty(model.LoginInput.ReturnUrl) && Url.IsLocalUrl(model.LoginInput.ReturnUrl))
         {
@@ -515,6 +559,7 @@ public class AccountController(
         await HttpContext.SignInAsync("AtsCookieScheme", new ClaimsPrincipal(claimsIdentity), authProperties);
 
         _logger.LogInformation("Ứng viên {Email} đăng nhập từ IP {Ip}.", model.LoginInput.Email, ip);
+        DispatchLoginSuccessAlert(userInfo.Email, userInfo.FullName);
 
         if (!string.IsNullOrEmpty(model.LoginInput.ReturnUrl) && Url.IsLocalUrl(model.LoginInput.ReturnUrl))
         {
@@ -903,6 +948,7 @@ public class AccountController(
         await HttpContext.SignOutAsync("ExternalCookieScheme");
 
         _logger.LogInformation("Người dùng {Email} đăng nhập thành công qua Google OAuth.", email);
+        DispatchLoginSuccessAlert(userInfo.Email, userInfo.FullName);
 
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
         {

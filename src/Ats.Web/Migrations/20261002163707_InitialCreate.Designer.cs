@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Ats.Web.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260925064502_AddAtsSchema")]
-    partial class AddAtsSchema
+    [Migration("20261002163707_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -236,6 +236,63 @@ namespace Ats.Web.Migrations
                         .HasDatabaseName("ix_audit_logs_user_id");
 
                     b.ToTable("audit_logs", (string)null);
+                });
+
+            modelBuilder.Entity("Ats.Web.Models.Entities.AuthAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("email");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("event_type");
+
+                    b.Property<string>("IpAddress")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("ip_address");
+
+                    b.Property<bool>("IsSuccess")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_success");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("SessionId")
+                        .HasColumnType("text")
+                        .HasColumnName("session_id");
+
+                    b.Property<DateTimeOffset>("Timestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp");
+
+                    b.Property<string>("UserAgent")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("user_agent");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_auth_audit_logs");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_auth_audit_logs_user_id");
+
+                    b.ToTable("auth_audit_logs", (string)null);
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.Candidate", b =>
@@ -1625,13 +1682,29 @@ namespace Ats.Web.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("ActivationToken")
+                        .HasColumnType("text")
+                        .HasColumnName("activation_token");
+
                     b.Property<string>("AvatarUrl")
                         .HasColumnType("text")
                         .HasColumnName("avatar_url");
 
+                    b.Property<DateTimeOffset?>("ChangePasswordLockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("change_password_locked_until");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Department")
+                        .HasColumnType("text")
+                        .HasColumnName("department");
 
                     b.Property<Guid?>("DepartmentId")
                         .HasColumnType("uuid")
@@ -1641,6 +1714,10 @@ namespace Ats.Web.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("email");
+
+                    b.Property<int>("FailedChangePasswordAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("failed_change_password_attempts");
 
                     b.Property<int>("FailedLoginAttempts")
                         .HasColumnType("integer")
@@ -1655,9 +1732,25 @@ namespace Ats.Web.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("job_position_id");
 
+                    b.Property<DateTimeOffset?>("LastActivityAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_activity_at");
+
                     b.Property<DateTimeOffset?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_login_at");
+
+                    b.Property<string>("LockReason")
+                        .HasColumnType("text")
+                        .HasColumnName("lock_reason");
+
+                    b.Property<DateTimeOffset?>("LockedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_at");
+
+                    b.Property<Guid?>("LockedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("locked_by");
 
                     b.Property<DateTimeOffset?>("LockedUntil")
                         .HasColumnType("timestamp with time zone")
@@ -1668,9 +1761,26 @@ namespace Ats.Web.Migrations
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
 
+                    b.Property<string>("PasswordResetToken")
+                        .HasColumnType("text")
+                        .HasColumnName("password_reset_token");
+
+                    b.Property<DateTimeOffset?>("PasswordResetTokenExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("password_reset_token_expires_at");
+
                     b.Property<string>("PhoneNumber")
                         .HasColumnType("text")
                         .HasColumnName("phone_number");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("role");
+
+                    b.Property<Guid?>("RoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("role_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -1681,12 +1791,19 @@ namespace Ats.Web.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
                     b.Property<int>("UserType")
                         .HasColumnType("integer")
                         .HasColumnName("user_type");
 
                     b.HasKey("Id")
                         .HasName("pk_users");
+
+                    b.HasIndex("Department")
+                        .HasDatabaseName("ix_users_department");
 
                     b.HasIndex("DepartmentId")
                         .HasDatabaseName("ix_users_department_id");
@@ -1695,8 +1812,14 @@ namespace Ats.Web.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_users_email");
 
+                    b.HasIndex("FullName")
+                        .HasDatabaseName("ix_users_full_name");
+
                     b.HasIndex("JobPositionId")
                         .HasDatabaseName("ix_users_job_position_id");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_users_role_id");
 
                     b.ToTable("users", (string)null);
                 });
@@ -1718,6 +1841,53 @@ namespace Ats.Web.Migrations
                         .HasDatabaseName("ix_user_roles_role_id");
 
                     b.ToTable("user_roles", (string)null);
+                });
+
+            modelBuilder.Entity("Ats.Web.Models.Entities.UserSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("IpAddress")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("ip_address");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_revoked");
+
+                    b.Property<DateTimeOffset>("LastActiveAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_active_at");
+
+                    b.Property<string>("SessionId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("session_id");
+
+                    b.Property<string>("UserAgent")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("user_agent");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_sessions");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_user_sessions_user_id");
+
+                    b.ToTable("user_sessions", (string)null);
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.Application", b =>
@@ -1805,6 +1975,15 @@ namespace Ats.Web.Migrations
                         .HasConstraintName("fk_audit_logs_users_user_id");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Ats.Web.Models.Entities.AuthAuditLog", b =>
+                {
+                    b.HasOne("Ats.Web.Models.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_auth_audit_logs_users_user_id");
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.Candidate", b =>
@@ -2092,19 +2271,29 @@ namespace Ats.Web.Migrations
 
             modelBuilder.Entity("Ats.Web.Models.Entities.User", b =>
                 {
-                    b.HasOne("Ats.Web.Models.Entities.Department", "Department")
+                    b.HasOne("Ats.Web.Models.Entities.Department", "DepartmentEntity")
                         .WithMany()
                         .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_users_departments_department_id");
 
                     b.HasOne("Ats.Web.Models.Entities.JobPosition", "JobPosition")
                         .WithMany()
                         .HasForeignKey("JobPositionId")
+                        .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_users_job_positions_job_position_id");
 
-                    b.Navigation("Department");
+                    b.HasOne("Ats.Web.Models.Entities.Role", "RoleEntity")
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_users_roles_role_id");
+
+                    b.Navigation("DepartmentEntity");
 
                     b.Navigation("JobPosition");
+
+                    b.Navigation("RoleEntity");
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.UserRole", b =>
@@ -2126,6 +2315,16 @@ namespace Ats.Web.Migrations
                     b.Navigation("Role");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Ats.Web.Models.Entities.UserSession", b =>
+                {
+                    b.HasOne("Ats.Web.Models.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_sessions_users_user_id");
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.Application", b =>

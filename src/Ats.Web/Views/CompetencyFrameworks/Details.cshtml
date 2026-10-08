@@ -1,0 +1,239 @@
+@model Ats.Web.Models.ViewModels.CompetencyFrameworks.CompetencyFrameworkDetailViewModel
+@{
+    ViewData["Title"] = $"Chi tiết Khung năng lực: {Model.Name}";
+    var canManage = (bool)(ViewBag.CanManage ?? false);
+}
+
+<div class="container-fluid px-3 px-md-4 py-4" style="max-width: 1200px;">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none text-muted">Bàn làm việc</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-muted">Khung năng lực</a></li>
+            <li class="breadcrumb-item active fw-medium text-dark" aria-current="page">@Model.Code</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                <span class="badge bg-light text-dark border font-monospace px-2 py-1" style="border-radius: 6px; font-size: 0.88rem;">@Model.Code</span>
+                <h1 class="h3 fw-bold text-dark mb-0">@Model.Name</h1>
+                @if (Model.IsActive)
+                {
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="border-radius: 6px;">
+                        <i class="bi bi-check-circle-fill me-1"></i>Đang sử dụng
+                    </span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1" style="border-radius: 6px;">
+                        Ngừng sử dụng
+                    </span>
+                }
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.Description))
+            {
+                <p class="text-muted small mb-0">@Model.Description</p>
+            }
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            @if (canManage)
+            {
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary d-inline-flex align-items-center gap-2 px-3 py-2" style="border-radius: 8px;">
+                    <i class="bi bi-pencil-square"></i>
+                    <span class="fw-semibold">Chỉnh sửa</span>
+                </a>
+                <form asp-action="Clone" asp-route-id="@Model.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn nhân bản khung năng lực [@Model.Code] @Model.Name không?');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2" style="border-radius: 8px;">
+                        <i class="bi bi-copy"></i>
+                        <span class="fw-semibold">Nhân bản</span>
+                    </button>
+                </form>
+                <button type="button" class="btn btn-outline-danger d-inline-flex align-items-center gap-2 px-3 py-2" style="border-radius: 8px;" data-bs-toggle="modal" data-bs-target="#deleteFrameworkModal">
+                    <i class="bi bi-trash"></i>
+                    <span class="fw-semibold">Xóa</span>
+                </button>
+            }
+            <a asp-action="Index" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2" style="border-radius: 8px;">
+                <i class="bi bi-arrow-left"></i>
+                <span class="fw-semibold">Danh sách</span>
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm d-flex align-items-center gap-2 mb-4" style="border-radius: 12px; background-color: #ECFDF5; color: #065F46;">
+            <i class="bi bi-check-circle-fill fs-5 text-success"></i>
+            <div>@TempData["SuccessMessage"]</div>
+        </div>
+    }
+
+    <div class="row g-4 mb-4">
+        <!-- Cột trái: Tiêu chí đánh giá & Rubric -->
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+                <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-list-check text-primary"></i>
+                        <span>Tiêu chí Đánh giá (@Model.Criteria.Count tiêu chí)</span>
+                    </h5>
+                    <span class="badge font-monospace px-3 py-1" style="border-radius: 6px; background-color: #ECFDF5; color: #059669; border: 1px solid #A7F3D0;">
+                        Tổng trọng số: @Model.Criteria.Sum(c => c.Weight)%
+                    </span>
+                </div>
+                <div class="card-body p-4">
+                    @if (Model.Criteria.Any())
+                    {
+                        <div class="d-flex flex-column gap-3">
+                            @for (int i = 0; i < Model.Criteria.Count; i++)
+                            {
+                                var c = Model.Criteria[i];
+                                <div class="border rounded-3 p-3 bg-light" style="border-radius: 10px !important;">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <span class="badge bg-secondary font-monospace me-2" style="border-radius: 6px;">#@(i + 1)</span>
+                                            <strong class="text-dark fs-6">@c.Name</strong>
+                                        </div>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace px-2 py-1" style="border-radius: 6px;">
+                                            Trọng số: @c.Weight%
+                                        </span>
+                                    </div>
+
+                                    @if (!string.IsNullOrWhiteSpace(c.Description))
+                                    {
+                                        <p class="text-muted small mb-3">@c.Description</p>
+                                    }
+
+                                    <!-- Rubric Matrix -->
+                                    <div class="table-responsive border rounded-3 bg-white" style="border-radius: 8px !important;">
+                                        <table class="table table-sm table-bordered align-middle mb-0" style="font-size: 0.82rem;">
+                                            <thead class="table-light">
+                                                <tr class="text-center">
+                                                    <th style="width: 20%; color: #DC2626;">Mức 1 (Kém/Cơ bản)</th>
+                                                    <th style="width: 20%; color: #D97706;">Mức 2 (Khá)</th>
+                                                    <th style="width: 20%; color: #0284C7;">Mức 3 (Thành thạo)</th>
+                                                    <th style="width: 20%; color: #2563EB;">Mức 4 (Nâng cao)</th>
+                                                    <th style="width: 20%; color: #059669;">Mức 5 (Chuyên gia)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td class="p-2 text-muted">@(string.IsNullOrWhiteSpace(c.Rubric1) ? "—" : c.Rubric1)</td>
+                                                    <td class="p-2 text-muted">@(string.IsNullOrWhiteSpace(c.Rubric2) ? "—" : c.Rubric2)</td>
+                                                    <td class="p-2 text-muted">@(string.IsNullOrWhiteSpace(c.Rubric3) ? "—" : c.Rubric3)</td>
+                                                    <td class="p-2 text-muted">@(string.IsNullOrWhiteSpace(c.Rubric4) ? "—" : c.Rubric4)</td>
+                                                    <td class="p-2 text-muted">@(string.IsNullOrWhiteSpace(c.Rubric5) ? "—" : c.Rubric5)</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted small">
+                            Chưa có tiêu chí nào được định nghĩa trong khung năng lực này.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột phải: Vị trí chức danh áp dụng & Metadata -->
+        <div class="col-12 col-lg-4">
+            <!-- Chức danh áp dụng -->
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+                <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-briefcase text-success"></i>
+                        <span>Chức danh áp dụng (@Model.AssignedPositions.Count)</span>
+                    </h6>
+                </div>
+                <div class="card-body p-3" style="max-height: 420px; overflow-y: auto;">
+                    @if (Model.AssignedPositions.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var pos in Model.AssignedPositions)
+                            {
+                                <div class="list-group-item px-2 py-2 border-0 border-bottom">
+                                    <div class="fw-semibold text-dark small text-truncate">@pos.Title</div>
+                                    <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.78rem;">
+                                        <span class="badge bg-light text-dark border font-monospace" style="border-radius: 4px;">@pos.Code</span>
+                                        <span>•</span>
+                                        <span class="text-truncate">@pos.DepartmentName</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted small">
+                            <i class="bi bi-info-circle d-block mb-1 fs-5"></i>
+                            Khung năng lực này chưa được gán cho chức danh công việc nào.
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Metadata info -->
+            <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h6 class="fw-bold text-dark mb-0">Thông tin bổ sung</h6>
+                </div>
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between py-2 border-bottom small">
+                        <span class="text-muted">Ngày tạo:</span>
+                        <span class="font-monospace text-dark">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 small">
+                        <span class="text-muted">Cập nhật lần cuối:</span>
+                        <span class="font-monospace text-dark">@Model.UpdatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal xác nhận xóa -->
+@if (canManage)
+{
+    <div class="modal fade" id="deleteFrameworkModal" tabindex="-1" aria-labelledby="deleteFrameworkModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
+                <div class="modal-header border-bottom py-3 px-4 bg-danger-subtle text-danger">
+                    <h6 class="modal-title fw-bold d-flex align-items-center gap-2" id="deleteFrameworkModalLabel">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span>Xác nhận xóa Khung năng lực</span>
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" asp-action="Delete" asp-route-id="@Model.Id">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-body p-4">
+                        <p class="mb-2 text-dark">
+                            Bạn có chắc chắn muốn xóa khung năng lực: <strong class="text-danger">@Model.Code - @Model.Name</strong>?
+                        </p>
+                        <p class="text-muted small mb-0">
+                            Các chức danh công việc đang liên kết với khung năng lực này sẽ được tự động gỡ bỏ liên kết. Thao tác này có thể ảnh hưởng đến các phiếu đánh giá chưa hoàn thành.
+                        </p>
+                    </div>
+                    <div class="modal-footer border-top py-2 px-4 bg-light">
+                        <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy bỏ</button>
+                        <button type="submit" class="btn btn-danger px-3 d-inline-flex align-items-center gap-1 fw-semibold" style="border-radius: 8px;">
+                            <i class="bi bi-trash"></i>
+                            <span>Xác nhận xóa</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}

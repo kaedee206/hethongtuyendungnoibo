@@ -9,6 +9,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Role> Roles { get; set; }
     public DbSet<Permission> Permissions { get; set; }
     public DbSet<UserRole> UserRoles { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
     public DbSet<RolePermission> RolePermissions { get; set; }
 
     public DbSet<AuthAuditLog> AuthAuditLogs { get; set; }
@@ -35,9 +36,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<JobOffer> JobOffers { get; set; }
     public DbSet<OfferApproval> OfferApprovals { get; set; }
 
-    public DbSet<AuditLog> AuditLogs { get; set; }
     public DbSet<EmailLog> EmailLogs { get; set; }
     public DbSet<Notification> Notifications { get; set; }
+
+    public DbSet<CompetencyFramework> CompetencyFrameworks { get; set; }
+    public DbSet<CompetencyCriterion> CompetencyCriteria { get; set; }
+    public DbSet<InterviewQuestionBank> InterviewQuestionBanks { get; set; }
+    public DbSet<RecruitmentCatalog> RecruitmentCatalogs { get; set; }
+    public DbSet<CompanyProfile> CompanyProfiles { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -186,6 +192,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.ToTable("audit_logs");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.OldValues).HasColumnType("jsonb");
+            entity.Property(e => e.NewValues).HasColumnType("jsonb");
+        });
         // Other Indexes
         modelBuilder.Entity<Candidate>().HasIndex(c => c.Email);
         modelBuilder.Entity<JobRequisition>().HasIndex(r => r.Code).IsUnique();
@@ -194,5 +207,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<JobPosition>().HasIndex(p => p.Code).IsUnique();
         modelBuilder.Entity<Role>().HasIndex(r => r.Code).IsUnique();
         modelBuilder.Entity<Permission>().HasIndex(p => p.Code).IsUnique();
+
+        // CompetencyFramework: unique code + relationship to JobPosition (SCRUM-222)
+        modelBuilder.Entity<CompetencyFramework>().HasIndex(cf => cf.Code).IsUnique();
+
+        modelBuilder.Entity<JobPosition>()
+            .HasOne(jp => jp.CompetencyFramework)
+            .WithMany(cf => cf.AssignedPositions)
+            .HasForeignKey(jp => jp.CompetencyFrameworkId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

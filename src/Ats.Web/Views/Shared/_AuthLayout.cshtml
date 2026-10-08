@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi" class="">
+<html lang="vi" class="h-full overflow-hidden">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -57,7 +57,7 @@
 
     @* Google Fonts: Inter + JetBrains Mono *@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
     @* Favicon từ logoweb *@
@@ -65,18 +65,7 @@
 
     @await RenderSectionAsync("HeadStyles", required: false)
 </head>
-<body class="bg-[#F8FAFC] dark:bg-[#0B0F17] font-sans antialiased transition-colors duration-200">
-
-    @* Nút Quay lại Trang chủ Tuyển dụng - Pinned Top-Left *@
-    <a href="/gioi-thieu"
-       title="Quay lại Trang chủ Tuyển dụng NoveraTech"
-       aria-label="Quay lại Trang chủ Tuyển dụng NoveraTech"
-       class="fixed top-4 left-4 z-50 inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-[#0F172A] dark:text-[#F8FAFC] bg-white/95 dark:bg-[#111827]/95 backdrop-blur-md border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm rounded-lg hover:border-[#059669] hover:text-[#059669] dark:hover:text-[#10B981] hover:shadow transition-all group no-underline">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 transition-transform group-hover:-translate-x-1 text-[#059669]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-        </svg>
-        <span>Về trang chủ</span>
-    </a>
+<body class="h-full overflow-hidden bg-[#F8FAFC] dark:bg-[#0B0F17] font-sans antialiased transition-colors duration-200">
 
     @* Theme Switcher Button - Pinned Top-Right *@
     <button
@@ -95,7 +84,7 @@
         </svg>
     </button>
 
-    <main role="main">
+    <main role="main" class="h-full overflow-hidden">
         @RenderBody()
     </main>
 
