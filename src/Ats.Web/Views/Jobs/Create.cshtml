@@ -249,18 +249,23 @@
             </div>
         </div>
 
-        <!-- Phần 2: Mô tả tổng quan (Overview) -->
+        <!-- Phần 2: Mô tả tổng quan & Chức năng vị trí -->
         <div class="form-card">
             <div class="form-section-title">
                 <i class="bi bi-file-text-fill" style="color: var(--color-accent);"></i>
-                2. Mô Tả Tổng Quan Vị Trí (Overview)
+                2. Tổng Quan & Mô Tả Chức Năng Vị Trí
             </div>
-            <div class="mb-2">
-                <label asp-for="Overview" class="form-label">Giới thiệu vai trò và bối cảnh dự án <span class="text-danger">*</span></label>
-                <textarea asp-for="Overview" class="form-control" id="jobOverviewInput" rows="4" required
+            <div class="mb-3">
+                <label asp-for="Overview" class="form-label">Tổng quan vị trí (Overview) <span class="text-danger">*</span></label>
+                <textarea asp-for="Overview" class="form-control" id="jobOverviewInput" rows="3" required
                           placeholder="Mô tả tầm quan trọng của vị trí, sản phẩm cốt lõi mà nhân sự sẽ tham gia phát triển, và cơ hội tạo ra tác động lớn tại NoveraTech..."></textarea>
             </div>
-            <div class="form-text" style="font-size: 0.75rem;">Đoạn mô tả này sẽ xuất hiện ở đầu trang chi tiết việc làm và là ấn tượng đầu tiên gửi tới các ứng viên tiềm năng.</div>
+            <div class="mb-2">
+                <label asp-for="PositionDescription" class="form-label">Mô tả chức năng & Vai trò công việc</label>
+                <textarea asp-for="PositionDescription" class="form-control" id="jobPositionDescInput" rows="3"
+                          placeholder="Mô tả chức năng nhiệm vụ, vai trò trong tổ chức và mục tiêu hoạt động của chức danh..."></textarea>
+            </div>
+            <div class="form-text" style="font-size: 0.75rem;">Thông tin này sẽ xuất hiện trên trang chi tiết việc làm và đồng bộ cùng danh mục chức danh nhân sự.</div>
         </div>
 
         <!-- Phần 3: Trách nhiệm công việc (Responsibilities) -->
