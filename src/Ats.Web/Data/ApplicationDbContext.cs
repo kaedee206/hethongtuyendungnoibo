@@ -44,6 +44,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<InterviewQuestionBank> InterviewQuestionBanks { get; set; }
     public DbSet<RecruitmentCatalog> RecruitmentCatalogs { get; set; }
     public DbSet<CompanyProfile> CompanyProfiles { get; set; }
+    
+    public DbSet<ApprovalRule> ApprovalRules { get; set; }
+    public DbSet<ApprovalRuleStep> ApprovalRuleSteps { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -58,6 +61,31 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasOne(d => d.Parent)
             .WithMany(d => d.Children)
             .HasForeignKey(d => d.ParentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Approval rules relationships
+        modelBuilder.Entity<ApprovalRule>()
+            .HasOne(ar => ar.Department)
+            .WithMany()
+            .HasForeignKey(ar => ar.DepartmentId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<ApprovalRuleStep>()
+            .HasOne(s => s.ApprovalRule)
+            .WithMany(r => r.Steps)
+            .HasForeignKey(s => s.ApprovalRuleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ApprovalRuleStep>()
+            .HasOne(s => s.ApproverRole)
+            .WithMany()
+            .HasForeignKey(s => s.ApproverRoleId)
+            .OnDelete(DeleteBehavior.Restrict);
+            
+        modelBuilder.Entity<ApprovalRuleStep>()
+            .HasOne(s => s.ApproverUser)
+            .WithMany()
+            .HasForeignKey(s => s.ApproverUserId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Department>()

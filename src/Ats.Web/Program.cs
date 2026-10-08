@@ -46,6 +46,7 @@ builder.Services.AddScoped<ICompetencyFrameworkService, CompetencyFrameworkServi
 builder.Services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
 builder.Services.AddScoped<IRequisitionService, RequisitionService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<IApprovalRuleService, ApprovalRuleService>();
 
 
 // Cấu hình thời gian Session (Idle timeout)
