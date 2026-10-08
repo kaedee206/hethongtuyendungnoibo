@@ -133,7 +133,8 @@ public partial class ProfileService(
             return (false, "Không tìm thấy người dùng.", null);
         }
 
-        var uploadsFolder = Path.Combine(webRootPath, "uploads", "avatars");
+        var root = string.IsNullOrWhiteSpace(webRootPath) ? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot") : webRootPath;
+        var uploadsFolder = Path.Combine(root, "uploads", "avatars");
         if (!Directory.Exists(uploadsFolder))
         {
             Directory.CreateDirectory(uploadsFolder);
