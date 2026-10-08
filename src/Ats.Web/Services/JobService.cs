@@ -134,7 +134,15 @@ public class JobService : IJobService
         }
 
         // 2. Fallback: Danh sách 12 vị trí việc làm chuyên sâu của NoveraTech
-        return GetStandardNoveraTechJobs();
+        var standardJobs = GetStandardNoveraTechJobs();
+        foreach (var sj in standardJobs)
+        {
+            if (string.IsNullOrWhiteSpace(sj.PositionDescription))
+            {
+                sj.PositionDescription = $"Vị trí {sj.Title} thuộc {sj.Department}, đảm nhiệm vai trò chủ chốt trong việc hoạch định giải pháp kỹ thuật, triển khai công nghệ lõi và tối ưu hóa quy trình nghiệp vụ theo tiêu chuẩn quốc tế.";
+            }
+        }
+        return standardJobs;
     }
 
     private JobItemViewModel MapEntityToViewModel(Models.Entities.JobPosting entity)
@@ -179,6 +187,18 @@ public class JobService : IJobService
 
         var reqList = rawReqs.Split(new[] { '\n', '\r', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 
+        var positionDesc = entity.Requisition?.JobPosition?.Description;
+        var reqJobDesc = entity.Requisition?.JobDescription;
+        var postJobDesc = entity.JobDescription;
+
+        var resolvedPosDesc = !string.IsNullOrWhiteSpace(positionDesc) 
+            ? positionDesc 
+            : (!string.IsNullOrWhiteSpace(reqJobDesc) ? reqJobDesc : (postJobDesc ?? ""));
+
+        var resolvedOverview = !string.IsNullOrWhiteSpace(postJobDesc) 
+            ? postJobDesc 
+            : (!string.IsNullOrWhiteSpace(resolvedPosDesc) ? resolvedPosDesc : "NoveraTech tuyển dụng nhân tài cùng phát triển các giải pháp công nghệ cao.");
+
         return new JobItemViewModel
         {
             Id = entity.Id.ToString(),
@@ -191,8 +211,9 @@ public class JobService : IJobService
             ExperienceLevel = level,
             SalaryDisplay = entity.SalaryDisplay ?? "Thương lượng theo năng lực",
             IsHot = isHot,
-            ShortSummary = entity.JobDescription?.Length > 160 ? entity.JobDescription[..160] + "..." : (entity.JobDescription ?? ""),
-            Overview = entity.JobDescription ?? "",
+            ShortSummary = resolvedOverview.Length > 160 ? resolvedOverview[..160] + "..." : resolvedOverview,
+            Overview = resolvedOverview,
+            PositionDescription = resolvedPosDesc,
             Responsibilities = respList.Any() ? respList : new List<string> { "Tham gia phát triển các tính năng phần mềm theo yêu cầu kiến trúc.", "Phối hợp cùng đội ngũ kỹ sư và kiểm thử chất lượng sản phẩm." },
             Requirements = reqList.Any() ? reqList : new List<string> { "Có kinh nghiệm thực chiến trong lĩnh vực tương đương.", "Tư duy giải quyết vấn đề tốt, cầu tiến." },
             Benefits = entity.Benefits?.Split(new[] { '\n', '\r', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList() ?? GetDefaultNoveraTechBenefits(),
