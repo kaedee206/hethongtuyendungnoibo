@@ -81,6 +81,97 @@
         </div>
     }
 
+    <!-- Desk Location & Approval Tracking Board (Scrum #23) -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: #FFFFFF; border-left: 5px solid @(Model.Status == RequisitionStatus.PENDING_APPROVAL ? "#2563EB" : Model.Status == RequisitionStatus.APPROVED ? "#16A34A" : Model.Status == RequisitionStatus.CHANGES_REQUESTED ? "#D97706" : "#DC2626") !important;">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm flex-shrink-0" 
+                         style="width: 52px; height: 52px; background-color: @(Model.Status == RequisitionStatus.PENDING_APPROVAL ? "#2563EB" : Model.Status == RequisitionStatus.APPROVED ? "#16A34A" : Model.Status == RequisitionStatus.CHANGES_REQUESTED ? "#D97706" : "#DC2626");">
+                        @if (Model.Status == RequisitionStatus.PENDING_APPROVAL)
+                        {
+                            <i class="bi bi-person-workspace fs-3"></i>
+                        }
+                        else if (Model.Status == RequisitionStatus.APPROVED)
+                        {
+                            <i class="bi bi-check2-all fs-3"></i>
+                        }
+                        else if (Model.Status == RequisitionStatus.CHANGES_REQUESTED)
+                        {
+                            <i class="bi bi-reply-fill fs-3"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-x-octagon-fill fs-3"></i>
+                        }
+                    </div>
+                    <div>
+                        <div class="text-uppercase text-secondary fw-semibold small" style="letter-spacing: 0.5px; font-size: 0.75rem;">
+                            Theo dõi Vị trí Bàn làm việc &amp; Tiến trình Phê duyệt (Scrum #23)
+                        </div>
+                        <h5 class="fw-bold text-dark mb-1">
+                            @if (Model.Status == RequisitionStatus.PENDING_APPROVAL)
+                            {
+                                <span>Hồ sơ hiện đang nằm ở bàn: <span class="text-primary">@Model.CurrentApproverName</span></span>
+                            }
+                            else if (Model.Status == RequisitionStatus.APPROVED)
+                            {
+                                <span class="text-success">Hồ sơ đã được phê duyệt hoàn tất ở tất cả các cấp</span>
+                            }
+                            else if (Model.Status == RequisitionStatus.CHANGES_REQUESTED)
+                            {
+                                <span class="text-warning-emphasis">Hồ sơ đang ở bàn Bạn (Trưởng bộ phận) để bổ sung thông tin</span>
+                            }
+                            else if (Model.Status == RequisitionStatus.REJECTED)
+                            {
+                                <span class="text-danger">Yêu cầu tuyển dụng đã bị từ chối phê duyệt</span>
+                            }
+                            else
+                            {
+                                <span>@Model.CurrentStageSummary</span>
+                            }
+                        </h5>
+                        <div class="text-muted small d-flex flex-wrap align-items-center gap-3 mt-1">
+                            @if (Model.Status == RequisitionStatus.PENDING_APPROVAL)
+                            {
+                                <span><i class="bi bi-person-badge text-secondary me-1"></i>Chức vụ: <strong class="text-dark">@Model.CurrentApproverRole</strong></span>
+                                @if (!string.IsNullOrEmpty(Model.CurrentApproverEmail))
+                                {
+                                    <span><i class="bi bi-envelope text-secondary me-1"></i>Email: <a href="mailto:@Model.CurrentApproverEmail" class="text-decoration-none text-secondary">@Model.CurrentApproverEmail</a></span>
+                                }
+                                <span><i class="bi bi-calendar-event text-secondary me-1"></i>Tiếp nhận: <strong class="text-dark">@Model.CurrentPendingSinceDisplay</strong></span>
+                                <span class="badge bg-warning-subtle text-dark border border-warning-subtle px-2 py-1">
+                                    <i class="bi bi-clock-history me-1"></i>@Model.CurrentWaitingDurationDisplay
+                                </span>
+                            }
+                            else if (Model.Status == RequisitionStatus.APPROVED)
+                            {
+                                <span><i class="bi bi-check-circle-fill text-success me-1"></i>Đã thông qua: Cấp 1 (HR Manager) &amp; Cấp 2 (BOD)</span>
+                                <span><i class="bi bi-clock-history text-secondary me-1"></i>Thời điểm hoàn tất: <strong class="text-dark">@Model.CurrentPendingSinceDisplay</strong></span>
+                            }
+                            else if (Model.Status == RequisitionStatus.CHANGES_REQUESTED)
+                            {
+                                <span><i class="bi bi-exclamation-circle text-warning me-1"></i>Vui lòng xem ý kiến phản hồi bên dưới và chỉnh sửa để nộp lại</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model.Status == RequisitionStatus.PENDING_APPROVAL)
+                {
+                    <div class="d-none d-md-flex flex-column align-items-end text-end">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 fw-semibold" style="border-radius: 8px;">
+                            <i class="bi bi-diagram-3 me-1"></i>Cấp @(Model.CurrentPendingStepOrder ?? 1) / 2
+                        </span>
+                        <small class="text-muted mt-1" style="font-size: 0.75rem;">
+                            Không cần hỏi vòng quanh qua tin nhắn
+                        </small>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
     <div class="row g-4">
         <!-- Left Column: Details & Content -->
         <div class="col-12 col-lg-8">
@@ -282,15 +373,20 @@
             </div>
         </div>
 
-        <!-- Right Column: Approval Stepper & Audit Trail -->
+        <!-- Right Column: Approval Stepper & Immutable Audit Trail -->
         <div class="col-12 col-lg-4">
             <div class="card border-0 shadow-sm sticky-top" style="border-radius: 12px; background: #FFFFFF; top: 90px;">
                 <div class="card-header bg-white border-bottom py-3 px-4">
-                    <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                        <i class="bi bi-diagram-3-fill text-primary"></i>
-                        Tiến trình Phê duyệt Đa cấp
-                    </h6>
-                    <small class="text-muted">Lịch sử và các bước xét duyệt</small>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-diagram-3-fill text-primary"></i>
+                            Chuỗi Cấp duyệt &amp; Lịch sử
+                        </h6>
+                        <span class="badge bg-light text-muted border" title="Lịch sử bất biến không thể sửa hoặc xóa">
+                            <i class="bi bi-shield-lock-fill text-success me-1"></i>Bất biến
+                        </span>
+                    </div>
+                    <small class="text-muted">Theo dõi từng bước, người duyệt, thời điểm và ý kiến</small>
                 </div>
                 <div class="card-body p-4">
                     @if (Model.ApprovalSteps == null || Model.ApprovalSteps.Count == 0)
@@ -302,11 +398,24 @@
                     }
                     else
                     {
+                        var maxRound = Model.ApprovalSteps.Max(s => s.RoundNumber);
+                        
                         <div class="timeline position-relative">
                             @for (int i = 0; i < Model.ApprovalSteps.Count; i++)
                             {
                                 var step = Model.ApprovalSteps[i];
                                 var isLast = i == Model.ApprovalSteps.Count - 1;
+                                var isFirstOfRound = i == 0 || Model.ApprovalSteps[i - 1].RoundNumber != step.RoundNumber;
+
+                                if (isFirstOfRound && maxRound > 1)
+                                {
+                                    <div class="d-flex align-items-center gap-2 my-2 py-1 px-2 rounded-2 bg-light border small text-muted">
+                                        <i class="bi bi-arrow-repeat text-primary"></i>
+                                        <span class="fw-semibold">
+                                            @(step.RoundNumber == maxRound ? $"Vòng xét duyệt {step.RoundNumber} (Hiện tại)" : $"Vòng xét duyệt {step.RoundNumber} (Trước đó)")
+                                        </span>
+                                    </div>
+                                }
 
                                 <div class="timeline-item d-flex gap-3 mb-4 position-relative">
                                     <!-- Status Icon / Pin -->
@@ -346,7 +455,14 @@
                                         <div class="d-flex justify-content-between align-items-start gap-2">
                                             <div>
                                                 <h6 class="fw-bold text-dark mb-0 small">@step.StepTitle</h6>
-                                                <div class="text-secondary small fw-medium mt-1">@step.ApproverName</div>
+                                                <div class="text-secondary small fw-medium mt-1 d-flex align-items-center gap-1">
+                                                    <span>@step.ApproverName</span>
+                                                    <span class="badge bg-light text-muted border py-0 px-1" style="font-size: 0.68rem;">@step.ApproverRole</span>
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(step.ApproverEmail))
+                                                {
+                                                    <small class="text-muted d-block" style="font-size: 0.72rem;">@step.ApproverEmail</small>
+                                                }
                                             </div>
 
                                             @switch (step.Status)
@@ -368,12 +484,28 @@
                                             }
                                         </div>
 
-                                        @if (step.DecidedAt.HasValue)
-                                        {
-                                            <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">
-                                                <i class="bi bi-clock me-1"></i>@step.DecidedAtDisplay
-                                            </small>
-                                        }
+                                        <div class="text-muted d-flex flex-wrap align-items-center gap-2 mt-1" style="font-size: 0.75rem;">
+                                            @if (step.DecidedAt.HasValue)
+                                            {
+                                                <span><i class="bi bi-clock-history me-1"></i>Duyệt lúc: @step.DecidedAtDisplay</span>
+                                                @if (!string.IsNullOrEmpty(step.DurationDisplay) && step.DurationDisplay != "—")
+                                                {
+                                                    <span class="text-secondary">(@step.DurationDisplay)</span>
+                                                }
+                                            }
+                                            else if (step.IsCurrent)
+                                            {
+                                                <span><i class="bi bi-hourglass-split text-primary me-1"></i>Tiếp nhận: @step.StepCreatedAtDisplay</span>
+                                                @if (!string.IsNullOrEmpty(step.DurationDisplay) && step.DurationDisplay != "—")
+                                                {
+                                                    <span class="badge bg-warning-subtle text-dark border border-warning-subtle py-0 px-1" style="font-size: 0.7rem;">@step.DurationDisplay</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span><i class="bi bi-arrow-right-short me-1"></i>Chờ bước trước hoàn thành</span>
+                                            }
+                                        </div>
 
                                         <!-- Reviewer's recorded comment -->
                                         @if (!string.IsNullOrWhiteSpace(step.Comment))
@@ -390,6 +522,11 @@
                             }
                         </div>
                     }
+
+                    <div class="p-2 mt-2 rounded-2 bg-light border text-center text-muted small" style="font-size: 0.72rem;">
+                        <i class="bi bi-shield-lock-fill text-success me-1"></i>
+                        Lịch sử phê duyệt được niêm phong bất biến &amp; không thể sửa/xóa.
+                    </div>
 
                     <hr class="my-3" />
                     <div class="d-flex justify-content-between align-items-center text-muted small">
