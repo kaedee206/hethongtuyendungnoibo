@@ -41,10 +41,12 @@ public class RequisitionsController(
         var userId = GetCurrentUserId();
         var items = await _requisitionService.GetRequisitionsForApprovalAsync(userId, tab, search, cancellationToken);
         var pendingCount = await _requisitionService.GetPendingApprovalCountForUserAsync(userId, cancellationToken);
+        var myCount = await _requisitionService.GetMyRequisitionsCountAsync(userId, cancellationToken);
 
         ViewBag.CurrentTab = string.IsNullOrWhiteSpace(tab) ? "all" : tab.ToLowerInvariant();
         ViewBag.Search = search;
         ViewBag.PendingMyApprovalCount = pendingCount;
+        ViewBag.MyRequisitionsCount = myCount;
 
         return View(items);
     }
