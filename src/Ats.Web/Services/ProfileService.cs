@@ -10,12 +10,21 @@ using Microsoft.Extensions.Logging;
 
 namespace Ats.Web.Services;
 
-public partial class ProfileService(
-    ApplicationDbContext dbContext,
-    ILogger<ProfileService> logger) : IProfileService
+public partial class ProfileService : IProfileService
 {
-    private readonly ApplicationDbContext _dbContext = dbContext;
-    private readonly ILogger<ProfileService> _logger = logger;
+    private readonly ApplicationDbContext _dbContext;
+    private readonly ILogger<ProfileService> _logger;
+    private readonly IFileStorageService? _fileStorageService;
+
+    public ProfileService(
+        ApplicationDbContext dbContext,
+        ILogger<ProfileService> logger,
+        IFileStorageService? fileStorageService = null)
+    {
+        _dbContext = dbContext;
+        _logger = logger;
+        _fileStorageService = fileStorageService;
+    }
 
     [GeneratedRegex(@"^(0|\+84|84)[35789][0-9]{8}$")]
     private static partial Regex VietnamesePhoneRegex();
@@ -133,21 +142,29 @@ public partial class ProfileService(
             return (false, "Không tìm thấy người dùng.", null);
         }
 
-        var uploadsFolder = Path.Combine(webRootPath, "uploads", "avatars");
-        if (!Directory.Exists(uploadsFolder))
+        string relativeUrl;
+        if (_fileStorageService != null)
         {
-            Directory.CreateDirectory(uploadsFolder);
+            relativeUrl = await _fileStorageService.SaveMediaAsync(file, $"avatar_{userId:N}", cancellationToken);
         }
-
-        var uniqueFileName = $"{userId}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}{extension}";
-        var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-        using (var stream = new FileStream(filePath, FileMode.Create))
+        else
         {
-            await file.CopyToAsync(stream, cancellationToken);
-        }
+            var uploadsFolder = Path.Combine(webRootPath, "uploads", "media");
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
 
-        var relativeUrl = $"/uploads/avatars/{uniqueFileName}";
+            var uniqueFileName = $"{userId}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}{extension}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream, cancellationToken);
+            }
+
+            relativeUrl = $"/uploads/media/{uniqueFileName}";
+        }
         user.AvatarUrl = relativeUrl;
         user.UpdatedAt = DateTimeOffset.UtcNow;
         user.UpdatedBy = userId;

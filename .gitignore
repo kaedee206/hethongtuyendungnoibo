@@ -606,8 +606,10 @@ dist/
 build/
 
 # 8. User uploads, media & runtime generated assets (CVs, resumes, avatars)
-**/wwwroot/uploads/*
-!**/wwwroot/uploads/.gitkeep
+**/wwwroot/uploads/**
+!**/wwwroot/uploads/
+!**/wwwroot/uploads/**/
+!**/wwwroot/uploads/**/.gitkeep
 **/wwwroot/resumes/*
 !**/wwwroot/resumes/.gitkeep
 **/wwwroot/files/*

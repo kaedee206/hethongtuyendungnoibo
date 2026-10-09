@@ -17,17 +17,20 @@ public class JobsController : Controller
     private readonly IJobService _jobService;
     private readonly ApplicationDbContext _dbContext;
     private readonly IWebHostEnvironment _env;
+    private readonly IFileStorageService _fileStorageService;
     private readonly ILogger<JobsController> _logger;
 
     public JobsController(
         IJobService jobService,
         ApplicationDbContext dbContext,
         IWebHostEnvironment env,
+        IFileStorageService fileStorageService,
         ILogger<JobsController> logger)
     {
         _jobService = jobService;
         _dbContext = dbContext;
         _env = env;
+        _fileStorageService = fileStorageService;
         _logger = logger;
     }
 
@@ -134,19 +137,7 @@ public class JobsController : Controller
             if (cvFile != null && cvFile.Length > 0)
             {
                 var originalName = Path.GetFileName(cvFile.FileName);
-                var uploadsDir = Path.Combine(_env.WebRootPath, "uploads", "resumes");
-                if (!Directory.Exists(uploadsDir))
-                {
-                    Directory.CreateDirectory(uploadsDir);
-                }
-
-                var uniqueFileName = $"{Guid.NewGuid()}_{originalName}";
-                var filePath = Path.Combine(uploadsDir, uniqueFileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await cvFile.CopyToAsync(stream);
-                }
+                var savedFilePath = await _fileStorageService.SaveCvAsync(cvFile, $"cv_{candidate.Id:N}");
 
                 foreach (var r in candidate.Resumes)
                 {
@@ -158,7 +149,7 @@ public class JobsController : Controller
                     Id = Guid.NewGuid(),
                     CandidateId = candidate.Id,
                     FileName = originalName,
-                    FilePath = $"/uploads/resumes/{uniqueFileName}",
+                    FilePath = savedFilePath,
                     FileSize = cvFile.Length,
                     MimeType = cvFile.ContentType,
                     IsPrimary = true,

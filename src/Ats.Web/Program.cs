@@ -46,6 +46,7 @@ builder.Services.AddScoped<ICompetencyFrameworkService, CompetencyFrameworkServi
 builder.Services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
 builder.Services.AddScoped<IRequisitionService, RequisitionService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 
 
 // Cấu hình thời gian Session (Idle timeout)
@@ -135,6 +136,8 @@ app.UseAuthorization();
 // Kích hoạt Middleware gia hạn phiên tự động
 app.UseMiddleware<Ats.Web.Middlewares.SessionActivityMiddleware>();
 
+// Phục vụ tệp tĩnh (bao gồm tệp người dùng tải lên trong wwwroot/uploads)
+app.UseStaticFiles();
 app.MapStaticAssets();
 
 app.MapControllerRoute(
@@ -146,6 +149,9 @@ app.MapControllerRoute(
 // Khởi tạo seed data tự động và đảm bảo schema bảng đầy đủ
 using (var scope = app.Services.CreateScope())
 {
+    var storageService = scope.ServiceProvider.GetRequiredService<IFileStorageService>();
+    storageService.EnsureStorageDirectories();
+
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     try
     {

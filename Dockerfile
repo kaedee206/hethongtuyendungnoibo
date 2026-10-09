@@ -12,8 +12,8 @@ ENV ASPNETCORE_HTTP_PORTS=8080 \
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl && \
     rm -rf /var/lib/apt/lists/* && \
-    mkdir -p /app/wwwroot/uploads/avatars /app/wwwroot/uploads/resumes && \
-    chown -R app:app /app/wwwroot/uploads
+    mkdir -p /app/wwwroot/uploads/media /app/wwwroot/uploads/cvs /app/wwwroot/uploads/avatars /app/wwwroot/uploads/resumes /app/wwwroot/templates && \
+    chown -R app:app /app/wwwroot/uploads /app/wwwroot/templates
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0-bookworm-slim AS restore
 WORKDIR /src
