@@ -16,9 +16,15 @@ public class RequisitionApprovalListItemViewModel
     public RequisitionStatus Status { get; set; }
     public int CurrentStepOrder { get; set; }
     public string CurrentApproverName { get; set; } = string.Empty;
+    public string CurrentApproverRole { get; set; } = string.Empty;
+    public string CurrentApproverEmail { get; set; } = string.Empty;
     public bool CanCurrentUserApprove { get; set; }
     public string CreatedAtDisplay { get; set; } = string.Empty;
     public string? LatestComment { get; set; }
+    public string WaitingSinceDisplay { get; set; } = string.Empty;
+    public string WaitingDurationDisplay { get; set; } = string.Empty;
+    public string ApprovalChainProgress { get; set; } = string.Empty;
+    public bool IsCreatedByCurrentUser { get; set; }
 }
 
 public class RequisitionDetailsViewModel
@@ -43,6 +49,16 @@ public class RequisitionDetailsViewModel
     public string CreatedAtDisplay { get; set; } = string.Empty;
     public bool CanCurrentUserApprove { get; set; }
     public int? CurrentPendingStepOrder { get; set; }
+
+    // Thông tin vị trí bàn làm việc hiện tại (Scrum #23)
+    public string CurrentApproverName { get; set; } = string.Empty;
+    public string CurrentApproverRole { get; set; } = string.Empty;
+    public string CurrentApproverEmail { get; set; } = string.Empty;
+    public string CurrentPendingSinceDisplay { get; set; } = string.Empty;
+    public string CurrentWaitingDurationDisplay { get; set; } = string.Empty;
+    public string CurrentStageSummary { get; set; } = string.Empty;
+    public bool IsCurrentUserHiringManager { get; set; }
+
     public List<RequisitionApprovalStepDto> ApprovalSteps { get; set; } = new();
 }
 
@@ -53,11 +69,16 @@ public class RequisitionApprovalStepDto
     public Guid ApproverId { get; set; }
     public string ApproverName { get; set; } = string.Empty;
     public string ApproverRole { get; set; } = string.Empty;
+    public string ApproverEmail { get; set; } = string.Empty;
     public ApprovalStatus Status { get; set; } = ApprovalStatus.PENDING;
     public string? Comment { get; set; }
     public DateTimeOffset? DecidedAt { get; set; }
     public string DecidedAtDisplay { get; set; } = string.Empty;
+    public string StepCreatedAtDisplay { get; set; } = string.Empty;
+    public string DurationDisplay { get; set; } = string.Empty;
+    public int RoundNumber { get; set; } = 1;
     public bool IsCurrent { get; set; }
+    public bool IsImmutable { get; set; } = true;
 }
 
 public class RequisitionApprovalDecisionInputModel
