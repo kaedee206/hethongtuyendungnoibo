@@ -350,14 +350,25 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
             <div class="modal-body p-4">
-                <div class="alert alert-info d-flex align-items-center justify-content-between mb-4" style="border-radius: 8px;">
-                    <div>
-                        <i class="bi bi-info-circle-fill me-2"></i>
-                        <span>Vui lòng sử dụng tệp mẫu chuẩn để hệ thống tự động kiểm tra định dạng.</span>
+                <!-- Khối tải tệp mẫu chuẩn Excel -->
+                <div class="card bg-light border-0 mb-4 p-3 shadow-sm" style="border-radius: 10px; border-left: 4px solid #198754 !important;">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-file-earmark-excel-fill text-success fs-2 me-3"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1 text-dark">Tệp Excel mẫu chuẩn hệ thống ATS</h6>
+                                <p class="text-muted small mb-0">Bao gồm 3 Sheet: <strong>Hướng dẫn</strong>, <strong>Dữ liệu mẫu</strong> và <strong>Danh mục tham chiếu</strong> (Phòng ban, Chức vụ, Vai trò).</p>
+                            </div>
+                        </div>
+                        <a href="/users/import-template" class="btn btn-success fw-semibold shadow-sm px-3" style="border-radius: 8px;">
+                            <i class="bi bi-download me-1"></i> Tải file mẫu (.xlsx)
+                        </a>
                     </div>
-                    <a href="/users/import-template" class="btn btn-sm btn-outline-primary bg-white text-primary fw-semibold" style="border-radius: 6px;">
-                        <i class="bi bi-download me-1"></i> Tải file mẫu (.xlsx)
-                    </a>
+                    <div class="mt-2 pt-2 border-top text-secondary small d-flex flex-wrap gap-3">
+                        <span><i class="bi bi-check-circle text-success me-1"></i>Email bắt buộc: <code>@@noveratech.digital</code></span>
+                        <span><i class="bi bi-check-circle text-success me-1"></i>Cột bắt buộc: Họ tên (*), Email (*), Vai trò (*)</span>
+                        <span><i class="bi bi-info-circle text-primary me-1"></i>Mật khẩu mặc định: <code>AtsUser@123456</code></span>
+                    </div>
                 </div>
 
                 <div class="mb-4">
