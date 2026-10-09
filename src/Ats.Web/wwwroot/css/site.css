@@ -1454,46 +1454,133 @@ body.sidebar-resizing .ats-main-area {
   line-height: 1.1;
 }
 
-/* Horizontal Pipeline Stepper */
-.pipeline-stepper-wrap {
-  display: flex;
-  align-items: stretch;
-  gap: 0.5rem;
-  overflow-x: auto;
-  padding-bottom: 0.35rem;
+/* Modern Recruitment Funnel & Linear Pipeline */
+.pipeline-funnel-card {
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 12px;
+  background: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
-.pipeline-step-card {
-  flex: 1 1 0;
-  min-width: 140px;
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
-  padding: 0.75rem 0.85rem;
-  cursor: pointer;
-  transition: all 0.18s ease;
+
+.pipeline-conversion-track {
+  width: 100%;
+  height: 6px;
+  background: #F1F5F9;
+  border-radius: 999px;
+  display: flex;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.pipeline-conversion-segment {
+  height: 100%;
+  transition: width 0.3s ease;
   position: relative;
 }
-.pipeline-step-card:hover {
-  background: #FFFFFF;
-  border-color: #059669;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+
+.pipeline-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.5rem;
+  width: 100%;
 }
-.pipeline-step-card:not(:last-child)::after {
-  content: "→";
+
+.pipeline-step-item {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-top: 3px solid var(--stage-color, #059669);
+  border-radius: 10px;
+  padding: 0.7rem 0.65rem;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.pipeline-step-item:hover {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.pipeline-step-item.active {
+  background: #F0FDF4;
+  border-color: #059669 !important;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
+}
+
+.pipeline-step-item .step-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(15, 23, 42, 0.05);
+  color: #334155;
+}
+
+.pipeline-step-item .step-pct {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748B;
+  background: #F1F5F9;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.pipeline-step-item .step-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1E293B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0.35rem 0;
+}
+
+.pipeline-step-item .step-count {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0F172A;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1;
+}
+
+.pipeline-step-item .step-unit {
+  font-size: 0.68rem;
+  color: #64748B;
+}
+
+.pipeline-step-item:not(:last-child)::after {
+  content: "›";
   position: absolute;
-  right: -9px;
+  right: -6px;
   top: 50%;
   transform: translateY(-50%);
   color: #94A3B8;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 700;
-  z-index: 2;
+  z-index: 3;
   pointer-events: none;
 }
+
 @media (max-width: 991px) {
-  .pipeline-step-card:not(:last-child)::after {
+  .pipeline-steps-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .pipeline-step-item:not(:last-child)::after {
     display: none;
+  }
+}
+
+@media (max-width: 576px) {
+  .pipeline-steps-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
