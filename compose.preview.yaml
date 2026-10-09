@@ -14,3 +14,14 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  nginx:
+    container_name: ats-nginx-preview
+    restart: unless-stopped
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
