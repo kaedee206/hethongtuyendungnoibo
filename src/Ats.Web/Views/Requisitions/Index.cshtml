@@ -5,6 +5,7 @@
     var currentTab = (string)(ViewBag.CurrentTab ?? "all");
     var search = (string)(ViewBag.Search ?? "");
     var pendingMyApprovalCount = (int)(ViewBag.PendingMyApprovalCount ?? 0);
+    var myRequisitionsCount = (int)(ViewBag.MyRequisitionsCount ?? 0);
 }
 
 <div class="container-fluid px-4 py-4" style="background-color: #F8FAFC; min-height: 100vh;">
@@ -60,6 +61,18 @@
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
                 <!-- Navigation Tabs -->
                 <ul class="nav nav-pills flex-nowrap overflow-auto gap-2" id="requisitionTabs" role="tablist">
+                    <li class="nav-item">
+                        <a href="@Url.Action("Index", "Requisitions", new { tab = "my-requisitions", search })"
+                           class="nav-link py-2 px-3 fw-medium d-flex align-items-center gap-2 @(currentTab == "my-requisitions" || currentTab == "cua-toi" ? "active" : "")"
+                           style="border-radius: 8px; font-size: 0.9rem;">
+                            <i class="bi bi-person-workspace"></i>
+                            <span>Yêu cầu của tôi</span>
+                            @if (myRequisitionsCount > 0)
+                            {
+                                <span class="badge rounded-pill bg-primary">@myRequisitionsCount</span>
+                            }
+                        </a>
+                    </li>
                     <li class="nav-item">
                         <a href="@Url.Action("Index", "Requisitions", new { tab = "my-pending", search })"
                            class="nav-link py-2 px-3 fw-medium d-flex align-items-center gap-2 @(currentTab == "my-pending" || currentTab == "cho-toi-duyet" ? "active" : "")"
@@ -157,7 +170,7 @@
                                 <th class="py-3">Dải lương đề xuất</th>
                                 <th class="py-3">Người đề xuất / Hạn</th>
                                 <th class="py-3">Trạng thái</th>
-                                <th class="py-3">Tiến trình phê duyệt</th>
+                                <th class="py-3">Tiến trình phê duyệt &amp; Bàn làm việc</th>
                                 <th class="pe-4 py-3 text-end">Thao tác</th>
                             </tr>
                         </thead>
@@ -166,10 +179,14 @@
                             {
                                 <tr>
                                     <td class="ps-4 py-3">
-                                        <div class="fw-bold text-primary">
-                                            <a href="@Url.Action("Details", "Requisitions", new { id = item.Id })" class="text-decoration-none">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <a href="@Url.Action("Details", "Requisitions", new { id = item.Id })" class="fw-bold text-primary text-decoration-none font-monospace">
                                                 @item.Code
                                             </a>
+                                            @if (item.IsCreatedByCurrentUser)
+                                            {
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.65rem;">Của tôi</span>
+                                            }
                                         </div>
                                         <div class="text-dark fw-medium mt-1">@item.JobTitle</div>
                                     </td>
@@ -233,18 +250,56 @@
                                     <td class="py-3">
                                         @if (item.Status == RequisitionStatus.PENDING_APPROVAL)
                                         {
-                                            <div class="d-flex align-items-center gap-1">
-                                                <span class="badge bg-primary text-white" style="border-radius: 4px; font-size: 0.7rem;">Cấp @item.CurrentStepOrder</span>
-                                                <span class="text-muted small">@item.CurrentApproverName</span>
+                                            <div class="d-flex flex-column gap-1">
+                                                <div class="d-flex align-items-center gap-1">
+                                                    <span class="badge bg-primary text-white" style="border-radius: 4px; font-size: 0.72rem;">Cấp @item.CurrentStepOrder</span>
+                                                    <span class="fw-semibold text-dark small">@item.CurrentApproverName</span>
+                                                </div>
+                                                <div class="text-muted d-flex align-items-center gap-2" style="font-size: 0.75rem;">
+                                                    <span class="text-secondary"><i class="bi bi-person-badge me-1"></i>@item.CurrentApproverRole</span>
+                                                    @if (!string.IsNullOrEmpty(item.WaitingDurationDisplay) && item.WaitingDurationDisplay != "—")
+                                                    {
+                                                        <span class="badge bg-warning-subtle text-dark border border-warning-subtle py-0 px-1" style="font-size: 0.7rem;">
+                                                            <i class="bi bi-clock-history me-1"></i>@item.WaitingDurationDisplay
+                                                        </span>
+                                                    }
+                                                </div>
+                                                <div class="text-primary fw-medium" style="font-size: 0.72rem;">
+                                                    <i class="bi bi-arrow-right-short"></i>Đang ở bàn: @item.CurrentApproverName
+                                                </div>
                                             </div>
                                         }
                                         else if (item.Status == RequisitionStatus.APPROVED)
                                         {
-                                            <small class="text-success fw-medium"><i class="bi bi-check2-all me-1"></i>Đã duyệt 2/2 cấp</small>
+                                            <div class="d-flex flex-column gap-1">
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle w-auto align-self-start" style="border-radius: 4px; font-size: 0.72rem;">
+                                                    <i class="bi bi-check-circle-fill me-1"></i>Đã duyệt 2/2 cấp
+                                                </span>
+                                                <small class="text-muted" style="font-size: 0.75rem;">BOD đã duyệt hoàn tất</small>
+                                            </div>
                                         }
                                         else if (item.Status == RequisitionStatus.CHANGES_REQUESTED)
                                         {
-                                            <small class="text-warning-emphasis fw-medium"><i class="bi bi-reply-fill me-1"></i>Đã trả hồ sơ về</small>
+                                            <div class="d-flex flex-column gap-1">
+                                                <span class="badge bg-warning-subtle text-dark border border-warning w-auto align-self-start" style="border-radius: 4px; font-size: 0.72rem;">
+                                                    <i class="bi bi-arrow-repeat me-1"></i>Đang ở bàn Bạn (Cần bổ sung)
+                                                </span>
+                                                @if (!string.IsNullOrWhiteSpace(item.LatestComment))
+                                                {
+                                                    <small class="text-muted fst-italic text-truncate" style="max-width: 200px;" title="@item.LatestComment">
+                                                        "@item.LatestComment"
+                                                    </small>
+                                                }
+                                            </div>
+                                        }
+                                        else if (item.Status == RequisitionStatus.REJECTED)
+                                        {
+                                            <div class="d-flex flex-column gap-1">
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle w-auto align-self-start" style="border-radius: 4px; font-size: 0.72rem;">
+                                                    <i class="bi bi-x-circle-fill me-1"></i>Đã dừng quy trình
+                                                </span>
+                                                <small class="text-muted" style="font-size: 0.75rem;">Đã từ chối</small>
+                                            </div>
                                         }
                                         else
                                         {
