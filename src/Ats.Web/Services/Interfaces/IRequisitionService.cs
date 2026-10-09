@@ -40,4 +40,25 @@ public interface IRequisitionService
         Guid sourceId,
         Guid currentUserId,
         CancellationToken cancellationToken = default);
+
+    Task<(bool Success, string Message)> ProcessApprovalDecisionAsync(
+        Guid requisitionId,
+        Guid currentUserId,
+        RequisitionApprovalDecisionInputModel input,
+        CancellationToken cancellationToken = default);
+
+    Task<RequisitionDetailsViewModel?> GetRequisitionDetailsAsync(
+        Guid id,
+        Guid currentUserId,
+        CancellationToken cancellationToken = default);
+
+    Task<List<RequisitionApprovalListItemViewModel>> GetRequisitionsForApprovalAsync(
+        Guid currentUserId,
+        string? tab = null,
+        string? search = null,
+        CancellationToken cancellationToken = default);
+
+    Task<int> GetPendingApprovalCountForUserAsync(
+        Guid currentUserId,
+        CancellationToken cancellationToken = default);
 }
