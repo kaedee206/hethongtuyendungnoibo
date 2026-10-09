@@ -124,10 +124,12 @@ public class PipelineFunnelStageDto
 {
     public int StageOrder { get; set; }
     public string StageName { get; set; } = string.Empty;
+    public string ShortName { get; set; } = string.Empty;
     public string ColorCode { get; set; } = "#0d6efd";
     public int Count { get; set; }
     public double Percentage { get; set; }
     public string Subtitle { get; set; } = string.Empty;
+    public bool IsTerminal { get; set; } = false;
 }
 
 public class InterviewEvaluationCandidateDto
