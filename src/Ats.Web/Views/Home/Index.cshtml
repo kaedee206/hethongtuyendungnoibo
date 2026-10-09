@@ -700,35 +700,75 @@
                     <!-- BỐ CỤC EXECUTIVE OVERVIEW (8 Cột Phễu + Ứng viên mới, 4 Cột Hàng đợi duyệt + Tác vụ) -->
                     <div class="row g-4 mb-4">
                         <div class="col-12 col-xl-8 d-flex flex-column gap-4">
-                            <!-- Phễu Tuyển Dụng Dạng Stepper Tuyến Tính (Horizontal Linear Pipeline) -->
-                            <div class="card border-0 shadow-sm p-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                            <!-- Phễu Tuyển Dụng Tuyến Tính (Linear Pipeline & Funnel Distribution) -->
+                            <div class="card border-0 shadow-sm p-4 pipeline-funnel-card">
                                 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 pb-2 gap-2" style="border-bottom: 1px solid #F1F5F9;">
                                     <div>
-                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">
-                                            <i class="bi bi-funnel text-success me-1.5"></i>Phễu Tuyển Dụng Tuyến Tính (Linear Pipeline)
-                                        </h5>
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">
+                                                <i class="bi bi-funnel text-success me-1"></i>Phễu Tuyển Dụng Tuyến Tính
+                                            </h5>
+                                            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill" style="font-size: 0.72rem; font-weight: 600;">
+                                                @Model.PipelineFunnel.Where(s => !s.IsTerminal).Sum(s => s.Count) đang xử lý
+                                            </span>
+                                        </div>
                                         <small class="text-muted">Nhấp vào từng giai đoạn để lọc nhanh danh sách ứng viên tương ứng</small>
                                     </div>
-                                    <button type="button" class="btn btn-outline-success btn-sm fw-semibold" style="border-radius: 8px; font-size: 0.78rem;" onclick="switchDashboardFeature('ung-vien', event); filterPipelineCandidates('ALL');">
-                                        <i class="bi bi-people me-1"></i> Quản lý toàn bộ hồ sơ &rarr;
-                                    </button>
+                                    <div class="d-flex align-items-center gap-2">
+                                        @{
+                                            var rejectedStage = Model.PipelineFunnel.FirstOrDefault(s => s.IsTerminal);
+                                        }
+                                        @if (rejectedStage != null)
+                                        {
+                                            <button type="button" class="btn btn-outline-danger btn-sm fw-semibold d-inline-flex align-items-center gap-1.5"
+                                                    style="border-radius: 8px; font-size: 0.78rem; padding: 0.35rem 0.65rem;"
+                                                    onclick="switchDashboardFeature('ung-vien', event); setTimeout(function() { filterPipelineCandidates('REJECTED'); }, 50);"
+                                                    title="Xem ứng viên đã từ chối hoặc rớt tuyển">
+                                                <span class="rounded-circle" style="width: 7px; height: 7px; background: #E11D48;"></span>
+                                                Đã từ chối (@rejectedStage.Count)
+                                            </button>
+                                        }
+                                        <button type="button" class="btn btn-outline-success btn-sm fw-semibold" style="border-radius: 8px; font-size: 0.78rem; padding: 0.35rem 0.65rem;" onclick="switchDashboardFeature('ung-vien', event); filterPipelineCandidates('ALL');">
+                                            <i class="bi bi-people me-1"></i> Quản lý hồ sơ &rarr;
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <div class="pipeline-stepper-wrap">
-                                    @for (int i = 0; i < Model.PipelineFunnel.Count; i++)
+                                <!-- Thanh tiến trình tỷ lệ chuyển đổi (Funnel Conversion Bar) -->
+                                <div class="pipeline-conversion-track" title="Tỷ lệ phân bổ hồ sơ qua các giai đoạn">
+                                    @foreach (var stage in Model.PipelineFunnel.Where(s => !s.IsTerminal))
                                     {
-                                        var stage = Model.PipelineFunnel[i];
+                                        if (stage.Percentage > 0)
+                                        {
+                                            <div class="pipeline-conversion-segment" 
+                                                 style="width: @stage.Percentage%; background-color: @stage.ColorCode;"
+                                                 data-bs-toggle="tooltip"
+                                                 title="@stage.StageName: @stage.Count hồ sơ (@stage.Percentage%)">
+                                            </div>
+                                        }
+                                    }
+                                </div>
+
+                                <!-- 6 Bước Tuyến Tính Gọn Gàng - Vừa Khít 100% Không Cuộn Ngang -->
+                                <div class="pipeline-steps-grid">
+                                    @foreach (var stage in Model.PipelineFunnel.Where(s => !s.IsTerminal))
+                                    {
                                         <div class="pipeline-step-item cursor-pointer"
+                                             style="--stage-color: @stage.ColorCode;"
                                              onclick="switchDashboardFeature('ung-vien', event); setTimeout(function() { filterPipelineCandidates('@stage.StageOrder'); }, 50);"
-                                             title="Xem ứng viên ở giai đoạn: @stage.StageName">
-                                            <div class="d-flex align-items-center justify-content-between mb-1">
-                                                <span class="step-num">@stage.StageOrder.ToString("D2")</span>
+                                             title="Giai đoạn @stage.StageOrder: @stage.StageName (@stage.Subtitle) — Bấm để lọc danh sách">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <span class="step-badge" style="background-color: @(stage.ColorCode)15; color: @stage.ColorCode;">
+                                                    @stage.StageOrder.ToString("D2")
+                                                </span>
                                                 <span class="step-pct">@stage.Percentage%</span>
                                             </div>
-                                            <div class="step-name text-truncate">@stage.StageName</div>
-                                            <div class="d-flex align-items-baseline gap-1 mt-1">
+                                            <div class="step-title" title="@stage.StageName">
+                                                @(string.IsNullOrWhiteSpace(stage.ShortName) ? stage.StageName : stage.ShortName)
+                                            </div>
+                                            <div class="d-flex align-items-baseline gap-1">
                                                 <span class="step-count">@stage.Count</span>
-                                                <span style="font-size: 0.7rem; color: #64748B;">hồ sơ</span>
+                                                <span class="step-unit">hồ sơ</span>
                                             </div>
                                         </div>
                                     }
@@ -915,21 +955,12 @@
                             <button type="button" class="candidate-stage-pill active" onclick="filterPipelineCandidates('ALL', this)">
                                 Tất cả <span class="pill-count">@Model.CandidatePipelineItems.Count</span>
                             </button>
-                            <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('1', this)">
-                                01. Ứng tuyển mới <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 1)</span>
-                            </button>
-                            <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('2', this)">
-                                02. Sàng lọc CV <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 2)</span>
-                            </button>
-                            <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('4', this)">
-                                04. Phỏng vấn <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 4)</span>
-                            </button>
-                            <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('5', this)">
-                                05. Đề xuất Offer <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 5)</span>
-                            </button>
-                            <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('6', this)">
-                                06. Đã Onboard <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == 6)</span>
-                            </button>
+                            @foreach (var stage in Model.PipelineFunnel.Where(s => !s.IsTerminal))
+                            {
+                                <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('@stage.StageOrder', this)">
+                                    @stage.StageOrder.ToString("D2"). @(string.IsNullOrWhiteSpace(stage.ShortName) ? stage.StageName : stage.ShortName) <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == stage.StageOrder)</span>
+                                </button>
+                            }
                             <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('REJECTED', this)">
                                 Đã từ chối <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.Status == "REJECTED")</span>
                             </button>
