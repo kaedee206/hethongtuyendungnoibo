@@ -61,4 +61,8 @@ public interface IRequisitionService
     Task<int> GetPendingApprovalCountForUserAsync(
         Guid currentUserId,
         CancellationToken cancellationToken = default);
+
+    Task<int> GetMyRequisitionsCountAsync(
+        Guid currentUserId,
+        CancellationToken cancellationToken = default);
 }
