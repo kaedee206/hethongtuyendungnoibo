@@ -1,0 +1,179 @@
+@model Ats.Web.Models.ViewModels.Requisitions.RequisitionApprovalDecisionInputModel
+
+<!-- Modal Ra quyết định phê duyệt yêu cầu tuyển dụng (Scrum #22) -->
+<div class="modal fade" id="approvalDecisionModal" tabindex="-1" aria-labelledby="approvalDecisionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header border-bottom py-3 px-4 bg-light">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle text-primary bg-primary-subtle" style="width: 36px; height: 36px;">
+                        <i class="bi bi-shield-check fs-5"></i>
+                    </span>
+                    <div>
+                        <h6 class="modal-title fw-bold text-dark mb-0" id="approvalDecisionModalLabel">Ra quyết định phê duyệt</h6>
+                        <small class="text-muted" id="modalRequisitionSubtitle">Yêu cầu tuyển dụng</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+
+            <form asp-controller="Requisitions" asp-action="Decision" method="post" id="approvalDecisionForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="RequisitionId" id="modalRequisitionId" />
+                <input type="hidden" asp-for="Action" id="modalAction" value="APPROVE" />
+
+                <div class="modal-body p-4">
+                    <!-- Action Choice Cards -->
+                    <label class="form-label fw-semibold text-secondary small text-uppercase mb-2">Chọn quyết định của bạn</label>
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <input type="radio" class="btn-check" name="actionRadio" id="actionApprove" value="APPROVE" checked autocomplete="off">
+                            <label class="btn btn-outline-success w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-1 rounded-3 h-100" for="actionApprove" style="border-radius: 8px;">
+                                <i class="bi bi-check-circle-fill fs-4"></i>
+                                <span class="fw-bold small">Duyệt</span>
+                            </label>
+                        </div>
+                        <div class="col-4">
+                            <input type="radio" class="btn-check" name="actionRadio" id="actionChanges" value="REQUEST_CHANGES" autocomplete="off">
+                            <label class="btn btn-outline-warning w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-1 rounded-3 h-100" for="actionChanges" style="border-radius: 8px;">
+                                <i class="bi bi-arrow-repeat fs-4"></i>
+                                <span class="fw-bold small">Yêu cầu bổ sung</span>
+                            </label>
+                        </div>
+                        <div class="col-4">
+                            <input type="radio" class="btn-check" name="actionRadio" id="actionReject" value="REJECT" autocomplete="off">
+                            <label class="btn btn-outline-danger w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-1 rounded-3 h-100" for="actionReject" style="border-radius: 8px;">
+                                <i class="bi bi-x-circle-fill fs-4"></i>
+                                <span class="fw-bold small">Từ chối</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Action Description Banner -->
+                    <div id="actionHelperBanner" class="alert alert-success d-flex align-items-start gap-2 py-2 px-3 mb-3 small" style="border-radius: 8px;">
+                        <i class="bi bi-info-circle-fill mt-1"></i>
+                        <span id="actionHelperText">Phê duyệt yêu cầu. Hồ sơ sẽ tự động chuyển sang cấp kế tiếp hoặc hoàn tất nếu là cấp cuối.</span>
+                    </div>
+
+                    <!-- Comment Input Box -->
+                    <div class="mb-2">
+                        <label for="modalComment" class="form-label fw-semibold text-dark small" id="commentLabel">
+                            Ý kiến ghi chép / Đóng góp
+                            <span class="text-danger d-none" id="commentRequiredStar">(*)</span>
+                        </label>
+                        <textarea asp-for="Comment" id="modalComment" rows="4" class="form-control" 
+                                  placeholder="Nhập ghi chú hoặc ý kiến của bạn tại đây..." style="border-radius: 8px; resize: vertical;"></textarea>
+                        <div class="invalid-feedback" id="commentErrorMsg">
+                            Vui lòng nhập ý kiến / lý do cho hành động này.
+                        </div>
+                        <small class="text-muted d-block mt-1" id="commentHelp">
+                            Ý kiến này sẽ được lưu cố định trong lịch sử xét duyệt và hiển thị cho người tạo hồ sơ.
+                        </small>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-top py-2 px-4 bg-light d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary px-3 py-2" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-success px-4 py-2 fw-semibold" id="submitDecisionBtn" style="border-radius: 8px;">
+                        <i class="bi bi-send-check me-1"></i>
+                        <span id="submitBtnText">Xác nhận Duyệt</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const modalEl = document.getElementById('approvalDecisionModal');
+        if (!modalEl) return;
+
+        const actionRadios = modalEl.querySelectorAll('input[name="actionRadio"]');
+        const modalActionInput = document.getElementById('modalAction');
+        const modalCommentInput = document.getElementById('modalComment');
+        const commentLabel = document.getElementById('commentLabel');
+        const commentRequiredStar = document.getElementById('commentRequiredStar');
+        const commentErrorMsg = document.getElementById('commentErrorMsg');
+        const actionHelperBanner = document.getElementById('actionHelperBanner');
+        const actionHelperText = document.getElementById('actionHelperText');
+        const submitDecisionBtn = document.getElementById('submitDecisionBtn');
+        const submitBtnText = document.getElementById('submitBtnText');
+        const form = document.getElementById('approvalDecisionForm');
+
+        function updateActionUi(action) {
+            modalActionInput.value = action;
+            modalCommentInput.classList.remove('is-invalid');
+
+            if (action === 'APPROVE') {
+                actionHelperBanner.className = 'alert alert-success d-flex align-items-start gap-2 py-2 px-3 mb-3 small';
+                actionHelperText.innerText = 'Phê duyệt yêu cầu. Hồ sơ sẽ tự động chuyển sang cấp kế tiếp hoặc hoàn tất nếu là cấp cuối.';
+                commentRequiredStar.classList.add('d-none');
+                commentLabel.childNodes[0].nodeValue = 'Ý kiến / Ghi chú thêm ';
+                modalCommentInput.placeholder = 'Nhập ghi chú thêm (không bắt buộc)...';
+                submitDecisionBtn.className = 'btn btn-success px-4 py-2 fw-semibold';
+                submitBtnText.innerText = 'Xác nhận Duyệt';
+            } else if (action === 'REQUEST_CHANGES') {
+                actionHelperBanner.className = 'alert alert-warning d-flex align-items-start gap-2 py-2 px-3 mb-3 small';
+                actionHelperText.innerText = 'Yêu cầu bổ sung sẽ trả hồ sơ về cho người tạo và giữ nguyên lịch sử để người tạo cập nhật.';
+                commentRequiredStar.classList.remove('d-none');
+                commentLabel.childNodes[0].nodeValue = 'Nội dung yêu cầu bổ sung ';
+                modalCommentInput.placeholder = 'Nhập chi tiết các nội dung cần bổ sung, chỉnh sửa... (* bắt buộc)';
+                submitDecisionBtn.className = 'btn btn-warning px-4 py-2 fw-semibold text-dark';
+                submitBtnText.innerText = 'Gửi yêu cầu bổ sung';
+            } else if (action === 'REJECT') {
+                actionHelperBanner.className = 'alert alert-danger d-flex align-items-start gap-2 py-2 px-3 mb-3 small';
+                actionHelperText.innerText = 'Từ chối yêu cầu tuyển dụng này. Hồ sơ sẽ dừng quy trình xét duyệt.';
+                commentRequiredStar.classList.remove('d-none');
+                commentLabel.childNodes[0].nodeValue = 'Lý do từ chối ';
+                modalCommentInput.placeholder = 'Nhập lý do từ chối yêu cầu tuyển dụng... (* bắt buộc)';
+                submitDecisionBtn.className = 'btn btn-danger px-4 py-2 fw-semibold';
+                submitBtnText.innerText = 'Xác nhận Từ chối';
+            }
+        }
+
+        actionRadios.forEach(radio => {
+            radio.addEventListener('change', function () {
+                updateActionUi(this.value);
+            });
+        });
+
+        form.addEventListener('submit', function (e) {
+            const currentAction = modalActionInput.value;
+            const commentVal = modalCommentInput.value.trim();
+
+            if ((currentAction === 'REQUEST_CHANGES' || currentAction === 'REJECT') && !commentVal) {
+                e.preventDefault();
+                modalCommentInput.classList.add('is-invalid');
+                commentErrorMsg.innerText = currentAction === 'REJECT' 
+                    ? 'Vui lòng nhập lý do từ chối yêu cầu tuyển dụng.' 
+                    : 'Vui lòng nhập nội dung ý kiến yêu cầu bổ sung hồ sơ.';
+                modalCommentInput.focus();
+                return false;
+            }
+
+            modalCommentInput.classList.remove('is-invalid');
+        });
+
+        modalEl.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            if (button) {
+                const reqId = button.getAttribute('data-requisition-id');
+                const reqCode = button.getAttribute('data-requisition-code');
+                const defaultAction = button.getAttribute('data-default-action') || 'APPROVE';
+
+                if (reqId) document.getElementById('modalRequisitionId').value = reqId;
+                if (reqCode) document.getElementById('modalRequisitionSubtitle').innerText = 'Yêu cầu: ' + reqCode;
+
+                // Set radio
+                const targetRadio = modalEl.querySelector(`input[name="actionRadio"][value="${defaultAction}"]`);
+                if (targetRadio) {
+                    targetRadio.checked = true;
+                    updateActionUi(defaultAction);
+                }
+                modalCommentInput.value = '';
+                modalCommentInput.classList.remove('is-invalid');
+            }
+        });
+    });
+</script>

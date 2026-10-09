@@ -1,8 +1,10 @@
+@using Ats.Web.Constants
 @model Ats.Web.Models.ViewModels.Jobs.JobDetailViewModel
 @{
     ViewData["Title"] = $"{Model.Job.Title} — Tuyển Dụng NoveraTech";
     ViewData["BodyClass"] = "job-detail-page";
     var job = Model.Job;
+    var canEditJob = User.Identity?.IsAuthenticated == true && (User.IsInRole(UserRoles.Recruiter) || User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Admin));
 }
 
 @* ══════════════════════════════════════════════════════════
@@ -272,6 +274,12 @@
             <!-- Header Actions -->
             <div class="col-12 col-lg-4 text-lg-end">
                 <div class="d-flex flex-column gap-2.5 justify-content-lg-end align-items-lg-end">
+                    @if (canEditJob)
+                    {
+                        <button type="button" class="btn btn-warning text-dark fw-bold w-100 shadow-sm d-flex align-items-center justify-content-center gap-2 mb-1" data-bs-toggle="modal" data-bs-target="#editJobPostingModal" style="border-radius: var(--radius-button); padding: 0.7rem 1.25rem;">
+                            <i class="bi bi-pencil-square fs-5"></i> Chỉnh sửa bài đăng
+                        </button>
+                    }
                     <a href="#apply-section" class="btn-apply-main w-100 w-sm-auto">
                         <i class="bi bi-send-fill"></i> Ứng tuyển vị trí này
                     </a>
@@ -297,16 +305,56 @@
         <div class="col-12 col-lg-8">
             <!-- 1. Bối cảnh & Tổng quan -->
             <div class="detail-card">
-                <h2 class="section-title">
-                    <i class="bi bi-info-circle text-primary"></i> Tổng quan về vị trí công việc
-                </h2>
-                <p style="line-height: 1.75; color: #334155; font-size: 0.95rem;">
-                    @job.Overview
-                </p>
-                <div class="p-3 bg-light rounded-3 border" style="border-radius: var(--radius-button); font-size: 0.875rem;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="section-title mb-0 border-0 pb-0">
+                        <i class="bi bi-info-circle text-primary"></i> Tổng quan về vị trí công việc
+                    </h2>
+                    @if (canEditJob)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#editJobPostingModal" style="border-radius: 6px; font-size: 0.8rem;">
+                            <i class="bi bi-pencil"></i> Chỉnh sửa
+                        </button>
+                    }
+                </div>
+                <div style="line-height: 1.75; color: #334155; font-size: 0.95rem; white-space: pre-line;">
+                    @Html.Raw(job.Overview)
+                </div>
+                <div class="p-3 bg-light rounded-3 border mt-3" style="border-radius: var(--radius-button); font-size: 0.875rem;">
                     <strong class="text-dark"><i class="bi bi-lightbulb text-warning me-1"></i> Văn hóa Kỹ thuật tại NoveraTech:</strong>
                     <div class="text-muted mt-1" style="line-height: 1.6;">
                         Chúng tôi đề cao tính thực chất, trao quyền tự chủ kỹ thuật tối đa cho kỹ sư và đánh giá dựa trên giá trị giải pháp thay vì hình thức chấm công.
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Mô tả chức năng & Vai trò (Position Function & Role Description) -->
+            <div class="detail-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="section-title mb-0 border-0 pb-0">
+                        <i class="bi bi-briefcase text-success"></i> Mô tả chức năng & Vai trò công việc
+                    </h2>
+                    @if (canEditJob)
+                    {
+                        <span class="badge bg-light text-secondary border font-monospace" style="font-size: 0.72rem; border-radius: 4px;">Recruiter / HR / Admin</span>
+                    }
+                </div>
+                <div style="line-height: 1.75; color: #334155; font-size: 0.95rem; white-space: pre-line;">
+                    @if (!string.IsNullOrWhiteSpace(job.PositionDescription))
+                    {
+                        @Html.Raw(job.PositionDescription)
+                    }
+                    else
+                    {
+                        @Html.Raw(job.Overview)
+                    }
+                </div>
+                <div class="mt-3 p-3 rounded-3 border" style="background: #F8FAFC; border-color: #E2E8F0; border-radius: var(--radius-button); font-size: 0.85rem;">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <i class="bi bi-diagram-3-fill text-primary"></i>
+                        <span class="fw-bold text-dark">Khung định biên & Vị trí trong tổ chức:</span>
+                    </div>
+                    <div class="text-muted" style="line-height: 1.55;">
+                        Chức danh <strong>@job.Title</strong> thuộc <strong>@job.Department</strong>, cấp bậc <strong>@job.ExperienceLevel</strong>, chế độ <strong>@job.EmploymentType</strong> tại <strong>@job.WorkLocation</strong>.
                     </div>
                 </div>
             </div>
@@ -581,3 +629,153 @@
         </div>
     </div>
 </div>
+
+@if (canEditJob)
+{
+    <!-- Modal Chỉnh sửa bài đăng trực tiếp (Dành cho Recruiter, HRManager, Admin) -->
+    <div class="modal fade" id="editJobPostingModal" tabindex="-1" aria-labelledby="editJobPostingModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 14px;">
+                <div class="modal-header border-bottom pb-3" style="background: #F8FAFC;">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center justify-content-center rounded-3 bg-warning text-dark" style="width: 38px; height: 38px;">
+                            <i class="bi bi-pencil-square fs-5"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold text-dark mb-0" id="editJobPostingModalLabel">
+                                Chỉnh sửa trực tiếp tin tuyển dụng
+                            </h5>
+                            <span class="text-muted" style="font-size: 0.78rem;">Phân quyền: Recruiter / Trưởng phòng Nhân sự / Admin hệ thống</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="editJobPostingForm" onsubmit="handleUpdateJobPosting(event)">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="JobId" value="@(string.IsNullOrEmpty(job.Id) ? job.Slug : job.Id)" />
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-8">
+                                <label class="form-label small fw-bold text-dark">Tiêu đề vị trí công việc <span class="text-danger">*</span></label>
+                                <input type="text" name="Title" class="form-control" value="@job.Title" required style="border-radius: 8px;" />
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-bold text-dark">Phòng ban / Đơn vị <span class="text-danger">*</span></label>
+                                <input type="text" name="Department" class="form-control" value="@job.Department" required style="border-radius: 8px;" />
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-bold text-dark">Cấp bậc / Trình độ</label>
+                                <input type="text" name="ExperienceLevel" class="form-control" value="@job.ExperienceLevel" placeholder="VD: Senior, Middle, Lead" style="border-radius: 8px;" />
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-bold text-dark">Mức thu nhập đãi ngộ (Lương)</label>
+                                <input type="text" name="SalaryDisplay" class="form-control" value="@job.SalaryDisplay" placeholder="VD: 35 – 50 Triệu VNĐ" style="border-radius: 8px;" />
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-bold text-dark">Hạn nộp hồ sơ</label>
+                                <input type="date" name="Deadline" class="form-control" value="@job.Deadline.ToString("yyyy-MM-dd")" required style="border-radius: 8px;" />
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">Địa điểm làm việc & Chế độ</label>
+                                <input type="text" name="WorkLocation" class="form-control" value="@job.WorkLocation" placeholder="VD: Hà Nội (Hybrid 2 ngày WFH)" style="border-radius: 8px;" />
+                            </div>
+
+                            <!-- 1. Tổng quan vị trí -->
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">1. Tổng quan vị trí công việc</label>
+                                <textarea name="Overview" class="form-control" rows="3" style="border-radius: 8px;" placeholder="Bối cảnh dự án, sứ mệnh của vị trí...">@job.Overview</textarea>
+                            </div>
+
+                            <!-- 2. Mô tả chức năng & Vai trò -->
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">2. Mô tả chức năng & Vai trò nhiệm vụ</label>
+                                <textarea name="PositionDescription" class="form-control" rows="3" style="border-radius: 8px;" placeholder="Mô tả chức năng nhiệm vụ của vị trí trong cơ cấu doanh nghiệp...">@job.PositionDescription</textarea>
+                            </div>
+
+                            <!-- 3. Trách nhiệm chính -->
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">3. Trách nhiệm & Nhiệm vụ chính (Mỗi ý một dòng)</label>
+                                <textarea name="Responsibilities" class="form-control font-monospace" rows="4" style="border-radius: 8px; font-size: 0.88rem;">@string.Join("\n", job.Responsibilities)</textarea>
+                            </div>
+
+                            <!-- 4. Yêu cầu chuyên môn -->
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">4. Yêu cầu năng lực & Kinh nghiệm (Mỗi ý một dòng)</label>
+                                <textarea name="Requirements" class="form-control font-monospace" rows="4" style="border-radius: 8px; font-size: 0.88rem;">@string.Join("\n", job.Requirements)</textarea>
+                            </div>
+
+                            <!-- 5. Tech Stack -->
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">5. Công nghệ & Công cụ (Cách nhau bằng dấu phẩy)</label>
+                                <input type="text" name="TechStack" class="form-control font-monospace" value="@string.Join(", ", job.TechStack)" placeholder=".NET 9, C#, React 19, TypeScript, PostgreSQL" style="border-radius: 8px; font-size: 0.88rem;" />
+                            </div>
+
+                            <!-- 6. Quyền lợi đãi ngộ -->
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">6. Quyền lợi & Đãi ngộ (Mỗi ý một dòng)</label>
+                                <textarea name="Benefits" class="form-control font-monospace" rows="4" style="border-radius: 8px; font-size: 0.88rem;">@string.Join("\n", job.Benefits)</textarea>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                            <button type="button" class="btn btn-light px-4" style="border-radius: 8px;" data-bs-dismiss="modal">Hủy bỏ</button>
+                            <button type="submit" class="btn btn-success px-4 fw-bold text-white d-inline-flex align-items-center gap-2" id="btnSubmitEditJob" style="border-radius: 8px;">
+                                <span class="spinner-border spinner-border-sm d-none" id="spinnerEditJob"></span>
+                                <i class="bi bi-floppy"></i> Lưu thay đổi trực tiếp
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        async function handleUpdateJobPosting(e) {
+            e.preventDefault();
+            var form = document.getElementById('editJobPostingForm');
+            var btn = document.getElementById('btnSubmitEditJob');
+            var spinner = document.getElementById('spinnerEditJob');
+
+            btn.disabled = true;
+            spinner.classList.remove('d-none');
+
+            var formData = new FormData(form);
+
+            try {
+                var res = await fetch('/Jobs/UpdatePosting', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                var data = await res.json();
+                if (data.success) {
+                    alert(data.message || 'Cập nhật bài đăng thành công!');
+                    var modalEl = document.getElementById('editJobPostingModal');
+                    if (modalEl) {
+                        var m = bootstrap.Modal.getInstance(modalEl);
+                        if (m) m.hide();
+                    }
+                    if (data.slug) {
+                        window.location.href = '/Jobs/Detail/' + data.slug;
+                    } else {
+                        window.location.reload();
+                    }
+                } else {
+                    alert(data.message || 'Lỗi khi cập nhật bài đăng.');
+                }
+            } catch (err) {
+                alert('Lỗi kết nối máy chủ: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('d-none');
+            }
+        }
+    </script>
+}
+

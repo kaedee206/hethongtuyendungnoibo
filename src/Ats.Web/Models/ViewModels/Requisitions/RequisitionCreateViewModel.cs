@@ -74,6 +74,16 @@ public class RequisitionCreateViewModel : IValidatableObject
     /// </summary>
     public bool IsDraft { get; set; }
 
+    /// <summary>
+    /// Trạng thái hiện tại của yêu cầu tuyển dụng (nếu đang xem/sửa sau khi bị yêu cầu bổ sung).
+    /// </summary>
+    public RequisitionStatus? Status { get; set; }
+
+    /// <summary>
+    /// Ý kiến phản hồi / lý do yêu cầu bổ sung từ Người duyệt (nếu trạng thái là CHANGES_REQUESTED).
+    /// </summary>
+    public string? ReviewerFeedback { get; set; }
+
     // Dữ liệu hỗ trợ giao diện Dropdown
     public List<JobPositionOptionViewModel> JobPositionOptions { get; set; } = [];
     public List<DepartmentOptionViewModel> DepartmentOptions { get; set; } = [];

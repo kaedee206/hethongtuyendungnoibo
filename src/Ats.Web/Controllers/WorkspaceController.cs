@@ -506,7 +506,7 @@ public class WorkspaceController : Controller
     /// </summary>
     [HttpPost("CreateJobPosting")]
     [ValidateAntiForgeryToken]
-    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.Approver}")]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin}")]
     public async Task<IActionResult> CreateJobPosting(
         [FromForm] string title,
         [FromForm] string? deptName,
@@ -529,6 +529,8 @@ public class WorkspaceController : Controller
             var dept = await _dbContext.Departments.FirstOrDefaultAsync(d => d.Name.Contains(deptName ?? "Công nghệ") || d.Code == "IT")
                 ?? await _dbContext.Departments.FirstAsync();
 
+            var descContent = string.IsNullOrWhiteSpace(description) ? "Chịu trách nhiệm thực hiện các mục tiêu công nghệ và sản phẩm trọng điểm của công ty." : description.Trim();
+
             // Tìm hoặc tạo JobPosition
             var posCode = "JOB-" + Guid.NewGuid().ToString("N")[..6].ToUpper();
             var jobPos = new JobPosition
@@ -538,6 +540,7 @@ public class WorkspaceController : Controller
                 Title = title.Trim(),
                 DepartmentId = dept.Id,
                 JobLevel = "MIDDLE-SENIOR",
+                Description = descContent,
                 IsActive = true,
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow
@@ -556,6 +559,7 @@ public class WorkspaceController : Controller
                 HeadcountType = HeadcountType.NEW_HEADCOUNT,
                 Status = RequisitionStatus.APPROVED,
                 Currency = "VND",
+                JobDescription = descContent,
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow
             };

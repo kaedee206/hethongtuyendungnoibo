@@ -27,7 +27,7 @@
                 <div class="position-relative">
                     @if (!string.IsNullOrEmpty(Model.AvatarUrl))
                     {
-                        <img src="@Model.AvatarUrl" alt="Avatar" id="avatarPreview" class="border shadow-sm" style="width: 96px; height: 96px; border-radius: 12px; object-fit: cover;" />
+                        <img src="@Model.AvatarUrl" alt="Avatar" id="avatarPreview" class="border shadow-sm" style="width: 96px; height: 96px; border-radius: 12px; object-fit: cover;" onerror="this.onerror=null;this.src='/img/logo-icon-dark-transparent.png';" />
                     }
                     else
                     {
@@ -209,6 +209,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
         const formData = new FormData();
         formData.append('avatarFile', selectedAvatarFile);
+        if (token) {
+            formData.append('__RequestVerificationToken', token);
+        }
 
         btnUploadAvatar.disabled = true;
         avatarSpinner.classList.remove('d-none');
@@ -227,6 +230,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast(data.message || 'Cập nhật ảnh đại diện thành công.', true);
                 btnUploadAvatar.classList.add('d-none');
                 selectedAvatarFile = null;
+                if (data.avatarUrl) {
+                    const img = document.getElementById('avatarPreview');
+                    if (img) img.src = data.avatarUrl;
+                }
             } else {
                 showToast(data.message || 'Tải ảnh đại diện thất bại.', false);
             }

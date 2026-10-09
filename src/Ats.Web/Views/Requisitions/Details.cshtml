@@ -1,0 +1,608 @@
+@model Ats.Web.Models.ViewModels.Requisitions.RequisitionDetailsViewModel
+@using Ats.Web.Models.Enums
+@{
+    ViewData["Title"] = $"Chi tiết Yêu cầu {Model.Code}";
+}
+
+<div class="container-fluid px-3 px-md-4 py-4" style="background-color: #F8FAFC; min-height: 100vh;">
+    <!-- Breadcrumb & Top Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 text-muted small">
+                    <li class="breadcrumb-item"><a href="/dashboard/tong-quan" class="text-decoration-none text-secondary">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="/yeu-cau-tuyen-dung" class="text-decoration-none text-secondary">Yêu cầu tuyển dụng</a></li>
+                    <li class="breadcrumb-item active text-dark fw-medium" aria-current="page">@Model.Code</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center gap-3">
+                <h4 class="fw-bold text-dark mb-0 font-monospace">@Model.Code</h4>
+                @switch (Model.Status)
+                {
+                    case RequisitionStatus.PENDING_APPROVAL:
+                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 fs-6" style="border-radius: 8px;">
+                            <i class="bi bi-hourglass-split me-1"></i>Đang chờ phê duyệt
+                        </span>
+                        break;
+                    case RequisitionStatus.APPROVED:
+                        <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle px-3 py-2 fs-6" style="border-radius: 8px;">
+                            <i class="bi bi-check-circle-fill me-1"></i>Đã phê duyệt
+                        </span>
+                        break;
+                    case RequisitionStatus.CHANGES_REQUESTED:
+                        <span class="badge bg-warning-subtle text-dark border border-warning px-3 py-2 fs-6" style="border-radius: 8px;">
+                            <i class="bi bi-arrow-repeat me-1"></i>Yêu cầu bổ sung
+                        </span>
+                        break;
+                    case RequisitionStatus.REJECTED:
+                        <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle px-3 py-2 fs-6" style="border-radius: 8px;">
+                            <i class="bi bi-x-circle-fill me-1"></i>Từ chối
+                        </span>
+                        break;
+                    default:
+                        <span class="badge bg-secondary-subtle text-secondary px-3 py-2 fs-6" style="border-radius: 8px;">
+                            @Model.Status
+                        </span>
+                        break;
+                }
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <a href="/yeu-cau-tuyen-dung" class="btn btn-outline-secondary px-3 py-2 fw-medium d-flex align-items-center gap-1 shadow-sm" style="border-radius: 8px;">
+                <i class="bi bi-arrow-left"></i>
+                <span>Quay lại</span>
+            </a>
+            @if (Model.Status == RequisitionStatus.CHANGES_REQUESTED || Model.Status == RequisitionStatus.DRAFT)
+            {
+                <a href="@Url.Action("Edit", "Requisitions", new { id = Model.Id })" class="btn btn-warning px-3 py-2 fw-medium d-flex align-items-center gap-1 shadow-sm text-dark" style="border-radius: 8px;">
+                    <i class="bi bi-pencil-square"></i>
+                    <span>Chỉnh sửa hồ sơ</span>
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm mb-4" role="alert" style="border-radius: 10px;">
+            <i class="bi bi-check-circle-fill fs-5"></i>
+            <div>@TempData["SuccessMessage"]</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm mb-4" role="alert" style="border-radius: 10px;">
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+            <div>@TempData["ErrorMessage"]</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+
+    <!-- Desk Location & Approval Tracking Board (Scrum #23) -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: #FFFFFF; border-left: 5px solid @(Model.Status == RequisitionStatus.PENDING_APPROVAL ? "#2563EB" : Model.Status == RequisitionStatus.APPROVED ? "#16A34A" : Model.Status == RequisitionStatus.CHANGES_REQUESTED ? "#D97706" : "#DC2626") !important;">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm flex-shrink-0" 
+                         style="width: 52px; height: 52px; background-color: @(Model.Status == RequisitionStatus.PENDING_APPROVAL ? "#2563EB" : Model.Status == RequisitionStatus.APPROVED ? "#16A34A" : Model.Status == RequisitionStatus.CHANGES_REQUESTED ? "#D97706" : "#DC2626");">
+                        @if (Model.Status == RequisitionStatus.PENDING_APPROVAL)
+                        {
+                            <i class="bi bi-person-workspace fs-3"></i>
+                        }
+                        else if (Model.Status == RequisitionStatus.APPROVED)
+                        {
+                            <i class="bi bi-check2-all fs-3"></i>
+                        }
+                        else if (Model.Status == RequisitionStatus.CHANGES_REQUESTED)
+                        {
+                            <i class="bi bi-reply-fill fs-3"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-x-octagon-fill fs-3"></i>
+                        }
+                    </div>
+                    <div>
+                        <div class="text-uppercase text-secondary fw-semibold small" style="letter-spacing: 0.5px; font-size: 0.75rem;">
+                            Theo dõi Vị trí Bàn làm việc &amp; Tiến trình Phê duyệt (Scrum #23)
+                        </div>
+                        <h5 class="fw-bold text-dark mb-1">
+                            @if (Model.Status == RequisitionStatus.PENDING_APPROVAL)
+                            {
+                                <span>Hồ sơ hiện đang nằm ở bàn: <span class="text-primary">@Model.CurrentApproverName</span></span>
+                            }
+                            else if (Model.Status == RequisitionStatus.APPROVED)
+                            {
+                                <span class="text-success">Hồ sơ đã được phê duyệt hoàn tất ở tất cả các cấp</span>
+                            }
+                            else if (Model.Status == RequisitionStatus.CHANGES_REQUESTED)
+                            {
+                                <span class="text-warning-emphasis">Hồ sơ đang ở bàn Bạn (Trưởng bộ phận) để bổ sung thông tin</span>
+                            }
+                            else if (Model.Status == RequisitionStatus.REJECTED)
+                            {
+                                <span class="text-danger">Yêu cầu tuyển dụng đã bị từ chối phê duyệt</span>
+                            }
+                            else
+                            {
+                                <span>@Model.CurrentStageSummary</span>
+                            }
+                        </h5>
+                        <div class="text-muted small d-flex flex-wrap align-items-center gap-3 mt-1">
+                            @if (Model.Status == RequisitionStatus.PENDING_APPROVAL)
+                            {
+                                <span><i class="bi bi-person-badge text-secondary me-1"></i>Chức vụ: <strong class="text-dark">@Model.CurrentApproverRole</strong></span>
+                                @if (!string.IsNullOrEmpty(Model.CurrentApproverEmail))
+                                {
+                                    <span><i class="bi bi-envelope text-secondary me-1"></i>Email: <a href="mailto:@Model.CurrentApproverEmail" class="text-decoration-none text-secondary">@Model.CurrentApproverEmail</a></span>
+                                }
+                                <span><i class="bi bi-calendar-event text-secondary me-1"></i>Tiếp nhận: <strong class="text-dark">@Model.CurrentPendingSinceDisplay</strong></span>
+                                <span class="badge bg-warning-subtle text-dark border border-warning-subtle px-2 py-1">
+                                    <i class="bi bi-clock-history me-1"></i>@Model.CurrentWaitingDurationDisplay
+                                </span>
+                            }
+                            else if (Model.Status == RequisitionStatus.APPROVED)
+                            {
+                                <span><i class="bi bi-check-circle-fill text-success me-1"></i>Đã thông qua: Cấp 1 (HR Manager) &amp; Cấp 2 (BOD)</span>
+                                <span><i class="bi bi-clock-history text-secondary me-1"></i>Thời điểm hoàn tất: <strong class="text-dark">@Model.CurrentPendingSinceDisplay</strong></span>
+                            }
+                            else if (Model.Status == RequisitionStatus.CHANGES_REQUESTED)
+                            {
+                                <span><i class="bi bi-exclamation-circle text-warning me-1"></i>Vui lòng xem ý kiến phản hồi bên dưới và chỉnh sửa để nộp lại</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model.Status == RequisitionStatus.PENDING_APPROVAL)
+                {
+                    <div class="d-none d-md-flex flex-column align-items-end text-end">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 fw-semibold" style="border-radius: 8px;">
+                            <i class="bi bi-diagram-3 me-1"></i>Cấp @(Model.CurrentPendingStepOrder ?? 1) / 2
+                        </span>
+                        <small class="text-muted mt-1" style="font-size: 0.75rem;">
+                            Không cần hỏi vòng quanh qua tin nhắn
+                        </small>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column: Details & Content -->
+        <div class="col-12 col-lg-8">
+            <!-- Decision Action Card (Only shown if CanCurrentUserApprove) -->
+            @if (Model.CanCurrentUserApprove)
+            {
+                <div class="card border-0 shadow-sm mb-4 border-start border-4 border-primary" style="border-radius: 12px; background: #FFFFFF;">
+                    <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white" style="width: 32px; height: 32px;">
+                                <i class="bi bi-shield-check"></i>
+                            </span>
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0">Hộp ra quyết định phê duyệt (Scrum #22)</h6>
+                                <small class="text-muted">Bạn có quyền phê duyệt cho cấp hiện tại của yêu cầu này</small>
+                            </div>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="border-radius: 6px;">
+                            Cấp @(Model.CurrentPendingStepOrder ?? 1)
+                        </span>
+                    </div>
+                    <div class="card-body p-4">
+                        <form asp-controller="Requisitions" asp-action="Decision" method="post" id="detailsApprovalForm">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="RequisitionId" value="@Model.Id" />
+                            <input type="hidden" name="Action" id="detailsFormAction" value="APPROVE" />
+
+                            <label class="form-label fw-semibold text-secondary small text-uppercase mb-2">Chọn 1 trong 3 hành động quyết định:</label>
+                            <div class="row g-2 mb-3">
+                                <div class="col-4">
+                                    <button type="button" class="btn btn-outline-success w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-1 decision-btn active" 
+                                            data-action="APPROVE" style="border-radius: 8px;">
+                                        <i class="bi bi-check-circle-fill fs-4"></i>
+                                        <span class="fw-bold small">Duyệt</span>
+                                    </button>
+                                </div>
+                                <div class="col-4">
+                                    <button type="button" class="btn btn-outline-warning w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-1 decision-btn" 
+                                            data-action="REQUEST_CHANGES" style="border-radius: 8px;">
+                                        <i class="bi bi-arrow-repeat fs-4"></i>
+                                        <span class="fw-bold small">Yêu cầu bổ sung</span>
+                                    </button>
+                                </div>
+                                <div class="col-4">
+                                    <button type="button" class="btn btn-outline-danger w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-1 decision-btn" 
+                                            data-action="REJECT" style="border-radius: 8px;">
+                                        <i class="bi bi-x-circle-fill fs-4"></i>
+                                        <span class="fw-bold small">Từ chối</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Dynamic Helper Banner -->
+                            <div id="detailsHelperBanner" class="alert alert-success d-flex align-items-start gap-2 py-2 px-3 mb-3 small" style="border-radius: 8px;">
+                                <i class="bi bi-info-circle-fill mt-1"></i>
+                                <span id="detailsHelperText">Phê duyệt yêu cầu. Hồ sơ sẽ tự động chuyển sang cấp tiếp theo (hoặc hoàn tất nếu là cấp cuối).</span>
+                            </div>
+
+                            <!-- Comment Textarea -->
+                            <div class="mb-3">
+                                <label for="detailsComment" class="form-label fw-semibold text-dark small" id="detailsCommentLabel">
+                                    Ý kiến / Ghi chú của Người duyệt
+                                    <span class="text-danger d-none" id="detailsCommentRequiredStar">(*)</span>
+                                </label>
+                                <textarea name="Comment" id="detailsComment" rows="3" class="form-control" 
+                                          placeholder="Nhập ghi chú thêm (không bắt buộc đối với Duyệt)..." style="border-radius: 8px;"></textarea>
+                                <div class="invalid-feedback" id="detailsCommentError">
+                                    Vui lòng nhập ý kiến cho hành động này.
+                                </div>
+                                <small class="text-muted d-block mt-1">
+                                    Ý kiến sẽ được ghi nhận vào lịch sử phê duyệt và gửi thông báo tới người tạo.
+                                </small>
+                            </div>
+
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" class="btn btn-success px-4 py-2 fw-semibold d-flex align-items-center gap-2" id="detailsSubmitBtn" style="border-radius: 8px;">
+                                    <i class="bi bi-send-check"></i>
+                                    <span id="detailsSubmitBtnText">Xác nhận Duyệt</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+
+            <!-- Card: Requisition Basic Info -->
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: #FFFFFF;">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        Thông tin chi tiết Vị trí &amp; Tuyển dụng
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <div class="text-muted small">Vị trí / Chức danh:</div>
+                            <div class="fw-bold text-dark fs-6 mt-1">@Model.JobPositionTitle</div>
+                            @if (!string.IsNullOrWhiteSpace(Model.JobLevel))
+                            {
+                                <span class="badge bg-light text-secondary border mt-1" style="border-radius: 4px;">Level: @Model.JobLevel</span>
+                            }
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="text-muted small">Phòng ban phụ trách:</div>
+                            <div class="fw-semibold text-dark fs-6 mt-1">@Model.DepartmentName</div>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <div class="text-muted small">Số lượng cần tuyển:</div>
+                            <div class="fw-bold text-dark fs-5 mt-1">@Model.Quantity <span class="fs-6 fw-normal text-muted">nhân sự</span></div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="text-muted small">Loại Headcount:</div>
+                            <div class="fw-semibold text-dark mt-1">
+                                @(Model.HeadcountType == HeadcountType.NEW_HEADCOUNT ? "Tăng mới định biên" : "Thay thế nhân sự nghỉ việc")
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="text-muted small">Ngày cần nhân sự có mặt:</div>
+                            <div class="fw-semibold text-primary mt-1">
+                                <i class="bi bi-calendar-event me-1"></i>@Model.TargetHireDateDisplay
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <div class="text-muted small">Dải lương đề xuất:</div>
+                            <div class="fw-bold text-success fs-6 mt-1">@Model.SalaryDisplay</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="text-muted small">Người lập yêu cầu (Hiring Manager):</div>
+                            <div class="fw-semibold text-dark mt-1">@Model.HiringManagerName</div>
+                            <small class="text-muted">@Model.HiringManagerEmail</small>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(Model.Reason))
+                        {
+                            <div class="col-12">
+                                <div class="text-muted small">Lý do tuyển dụng:</div>
+                                <div class="p-3 bg-light rounded-3 text-dark mt-1 small">@Model.Reason</div>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(Model.SalaryBandExplanation))
+                        {
+                            <div class="col-12">
+                                <div class="text-muted small">Giải trình dải lương ngoài chuẩn:</div>
+                                <div class="p-3 bg-warning-subtle text-dark border border-warning-subtle rounded-3 mt-1 small">
+                                    <i class="bi bi-exclamation-triangle me-1 text-warning"></i>@Model.SalaryBandExplanation
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card: Job Description -->
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: #FFFFFF;">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-card-text text-primary"></i>
+                        Mô tả công việc (Job Description)
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    @if (string.IsNullOrWhiteSpace(Model.JobDescription))
+                    {
+                        <p class="text-muted fst-italic mb-0">Chưa có nội dung mô tả công việc.</p>
+                    }
+                    else
+                    {
+                        <div class="content-preview text-dark" style="line-height: 1.7;">
+                            @Html.Raw(Model.JobDescription)
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Card: Requirements -->
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: #FFFFFF;">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-check2-square text-primary"></i>
+                        Yêu cầu ứng viên (Requirements)
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    @if (string.IsNullOrWhiteSpace(Model.Requirements))
+                    {
+                        <p class="text-muted fst-italic mb-0">Chưa có nội dung yêu cầu ứng viên.</p>
+                    }
+                    else
+                    {
+                        <div class="content-preview text-dark" style="line-height: 1.7;">
+                            @Html.Raw(Model.Requirements)
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Approval Stepper & Immutable Audit Trail -->
+        <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm sticky-top" style="border-radius: 12px; background: #FFFFFF; top: 90px;">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-diagram-3-fill text-primary"></i>
+                            Chuỗi Cấp duyệt &amp; Lịch sử
+                        </h6>
+                        <span class="badge bg-light text-muted border" title="Lịch sử bất biến không thể sửa hoặc xóa">
+                            <i class="bi bi-shield-lock-fill text-success me-1"></i>Bất biến
+                        </span>
+                    </div>
+                    <small class="text-muted">Theo dõi từng bước, người duyệt, thời điểm và ý kiến</small>
+                </div>
+                <div class="card-body p-4">
+                    @if (Model.ApprovalSteps == null || Model.ApprovalSteps.Count == 0)
+                    {
+                        <div class="text-center py-4 text-muted small">
+                            <i class="bi bi-clock-history fs-3 d-block mb-2"></i>
+                            Yêu cầu này chưa được kích hoạt luồng phê duyệt.
+                        </div>
+                    }
+                    else
+                    {
+                        var maxRound = Model.ApprovalSteps.Max(s => s.RoundNumber);
+                        
+                        <div class="timeline position-relative">
+                            @for (int i = 0; i < Model.ApprovalSteps.Count; i++)
+                            {
+                                var step = Model.ApprovalSteps[i];
+                                var isLast = i == Model.ApprovalSteps.Count - 1;
+                                var isFirstOfRound = i == 0 || Model.ApprovalSteps[i - 1].RoundNumber != step.RoundNumber;
+
+                                if (isFirstOfRound && maxRound > 1)
+                                {
+                                    <div class="d-flex align-items-center gap-2 my-2 py-1 px-2 rounded-2 bg-light border small text-muted">
+                                        <i class="bi bi-arrow-repeat text-primary"></i>
+                                        <span class="fw-semibold">
+                                            @(step.RoundNumber == maxRound ? $"Vòng xét duyệt {step.RoundNumber} (Hiện tại)" : $"Vòng xét duyệt {step.RoundNumber} (Trước đó)")
+                                        </span>
+                                    </div>
+                                }
+
+                                <div class="timeline-item d-flex gap-3 mb-4 position-relative">
+                                    <!-- Status Icon / Pin -->
+                                    <div class="d-flex flex-column align-items-center">
+                                        @switch (step.Status)
+                                        {
+                                            case ApprovalStatus.APPROVED:
+                                                <div class="rounded-circle d-flex align-items-center justify-content-center bg-success text-white shadow-sm" style="width: 36px; height: 36px; z-index: 2;">
+                                                    <i class="bi bi-check-lg fs-5"></i>
+                                                </div>
+                                                break;
+                                            case ApprovalStatus.CHANGES_REQUESTED:
+                                                <div class="rounded-circle d-flex align-items-center justify-content-center bg-warning text-dark shadow-sm" style="width: 36px; height: 36px; z-index: 2;">
+                                                    <i class="bi bi-arrow-repeat fs-5"></i>
+                                                </div>
+                                                break;
+                                            case ApprovalStatus.REJECTED:
+                                                <div class="rounded-circle d-flex align-items-center justify-content-center bg-danger text-white shadow-sm" style="width: 36px; height: 36px; z-index: 2;">
+                                                    <i class="bi bi-x-lg fs-5"></i>
+                                                </div>
+                                                break;
+                                            default:
+                                                <div class="rounded-circle d-flex align-items-center justify-content-center @(step.IsCurrent ? "bg-primary text-white ring-4 ring-primary-subtle" : "bg-light text-muted border") shadow-sm" style="width: 36px; height: 36px; z-index: 2;">
+                                                    <i class="bi @(step.IsCurrent ? "bi-hourglass-split" : "bi-circle")"></i>
+                                                </div>
+                                                break;
+                                        }
+
+                                        @if (!isLast)
+                                        {
+                                            <div class="h-100 border-start border-2 my-1" style="min-height: 45px; border-color: #E2E8F0 !important;"></div>
+                                        }
+                                    </div>
+
+                                    <!-- Step Details Content -->
+                                    <div class="flex-grow-1 pb-2">
+                                        <div class="d-flex justify-content-between align-items-start gap-2">
+                                            <div>
+                                                <h6 class="fw-bold text-dark mb-0 small">@step.StepTitle</h6>
+                                                <div class="text-secondary small fw-medium mt-1 d-flex align-items-center gap-1">
+                                                    <span>@step.ApproverName</span>
+                                                    <span class="badge bg-light text-muted border py-0 px-1" style="font-size: 0.68rem;">@step.ApproverRole</span>
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(step.ApproverEmail))
+                                                {
+                                                    <small class="text-muted d-block" style="font-size: 0.72rem;">@step.ApproverEmail</small>
+                                                }
+                                            </div>
+
+                                            @switch (step.Status)
+                                            {
+                                                case ApprovalStatus.APPROVED:
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle" style="border-radius: 6px; font-size: 0.75rem;">Đã duyệt</span>
+                                                    break;
+                                                case ApprovalStatus.CHANGES_REQUESTED:
+                                                    <span class="badge bg-warning-subtle text-dark border border-warning" style="border-radius: 6px; font-size: 0.75rem;">Yêu cầu bổ sung</span>
+                                                    break;
+                                                case ApprovalStatus.REJECTED:
+                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="border-radius: 6px; font-size: 0.75rem;">Từ chối</span>
+                                                    break;
+                                                default:
+                                                    <span class="badge @(step.IsCurrent ? "bg-primary-subtle text-primary border border-primary-subtle" : "bg-light text-muted border")" style="border-radius: 6px; font-size: 0.75rem;">
+                                                        @(step.IsCurrent ? "Đang chờ duyệt" : "Chờ tới lượt")
+                                                    </span>
+                                                    break;
+                                            }
+                                        </div>
+
+                                        <div class="text-muted d-flex flex-wrap align-items-center gap-2 mt-1" style="font-size: 0.75rem;">
+                                            @if (step.DecidedAt.HasValue)
+                                            {
+                                                <span><i class="bi bi-clock-history me-1"></i>Duyệt lúc: @step.DecidedAtDisplay</span>
+                                                @if (!string.IsNullOrEmpty(step.DurationDisplay) && step.DurationDisplay != "—")
+                                                {
+                                                    <span class="text-secondary">(@step.DurationDisplay)</span>
+                                                }
+                                            }
+                                            else if (step.IsCurrent)
+                                            {
+                                                <span><i class="bi bi-hourglass-split text-primary me-1"></i>Tiếp nhận: @step.StepCreatedAtDisplay</span>
+                                                @if (!string.IsNullOrEmpty(step.DurationDisplay) && step.DurationDisplay != "—")
+                                                {
+                                                    <span class="badge bg-warning-subtle text-dark border border-warning-subtle py-0 px-1" style="font-size: 0.7rem;">@step.DurationDisplay</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span><i class="bi bi-arrow-right-short me-1"></i>Chờ bước trước hoàn thành</span>
+                                            }
+                                        </div>
+
+                                        <!-- Reviewer's recorded comment -->
+                                        @if (!string.IsNullOrWhiteSpace(step.Comment))
+                                        {
+                                            <div class="mt-2 p-2 rounded-2 small @(step.Status == ApprovalStatus.CHANGES_REQUESTED ? "bg-warning-subtle border border-warning-subtle text-dark" : step.Status == ApprovalStatus.REJECTED ? "bg-danger-subtle border border-danger-subtle text-danger" : "bg-light border text-secondary")" style="font-size: 0.8rem;">
+                                                <div class="fw-semibold mb-1">
+                                                    <i class="bi bi-chat-left-text me-1"></i>Ý kiến ghi chép:
+                                                </div>
+                                                <div class="fst-italic">"@step.Comment"</div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <div class="p-2 mt-2 rounded-2 bg-light border text-center text-muted small" style="font-size: 0.72rem;">
+                        <i class="bi bi-shield-lock-fill text-success me-1"></i>
+                        Lịch sử phê duyệt được niêm phong bất biến &amp; không thể sửa/xóa.
+                    </div>
+
+                    <hr class="my-3" />
+                    <div class="d-flex justify-content-between align-items-center text-muted small">
+                        <span>Ngày tạo hồ sơ:</span>
+                        <span class="fw-medium text-dark">@Model.CreatedAtDisplay</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const decisionButtons = document.querySelectorAll('.decision-btn');
+        const formActionInput = document.getElementById('detailsFormAction');
+        const commentInput = document.getElementById('detailsComment');
+        const commentLabel = document.getElementById('detailsCommentLabel');
+        const commentRequiredStar = document.getElementById('detailsCommentRequiredStar');
+        const commentError = document.getElementById('detailsCommentError');
+        const helperBanner = document.getElementById('detailsHelperBanner');
+        const helperText = document.getElementById('detailsHelperText');
+        const submitBtn = document.getElementById('detailsSubmitBtn');
+        const submitBtnText = document.getElementById('detailsSubmitBtnText');
+        const form = document.getElementById('detailsApprovalForm');
+
+        if (!form) return;
+
+        decisionButtons.forEach(btn => {
+            btn.addEventListener('click', function () {
+                decisionButtons.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const action = this.getAttribute('data-action');
+                formActionInput.value = action;
+                commentInput.classList.remove('is-invalid');
+
+                if (action === 'APPROVE') {
+                    helperBanner.className = 'alert alert-success d-flex align-items-start gap-2 py-2 px-3 mb-3 small';
+                    helperText.innerText = 'Phê duyệt yêu cầu. Hồ sơ sẽ tự động chuyển sang cấp tiếp theo (hoặc hoàn tất nếu là cấp cuối).';
+                    commentRequiredStar.classList.add('d-none');
+                    commentInput.placeholder = 'Nhập ghi chú thêm (không bắt buộc đối với Duyệt)...';
+                    submitBtn.className = 'btn btn-success px-4 py-2 fw-semibold d-flex align-items-center gap-2';
+                    submitBtnText.innerText = 'Xác nhận Duyệt';
+                } else if (action === 'REQUEST_CHANGES') {
+                    helperBanner.className = 'alert alert-warning d-flex align-items-start gap-2 py-2 px-3 mb-3 small';
+                    helperText.innerText = 'Yêu cầu bổ sung sẽ trả hồ sơ về cho người tạo và giữ nguyên lịch sử để người tạo cập nhật.';
+                    commentRequiredStar.classList.remove('d-none');
+                    commentInput.placeholder = 'Nhập các nội dung cần bổ sung, chỉnh sửa... (* bắt buộc)';
+                    submitBtn.className = 'btn btn-warning px-4 py-2 fw-semibold d-flex align-items-center gap-2 text-dark';
+                    submitBtnText.innerText = 'Gửi yêu cầu bổ sung';
+                } else if (action === 'REJECT') {
+                    helperBanner.className = 'alert alert-danger d-flex align-items-start gap-2 py-2 px-3 mb-3 small';
+                    helperText.innerText = 'Từ chối yêu cầu tuyển dụng này. Quy trình phê duyệt sẽ dừng lại.';
+                    commentRequiredStar.classList.remove('d-none');
+                    commentInput.placeholder = 'Nhập lý do từ chối yêu cầu tuyển dụng... (* bắt buộc)';
+                    submitBtn.className = 'btn btn-danger px-4 py-2 fw-semibold d-flex align-items-center gap-2';
+                    submitBtnText.innerText = 'Xác nhận Từ chối';
+                }
+            });
+        });
+
+        form.addEventListener('submit', function (e) {
+            const action = formActionInput.value;
+            const comment = commentInput.value.trim();
+
+            if ((action === 'REQUEST_CHANGES' || action === 'REJECT') && !comment) {
+                e.preventDefault();
+                commentInput.classList.add('is-invalid');
+                commentError.innerText = action === 'REJECT'
+                    ? 'Vui lòng nhập lý do từ chối yêu cầu tuyển dụng.'
+                    : 'Vui lòng nhập ý kiến yêu cầu bổ sung thông tin.';
+                commentInput.focus();
+                return false;
+            }
+
+            commentInput.classList.remove('is-invalid');
+        });
+    });
+</script>

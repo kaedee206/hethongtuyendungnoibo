@@ -14,6 +14,7 @@ public class JobItemViewModel
     public bool IsHot { get; set; }
     public string ShortSummary { get; set; } = string.Empty;
     public string Overview { get; set; } = string.Empty;
+    public string PositionDescription { get; set; } = string.Empty;
     public List<string> Responsibilities { get; set; } = new();
     public List<string> Requirements { get; set; } = new();
     public List<string> Benefits { get; set; } = new();
@@ -59,9 +60,27 @@ public class CreateJobViewModel
     public DateTime ExpiredDate { get; set; } = DateTime.UtcNow.AddDays(30);
 
     public string Overview { get; set; } = string.Empty;
+    public string PositionDescription { get; set; } = string.Empty;
     public string Responsibilities { get; set; } = string.Empty;
     public string Requirements { get; set; } = string.Empty;
     public string TechStack { get; set; } = string.Empty; // Comma-delimited list of tags
+    public string Benefits { get; set; } = string.Empty;
+}
+
+public class UpdateJobPostingRequest
+{
+    public string JobId { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Department { get; set; } = string.Empty;
+    public string WorkLocation { get; set; } = string.Empty;
+    public string ExperienceLevel { get; set; } = string.Empty;
+    public string SalaryDisplay { get; set; } = string.Empty;
+    public DateTime Deadline { get; set; } = DateTime.UtcNow.AddDays(30);
+    public string Overview { get; set; } = string.Empty;
+    public string PositionDescription { get; set; } = string.Empty;
+    public string Responsibilities { get; set; } = string.Empty;
+    public string Requirements { get; set; } = string.Empty;
+    public string TechStack { get; set; } = string.Empty;
     public string Benefits { get; set; } = string.Empty;
 }
 
