@@ -28,6 +28,30 @@ public class RequisitionsController(
     }
 
     /// <summary>
+    /// GET: /yeu-cau-tuyen-dung hoặc /requisitions
+    /// Danh sách yêu cầu tuyển dụng với các tab phân loại và phê duyệt.
+    /// </summary>
+    [HttpGet("")]
+    [HttpGet("danh-sach")]
+    public async Task<IActionResult> Index(
+        [FromQuery] string? tab = null,
+        [FromQuery] string? search = null,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        var items = await _requisitionService.GetRequisitionsForApprovalAsync(userId, tab, search, cancellationToken);
+        var pendingCount = await _requisitionService.GetPendingApprovalCountForUserAsync(userId, cancellationToken);
+        var myCount = await _requisitionService.GetMyRequisitionsCountAsync(userId, cancellationToken);
+
+        ViewBag.CurrentTab = string.IsNullOrWhiteSpace(tab) ? "all" : tab.ToLowerInvariant();
+        ViewBag.Search = search;
+        ViewBag.PendingMyApprovalCount = pendingCount;
+        ViewBag.MyRequisitionsCount = myCount;
+
+        return View(items);
+    }
+
+    /// <summary>
     /// GET: /yeu-cau-tuyen-dung/tao-moi hoặc /requisitions/create
     /// Hiển thị giao diện Form khai báo thông tin cơ bản yêu cầu tuyển dụng.
     /// </summary>
@@ -332,6 +356,93 @@ public class RequisitionsController(
 
         TempData["SuccessMessage"] = message;
         return RedirectToAction(nameof(Edit), new { id = newRequisitionId!.Value });
+    }
+
+    /// <summary>
+    /// GET: /yeu-cau-tuyen-dung/chi-tiet/{id} hoặc /requisitions/details/{id}
+    /// Chi tiết yêu cầu tuyển dụng và tiến trình phê duyệt đa cấp.
+    /// </summary>
+    [HttpGet("chi-tiet/{id:guid}")]
+    [HttpGet("details/{id:guid}")]
+    public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        var model = await _requisitionService.GetRequisitionDetailsAsync(id, userId, cancellationToken);
+
+        if (model == null)
+        {
+            TempData["ErrorMessage"] = "Không tìm thấy yêu cầu tuyển dụng hoặc bạn không có quyền xem.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        return View(model);
+    }
+
+    /// <summary>
+    /// POST: /yeu-cau-tuyen-dung/phe-duyet hoặc /requisitions/decision
+    /// Ra quyết định phê duyệt: Duyệt (APPROVE), Từ chối (REJECT), Yêu cầu bổ sung (REQUEST_CHANGES).
+    /// </summary>
+    [HttpPost("phe-duyet")]
+    [HttpPost("decision")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Decision(
+        [FromForm] RequisitionApprovalDecisionInputModel model,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        var (success, message) = await _requisitionService.ProcessApprovalDecisionAsync(model.RequisitionId, userId, model, cancellationToken);
+
+        var isAjax = Request.Headers.Accept.Any(h => h?.Contains("application/json") == true) ||
+                     Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+
+        if (isAjax)
+        {
+            return Json(new { success, message });
+        }
+
+        if (success)
+        {
+            TempData["SuccessMessage"] = message;
+        }
+        else
+        {
+            TempData["ErrorMessage"] = message;
+        }
+
+        return RedirectToAction(nameof(Details), new { id = model.RequisitionId });
+    }
+
+    /// <summary>
+    /// GET: /yeu-cau-tuyen-dung/api/approval-modal/{id}
+    /// Lấy thông tin tóm tắt cho Modal phê duyệt nhanh.
+    /// </summary>
+    [HttpGet("api/approval-modal/{id:guid}")]
+    public async Task<IActionResult> GetApprovalModalData(Guid id, CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        var details = await _requisitionService.GetRequisitionDetailsAsync(id, userId, cancellationToken);
+
+        if (details == null)
+        {
+            return NotFound(new { success = false, message = "Không tìm thấy yêu cầu tuyển dụng." });
+        }
+
+        return Json(new
+        {
+            success = true,
+            data = new
+            {
+                id = details.Id,
+                code = details.Code,
+                jobTitle = details.JobPositionTitle,
+                department = details.DepartmentName,
+                quantity = details.Quantity,
+                hiringManager = details.HiringManagerName,
+                canApprove = details.CanCurrentUserApprove,
+                currentStep = details.CurrentPendingStepOrder,
+                status = details.Status.ToString()
+            }
+        });
     }
 }
 

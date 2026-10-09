@@ -817,3 +817,42 @@ UPDATE departments SET manager_id = '3dbde712-2654-4b7c-a5d3-da24272b4f77' WHERE
 UPDATE departments SET manager_id = 'e19d5cf0-7b8f-4296-a9b8-e35ed080cc55' WHERE id = 'f30e32de-1d91-46e1-95aa-549384ebb8a7'; -- HR: Nguyễn Mai Phương
 UPDATE departments SET manager_id = 'caccc0e1-8c9c-4ccb-b742-dbc9f64decec' WHERE id = '1dc060f4-1b86-4161-bd37-21811fa7486b'; -- IT: Vũ Thành Long
 UPDATE departments SET manager_id = 'a4c487b8-dd2b-4f5a-839c-374090c6a4f7' WHERE id = '7f0c7044-5198-4882-81d6-bd3aea8d1ee6'; -- SALES: Hoàng Gia Bảo
+
+-- --------------------------------------------------------------------------------
+-- SCRUM-276: B?NG C?U H�NH LU?NG PH� DUY?T THEO H?N M?C (approval_rules & approval_rule_steps)
+-- --------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS approval_rules (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
+    min_salary NUMERIC(18,2) NOT NULL DEFAULT 0,
+    max_salary NUMERIC(18,2),
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by_id UUID,
+    updated_by_id UUID,
+    is_deleted BOOLEAN NOT NULL DEFAULT false,
+    deleted_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS ix_approval_rules_department_id ON approval_rules(department_id);
+
+CREATE TABLE IF NOT EXISTS approval_rule_steps (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    approval_rule_id UUID NOT NULL REFERENCES approval_rules(id) ON DELETE CASCADE,
+    step_order INTEGER NOT NULL,
+    approver_role_id UUID REFERENCES roles(id) ON DELETE RESTRICT,
+    approver_user_id UUID REFERENCES users(id) ON DELETE RESTRICT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by_id UUID,
+    updated_by_id UUID,
+    is_deleted BOOLEAN NOT NULL DEFAULT false,
+    deleted_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS ix_approval_rule_steps_approval_rule_id ON approval_rule_steps(approval_rule_id);
+CREATE INDEX IF NOT EXISTS ix_approval_rule_steps_approver_role_id ON approval_rule_steps(approver_role_id);
+CREATE INDEX IF NOT EXISTS ix_approval_rule_steps_approver_user_id ON approval_rule_steps(approver_user_id);
+

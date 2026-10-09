@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -11,11 +11,11 @@ namespace Ats.Web.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "lock_reason",
-                table: "users",
-                type: "text",
-                nullable: true);
+            // migrationBuilder.AddColumn<string>(
+            //     name: "lock_reason",
+            //     table: "users",
+            //     type: "text",
+            //     nullable: true);
 
             migrationBuilder.AddColumn<DateTimeOffset>(
                 name: "locked_at",

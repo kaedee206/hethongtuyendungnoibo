@@ -214,15 +214,27 @@ public class HomeController : Controller
             {
                 appCountsByStage.TryGetValue(stg.Id, out var count);
                 var pct = Math.Round((double)count / totalApps * 100, 1);
+                var (shortName, stageColor, isTerminal) = stg.StageOrder switch
+                {
+                    1 => ("Ứng tuyển", "#2563EB", false),
+                    2 => ("Sàng lọc CV", "#4F46E5", false),
+                    3 => ("PV Sơ loại", "#0891B2", false),
+                    4 => ("PV Chuyên môn", "#D97706", false),
+                    5 => ("Đề xuất Offer", "#7C3AED", false),
+                    6 => ("Đã tuyển dụng", "#059669", false),
+                    7 => ("Đã từ chối", "#E11D48", true),
+                    _ => (stg.Name, "#64748B", false)
+                };
+
                 var subtitle = stg.StageOrder switch
                 {
                     1 => "Cổng ứng tuyển",
-                    2 => "Sàng lọc CV",
-                    3 => "Phỏng vấn sơ loại",
-                    4 => "Phỏng vấn chuyên môn",
-                    5 => "Chờ duyệt Offer",
+                    2 => "Đánh giá hồ sơ",
+                    3 => "Phỏng vấn sơ bộ",
+                    4 => "Đánh giá nghiệp vụ",
+                    5 => "Thương thảo Offer",
                     6 => "Đã ký HĐLĐ",
-                    7 => "Lưu kho dữ liệu",
+                    7 => "Hồ sơ lưu trữ",
                     _ => "Tiến trình"
                 };
 
@@ -230,10 +242,12 @@ public class HomeController : Controller
                 {
                     StageOrder = stg.StageOrder,
                     StageName = stg.Name,
-                    ColorCode = stg.ColorCode ?? "#0D5C4D",
+                    ShortName = shortName,
+                    ColorCode = stageColor,
                     Count = count,
                     Percentage = pct,
-                    Subtitle = subtitle
+                    Subtitle = subtitle,
+                    IsTerminal = isTerminal
                 });
             }
             model.PipelineFunnel = funnelList;

@@ -149,7 +149,8 @@ public partial class ProfileService : IProfileService
         }
         else
         {
-            var uploadsFolder = Path.Combine(webRootPath, "uploads", "media");
+            var root = string.IsNullOrWhiteSpace(webRootPath) ? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot") : webRootPath;
+            var uploadsFolder = Path.Combine(root, "uploads", "media");
             if (!Directory.Exists(uploadsFolder))
             {
                 Directory.CreateDirectory(uploadsFolder);

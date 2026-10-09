@@ -10,10 +10,10 @@
     <!-- Favicon từ bộ logo chính thức -->
     <link rel="icon" type="image/png" href="~/img/favicon.png" asp-append-version="true" />
     <link rel="shortcut icon" type="image/png" href="~/img/favicon.png" asp-append-version="true" />
-    <!-- Google Fonts: Inter + Outfit -->
+    <!-- Google Fonts: Inter + JetBrains Mono + Outfit (RULE.md Style Guide Compliant) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -81,11 +81,11 @@
                                 </li>
                             }
 
-                            @* Menu dành cho HR Manager & Recruiter *@
-                            @if (User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
+                            @* Menu dành cho Admin, HR Manager & Recruiter *@
+                            @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#createJobModal">
+                                    <a class="nav-link ats-nav-link" asp-controller="Jobs" asp-action="Create">
                                         <i class="bi bi-megaphone me-1"></i> + Đăng tin tuyển dụng
                                     </a>
                                 </li>
@@ -212,11 +212,11 @@
                                         </li>
                                     }
 
-                                    @if (User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
+                                    @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
                                     {
                                         <li>
-                                            <a class="dropdown-item py-2" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#createJobModal">
-                                                <i class="bi bi-megaphone me-2 text-muted"></i> Đăng tin tuyển dụng
+                                            <a class="dropdown-item py-2" asp-controller="Jobs" asp-action="Create">
+                                                <i class="bi bi-megaphone me-2 text-primary"></i> Đăng tin tuyển dụng
                                             </a>
                                         </li>
                                     }
@@ -426,6 +426,10 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/instant-search.js" asp-append-version="true"></script>
     <script src="~/js/sidebar.js" asp-append-version="true"></script>
+
+    <div id="globalAntiforgeryContainer" class="d-none">
+        @Html.AntiForgeryToken()
+    </div>
 
     @await RenderSectionAsync("Scripts", required: false)
 
