@@ -3,7 +3,10 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@ViewData["Title"] - ATS | Hệ thống Tuyển dụng Nội bộ</title>
+    <title>@ViewData["Title"] - NoveraTech Careers</title>
+    <!-- Favicon (RULE.md Compliant) -->
+    <link rel="icon" type="image/png" href="~/img/logo/favicon.png" asp-append-version="true" />
+
     <!-- Google Fonts: Inter + JetBrains Mono (RULE.md Style Guide Compliant) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -17,7 +20,7 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="account-body position-relative">
-    <a href="/gioi-thieu" class="btn btn-sm btn-outline-secondary position-fixed top-0 start-0 m-3 shadow-sm bg-white border-slate-200" style="z-index: 1050; border-radius: 9999px;">
+    <a href="/gioi-thieu" class="btn btn-sm btn-outline-secondary position-fixed top-0 start-0 m-3 shadow-sm bg-white border-slate-200" style="z-index: 1050; border-radius: 8px;">
         <i class="bi bi-arrow-left me-1"></i> Về trang chủ
     </a>
     <main role="main">
@@ -25,7 +28,7 @@
     </main>
 
     <footer class="account-footer text-center text-muted small">
-        &copy; @DateTime.Now.Year - ATS - Hệ thống Tuyển dụng Nội bộ
+        &copy; @DateTime.Now.Year NoveraTech Careers · Cổng Thông tin Tuyển dụng
     </footer>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
