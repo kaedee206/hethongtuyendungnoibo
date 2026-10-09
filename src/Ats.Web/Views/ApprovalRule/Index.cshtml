@@ -1,0 +1,365 @@
+@{
+    ViewData["Title"] = "Cấu hình luồng phê duyệt";
+    var departments = ViewBag.Departments as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var roles = ViewBag.Roles as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var users = ViewBag.Users as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+
+<div class="container-fluid px-3 px-md-4 py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 fw-bold mb-1" style="color: var(--text-primary);">Cấu hình luồng phê duyệt</h1>
+            <p class="text-muted mb-0" style="font-size: 0.92rem;">Quản lý chuỗi cấp duyệt nhiều cấp theo phòng ban và hạn mức lương</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary d-inline-flex align-items-center gap-2" style="border-radius: 8px;" onclick="openApprovalRuleModal()">
+                <i class="bi bi-plus-lg"></i> Thêm cấu hình mới
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+        <div class="card-body p-3 p-md-4">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-6">
+                    <select class="form-select bg-light" id="deptFilterSelect" style="border-radius: 8px;" onchange="loadApprovalRules()">
+                        <option value="">-- Tất cả phòng ban / Áp dụng chung --</option>
+                        @foreach (var dept in departments)
+                        {
+                            <option value="@dept.Id">@dept.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table View -->
+    <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="approvalRulesTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Tên quy trình</th>
+                            <th>Phòng ban áp dụng</th>
+                            <th>Hạn mức lương (VNĐ)</th>
+                            <th>Chuỗi phê duyệt</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end pe-4">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="approvalRulesTbody">
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="spinner-border text-success" role="status">
+                                    <span class="visually-hidden">Đang tải...</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Create / Edit Rule -->
+<div class="modal fade" id="approvalRuleModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold" id="approvalRuleModalTitle" style="color: var(--text-primary);">Thêm cấu hình phê duyệt</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="approvalRuleForm" novalidate>
+                <input type="hidden" id="ruleId" />
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Tên quy trình <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="ruleName" required placeholder="Ví dụ: Quy trình phê duyệt Headcount > 30tr" />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Phòng ban áp dụng</label>
+                        <select class="form-select" id="ruleDept">
+                            <option value="">-- Áp dụng chung cho toàn công ty --</option>
+                            @foreach (var dept in departments)
+                            {
+                                <option value="@dept.Id">@dept.Name</option>
+                            }
+                        </select>
+                        <div class="form-text small text-muted">Nếu chọn phòng ban cụ thể, quy tắc này sẽ ưu tiên áp dụng cho phòng ban đó.</div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Mức lương đề xuất (Min) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="ruleMinSalary" required min="0" value="0" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Mức lương đề xuất (Max)</label>
+                            <input type="number" class="form-control" id="ruleMaxSalary" />
+                            <div class="form-text small text-muted">Để trống nếu không giới hạn mức tối đa.</div>
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch mb-4">
+                        <input class="form-check-input" type="checkbox" id="ruleIsActive" checked>
+                        <label class="form-check-label small fw-semibold" for="ruleIsActive">Đang hoạt động</label>
+                    </div>
+
+                    <h6 class="fw-bold mb-3">Chuỗi các cấp phê duyệt</h6>
+                    <div class="alert alert-info py-2 small">
+                        <i class="bi bi-info-circle me-1"></i> Các cấp sẽ được phê duyệt theo thứ tự từ 1 trở đi.
+                    </div>
+                    <div id="ruleStepsContainer">
+                        <!-- Steps will be generated here -->
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addRuleStep()">
+                        <i class="bi bi-plus-circle me-1"></i> Thêm cấp duyệt mới
+                    </button>
+                    <div id="ruleFormError" class="text-danger mt-3 small d-none"></div>
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-outline-secondary" style="border-radius: 8px;" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary px-4" style="border-radius: 8px;" id="saveRuleBtn">Lưu cấu hình</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const ROLES = @Json.Serialize(roles);
+        const USERS = @Json.Serialize(users);
+        let currentSteps = [];
+
+        $(document).ready(function () {
+            loadApprovalRules();
+
+            $('#approvalRuleForm').on('submit', function (e) {
+                e.preventDefault();
+                saveApprovalRule();
+            });
+        });
+
+        function formatCurrency(amount) {
+            if (amount == null) return "Không giới hạn";
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        }
+
+        function loadApprovalRules() {
+            const deptId = $('#deptFilterSelect').val();
+            $.ajax({
+                url: '/api/approval-rules' + (deptId ? `?departmentId=${deptId}` : ''),
+                type: 'GET',
+                success: function (res) {
+                    const rules = res.data;
+                    const tbody = $('#approvalRulesTbody');
+                    tbody.empty();
+
+                    if (rules.length === 0) {
+                        tbody.append(`<tr><td colspan="6" class="text-center py-4 text-muted">Chưa có cấu hình luồng phê duyệt nào.</td></tr>`);
+                        return;
+                    }
+
+                    rules.forEach(rule => {
+                        let stepsHtml = rule.steps.map(s => 
+                            `<span class="badge bg-secondary me-1">Cấp ${s.stepOrder}: ${s.approverRoleName || s.approverUserName}</span>`
+                        ).join('');
+
+                        let tr = `
+                            <tr>
+                                <td class="ps-4 fw-semibold">${rule.name}</td>
+                                <td>${rule.departmentName || '<span class="badge bg-info">Áp dụng chung</span>'}</td>
+                                <td>Từ: <b>${formatCurrency(rule.minSalary)}</b><br/>Đến: <b>${formatCurrency(rule.maxSalary)}</b></td>
+                                <td>${stepsHtml}</td>
+                                <td>${rule.isActive ? '<span class="badge bg-success">Hoạt động</span>' : '<span class="badge bg-danger">Ngừng</span>'}</td>
+                                <td class="text-end pe-4">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editRule('${rule.id}')"><i class="bi bi-pencil"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteRule('${rule.id}')"><i class="bi bi-trash"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                        tbody.append(tr);
+                    });
+                }
+            });
+        }
+
+        function openApprovalRuleModal() {
+            $('#ruleId').val('');
+            $('#ruleName').val('');
+            $('#ruleDept').val('');
+            $('#ruleMinSalary').val(0);
+            $('#ruleMaxSalary').val('');
+            $('#ruleIsActive').prop('checked', true);
+            $('#approvalRuleModalTitle').text('Thêm cấu hình phê duyệt mới');
+            
+            currentSteps = [];
+            addRuleStep(); // add default first step
+            
+            $('#ruleFormError').addClass('d-none');
+            var modal = new bootstrap.Modal(document.getElementById('approvalRuleModal'));
+            modal.show();
+        }
+
+        function addRuleStep(stepData = null) {
+            const stepIndex = currentSteps.length;
+            const sOrder = stepData ? stepData.stepOrder : (stepIndex + 1);
+            const rId = stepData ? stepData.approverRoleId : '';
+            const uId = stepData ? stepData.approverUserId : '';
+
+            let roleOptions = ROLES.map(r => `<option value="${r.id}" ${r.id == rId ? 'selected' : ''}>${r.name}</option>`).join('');
+            let userOptions = USERS.map(u => `<option value="${u.id}" ${u.id == uId ? 'selected' : ''}>${u.fullName} (${u.email})</option>`).join('');
+
+            let html = `
+                <div class="card mb-2 shadow-sm border step-card" data-index="${stepIndex}">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0 fw-bold text-primary">Cấp phê duyệt <span class="step-order">${sOrder}</span></h6>
+                            <button type="button" class="btn-close" style="font-size: 0.75rem" onclick="removeRuleStep(this)"></button>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="small text-muted">Duyệt theo Chức danh (Role)</label>
+                                <select class="form-select form-select-sm step-role">
+                                    <option value="">-- Chọn Role --</option>
+                                    ${roleOptions}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="small text-muted">Hoặc Duyệt theo Người cụ thể</label>
+                                <select class="form-select form-select-sm step-user">
+                                    <option value="">-- Chọn User --</option>
+                                    ${userOptions}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#ruleStepsContainer').append(html);
+            currentSteps.push({});
+            reindexSteps();
+        }
+
+        function removeRuleStep(btn) {
+            $(btn).closest('.step-card').remove();
+            currentSteps.pop();
+            reindexSteps();
+        }
+
+        function reindexSteps() {
+            $('#ruleStepsContainer .step-card').each(function(index) {
+                $(this).find('.step-order').text(index + 1);
+            });
+        }
+
+        function saveApprovalRule() {
+            const id = $('#ruleId').val();
+            const payload = {
+                name: $('#ruleName').val(),
+                departmentId: $('#ruleDept').val() || null,
+                minSalary: parseFloat($('#ruleMinSalary').val()) || 0,
+                maxSalary: $('#ruleMaxSalary').val() ? parseFloat($('#ruleMaxSalary').val()) : null,
+                isActive: $('#ruleIsActive').is(':checked'),
+                steps: []
+            };
+
+            $('#ruleStepsContainer .step-card').each(function(index) {
+                let roleId = $(this).find('.step-role').val();
+                let userId = $(this).find('.step-user').val();
+                payload.steps.push({
+                    stepOrder: index + 1,
+                    approverRoleId: roleId || null,
+                    approverUserId: userId || null
+                });
+            });
+
+            if (payload.steps.length === 0) {
+                showFormError('Vui lòng thêm ít nhất 1 cấp duyệt.');
+                return;
+            }
+
+            // Validations
+            let valid = true;
+            payload.steps.forEach(s => {
+                if (!s.approverRoleId && !s.approverUserId) {
+                    valid = false;
+                }
+            });
+            if (!valid) {
+                showFormError('Tất cả các cấp duyệt phải chọn ít nhất 1 Role hoặc 1 User.');
+                return;
+            }
+
+            const url = id ? `/api/approval-rules/${id}` : '/api/approval-rules';
+            const method = id ? 'PUT' : 'POST';
+
+            $.ajax({
+                url: url,
+                type: method,
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function(res) {
+                    if (res.isSuccess) {
+                        $('#approvalRuleModal').modal('hide');
+                        loadApprovalRules();
+                    } else {
+                        showFormError(res.message);
+                    }
+                },
+                error: function(xhr) {
+                    showFormError(xhr.responseJSON?.message || 'Có lỗi xảy ra.');
+                }
+            });
+        }
+
+        function showFormError(msg) {
+            $('#ruleFormError').removeClass('d-none').text(msg);
+        }
+
+        function editRule(id) {
+            $.ajax({
+                url: `/api/approval-rules/${id}`,
+                type: 'GET',
+                success: function(res) {
+                    const rule = res.data;
+                    $('#ruleId').val(rule.id);
+                    $('#ruleName').val(rule.name);
+                    $('#ruleDept').val(rule.departmentId || '');
+                    $('#ruleMinSalary').val(rule.minSalary);
+                    $('#ruleMaxSalary').val(rule.maxSalary || '');
+                    $('#ruleIsActive').prop('checked', rule.isActive);
+                    
+                    $('#ruleStepsContainer').empty();
+                    currentSteps = [];
+                    rule.steps.forEach(s => {
+                        addRuleStep(s);
+                    });
+                    
+                    $('#approvalRuleModalTitle').text('Sửa cấu hình phê duyệt');
+                    $('#ruleFormError').addClass('d-none');
+                    var modal = new bootstrap.Modal(document.getElementById('approvalRuleModal'));
+                    modal.show();
+                }
+            });
+        }
+
+        function deleteRule(id) {
+            if (confirm("Bạn có chắc chắn muốn xóa cấu hình này?")) {
+                $.ajax({
+                    url: `/api/approval-rules/${id}`,
+                    type: 'DELETE',
+                    success: function() {
+                        loadApprovalRules();
+                    }
+                });
+            }
+        }
+    </script>
+}

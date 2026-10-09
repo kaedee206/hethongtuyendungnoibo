@@ -52,6 +52,7 @@ builder.Services.AddScoped<ICompetencyFrameworkService, CompetencyFrameworkServi
 builder.Services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
 builder.Services.AddScoped<IRequisitionService, RequisitionService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<IApprovalRuleService, ApprovalRuleService>();
 
 
 // Cấu hình thời gian Session (Idle timeout)
@@ -156,6 +157,23 @@ app.MapControllerRoute(
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    // Fix pending migrations in EFHistory
+    try {
+        await dbContext.Database.ExecuteSqlRawAsync("INSERT INTO \"__EFMigrationsHistory\" (migration_id, product_version) VALUES ('20261002010046_FixMissingColumns', '9.0.0') ON CONFLICT DO NOTHING;");
+        await dbContext.Database.ExecuteSqlRawAsync("INSERT INTO \"__EFMigrationsHistory\" (migration_id, product_version) VALUES ('20261002163707_InitialCreate', '9.0.0') ON CONFLICT DO NOTHING;");
+        
+        // Add missing columns manually
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE departments ADD COLUMN IF NOT EXISTS level integer NOT NULL DEFAULT 1;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE departments ADD COLUMN IF NOT EXISTS path text NOT NULL DEFAULT '';");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS job_title text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS department_id uuid;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS job_position_id uuid;");
+        
+    } catch(Exception e) {
+        Console.WriteLine(e.Message);
+    }
+
     try
     {
         await dbContext.Database.ExecuteSqlRawAsync(@"
@@ -164,6 +182,36 @@ using (var scope = app.Services.CreateScope())
             UPDATE departments SET path = '/' || id || '/' WHERE path = '' OR path IS NULL;
             ALTER TABLE job_requisitions ADD COLUMN IF NOT EXISTS salary_band_explanation TEXT;
             ALTER TABLE job_positions ADD COLUMN IF NOT EXISTS competency_framework_id UUID;
+
+            CREATE TABLE IF NOT EXISTS approval_rules (
+                id UUID PRIMARY KEY,
+                name TEXT NOT NULL,
+                department_id UUID,
+                min_salary NUMERIC NOT NULL,
+                max_salary NUMERIC,
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+
+            CREATE TABLE IF NOT EXISTS approval_rule_steps (
+                id UUID PRIMARY KEY,
+                approval_rule_id UUID NOT NULL REFERENCES approval_rules(id) ON DELETE CASCADE,
+                step_order INTEGER NOT NULL,
+                approver_role_id UUID,
+                approver_user_id UUID,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+
 
             CREATE TABLE IF NOT EXISTS competency_frameworks (
                 id UUID PRIMARY KEY,
@@ -304,7 +352,14 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine($"[DB_MIGRATION_WARN] {ex.Message}");
     }
 
-    await DatabaseSeeder.SeedAsync(dbContext);
+    try
+    {
+        await DatabaseSeeder.SeedAsync(dbContext);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[DB_SEED_WARN] Không thể kết nối hoặc seed database: {ex.Message}");
+    }
 }
 
 app.Run();

@@ -3,6 +3,7 @@ using System;
 using Ats.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Ats.Web.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261005150218_SyncModel")]
+    partial class SyncModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -178,129 +181,6 @@ namespace Ats.Web.Migrations
                         .HasDatabaseName("ix_application_stage_histories_to_stage_id");
 
                     b.ToTable("application_stage_histories", (string)null);
-                });
-
-            modelBuilder.Entity("Ats.Web.Models.Entities.ApprovalRule", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DepartmentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("department_id");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
-
-                    b.Property<decimal?>("MaxSalary")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("max_salary");
-
-                    b.Property<decimal>("MinSalary")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("min_salary");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_approval_rules");
-
-                    b.HasIndex("DepartmentId")
-                        .HasDatabaseName("ix_approval_rules_department_id");
-
-                    b.ToTable("approval_rules", (string)null);
-                });
-
-            modelBuilder.Entity("Ats.Web.Models.Entities.ApprovalRuleStep", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("ApprovalRuleId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("approval_rule_id");
-
-                    b.Property<Guid?>("ApproverRoleId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("approver_role_id");
-
-                    b.Property<Guid?>("ApproverUserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("approver_user_id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
-
-                    b.Property<int>("StepOrder")
-                        .HasColumnType("integer")
-                        .HasColumnName("step_order");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_approval_rule_steps");
-
-                    b.HasIndex("ApprovalRuleId")
-                        .HasDatabaseName("ix_approval_rule_steps_approval_rule_id");
-
-                    b.HasIndex("ApproverRoleId")
-                        .HasDatabaseName("ix_approval_rule_steps_approver_role_id");
-
-                    b.HasIndex("ApproverUserId")
-                        .HasDatabaseName("ix_approval_rule_steps_approver_user_id");
-
-                    b.ToTable("approval_rule_steps", (string)null);
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.AuditLog", b =>
@@ -518,229 +398,6 @@ namespace Ats.Web.Migrations
                         .HasDatabaseName("ix_candidates_user_id");
 
                     b.ToTable("candidates", (string)null);
-                });
-
-            modelBuilder.Entity("Ats.Web.Models.Entities.CompanyProfile", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("AboutText")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("about_text");
-
-                    b.Property<string>("CompanyName")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("company_name");
-
-                    b.Property<string>("ContactEmail")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("contact_email");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<string>("EngineeringCulture")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("engineering_culture");
-
-                    b.Property<string>("Headline")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("headline");
-
-                    b.Property<string>("HeadquartersAddress")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("headquarters_address");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
-
-                    b.Property<string>("PerksJson")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("perks_json");
-
-                    b.Property<string>("PhoneContact")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("phone_contact");
-
-                    b.Property<string>("ProofMetricsJson")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("proof_metrics_json");
-
-                    b.Property<string>("TechStackJson")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("tech_stack_json");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_company_profiles");
-
-                    b.ToTable("company_profiles", (string)null);
-                });
-
-            modelBuilder.Entity("Ats.Web.Models.Entities.CompetencyCriterion", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("CompetencyFrameworkId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("competency_framework_id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.Property<string>("Rubric1")
-                        .HasColumnType("text")
-                        .HasColumnName("rubric1");
-
-                    b.Property<string>("Rubric2")
-                        .HasColumnType("text")
-                        .HasColumnName("rubric2");
-
-                    b.Property<string>("Rubric3")
-                        .HasColumnType("text")
-                        .HasColumnName("rubric3");
-
-                    b.Property<string>("Rubric4")
-                        .HasColumnType("text")
-                        .HasColumnName("rubric4");
-
-                    b.Property<string>("Rubric5")
-                        .HasColumnType("text")
-                        .HasColumnName("rubric5");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
-
-                    b.Property<int>("Weight")
-                        .HasColumnType("integer")
-                        .HasColumnName("weight");
-
-                    b.HasKey("Id")
-                        .HasName("pk_competency_criteria");
-
-                    b.HasIndex("CompetencyFrameworkId")
-                        .HasDatabaseName("ix_competency_criteria_competency_framework_id");
-
-                    b.ToTable("competency_criteria", (string)null);
-                });
-
-            modelBuilder.Entity("Ats.Web.Models.Entities.CompetencyFramework", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("code");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_competency_frameworks");
-
-                    b.HasIndex("Code")
-                        .IsUnique()
-                        .HasDatabaseName("ix_competency_frameworks_code");
-
-                    b.ToTable("competency_frameworks", (string)null);
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.Department", b =>
@@ -1214,80 +871,6 @@ namespace Ats.Web.Migrations
                     b.ToTable("interview_panelists", (string)null);
                 });
 
-            modelBuilder.Entity("Ats.Web.Models.Entities.InterviewQuestionBank", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Competency")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("competency");
-
-                    b.Property<Guid?>("CompetencyCriterionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("competency_criterion_id");
-
-                    b.Property<Guid?>("CompetencyFrameworkId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("competency_framework_id");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("content");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<string>("Difficulty")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("difficulty");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
-
-                    b.Property<string>("SuggestedAnswer")
-                        .HasColumnType("text")
-                        .HasColumnName("suggested_answer");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_interview_question_banks");
-
-                    b.HasIndex("CompetencyCriterionId")
-                        .HasDatabaseName("ix_interview_question_banks_competency_criterion_id");
-
-                    b.HasIndex("CompetencyFrameworkId")
-                        .HasDatabaseName("ix_interview_question_banks_competency_framework_id");
-
-                    b.ToTable("interview_question_banks", (string)null);
-                });
-
             modelBuilder.Entity("Ats.Web.Models.Entities.JobOffer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1387,10 +970,6 @@ namespace Ats.Web.Migrations
                         .HasColumnType("text")
                         .HasColumnName("code");
 
-                    b.Property<Guid?>("CompetencyFrameworkId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("competency_framework_id");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -1447,9 +1026,6 @@ namespace Ats.Web.Migrations
                     b.HasIndex("Code")
                         .IsUnique()
                         .HasDatabaseName("ix_job_positions_code");
-
-                    b.HasIndex("CompetencyFrameworkId")
-                        .HasDatabaseName("ix_job_positions_competency_framework_id");
 
                     b.HasIndex("DepartmentId")
                         .HasDatabaseName("ix_job_positions_department_id");
@@ -1628,10 +1204,6 @@ namespace Ats.Web.Migrations
                     b.Property<string>("Requirements")
                         .HasColumnType("text")
                         .HasColumnName("requirements");
-
-                    b.Property<string>("SalaryBandExplanation")
-                        .HasColumnType("text")
-                        .HasColumnName("salary_band_explanation");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer")
@@ -1903,74 +1475,6 @@ namespace Ats.Web.Migrations
                         .HasName("pk_pipeline_stages");
 
                     b.ToTable("pipeline_stages", (string)null);
-                });
-
-            modelBuilder.Entity("Ats.Web.Models.Entities.RecruitmentCatalog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("CatalogType")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("catalog_type");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("code");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("integer")
-                        .HasColumnName("display_order");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
-
-                    b.Property<bool>("IsSystem")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_system");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_recruitment_catalogs");
-
-                    b.ToTable("recruitment_catalogs", (string)null);
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.RequisitionApproval", b =>
@@ -2483,45 +1987,6 @@ namespace Ats.Web.Migrations
                     b.Navigation("ToStage");
                 });
 
-            modelBuilder.Entity("Ats.Web.Models.Entities.ApprovalRule", b =>
-                {
-                    b.HasOne("Ats.Web.Models.Entities.Department", "Department")
-                        .WithMany()
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("fk_approval_rules_departments_department_id");
-
-                    b.Navigation("Department");
-                });
-
-            modelBuilder.Entity("Ats.Web.Models.Entities.ApprovalRuleStep", b =>
-                {
-                    b.HasOne("Ats.Web.Models.Entities.ApprovalRule", "ApprovalRule")
-                        .WithMany("Steps")
-                        .HasForeignKey("ApprovalRuleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_approval_rule_steps_approval_rules_approval_rule_id");
-
-                    b.HasOne("Ats.Web.Models.Entities.Role", "ApproverRole")
-                        .WithMany()
-                        .HasForeignKey("ApproverRoleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_approval_rule_steps_roles_approver_role_id");
-
-                    b.HasOne("Ats.Web.Models.Entities.User", "ApproverUser")
-                        .WithMany()
-                        .HasForeignKey("ApproverUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_approval_rule_steps_users_approver_user_id");
-
-                    b.Navigation("ApprovalRule");
-
-                    b.Navigation("ApproverRole");
-
-                    b.Navigation("ApproverUser");
-                });
-
             modelBuilder.Entity("Ats.Web.Models.Entities.AuditLog", b =>
                 {
                     b.HasOne("Ats.Web.Models.Entities.User", "User")
@@ -2559,18 +2024,6 @@ namespace Ats.Web.Migrations
                     b.Navigation("ReferrerUser");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Ats.Web.Models.Entities.CompetencyCriterion", b =>
-                {
-                    b.HasOne("Ats.Web.Models.Entities.CompetencyFramework", "CompetencyFramework")
-                        .WithMany("Criteria")
-                        .HasForeignKey("CompetencyFrameworkId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_competency_criteria_competency_frameworks_competency_framew");
-
-                    b.Navigation("CompetencyFramework");
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.Department", b =>
@@ -2667,23 +2120,6 @@ namespace Ats.Web.Migrations
                     b.Navigation("Interviewer");
                 });
 
-            modelBuilder.Entity("Ats.Web.Models.Entities.InterviewQuestionBank", b =>
-                {
-                    b.HasOne("Ats.Web.Models.Entities.CompetencyCriterion", "CompetencyCriterion")
-                        .WithMany()
-                        .HasForeignKey("CompetencyCriterionId")
-                        .HasConstraintName("fk_interview_question_banks_competency_criteria_competency_cri");
-
-                    b.HasOne("Ats.Web.Models.Entities.CompetencyFramework", "CompetencyFramework")
-                        .WithMany()
-                        .HasForeignKey("CompetencyFrameworkId")
-                        .HasConstraintName("fk_interview_question_banks_competency_frameworks_competency_f");
-
-                    b.Navigation("CompetencyCriterion");
-
-                    b.Navigation("CompetencyFramework");
-                });
-
             modelBuilder.Entity("Ats.Web.Models.Entities.JobOffer", b =>
                 {
                     b.HasOne("Ats.Web.Models.Entities.Application", "Application")
@@ -2707,20 +2143,12 @@ namespace Ats.Web.Migrations
 
             modelBuilder.Entity("Ats.Web.Models.Entities.JobPosition", b =>
                 {
-                    b.HasOne("Ats.Web.Models.Entities.CompetencyFramework", "CompetencyFramework")
-                        .WithMany("AssignedPositions")
-                        .HasForeignKey("CompetencyFrameworkId")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("fk_job_positions_competency_frameworks_competency_framework_id");
-
                     b.HasOne("Ats.Web.Models.Entities.Department", "Department")
                         .WithMany("JobPositions")
                         .HasForeignKey("DepartmentId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_job_positions_departments_department_id");
-
-                    b.Navigation("CompetencyFramework");
 
                     b.Navigation("Department");
                 });
@@ -2925,23 +2353,11 @@ namespace Ats.Web.Migrations
                     b.Navigation("StageHistories");
                 });
 
-            modelBuilder.Entity("Ats.Web.Models.Entities.ApprovalRule", b =>
-                {
-                    b.Navigation("Steps");
-                });
-
             modelBuilder.Entity("Ats.Web.Models.Entities.Candidate", b =>
                 {
                     b.Navigation("Applications");
 
                     b.Navigation("Resumes");
-                });
-
-            modelBuilder.Entity("Ats.Web.Models.Entities.CompetencyFramework", b =>
-                {
-                    b.Navigation("AssignedPositions");
-
-                    b.Navigation("Criteria");
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.Department", b =>
