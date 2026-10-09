@@ -3,8 +3,13 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
-# dotenv files
+# Dotenv and Secret Configuration Files (Strict Security Audit)
 .env
+.env.*
+*.env
+*.env.*
+!*.env.example
+!.env.*.example
 
 # User-specific files
 *.rsuser
@@ -491,6 +496,8 @@ $RECYCLE.BIN/
 *.env
 *.env.*
 !.env.example
+!*.env.example
+!.env.*.example
 appsettings.Production.json
 appsettings.*.local.json
 appsettings.Development.local.json
@@ -635,9 +642,13 @@ Thumbs.db
 
 # Environment & secrets (NEVER commit these)
 .env
+.env.preview
+.env.production
 .env.local
 .env.*.local
 src/**/.env
+src/**/.env.preview
+src/**/.env.production
 src/**/.env.local
 *.secrets
 appsettings.Secrets.json

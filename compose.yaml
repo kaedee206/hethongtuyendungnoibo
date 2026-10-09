@@ -1,0 +1,18 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - uploads_data:/app/wwwroot/uploads
+    networks:
+      - ats-network
+
+networks:
+  ats-network:
+    name: ats_network
+    driver: bridge
+
+volumes:
+  uploads_data:
+    name: ats_uploads_data
