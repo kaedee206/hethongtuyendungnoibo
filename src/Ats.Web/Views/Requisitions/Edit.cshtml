@@ -42,6 +42,29 @@
                 </div>
             </div>
 
+            @if (Model.Status == Ats.Web.Models.Enums.RequisitionStatus.CHANGES_REQUESTED)
+            {
+                <div class="alert alert-warning border border-warning shadow-sm d-flex align-items-start gap-3 p-3 mb-4" style="border-radius: 12px; background-color: #FFFBEB;">
+                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-warning text-dark flex-shrink-0" style="width: 40px; height: 40px;">
+                        <i class="bi bi-arrow-repeat fs-5"></i>
+                    </span>
+                    <div class="flex-grow-1">
+                        <h6 class="fw-bold text-warning-emphasis mb-1">Yêu cầu bổ sung thông tin từ Người duyệt</h6>
+                        <p class="text-dark mb-2 small">
+                            Hồ sơ yêu cầu tuyển dụng này đã được Người duyệt yêu cầu bổ sung thông tin.
+                            Vui lòng cập nhật các nội dung cần thiết bên dưới và nhấn <strong>Gửi duyệt</strong> lại. Toàn bộ lịch sử các vòng duyệt trước đó được giữ nguyên vẹn.
+                        </p>
+                        @if (!string.IsNullOrWhiteSpace(Model.ReviewerFeedback))
+                        {
+                            <div class="p-3 bg-white border border-warning-subtle rounded-3 shadow-none">
+                                <div class="small fw-semibold text-secondary mb-1"><i class="bi bi-chat-quote-fill me-1 text-warning"></i>Ý kiến đóng góp từ Người duyệt:</div>
+                                <div class="text-dark fw-medium small fst-italic">"@Model.ReviewerFeedback"</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
             @if (TempData["SuccessMessage"] != null)
             {
                 <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 py-3 px-4 shadow-sm mb-4" role="alert" style="border-radius: 10px; border-left: 5px solid #059669 !important;">
