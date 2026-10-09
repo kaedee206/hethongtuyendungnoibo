@@ -234,9 +234,9 @@ public class RequisitionApprovalTrackingTests
         var list = await service.GetRequisitionsForApprovalAsync(hmUser.Id, tab: "my-requisitions");
 
         // Assert
-        list.Should().HaveCount(1);
-        list.Should().ContainSingle(i => i.Id == requisition.Id);
-        var item = list.First();
+        list.Items.Should().HaveCount(1);
+        list.Items.Should().ContainSingle(i => i.Id == requisition.Id);
+        var item = list.Items.First();
         item.IsCreatedByCurrentUser.Should().BeTrue();
         item.CurrentApproverName.Should().Be("Nguyễn Mai Phương");
         item.CurrentApproverRole.Should().Contain("HR Manager");

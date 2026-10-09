@@ -497,7 +497,7 @@ public class RequisitionValidationTests
     {
         using var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new RequisitionService(context, _serviceLoggerMock.Object);
-        var controller = new RequisitionsController(service, _controllerLoggerMock.Object);
+        var controller = new RequisitionsController(service, context, _controllerLoggerMock.Object);
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(
         [

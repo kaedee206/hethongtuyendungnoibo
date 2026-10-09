@@ -1023,10 +1023,16 @@ public class RequisitionService(
         };
     }
 
-    public async Task<List<RequisitionApprovalListItemViewModel>> GetRequisitionsForApprovalAsync(
+    public async Task<Ats.Web.Models.DTOs.PagedResult<RequisitionApprovalListItemViewModel>> GetRequisitionsForApprovalAsync(
         Guid currentUserId,
         string? tab = null,
         string? search = null,
+        Guid? departmentId = null,
+        Guid? recruiterId = null,
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        int page = 1,
+        int pageSize = 15,
         CancellationToken cancellationToken = default)
     {
         var currentUser = await _dbContext.Users
@@ -1046,6 +1052,7 @@ public class RequisitionService(
             .Include(r => r.JobPosition)
             .Include(r => r.Department)
             .Include(r => r.HiringManager)
+            .Include(r => r.AssignedRecruiter)
             .Include(r => r.Approvals)
                 .ThenInclude(a => a.Approver)
             .Where(r => !r.IsDeleted && r.Status != RequisitionStatus.DRAFT);
@@ -1053,6 +1060,16 @@ public class RequisitionService(
         if (!isAdmin && !isHrManager && !isApprover)
         {
             query = query.Where(r => r.HiringManagerId == currentUserId);
+        }
+
+        if (departmentId.HasValue)
+        {
+            query = query.Where(r => r.DepartmentId == departmentId.Value);
+        }
+
+        if (recruiterId.HasValue)
+        {
+            query = query.Where(r => r.AssignedRecruiterId == recruiterId.Value);
         }
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -1068,9 +1085,13 @@ public class RequisitionService(
             .ToListAsync(cancellationToken);
 
         var items = new List<RequisitionApprovalListItemViewModel>();
+        var today = DateOnly.FromDateTime(DateTime.Today);
 
         foreach (var r in list)
         {
+            if (fromDate.HasValue && DateOnly.FromDateTime(r.CreatedAt.Date) < fromDate.Value) continue;
+            if (toDate.HasValue && DateOnly.FromDateTime(r.CreatedAt.Date) > toDate.Value) continue;
+
             var pendingApprovals = r.Approvals
                 .Where(a => a.Status == ApprovalStatus.PENDING && !a.IsDeleted)
                 .OrderBy(a => a.StepOrder)
@@ -1138,6 +1159,12 @@ public class RequisitionService(
                 : "Thỏa thuận";
 
             var isCreatedByCurrentUser = r.HiringManagerId == currentUserId;
+            
+            int openDays = (int)(DateTimeOffset.UtcNow - r.CreatedAt).TotalDays;
+            int? remainingDays = r.TargetHireDate.HasValue 
+                ? r.TargetHireDate.Value.DayNumber - today.DayNumber 
+                : null;
+            bool isOverdue = remainingDays.HasValue && remainingDays.Value < 0 && r.Status != RequisitionStatus.APPROVED && r.Status != RequisitionStatus.REJECTED;
 
             var item = new RequisitionApprovalListItemViewModel
             {
@@ -1161,7 +1188,14 @@ public class RequisitionService(
                 WaitingSinceDisplay = waitingSinceDisplay,
                 WaitingDurationDisplay = waitingDurationDisplay,
                 ApprovalChainProgress = approvalChainProgress,
-                IsCreatedByCurrentUser = isCreatedByCurrentUser
+                IsCreatedByCurrentUser = isCreatedByCurrentUser,
+                OpenDays = openDays,
+                RemainingDays = remainingDays,
+                IsOverdue = isOverdue,
+                AssignedRecruiterName = r.AssignedRecruiter?.FullName,
+                CreatedAt = r.CreatedAt,
+                DepartmentId = r.DepartmentId,
+                AssignedRecruiterId = r.AssignedRecruiterId
             };
 
             var tabKey = tab?.Trim().ToLowerInvariant() ?? "all";
@@ -1182,15 +1216,24 @@ public class RequisitionService(
             }
         }
 
-        return items;
+        var totalCount = items.Count;
+        var pagedItems = items.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+        return new Ats.Web.Models.DTOs.PagedResult<RequisitionApprovalListItemViewModel>
+        {
+            Items = pagedItems,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
     }
 
     public async Task<int> GetPendingApprovalCountForUserAsync(
         Guid currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var items = await GetRequisitionsForApprovalAsync(currentUserId, "my-pending", null, cancellationToken);
-        return items.Count;
+        var items = await GetRequisitionsForApprovalAsync(currentUserId, "my-pending", null, null, null, null, null, 1, 9999, cancellationToken);
+        return items.TotalCount;
     }
 
     public async Task<int> GetMyRequisitionsCountAsync(

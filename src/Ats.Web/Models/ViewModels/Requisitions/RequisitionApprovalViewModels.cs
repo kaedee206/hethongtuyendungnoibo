@@ -25,6 +25,15 @@ public class RequisitionApprovalListItemViewModel
     public string WaitingDurationDisplay { get; set; } = string.Empty;
     public string ApprovalChainProgress { get; set; } = string.Empty;
     public bool IsCreatedByCurrentUser { get; set; }
+    
+    // Thuộc tính mới cho SCRUM-283
+    public int OpenDays { get; set; }
+    public int? RemainingDays { get; set; }
+    public bool IsOverdue { get; set; }
+    public string? AssignedRecruiterName { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public Guid? DepartmentId { get; set; }
+    public Guid? AssignedRecruiterId { get; set; }
 }
 
 public class RequisitionDetailsViewModel

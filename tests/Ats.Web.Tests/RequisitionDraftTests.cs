@@ -294,7 +294,7 @@ public class RequisitionDraftTests
     {
         using var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new RequisitionService(context, _serviceLoggerMock.Object);
-        var controller = new RequisitionsController(service, _controllerLoggerMock.Object);
+        var controller = new RequisitionsController(service, context, _controllerLoggerMock.Object);
 
         var managerId = Guid.NewGuid();
         var user = new ClaimsPrincipal(new ClaimsIdentity(
