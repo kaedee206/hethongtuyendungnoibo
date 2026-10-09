@@ -1,0 +1,68 @@
+using Ats.Web.Models.Enums;
+
+namespace Ats.Web.Models.ViewModels.Requisitions;
+
+public class RequisitionApprovalListItemViewModel
+{
+    public Guid Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string JobTitle { get; set; } = string.Empty;
+    public string DepartmentName { get; set; } = string.Empty;
+    public int Quantity { get; set; }
+    public HeadcountType HeadcountType { get; set; }
+    public string SalaryDisplay { get; set; } = string.Empty;
+    public string TargetHireDateDisplay { get; set; } = string.Empty;
+    public string HiringManagerName { get; set; } = string.Empty;
+    public RequisitionStatus Status { get; set; }
+    public int CurrentStepOrder { get; set; }
+    public string CurrentApproverName { get; set; } = string.Empty;
+    public bool CanCurrentUserApprove { get; set; }
+    public string CreatedAtDisplay { get; set; } = string.Empty;
+    public string? LatestComment { get; set; }
+}
+
+public class RequisitionDetailsViewModel
+{
+    public Guid Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string JobPositionTitle { get; set; } = string.Empty;
+    public string? JobLevel { get; set; }
+    public string DepartmentName { get; set; } = string.Empty;
+    public string HiringManagerName { get; set; } = string.Empty;
+    public string HiringManagerEmail { get; set; } = string.Empty;
+    public string? AssignedRecruiterName { get; set; }
+    public int Quantity { get; set; }
+    public HeadcountType HeadcountType { get; set; }
+    public string? Reason { get; set; }
+    public string SalaryDisplay { get; set; } = string.Empty;
+    public string? SalaryBandExplanation { get; set; }
+    public string TargetHireDateDisplay { get; set; } = string.Empty;
+    public RequisitionStatus Status { get; set; }
+    public string? JobDescription { get; set; }
+    public string? Requirements { get; set; }
+    public string CreatedAtDisplay { get; set; } = string.Empty;
+    public bool CanCurrentUserApprove { get; set; }
+    public int? CurrentPendingStepOrder { get; set; }
+    public List<RequisitionApprovalStepDto> ApprovalSteps { get; set; } = new();
+}
+
+public class RequisitionApprovalStepDto
+{
+    public int StepOrder { get; set; }
+    public string StepTitle { get; set; } = string.Empty;
+    public Guid ApproverId { get; set; }
+    public string ApproverName { get; set; } = string.Empty;
+    public string ApproverRole { get; set; } = string.Empty;
+    public ApprovalStatus Status { get; set; } = ApprovalStatus.PENDING;
+    public string? Comment { get; set; }
+    public DateTimeOffset? DecidedAt { get; set; }
+    public string DecidedAtDisplay { get; set; } = string.Empty;
+    public bool IsCurrent { get; set; }
+}
+
+public class RequisitionApprovalDecisionInputModel
+{
+    public Guid RequisitionId { get; set; }
+    public string Action { get; set; } = string.Empty; // APPROVE, REJECT, REQUEST_CHANGES
+    public string? Comment { get; set; }
+}
