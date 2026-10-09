@@ -1,0 +1,16 @@
+services:
+  web:
+    container_name: ats-web-preview
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    env_file:
+      - .env.preview
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
