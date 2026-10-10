@@ -349,7 +349,7 @@
                      data-dept-category="@job.DepartmentCategory.ToLowerInvariant()"
                      data-dept-name="@job.Department"
                      data-location="@job.WorkLocation"
-                     data-level="@job.ExperienceLevel"
+                     data-employment-type="@job.EmploymentType"
                      data-tech="@string.Join(" ", job.TechStack)"
                      data-summary="@job.ShortSummary"
                      data-hot="@(job.IsHot ? "true" : "false")">
@@ -529,7 +529,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const searchClearBtn = document.getElementById('jobSearchClearBtn');
     const deptSelect = document.getElementById('jobDeptSelect');
     const locationSelect = document.getElementById('jobLocationSelect');
-    const levelSelect = document.getElementById('jobLevelSelect');
+    const employmentTypeSelect = document.getElementById('jobEmploymentTypeSelect');
     const resetBtn = document.getElementById('btnResetAllJobFilters');
     const emptyStateResetBtn = document.getElementById('btnEmptyStateReset');
     const filterForm = document.getElementById('jobFilterForm');
@@ -556,7 +556,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const query = (searchInput ? searchInput.value : '').trim();
         const dept = (deptSelect ? deptSelect.value : 'all').toLowerCase();
         const loc = (locationSelect ? locationSelect.value : 'all').toLowerCase();
-        const lvl = (levelSelect ? levelSelect.value : 'all').toLowerCase();
+        const emp = (employmentTypeSelect ? employmentTypeSelect.value : 'all').toLowerCase();
 
         // Toggle clear button & 3-character hint
         const hint = document.getElementById('jobSearchHint');
@@ -583,13 +583,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const deptCat = card.getAttribute('data-dept-category') || '';
             const deptName = card.getAttribute('data-dept-name') || '';
             const location = card.getAttribute('data-location') || '';
-            const level = card.getAttribute('data-level') || '';
+            const employmentType = card.getAttribute('data-employment-type') || '';
             const tech = card.getAttribute('data-tech') || '';
             const summary = card.getAttribute('data-summary') || '';
             const isHot = card.getAttribute('data-hot') === 'true';
 
             // Text search: Chỉ tìm kiếm khi từ khóa có từ 3 ký tự trở lên (>= 3 chars)
-            const combinedText = `${title} ${deptName} ${tech} ${summary} ${location} ${level}`;
+            const combinedText = `${title} ${deptName} ${tech} ${summary} ${location} ${employmentType}`;
             const matchesQuery = !query || query.length < 3 || (window.NoveraInstantSearch 
                 ? window.NoveraInstantSearch.matchSearchTokens(combinedText, query)
                 : combinedText.toLowerCase().includes(query.toLowerCase()));
@@ -611,15 +611,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 matchesLoc = normJobLoc.includes(normLoc);
             }
 
-            // Level filter
-            let matchesLvl = true;
-            if (lvl && lvl !== 'all') {
-                const normLvl = window.NoveraInstantSearch ? window.NoveraInstantSearch.removeVietnameseTones(lvl) : lvl;
-                const normJobLvl = window.NoveraInstantSearch ? window.NoveraInstantSearch.removeVietnameseTones(level) : level.toLowerCase();
-                matchesLvl = normJobLvl.includes(normLvl);
+            // Employment Type filter
+            let matchesEmp = true;
+            if (emp && emp !== 'all') {
+                const normEmp = window.NoveraInstantSearch ? window.NoveraInstantSearch.removeVietnameseTones(emp) : emp;
+                const normJobEmp = window.NoveraInstantSearch ? window.NoveraInstantSearch.removeVietnameseTones(employmentType) : employmentType.toLowerCase();
+                matchesEmp = normJobEmp.includes(normEmp);
             }
 
-            const isMatch = matchesQuery && matchesDept && matchesLoc && matchesLvl;
+            const isMatch = matchesQuery && matchesDept && matchesLoc && matchesEmp;
             if (isMatch) {
                 card.classList.remove('d-none');
                 visibleCount++;
@@ -663,7 +663,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 search: query || null,
                 department: dept !== 'all' ? dept : null,
                 location: loc !== 'all' ? loc : null,
-                level: lvl !== 'all' ? lvl : null
+                employmentType: emp !== 'all' ? emp : null
             });
         }
     }
@@ -672,7 +672,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (searchInput) searchInput.value = '';
         if (deptSelect) deptSelect.value = 'all';
         if (locationSelect) locationSelect.value = 'all';
-        if (levelSelect) levelSelect.value = 'all';
+        if (employmentTypeSelect) employmentTypeSelect.value = 'all';
         applyJobFilters(true);
         if (searchInput) searchInput.focus();
     }
@@ -697,7 +697,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (deptSelect) deptSelect.addEventListener('change', () => applyJobFilters(true));
     if (locationSelect) locationSelect.addEventListener('change', () => applyJobFilters(true));
-    if (levelSelect) levelSelect.addEventListener('change', () => applyJobFilters(true));
+    if (employmentTypeSelect) employmentTypeSelect.addEventListener('change', () => applyJobFilters(true));
     if (resetBtn) resetBtn.addEventListener('click', resetAllFilters);
     if (emptyStateResetBtn) emptyStateResetBtn.addEventListener('click', resetAllFilters);
 
@@ -719,8 +719,8 @@ document.addEventListener('DOMContentLoaded', function () {
             locationSelect.value = params.location;
             changed = true;
         }
-        if (levelSelect && params.level !== undefined) {
-            levelSelect.value = params.level;
+        if (employmentTypeSelect && params.employmentType !== undefined) {
+            employmentTypeSelect.value = params.employmentType;
             changed = true;
         }
 
