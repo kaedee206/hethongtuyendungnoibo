@@ -69,6 +69,27 @@ function setupRequisitionForm(form) {
     const reviewJobDescContent = form.querySelector('#reviewJobDescContent');
     const reviewRequirementsContent = form.querySelector('#reviewRequirementsContent');
 
+    // Các phần tử Headcount Quota & Ngân sách (Scrum 24)
+    const headcountInfoWidget = form.querySelector('#headcountInfoWidget');
+    const headcountLoadingSpinner = form.querySelector('#headcountLoadingSpinner');
+    const headcountStatusBadge = form.querySelector('#headcountStatusBadge');
+    const headcountTargetText = form.querySelector('#headcountTargetText');
+    const headcountUsedText = form.querySelector('#headcountUsedText');
+    const headcountRemainingBox = form.querySelector('#headcountRemainingBox');
+    const headcountRemainingText = form.querySelector('#headcountRemainingText');
+    const headcountSalaryVal = form.querySelector('#headcountSalaryVal');
+    const headcountYearVal = form.querySelector('#headcountYearVal');
+    const overQuotaAlertBlock = form.querySelector('#overQuotaAlertBlock');
+    const overQuotaMessageText = form.querySelector('#overQuotaMessageText');
+    const reqIsOverQuota = form.querySelector('#reqIsOverQuota');
+    const reqIsOverQuotaOverride = form.querySelector('#reqIsOverQuotaOverride');
+    const overQuotaReasonContainer = form.querySelector('#overQuotaReasonContainer');
+    const reqOverQuotaReason = form.querySelector('#reqOverQuotaReason');
+    const hrOverrideSection = form.querySelector('#hrOverrideSection');
+    const reviewHeadcountQuotaStatus = form.querySelector('#reviewHeadcountQuotaStatus');
+    const reviewOverQuotaReasonCol = form.querySelector('#reviewOverQuotaReasonCol');
+    const reviewOverQuotaReason = form.querySelector('#reviewOverQuotaReason');
+
     // Thiết lập ngày tối thiểu cho DatePicker là ngày hôm nay
     if (dateInput) {
         const todayStr = new Date().toISOString().split('T')[0];
@@ -161,7 +182,92 @@ function setupRequisitionForm(form) {
                 this.classList.remove('is-invalid');
                 this.classList.add('is-valid');
             }
+            clearTimeout(headcountCheckTimeout);
+            headcountCheckTimeout = setTimeout(fetchDepartmentHeadcountQuota, 300);
         });
+    }
+
+    // 3.1. Kiểm tra thời gian thực chỉ tiêu Headcount phòng ban (Scrum 24)
+    let headcountCheckTimeout = null;
+
+    function fetchDepartmentHeadcountQuota() {
+        if (!deptSelect || !deptSelect.value) return;
+
+        const deptId = deptSelect.value;
+        const qty = (quantityInput && quantityInput.value) ? parseInt(quantityInput.value, 10) : 1;
+        const reqId = (reqIdInput && reqIdInput.value) ? reqIdInput.value : '';
+
+        if (headcountLoadingSpinner) headcountLoadingSpinner.classList.remove('d-none');
+
+        const apiUrl = `/yeu-cau-tuyen-dung/api/department-headcount?departmentId=${encodeURIComponent(deptId)}&quantity=${encodeURIComponent(qty || 1)}&requisitionId=${encodeURIComponent(reqId)}`;
+
+        fetch(apiUrl)
+            .then(res => res.json())
+            .then(data => {
+                if (headcountLoadingSpinner) headcountLoadingSpinner.classList.add('d-none');
+                if (!data || !data.success) return;
+
+                if (headcountTargetText) {
+                    headcountTargetText.textContent = data.hasPlan ? `${data.targetHeadcount} người` : 'Chưa cấp';
+                }
+                if (headcountUsedText) {
+                    headcountUsedText.textContent = `${data.usedHeadcount} người`;
+                }
+                if (headcountRemainingText) {
+                    headcountRemainingText.textContent = data.hasPlan ? `${data.remainingHeadcount} người` : '0 người';
+                    headcountRemainingText.className = 'fw-bold fs-6 ' + (data.remainingHeadcount > 0 ? 'text-success' : 'text-danger');
+                }
+                if (headcountSalaryVal) {
+                    headcountSalaryVal.textContent = data.salaryBudget > 0 ? `${formatVndCurrency(data.salaryBudget)}` : 'Chưa thiết lập';
+                }
+                if (headcountYearVal) {
+                    headcountYearVal.textContent = `Năm ${data.year}`;
+                }
+
+                if (data.isOverQuota) {
+                    if (reqIsOverQuota) reqIsOverQuota.value = 'true';
+                    if (overQuotaAlertBlock) overQuotaAlertBlock.classList.remove('d-none');
+                    if (overQuotaMessageText) overQuotaMessageText.textContent = data.message;
+                    if (headcountStatusBadge) {
+                        headcountStatusBadge.className = 'badge bg-danger text-white font-monospace';
+                        headcountStatusBadge.textContent = 'VƯỢT CHỈ TIÊU';
+                    }
+                } else {
+                    if (reqIsOverQuota) reqIsOverQuota.value = 'false';
+                    if (overQuotaAlertBlock) overQuotaAlertBlock.classList.add('d-none');
+                    if (headcountStatusBadge) {
+                        headcountStatusBadge.className = 'badge bg-success-subtle text-success border border-success-subtle font-monospace';
+                        headcountStatusBadge.textContent = 'ĐẠT ĐỊNH BIÊN';
+                    }
+                }
+            })
+            .catch(() => {
+                if (headcountLoadingSpinner) headcountLoadingSpinner.classList.add('d-none');
+            });
+    }
+
+    if (deptSelect) {
+        deptSelect.addEventListener('change', function () {
+            fetchDepartmentHeadcountQuota();
+        });
+    }
+
+    if (reqIsOverQuotaOverride) {
+        reqIsOverQuotaOverride.addEventListener('change', function () {
+            if (overQuotaReasonContainer) {
+                if (this.checked) {
+                    overQuotaReasonContainer.classList.remove('d-none');
+                    if (reqOverQuotaReason) reqOverQuotaReason.focus();
+                } else {
+                    overQuotaReasonContainer.classList.add('d-none');
+                }
+            }
+        });
+    }
+
+    // Tự động kiểm tra định biên khi tải trang nếu phòng ban đã được chọn
+    if (deptSelect && deptSelect.value) {
+        fetchDepartmentHeadcountQuota();
     }
 
     // 4. Kiểm tra ngày cần người
@@ -454,6 +560,25 @@ function setupRequisitionForm(form) {
             }
         }
 
+        // Tình trạng định biên Headcount (Scrum 24)
+        if (reviewHeadcountQuotaStatus) {
+            const isOver = reqIsOverQuota && reqIsOverQuota.value === 'true';
+            if (isOver) {
+                reviewHeadcountQuotaStatus.innerHTML = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-shield-x me-1"></i>Vượt chỉ tiêu định biên (Ngoại lệ)</span>';
+                if (reviewOverQuotaReasonCol && reviewOverQuotaReason) {
+                    reviewOverQuotaReasonCol.classList.remove('d-none');
+                    reviewOverQuotaReason.textContent = (reqOverQuotaReason && reqOverQuotaReason.value.trim())
+                        ? reqOverQuotaReason.value.trim()
+                        : '(Chưa nhập lý do ngoại lệ)';
+                }
+            } else {
+                reviewHeadcountQuotaStatus.innerHTML = '<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check-circle me-1"></i>Trong định biên</span>';
+                if (reviewOverQuotaReasonCol) {
+                    reviewOverQuotaReasonCol.classList.add('d-none');
+                }
+            }
+        }
+
         // Ghi chú lý do
         if (reviewReasonDetail) {
             const reasonInput = form.querySelector('[name="ReasonDetail"]');
@@ -733,6 +858,42 @@ function setupRequisitionForm(form) {
                 }
             }
             return false;
+        }
+
+        // Scrum 24: Kiểm tra cảnh báo chặn vượt chỉ tiêu Headcount khi gửi duyệt
+        if (!isDraft && reqIsOverQuota && reqIsOverQuota.value === 'true') {
+            if (!hrOverrideSection) {
+                // Không phải HR Manager / Admin: Chặn hoàn toàn
+                goToStep(1);
+                if (overQuotaAlertBlock) {
+                    overQuotaAlertBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                alert('CẢNH BÁO CHẶN: Yêu cầu tuyển dụng này vượt quá chỉ tiêu headcount còn lại của phòng ban. Chỉ có Trưởng phòng Nhân sự mới có quyền phê duyệt ghi đè ngoại lệ.');
+                return false;
+            } else {
+                // Là HR Manager / Admin: Bắt buộc xác nhận ghi đè và lý do
+                if (!reqIsOverQuotaOverride || !reqIsOverQuotaOverride.checked) {
+                    goToStep(1);
+                    if (reqIsOverQuotaOverride) {
+                        reqIsOverQuotaOverride.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        reqIsOverQuotaOverride.focus();
+                    }
+                    alert('Yêu cầu tuyển dụng này vượt quá chỉ tiêu headcount. Với vai trò Trưởng phòng Nhân sự, bạn cần đánh dấu xác nhận ghi đè và nhập lý do phê duyệt.');
+                    return false;
+                }
+
+                if (!reqOverQuotaReason || !reqOverQuotaReason.value.trim()) {
+                    goToStep(1);
+                    if (overQuotaReasonContainer) overQuotaReasonContainer.classList.remove('d-none');
+                    if (reqOverQuotaReason) {
+                        reqOverQuotaReason.classList.add('is-invalid');
+                        reqOverQuotaReason.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        reqOverQuotaReason.focus();
+                    }
+                    alert('Vui lòng nhập lý do phê duyệt vượt chỉ tiêu headcount để hoàn tất ghi đè.');
+                    return false;
+                }
+            }
         }
 
         // Tất cả hợp lệ -> Submit form

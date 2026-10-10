@@ -17,4 +17,6 @@ public class RequisitionDraftItemViewModel
     public DateTimeOffset UpdatedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public bool HasContent { get; set; }
+    public bool IsOverQuota { get; set; }
+    public string? OverQuotaReason { get; set; }
 }

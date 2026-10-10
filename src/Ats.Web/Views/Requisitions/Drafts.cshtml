@@ -132,6 +132,14 @@
                                                 <span class="badge bg-light text-dark border font-monospace">
                                                     @(item.Quantity > 0 ? item.Quantity.ToString() : "-")
                                                 </span>
+                                                @if (item.IsOverQuota)
+                                                {
+                                                    <div class="mt-1">
+                                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 0.7rem;" title="@(string.IsNullOrWhiteSpace(item.OverQuotaReason) ? "Vượt chỉ tiêu định biên" : "Vượt chỉ tiêu: " + item.OverQuotaReason)">
+                                                            <i class="bi bi-shield-x me-1"></i>Vượt chỉ tiêu
+                                                        </span>
+                                                    </div>
+                                                }
                                             </td>
                                             <td class="small font-monospace">
                                                 @if (item.MinSalary.HasValue && item.MaxSalary.HasValue && item.MaxSalary.Value > 0)

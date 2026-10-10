@@ -741,6 +741,46 @@ public static class DatabaseSeeder
             await context.SaveChangesAsync();
         }
 
+        // 12. Seed DepartmentHeadcountBudget (Scrum 24 - Quản lý ngân sách headcount theo phòng ban theo năm)
+        var currentYear = DateTime.UtcNow.Year;
+        if (!await context.DepartmentHeadcountBudgets.AnyAsync(b => b.Year == currentYear))
+        {
+            var depts = await context.Departments.ToListAsync();
+            var admin = await context.Users.FirstOrDefaultAsync(u => u.Email == "admin@noveratech.vn");
+            var adminId = admin?.Id;
+
+            var deptBudgets = new List<DepartmentHeadcountBudget>();
+            foreach (var d in depts)
+            {
+                var (targetHc, budget) = d.Code switch
+                {
+                    "IT" => (35, 15_000_000_000m),      // 35 nhân sự, 15 tỷ VND
+                    "HR" => (10, 3_500_000_000m),       // 10 nhân sự, 3.5 tỷ VND
+                    "SALES" => (20, 6_000_000_000m),    // 20 nhân sự, 6 tỷ VND
+                    "BOD" => (5, 4_000_000_000m),       // 5 nhân sự, 4 tỷ VND
+                    _ => (15, 5_000_000_000m)
+                };
+
+                deptBudgets.Add(new DepartmentHeadcountBudget
+                {
+                    Id = Guid.NewGuid(),
+                    DepartmentId = d.Id,
+                    Year = currentYear,
+                    TargetHeadcount = targetHc,
+                    SalaryBudget = budget,
+                    Currency = "VND",
+                    Note = $"Kế hoạch định biên và ngân sách lương năm {currentYear} đã được Ban Giám Đốc phê duyệt đầu năm.",
+                    IsActive = true,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow,
+                    CreatedById = adminId
+                });
+            }
+
+            await context.DepartmentHeadcountBudgets.AddRangeAsync(deptBudgets);
+            await context.SaveChangesAsync();
+        }
+
         await context.SaveChangesAsync();
     }
 }

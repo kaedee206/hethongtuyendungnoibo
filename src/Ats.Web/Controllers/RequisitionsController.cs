@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Ats.Web.Constants;
 using Ats.Web.Models.ViewModels.Requisitions;
+using Ats.Web.Services;
 using Ats.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,12 +15,32 @@ namespace Ats.Web.Controllers;
 [Authorize(Roles = $"{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Approver}")]
 [Route("yeu-cau-tuyen-dung")]
 [Route("requisitions")]
-public class RequisitionsController(
-    IRequisitionService requisitionService,
-    ILogger<RequisitionsController> logger) : Controller
+public class RequisitionsController : Controller
 {
-    private readonly IRequisitionService _requisitionService = requisitionService;
-    private readonly ILogger<RequisitionsController> _logger = logger;
+    private readonly IRequisitionService _requisitionService;
+    private readonly IDepartmentBudgetService _departmentBudgetService;
+    private readonly ILogger<RequisitionsController> _logger;
+
+    [ActivatorUtilitiesConstructor]
+    public RequisitionsController(
+        IRequisitionService requisitionService,
+        IDepartmentBudgetService departmentBudgetService,
+        ILogger<RequisitionsController> logger)
+    {
+        _requisitionService = requisitionService;
+        _departmentBudgetService = departmentBudgetService;
+        _logger = logger;
+    }
+
+    public RequisitionsController(
+        IRequisitionService requisitionService,
+        ILogger<RequisitionsController> logger)
+        : this(
+            requisitionService,
+            new DepartmentBudgetService(null!, Microsoft.Extensions.Logging.Abstractions.NullLogger<DepartmentBudgetService>.Instance),
+            logger)
+    {
+    }
 
     private Guid GetCurrentUserId()
     {
@@ -332,6 +353,43 @@ public class RequisitionsController(
 
         TempData["SuccessMessage"] = message;
         return RedirectToAction(nameof(Edit), new { id = newRequisitionId!.Value });
+    }
+
+    /// <summary>
+    /// GET: /yeu-cau-tuyen-dung/api/department-headcount hoặc /requisitions/api/department-headcount
+    /// Kiểm tra thời gian thực chỉ tiêu headcount, số lượng đã sử dụng và còn lại của phòng ban (Scrum 24).
+    /// </summary>
+    [HttpGet("api/department-headcount")]
+    public async Task<IActionResult> CheckDepartmentHeadcount(
+        [FromQuery] Guid departmentId,
+        [FromQuery] int quantity = 1,
+        [FromQuery] Guid? requisitionId = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (departmentId == Guid.Empty)
+        {
+            return BadRequest(new { success = false, message = "Phòng ban không hợp lệ." });
+        }
+
+        var result = await _departmentBudgetService.CheckHeadcountQuotaAsync(
+            departmentId,
+            quantity,
+            excludeRequisitionId: requisitionId,
+            cancellationToken: cancellationToken);
+
+        return Ok(new
+        {
+            success = true,
+            hasPlan = result.HasPlan,
+            isOverQuota = result.IsOverQuota,
+            targetHeadcount = result.TargetHeadcount,
+            usedHeadcount = result.UsedHeadcount,
+            remainingHeadcount = result.RemainingHeadcount,
+            salaryBudget = result.SalaryBudget,
+            currency = result.Currency,
+            year = result.Year,
+            message = result.Message
+        });
     }
 }
 

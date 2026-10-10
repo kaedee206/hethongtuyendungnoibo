@@ -33,9 +33,26 @@ public class JobRequisition : BaseEntity
     /// </summary>
     public string? Requirements { get; set; }
 
+    /// <summary>
+    /// Đánh dấu yêu cầu tuyển dụng vượt quá chỉ tiêu headcount phê duyệt đầu năm (Scrum 24).
+    /// </summary>
+    public bool IsOverQuota { get; set; } = false;
+
+    /// <summary>
+    /// Lý do giải trình vượt chỉ tiêu khi Trưởng phòng Nhân sự xác nhận ghi đè.
+    /// </summary>
+    public string? OverQuotaReason { get; set; }
+
+    /// <summary>
+    /// Trưởng phòng Nhân sự xác nhận phê duyệt ghi đè.
+    /// </summary>
+    public Guid? OverQuotaApprovedById { get; set; }
+    public DateTimeOffset? OverQuotaApprovedAt { get; set; }
+
     public JobPosition? JobPosition { get; set; }
     public Department? Department { get; set; }
     public User HiringManager { get; set; } = null!;
     public User? AssignedRecruiter { get; set; }
+    public User? OverQuotaApprovedBy { get; set; }
     public ICollection<RequisitionApproval> Approvals { get; set; } = new List<RequisitionApproval>();
 }

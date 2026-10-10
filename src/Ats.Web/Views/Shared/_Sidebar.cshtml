@@ -198,6 +198,18 @@
                             <span class="sidebar-nav-link-text">Sơ đồ tổ chức</span>
                         </span>
                     </a>
+                    @if (isAdmin || isHrManager)
+                    {
+                        <a href="/ngan-sach-headcount"
+                           class="sidebar-nav-link"
+                           data-path="/ngan-sach-headcount"
+                           data-tooltip="Ngân sách Headcount">
+                            <span class="sidebar-nav-link-content">
+                                <i class="bi bi-wallet2"></i>
+                                <span class="sidebar-nav-link-text">Ngân sách Headcount</span>
+                            </span>
+                        </a>
+                    }
                     <a href="/job-positions"
                        class="sidebar-nav-link"
                        data-path="/job-positions"

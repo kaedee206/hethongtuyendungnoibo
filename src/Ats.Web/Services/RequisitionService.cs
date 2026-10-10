@@ -9,12 +9,27 @@ using Microsoft.Extensions.Logging;
 
 namespace Ats.Web.Services;
 
-public class RequisitionService(
-    ApplicationDbContext dbContext,
-    ILogger<RequisitionService> logger) : IRequisitionService
+public class RequisitionService : IRequisitionService
 {
-    private readonly ApplicationDbContext _dbContext = dbContext;
-    private readonly ILogger<RequisitionService> _logger = logger;
+    private readonly ApplicationDbContext _dbContext;
+    private readonly IDepartmentBudgetService _departmentBudgetService;
+    private readonly ILogger<RequisitionService> _logger;
+
+    [ActivatorUtilitiesConstructor]
+    public RequisitionService(
+        ApplicationDbContext dbContext,
+        IDepartmentBudgetService departmentBudgetService,
+        ILogger<RequisitionService> logger)
+    {
+        _dbContext = dbContext;
+        _departmentBudgetService = departmentBudgetService;
+        _logger = logger;
+    }
+
+    public RequisitionService(ApplicationDbContext dbContext, ILogger<RequisitionService> logger)
+        : this(dbContext, new DepartmentBudgetService(dbContext, Microsoft.Extensions.Logging.Abstractions.NullLogger<DepartmentBudgetService>.Instance), logger)
+    {
+    }
 
     public async Task<RequisitionCreateViewModel> PrepareCreateViewModelAsync(Guid currentUserId, CancellationToken cancellationToken = default)
     {
@@ -130,6 +145,25 @@ public class RequisitionService(
             {
                 model.DepartmentId = eligibleDepartments.First().Id;
             }
+        }
+
+        model.IsHRManagerOrAdmin = isAdminOrHR;
+
+        // 5. Tính toán chỉ tiêu và số lượng headcount còn lại của phòng ban
+        if (model.DepartmentId.HasValue && model.DepartmentId.Value != Guid.Empty)
+        {
+            var quotaCheck = await _departmentBudgetService.CheckHeadcountQuotaAsync(
+                model.DepartmentId.Value,
+                model.Quantity > 0 ? model.Quantity : 1,
+                excludeRequisitionId: model.Id,
+                cancellationToken: cancellationToken);
+
+            model.DepartmentHeadcountTarget = quotaCheck.TargetHeadcount;
+            model.DepartmentHeadcountUsed = quotaCheck.UsedHeadcount;
+            model.DepartmentHeadcountRemaining = quotaCheck.RemainingHeadcount;
+            model.DepartmentSalaryBudget = quotaCheck.SalaryBudget;
+            model.HasHeadcountPlan = quotaCheck.HasPlan;
+            model.IsOverQuota = quotaCheck.IsOverQuota;
         }
     }
 
@@ -265,7 +299,39 @@ public class RequisitionService(
             ? (model.HeadcountType == HeadcountType.REPLACEMENT ? "Thay thế nhân sự nghỉ việc" : "Tăng mới headcount mở rộng dự án")
             : model.ReasonDetail.Trim();
 
-        // 2. Phân nhánh Xử lý: Cập nhật bản nháp đã có (UPDATE) hay Tạo mới (INSERT)
+        // 2. Kiểm tra chỉ tiêu Headcount theo phòng ban (Scrum 24)
+        if (model.DepartmentId.HasValue && model.DepartmentId.Value != Guid.Empty)
+        {
+            var quotaCheck = await _departmentBudgetService.CheckHeadcountQuotaAsync(
+                model.DepartmentId.Value,
+                model.Quantity > 0 ? model.Quantity : 1,
+                excludeRequisitionId: model.Id,
+                cancellationToken: cancellationToken);
+
+            model.DepartmentHeadcountTarget = quotaCheck.TargetHeadcount;
+            model.DepartmentHeadcountUsed = quotaCheck.UsedHeadcount;
+            model.DepartmentHeadcountRemaining = quotaCheck.RemainingHeadcount;
+            model.DepartmentSalaryBudget = quotaCheck.SalaryBudget;
+            model.HasHeadcountPlan = quotaCheck.HasPlan;
+            model.IsOverQuota = quotaCheck.IsOverQuota;
+
+            if (!model.IsDraft && quotaCheck.IsOverQuota)
+            {
+                // Vượt chỉ tiêu là cảnh báo chặn
+                if (!isAdminOrHR)
+                {
+                    return (false, quotaCheck.Message, null, null);
+                }
+
+                // Trưởng phòng nhân sự cần xác nhận ghi đè kèm lý do
+                if (!model.IsOverQuotaOverride || string.IsNullOrWhiteSpace(model.OverQuotaReason))
+                {
+                    return (false, "Yêu cầu tuyển dụng này vượt quá chỉ tiêu headcount của phòng ban. Với vai trò Trưởng phòng Nhân sự, bạn cần đánh dấu đồng ý ghi đè và nhập lý do phê duyệt vượt chỉ tiêu.", null, null);
+                }
+            }
+        }
+
+        // 3. Phân nhánh Xử lý: Cập nhật bản nháp đã có (UPDATE) hay Tạo mới (INSERT)
         if (model.Id.HasValue && model.Id.Value != Guid.Empty)
         {
             var existing = await _dbContext.JobRequisitions
@@ -298,6 +364,13 @@ public class RequisitionService(
             existing.JobDescription = string.IsNullOrWhiteSpace(model.JobDescription) ? null : model.JobDescription.Trim();
             existing.Requirements = string.IsNullOrWhiteSpace(model.Requirements) ? null : model.Requirements.Trim();
             existing.Status = model.IsDraft ? RequisitionStatus.DRAFT : RequisitionStatus.PENDING_APPROVAL;
+            existing.IsOverQuota = model.IsOverQuota;
+            existing.OverQuotaReason = model.IsOverQuota ? model.OverQuotaReason?.Trim() : null;
+            if (model.IsOverQuota && model.IsOverQuotaOverride && isAdminOrHR)
+            {
+                existing.OverQuotaApprovedById = currentUserId;
+                existing.OverQuotaApprovedAt = DateTimeOffset.UtcNow;
+            }
             existing.UpdatedAt = DateTimeOffset.UtcNow;
 
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -337,6 +410,10 @@ public class RequisitionService(
                 JobDescription = string.IsNullOrWhiteSpace(model.JobDescription) ? null : model.JobDescription.Trim(),
                 Requirements = string.IsNullOrWhiteSpace(model.Requirements) ? null : model.Requirements.Trim(),
                 Status = initialStatus,
+                IsOverQuota = model.IsOverQuota,
+                OverQuotaReason = model.IsOverQuota ? model.OverQuotaReason?.Trim() : null,
+                OverQuotaApprovedById = (model.IsOverQuota && model.IsOverQuotaOverride && isAdminOrHR) ? currentUserId : null,
+                OverQuotaApprovedAt = (model.IsOverQuota && model.IsOverQuotaOverride && isAdminOrHR) ? DateTimeOffset.UtcNow : null,
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow
             };
@@ -389,7 +466,9 @@ public class RequisitionService(
                 TargetHireDate = r.TargetHireDate,
                 UpdatedAt = r.UpdatedAt,
                 CreatedAt = r.CreatedAt,
-                HasContent = !string.IsNullOrWhiteSpace(r.JobDescription) || !string.IsNullOrWhiteSpace(r.Requirements)
+                HasContent = !string.IsNullOrWhiteSpace(r.JobDescription) || !string.IsNullOrWhiteSpace(r.Requirements),
+                IsOverQuota = r.IsOverQuota,
+                OverQuotaReason = r.OverQuotaReason
             })
             .ToListAsync(cancellationToken);
     }
@@ -427,9 +506,13 @@ public class RequisitionService(
             ReasonDetail = requisition.Reason,
             MinSalary = requisition.MinSalary,
             MaxSalary = requisition.MaxSalary,
+            SalaryBandExplanation = requisition.SalaryBandExplanation,
             TargetHireDate = requisition.TargetHireDate,
             JobDescription = requisition.JobDescription,
             Requirements = requisition.Requirements,
+            IsOverQuota = requisition.IsOverQuota,
+            OverQuotaReason = requisition.OverQuotaReason,
+            IsOverQuotaOverride = requisition.OverQuotaApprovedById.HasValue,
             IsDraft = true
         };
 

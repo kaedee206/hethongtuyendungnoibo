@@ -142,6 +142,98 @@
                     Bạn đang quản lý nhiều bộ phận hoặc có quyền quản trị, có thể linh hoạt chọn phòng ban cần bổ sung nhân sự.
                 </div>
             }
+
+            <input type="hidden" asp-for="IsOverQuota" id="reqIsOverQuota" />
+
+            <!-- Widget Hiển thị số headcount còn lại của phòng ban (Scrum 24) -->
+            <div id="headcountInfoWidget" class="card border-0 shadow-sm mt-2 mb-3 headcount-info-card" style="border-radius: 10px; background: #F8FAFC; border: 1px solid #E2E8F0 !important;">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-pie-chart-fill text-primary"></i>
+                            <span class="fw-bold text-dark small">Tình trạng định biên Headcount phòng ban</span>
+                            <span class="spinner-border spinner-border-sm text-primary d-none" id="headcountLoadingSpinner" role="status"></span>
+                        </div>
+                        <span class="badge font-monospace" id="headcountStatusBadge" style="font-size: 0.75rem;">Đang tải...</span>
+                    </div>
+
+                    <div class="row g-2 text-center">
+                        <div class="col-4">
+                            <div class="p-2 bg-white rounded-2 border">
+                                <div class="text-secondary small" style="font-size: 0.75rem;">Chỉ tiêu cả năm</div>
+                                <div class="fw-bold fs-6 text-dark" id="headcountTargetText">@(Model.DepartmentHeadcountTarget > 0 ? Model.DepartmentHeadcountTarget + " người" : "--")</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 bg-white rounded-2 border">
+                                <div class="text-secondary small" style="font-size: 0.75rem;">Đã sử dụng</div>
+                                <div class="fw-bold fs-6 text-warning-emphasis" id="headcountUsedText">@(Model.DepartmentHeadcountUsed > 0 ? Model.DepartmentHeadcountUsed + " người" : "0 người")</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 bg-white rounded-2 border" id="headcountRemainingBox">
+                                <div class="text-secondary small" style="font-size: 0.75rem;">Headcount còn lại</div>
+                                <div class="fw-bold fs-6 @(Model.DepartmentHeadcountRemaining > 0 ? "text-success" : "text-danger")" id="headcountRemainingText">
+                                    @(Model.HasHeadcountPlan ? Model.DepartmentHeadcountRemaining + " người" : "--")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="small text-muted mt-2 d-flex justify-content-between align-items-center" id="headcountSalaryBudgetText">
+                        <span><i class="bi bi-cash-stack me-1"></i>Ngân sách lương: <strong class="text-dark" id="headcountSalaryVal">@(Model.DepartmentSalaryBudget.HasValue && Model.DepartmentSalaryBudget.Value > 0 ? Model.DepartmentSalaryBudget.Value.ToString("N0") + " VND" : "--")</strong></span>
+                        <span class="fst-italic" id="headcountYearVal">Năm @DateTime.UtcNow.Year</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cảnh báo vượt chỉ tiêu (Scrum 24 - Requirement 3: Vượt chỉ tiêu là cảnh báo chặn, cần Trưởng phòng Nhân sự xác nhận ghi đè kèm lý do) -->
+            <div id="overQuotaAlertBlock" class="@(Model.IsOverQuota ? "" : "d-none") alert alert-danger border border-danger-subtle p-3 mb-3 rounded-3 shadow-sm" style="border-radius: 10px;">
+                <div class="d-flex align-items-start gap-2">
+                    <i class="bi bi-shield-x fs-4 text-danger mt-0"></i>
+                    <div class="flex-grow-1">
+                        <h6 class="fw-bold text-danger mb-1 d-flex align-items-center gap-2">
+                            <span>CẢNH BÁO CHẶN: VƯỢT CHỈ TIÊU HEADCOUNT PHÒNG BAN</span>
+                            <span class="badge bg-danger text-white">Chặn gửi duyệt</span>
+                        </h6>
+                        <p class="small text-danger-emphasis mb-2" id="overQuotaMessageText">
+                            Số lượng tuyển dụng yêu cầu vượt quá số headcount còn lại đã được phê duyệt đầu năm của phòng ban.
+                        </p>
+
+                        @if (!Model.IsHRManagerOrAdmin)
+                        {
+                            <!-- Trường hợp: Hiring Manager (Không phải HR Manager/Admin) -->
+                            <div class="p-2 bg-white rounded-2 border border-danger-subtle small text-danger" id="nonHrBlockNotice">
+                                <i class="bi bi-lock-fill me-1"></i>
+                                <strong>Quy định:</strong> Bạn không có thẩm quyền gửi duyệt yêu cầu vượt quá định biên. Vui lòng liên hệ <strong>Trưởng phòng Nhân sự</strong> để xem xét điều chỉnh chỉ tiêu hoặc phê duyệt ngoại lệ.
+                            </div>
+                        }
+                        else
+                        {
+                            <!-- Trường hợp: Trưởng phòng Nhân sự hoặc Quản trị viên (HR Manager / Admin) -->
+                            <div class="p-3 bg-white rounded-2 border border-danger-subtle mt-2" id="hrOverrideSection">
+                                <div class="d-flex align-items-center gap-2 mb-2 text-primary">
+                                    <i class="bi bi-shield-lock-fill"></i>
+                                    <strong class="small">Dành riêng cho Trưởng phòng Nhân sự: Quyền phê duyệt ngoại lệ</strong>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input type="checkbox" asp-for="IsOverQuotaOverride" class="form-check-input" id="reqIsOverQuotaOverride" />
+                                    <label class="form-check-label fw-bold text-dark small" for="reqIsOverQuotaOverride">
+                                        Tôi là Trưởng phòng Nhân sự, đồng ý xác nhận ghi đè phê duyệt vượt chỉ tiêu headcount cho yêu cầu này
+                                    </label>
+                                </div>
+                                <div id="overQuotaReasonContainer" class="mt-2 @(Model.IsOverQuotaOverride ? "" : "d-none")">
+                                    <label asp-for="OverQuotaReason" class="form-label fw-bold text-dark small mb-1">
+                                        Lý do phê duyệt vượt chỉ tiêu <span class="text-danger">*</span>
+                                    </label>
+                                    <textarea asp-for="OverQuotaReason" id="reqOverQuotaReason" class="form-control" rows="2" placeholder="Nêu rõ lý do đột xuất, quyết định phê duyệt ngoại lệ của Ban Giám Đốc hoặc dự án cấp bách..." style="border-radius: 8px;"></textarea>
+                                    <span asp-validation-for="OverQuotaReason" class="text-danger small mt-1 d-block"></span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- 3. Số lượng cần tuyển & Ngày cần người -->
@@ -557,6 +649,16 @@
                     <div class="col-12 col-md-6">
                         <div class="review-item-label">Loại chỉ tiêu (Headcount)</div>
                         <div class="review-item-value" id="reviewHeadcountType">--</div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="review-item-label">Tình trạng định biên Headcount</div>
+                        <div class="review-item-value" id="reviewHeadcountQuotaStatus">
+                            <span class="badge bg-success-subtle text-success border">Đang kiểm tra...</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 d-none" id="reviewOverQuotaReasonCol">
+                        <div class="review-item-label">Ghi đè vượt chỉ tiêu (Trưởng phòng Nhân sự)</div>
+                        <div class="review-item-value text-danger" id="reviewOverQuotaReason">--</div>
                     </div>
                     <div class="col-12">
                         <div class="review-item-label">Ghi chú mục tiêu tuyển dụng</div>

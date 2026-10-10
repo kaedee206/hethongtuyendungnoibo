@@ -27,8 +27,8 @@ public class JobPositionItemViewModel
     public string JobLevel { get; set; } = string.Empty;
     public decimal? MinSalary { get; set; }
     public decimal? MaxSalary { get; set; }
-    public string MinSalaryFormatted => MinSalary.HasValue ? MinSalary.Value.ToString("N0") + " ₫" : "---";
-    public string MaxSalaryFormatted => MaxSalary.HasValue ? MaxSalary.Value.ToString("N0") + " ₫" : "---";
+    public string MinSalaryFormatted => MinSalary.HasValue ? MinSalary.Value.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + " ₫" : "---";
+    public string MaxSalaryFormatted => MaxSalary.HasValue ? MaxSalary.Value.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + " ₫" : "---";
     public bool IsActive { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 }

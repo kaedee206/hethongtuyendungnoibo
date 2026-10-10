@@ -83,6 +83,18 @@ public class RequisitionCreateViewModel : IValidatableObject
     public string? CurrentUserDepartmentName { get; set; }
     public string? CurrentUserName { get; set; }
 
+    // Scrum 24: Quản lý ngân sách Headcount theo phòng ban
+    public bool IsOverQuota { get; set; } = false;
+    public bool IsOverQuotaOverride { get; set; } = false;
+    public string? OverQuotaReason { get; set; }
+
+    public int? DepartmentHeadcountTarget { get; set; }
+    public int? DepartmentHeadcountUsed { get; set; }
+    public int? DepartmentHeadcountRemaining { get; set; }
+    public decimal? DepartmentSalaryBudget { get; set; }
+    public bool HasHeadcountPlan { get; set; } = true;
+    public bool IsHRManagerOrAdmin { get; set; } = false;
+
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         // 1. Kiểm tra dải lương nếu người dùng đã nhập
@@ -186,6 +198,33 @@ public class RequisitionCreateViewModel : IValidatableObject
                         yield return new ValidationResult(
                             "Mức lương đề xuất nằm ngoài dải lương chuẩn của vị trí. Bắt buộc phải nhập giải trình lý do vượt khung.",
                             [nameof(SalaryBandExplanation)]);
+                    }
+                }
+            }
+
+            // 4. Scrum 24: Cảnh báo chặn vượt chỉ tiêu Headcount & Xác nhận ghi đè
+            if (IsOverQuota)
+            {
+                if (!IsHRManagerOrAdmin)
+                {
+                    yield return new ValidationResult(
+                        "Yêu cầu tuyển dụng vượt quá chỉ tiêu headcount của phòng ban. Vượt chỉ tiêu là cảnh báo chặn, cần Trưởng phòng Nhân sự xác nhận ghi đè kèm lý do.",
+                        [nameof(Quantity)]);
+                }
+                else
+                {
+                    if (!IsOverQuotaOverride)
+                    {
+                        yield return new ValidationResult(
+                            "Yêu cầu tuyển dụng vượt quá chỉ tiêu headcount phòng ban. Vui lòng xác nhận ghi đè chỉ tiêu.",
+                            [nameof(IsOverQuotaOverride)]);
+                    }
+
+                    if (string.IsNullOrWhiteSpace(OverQuotaReason))
+                    {
+                        yield return new ValidationResult(
+                            "Vui lòng nhập lý do giải trình khi xác nhận ghi đè chỉ tiêu vượt định mức.",
+                            [nameof(OverQuotaReason)]);
                     }
                 }
             }
