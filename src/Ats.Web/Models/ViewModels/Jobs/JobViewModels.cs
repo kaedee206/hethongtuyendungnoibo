@@ -33,7 +33,7 @@ public class JobListViewModel
     public string? SearchKeyword { get; set; }
     public string? SelectedDepartment { get; set; }
     public string? SelectedLocation { get; set; }
-    public string? SelectedLevel { get; set; }
+    public string? SelectedEmploymentType { get; set; }
     public int TotalOpenings => TotalRecords > 0 ? TotalRecords : Jobs.Count;
     public int HotOpeningsCount => (AllJobs != null && AllJobs.Any() ? AllJobs : Jobs).Count(j => j.IsHot);
     public int CurrentPage { get; set; } = 1;

@@ -266,13 +266,14 @@
                                 </select>
                             </div>
 
-                            <!-- Level Dropdown -->
+                            <!-- Employment Type Dropdown -->
                             <div class="col-6 col-md-2">
-                                <select id="jobLevelSelect" name="level" class="form-select form-select-custom">
-                                    <option value="all">Tất cả cấp bậc</option>
-                                    <option value="Senior" selected="@(Model.SelectedLevel == "Senior")">Senior</option>
-                                    <option value="Lead" selected="@(Model.SelectedLevel == "Lead")">Lead / Principal</option>
-                                    <option value="Middle" selected="@(Model.SelectedLevel == "Middle")">Middle</option>
+                                <select id="jobEmploymentTypeSelect" name="employmentType" class="form-select form-select-custom">
+                                    <option value="all">Tất cả hình thức</option>
+                                    <option value="Toàn thời gian" selected="@(Model.SelectedEmploymentType == "Toàn thời gian")">Toàn thời gian (Full-time)</option>
+                                    <option value="Bán thời gian" selected="@(Model.SelectedEmploymentType == "Bán thời gian")">Bán thời gian (Part-time)</option>
+                                    <option value="Thực tập" selected="@(Model.SelectedEmploymentType == "Thực tập")">Thực tập sinh (Intern)</option>
+                                    <option value="Hợp đồng" selected="@(Model.SelectedEmploymentType == "Hợp đồng")">Hợp đồng (Contract)</option>
                                 </select>
                             </div>
 
@@ -432,7 +433,7 @@
                                asp-route-search="@Model.SearchKeyword"
                                asp-route-department="@Model.SelectedDepartment"
                                asp-route-location="@Model.SelectedLocation"
-                               asp-route-level="@Model.SelectedLevel"
+                               asp-route-employmentType="@Model.SelectedEmploymentType"
                                style="border-radius: 6px; border-color: #E2E8F0; color: #0F172A;">
                                 <i class="bi bi-chevron-left me-1"></i> Trước
                             </a>
@@ -446,7 +447,7 @@
                                    asp-route-search="@Model.SearchKeyword"
                                    asp-route-department="@Model.SelectedDepartment"
                                    asp-route-location="@Model.SelectedLocation"
-                                   asp-route-level="@Model.SelectedLevel"
+                                   asp-route-employmentType="@Model.SelectedEmploymentType"
                                    style="border-radius: 6px; @(p == Model.CurrentPage ? "background: #059669; border-color: #059669; color: #FFF;" : "border-color: #E2E8F0; color: #0F172A;")">
                                     @p
                                 </a>
@@ -459,7 +460,7 @@
                                asp-route-search="@Model.SearchKeyword"
                                asp-route-department="@Model.SelectedDepartment"
                                asp-route-location="@Model.SelectedLocation"
-                               asp-route-level="@Model.SelectedLevel"
+                               asp-route-employmentType="@Model.SelectedEmploymentType"
                                style="border-radius: 6px; border-color: #E2E8F0; color: #0F172A;">
                                 Sau <i class="bi bi-chevron-right ms-1"></i>
                             </a>

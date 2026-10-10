@@ -16,7 +16,7 @@ public class JobService : IJobService
         _logger = logger;
     }
 
-    public async Task<JobListViewModel> GetJobListAsync(string? search = null, string? department = null, string? location = null, string? level = null, int page = 1, int pageSize = 9)
+    public async Task<JobListViewModel> GetJobListAsync(string? search = null, string? department = null, string? location = null, string? employmentType = null, int page = 1, int pageSize = 9)
     {
         if (page < 1) page = 1;
         if (pageSize <= 0) pageSize = 9;
@@ -31,6 +31,8 @@ public class JobService : IJobService
             query = query.Where(j => 
                 j.Title.ToLower().Contains(s) ||
                 j.ShortSummary.ToLower().Contains(s) ||
+                j.Overview.ToLower().Contains(s) ||
+                j.PositionDescription.ToLower().Contains(s) ||
                 j.TechStack.Any(t => t.ToLower().Contains(s)) ||
                 j.Requirements.Any(r => r.ToLower().Contains(s)) ||
                 j.Department.ToLower().Contains(s));
@@ -48,10 +50,10 @@ public class JobService : IJobService
             query = query.Where(j => j.WorkLocation.ToLower().Contains(loc));
         }
 
-        if (!string.IsNullOrWhiteSpace(level) && level != "all")
+        if (!string.IsNullOrWhiteSpace(employmentType) && employmentType != "all")
         {
-            var lvl = level.Trim().ToLower();
-            query = query.Where(j => j.ExperienceLevel.ToLower().Contains(lvl));
+            var et = employmentType.Trim().ToLower();
+            query = query.Where(j => j.EmploymentType.ToLower().Contains(et));
         }
 
         var filteredList = query.ToList();
@@ -65,7 +67,7 @@ public class JobService : IJobService
             SearchKeyword = search,
             SelectedDepartment = department,
             SelectedLocation = location,
-            SelectedLevel = level,
+            SelectedEmploymentType = employmentType,
             CurrentPage = page,
             PageSize = pageSize,
             TotalRecords = totalRecords
@@ -119,7 +121,8 @@ public class JobService : IJobService
                     .ThenInclude(r => r.Department)
                 .Include(j => j.Requisition)
                     .ThenInclude(r => r.JobPosition)
-                .Where(j => j.Status == Models.Enums.JobPostingStatus.PUBLISHED)
+                .Where(j => j.Status == Models.Enums.JobPostingStatus.PUBLISHED 
+                         && (j.ExpiredAt == null || j.ExpiredAt > DateTimeOffset.UtcNow))
                 .ToListAsync();
 
             if (dbJobs.Any())
