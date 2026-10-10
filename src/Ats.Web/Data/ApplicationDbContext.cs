@@ -45,6 +45,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<RecruitmentCatalog> RecruitmentCatalogs { get; set; }
     public DbSet<CompanyProfile> CompanyProfiles { get; set; }
     public DbSet<DepartmentHeadcountBudget> DepartmentHeadcountBudgets { get; set; }
+    public DbSet<RequisitionRecruiter> RequisitionRecruiters { get; set; }
+    public DbSet<RequisitionHandoverHistory> RequisitionHandoverHistories { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -102,6 +104,57 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
             entity.HasIndex(b => new { b.DepartmentId, b.Year })
                 .IsUnique();
+        });
+
+        // RequisitionRecruiter (Scrum 26)
+        modelBuilder.Entity<RequisitionRecruiter>(entity =>
+        {
+            entity.HasKey(rr => rr.Id);
+            entity.Property(rr => rr.Id).ValueGeneratedNever();
+
+            entity.HasOne(rr => rr.Requisition)
+                .WithMany(r => r.RequisitionRecruiters)
+                .HasForeignKey(rr => rr.RequisitionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(rr => rr.Recruiter)
+                .WithMany()
+                .HasForeignKey(rr => rr.RecruiterId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(rr => rr.AssignedBy)
+                .WithMany()
+                .HasForeignKey(rr => rr.AssignedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(rr => new { rr.RequisitionId, rr.RecruiterId });
+        });
+
+        // RequisitionHandoverHistory (Scrum 26)
+        modelBuilder.Entity<RequisitionHandoverHistory>(entity =>
+        {
+            entity.HasKey(rh => rh.Id);
+            entity.Property(rh => rh.Id).ValueGeneratedNever();
+
+            entity.HasOne(rh => rh.Requisition)
+                .WithMany(r => r.HandoverHistories)
+                .HasForeignKey(rh => rh.RequisitionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(rh => rh.FromRecruiter)
+                .WithMany()
+                .HasForeignKey(rh => rh.FromRecruiterId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(rh => rh.ToRecruiter)
+                .WithMany()
+                .HasForeignKey(rh => rh.ToRecruiterId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(rh => rh.TransferredBy)
+                .WithMany()
+                .HasForeignKey(rh => rh.TransferredById)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Cascade delete behavior adjustments

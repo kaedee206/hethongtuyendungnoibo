@@ -47,6 +47,7 @@ builder.Services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService
 builder.Services.AddScoped<IRequisitionService, RequisitionService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IDepartmentBudgetService, DepartmentBudgetService>();
+builder.Services.AddScoped<IRequisitionAssignmentService, RequisitionAssignmentService>();
 
 
 // Cấu hình thời gian Session (Idle timeout)
@@ -312,6 +313,42 @@ using (var scope = app.Services.CreateScope())
                 deleted_at TIMESTAMPTZ,
                 CONSTRAINT uq_department_headcount_budgets_dept_year UNIQUE (department_id, year)
             );
+
+            CREATE TABLE IF NOT EXISTS requisition_recruiters (
+                id UUID PRIMARY KEY,
+                requisition_id UUID NOT NULL REFERENCES job_requisitions(id) ON DELETE CASCADE,
+                recruiter_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+                assigned_by_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+                assigned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                note TEXT,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+            CREATE INDEX IF NOT EXISTS ix_requisition_recruiters_req_rec ON requisition_recruiters(requisition_id, recruiter_id);
+
+            CREATE TABLE IF NOT EXISTS requisition_handover_histories (
+                id UUID PRIMARY KEY,
+                requisition_id UUID NOT NULL REFERENCES job_requisitions(id) ON DELETE CASCADE,
+                from_recruiter_id UUID REFERENCES users(id) ON DELETE SET NULL,
+                to_recruiter_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+                handover_type VARCHAR(50) NOT NULL DEFAULT 'PRIMARY_TRANSFER',
+                reason TEXT NOT NULL DEFAULT '',
+                notes TEXT,
+                transferred_by_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+                transferred_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+            CREATE INDEX IF NOT EXISTS ix_requisition_handover_histories_req ON requisition_handover_histories(requisition_id, transferred_at DESC);
         ");
     }
     catch (Exception ex)

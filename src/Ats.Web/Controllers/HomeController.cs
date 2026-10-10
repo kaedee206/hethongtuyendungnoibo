@@ -15,16 +15,32 @@ public class HomeController : Controller
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly IJobService _jobService;
+    private readonly IRequisitionAssignmentService _assignmentService;
     private readonly ILogger<HomeController> _logger;
+
+    [ActivatorUtilitiesConstructor]
+    public HomeController(
+        ApplicationDbContext dbContext,
+        IJobService jobService,
+        IRequisitionAssignmentService assignmentService,
+        ILogger<HomeController> logger)
+    {
+        _dbContext = dbContext;
+        _jobService = jobService;
+        _assignmentService = assignmentService;
+        _logger = logger;
+    }
 
     public HomeController(
         ApplicationDbContext dbContext,
         IJobService jobService,
         ILogger<HomeController> logger)
+        : this(
+            dbContext,
+            jobService,
+            new Ats.Web.Services.RequisitionAssignmentService(dbContext, Microsoft.Extensions.Logging.Abstractions.NullLogger<Ats.Web.Services.RequisitionAssignmentService>.Instance),
+            logger)
     {
-        _dbContext = dbContext;
-        _jobService = jobService;
-        _logger = logger;
     }
 
     public IActionResult Index()
@@ -185,25 +201,68 @@ public class HomeController : Controller
         else
         {
             // Dành cho nhân sự (Staff / HR / Recruiter / Manager / Approver / Admin)
-            model.TotalOpenJobs = await _dbContext.JobPostings.CountAsync(j => j.Status == JobPostingStatus.PUBLISHED);
-            model.TotalApplications = await _dbContext.Applications.CountAsync(a => !a.IsDeleted);
+            // Scrum 26: Recruiter chỉ nhìn thấy ứng viên của vị trí được giao
+            var isRecruiterOnly = User?.Identity?.IsAuthenticated == true &&
+                                  User.IsInRole(UserRoles.Recruiter) &&
+                                  !User.IsInRole(UserRoles.Admin) &&
+                                  !User.IsInRole(UserRoles.HRManager);
+
+            List<Guid> assignedReqIds = new();
+            if (isRecruiterOnly && userId != Guid.Empty)
+            {
+                assignedReqIds = await _assignmentService.GetAssignedRequisitionIdsForRecruiterAsync(userId);
+                model.IsRecruiterScoped = true;
+                model.AssignedPositionsCount = assignedReqIds.Count;
+            }
+            else
+            {
+                model.RecruitersFilterList = await _assignmentService.GetAvailableRecruitersAsync();
+            }
+
+            if (isRecruiterOnly)
+            {
+                model.TotalOpenJobs = await _dbContext.JobPostings.CountAsync(j => j.Status == JobPostingStatus.PUBLISHED && assignedReqIds.Contains(j.RequisitionId));
+                model.TotalApplications = await _dbContext.Applications.CountAsync(a => !a.IsDeleted && assignedReqIds.Contains(a.JobPosting.RequisitionId));
+            }
+            else
+            {
+                model.TotalOpenJobs = await _dbContext.JobPostings.CountAsync(j => j.Status == JobPostingStatus.PUBLISHED);
+                model.TotalApplications = await _dbContext.Applications.CountAsync(a => !a.IsDeleted);
+            }
 
             var nowUtc = DateTimeOffset.UtcNow;
             var todayUtc = new DateTimeOffset(nowUtc.Year, nowUtc.Month, nowUtc.Day, 0, 0, 0, TimeSpan.Zero);
             var startOfWeek = todayUtc.AddDays(-(int)nowUtc.DayOfWeek + 1);
             var endOfWeek = startOfWeek.AddDays(7);
-            model.TotalInterviewsThisWeek = await _dbContext.Interviews.CountAsync(i => i.StartTime >= startOfWeek && i.StartTime <= endOfWeek);
-            if (model.TotalInterviewsThisWeek == 0)
+
+            var interviewBaseQuery = _dbContext.Interviews.AsQueryable();
+            if (isRecruiterOnly)
             {
-                model.TotalInterviewsThisWeek = await _dbContext.Interviews.CountAsync(i => i.Status == InterviewStatus.SCHEDULED);
+                interviewBaseQuery = interviewBaseQuery.Where(i => assignedReqIds.Contains(i.Application.JobPosting.RequisitionId));
             }
 
-            model.TotalPendingOffers = await _dbContext.JobOffers.CountAsync(o => o.Status == OfferStatus.PENDING_APPROVAL || o.Status == OfferStatus.DRAFT);
+            model.TotalInterviewsThisWeek = await interviewBaseQuery.CountAsync(i => i.StartTime >= startOfWeek && i.StartTime <= endOfWeek);
+            if (model.TotalInterviewsThisWeek == 0)
+            {
+                model.TotalInterviewsThisWeek = await interviewBaseQuery.CountAsync(i => i.Status == InterviewStatus.SCHEDULED);
+            }
+
+            var offerBaseQuery = _dbContext.JobOffers.AsQueryable();
+            if (isRecruiterOnly)
+            {
+                offerBaseQuery = offerBaseQuery.Where(o => assignedReqIds.Contains(o.Application.JobPosting.RequisitionId));
+            }
+            model.TotalPendingOffers = await offerBaseQuery.CountAsync(o => o.Status == OfferStatus.PENDING_APPROVAL || o.Status == OfferStatus.DRAFT);
 
             // Phễu tuyển dụng thật
             var stages = await _dbContext.PipelineStages.OrderBy(s => s.StageOrder).ToListAsync();
-            var appCountsByStage = await _dbContext.Applications
-                .Where(a => !a.IsDeleted)
+            var appCountQuery = _dbContext.Applications.Where(a => !a.IsDeleted);
+            if (isRecruiterOnly)
+            {
+                appCountQuery = appCountQuery.Where(a => assignedReqIds.Contains(a.JobPosting.RequisitionId));
+            }
+
+            var appCountsByStage = await appCountQuery
                 .GroupBy(a => a.CurrentStageId)
                 .Select(g => new { StageId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.StageId, x => x.Count);
@@ -239,7 +298,7 @@ public class HomeController : Controller
             model.PipelineFunnel = funnelList;
 
             // Lịch phỏng vấn tuần này
-            var dbInterviews = await _dbContext.Interviews
+            var interviewListQuery = _dbContext.Interviews
                 .Include(i => i.Application)
                     .ThenInclude(a => a.Candidate)
                 .Include(i => i.Application)
@@ -247,6 +306,14 @@ public class HomeController : Controller
                 .Include(i => i.Panelists)
                     .ThenInclude(p => p.Interviewer)
                 .Include(i => i.Evaluations)
+                .AsQueryable();
+
+            if (isRecruiterOnly)
+            {
+                interviewListQuery = interviewListQuery.Where(i => assignedReqIds.Contains(i.Application.JobPosting.RequisitionId));
+            }
+
+            var dbInterviews = await interviewListQuery
                 .OrderBy(i => i.StartTime)
                 .Take(10)
                 .ToListAsync();
@@ -306,12 +373,20 @@ public class HomeController : Controller
             }).ToList();
 
             // Offers chờ duyệt
-            var dbOffers = await _dbContext.JobOffers
+            var offerListQuery = _dbContext.JobOffers
                 .Include(o => o.Application)
                     .ThenInclude(a => a.Candidate)
                 .Include(o => o.Application)
                     .ThenInclude(a => a.JobPosting)
                 .Where(o => o.Status == OfferStatus.PENDING_APPROVAL || o.Status == OfferStatus.DRAFT)
+                .AsQueryable();
+
+            if (isRecruiterOnly)
+            {
+                offerListQuery = offerListQuery.Where(o => assignedReqIds.Contains(o.Application.JobPosting.RequisitionId));
+            }
+
+            var dbOffers = await offerListQuery
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
 
@@ -346,12 +421,20 @@ public class HomeController : Controller
                 .ToList();
 
             // Toàn bộ ứng viên cho Bảng Quản Lý Ứng Viên & Tiến Trình Tuyển Dụng
-            var allApps = await _dbContext.Applications
+            var allAppsQuery = _dbContext.Applications
                 .Include(a => a.Candidate)
                     .ThenInclude(c => c.Resumes)
                 .Include(a => a.JobPosting)
                 .Include(a => a.CurrentStage)
                 .Where(a => !a.IsDeleted)
+                .AsQueryable();
+
+            if (isRecruiterOnly)
+            {
+                allAppsQuery = allAppsQuery.Where(a => assignedReqIds.Contains(a.JobPosting.RequisitionId));
+            }
+
+            var allApps = await allAppsQuery
                 .OrderByDescending(a => a.AppliedAt)
                 .Take(50)
                 .ToListAsync();
@@ -386,6 +469,7 @@ public class HomeController : Controller
     public async Task<IActionResult> GetCandidatePipeline(
         [FromQuery] string? search,
         [FromQuery] string? stageOrder,
+        [FromQuery] Guid? recruiterId = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         CancellationToken cancellationToken = default)
@@ -400,6 +484,28 @@ public class HomeController : Controller
             .Include(a => a.JobPosting)
             .Include(a => a.CurrentStage)
             .Where(a => !a.IsDeleted);
+
+        // Scrum 26: Recruiter chỉ nhìn thấy ứng viên của vị trí được giao
+        var isRecruiterOnly = User?.Identity?.IsAuthenticated == true &&
+                              User.IsInRole(UserRoles.Recruiter) &&
+                              !User.IsInRole(UserRoles.Admin) &&
+                              !User.IsInRole(UserRoles.HRManager);
+
+        if (isRecruiterOnly && _assignmentService != null)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+            if (currentUserId != Guid.Empty)
+            {
+                var assignedReqIds = await _assignmentService.GetAssignedRequisitionIdsForRecruiterAsync(currentUserId);
+                query = query.Where(a => assignedReqIds.Contains(a.JobPosting.RequisitionId));
+            }
+        }
+        else if (recruiterId.HasValue && recruiterId.Value != Guid.Empty && _assignmentService != null)
+        {
+            var filterReqIds = await _assignmentService.GetAssignedRequisitionIdsForRecruiterAsync(recruiterId.Value);
+            query = query.Where(a => filterReqIds.Contains(a.JobPosting.RequisitionId));
+        }
 
         if (!string.IsNullOrWhiteSpace(search) && search.Trim().Length >= 3)
         {

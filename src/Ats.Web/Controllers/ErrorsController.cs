@@ -11,6 +11,7 @@ namespace Ats.Web.Controllers;
 public class ErrorsController : Controller
 {
     [HttpGet("{statusCode:int}")]
+    [HttpPost("{statusCode:int}")]
     public IActionResult HandleStatusCode(int statusCode)
     {
         ViewData["StatusCode"] = statusCode;

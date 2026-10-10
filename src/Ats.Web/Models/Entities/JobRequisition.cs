@@ -55,4 +55,14 @@ public class JobRequisition : BaseEntity
     public User? AssignedRecruiter { get; set; }
     public User? OverQuotaApprovedBy { get; set; }
     public ICollection<RequisitionApproval> Approvals { get; set; } = new List<RequisitionApproval>();
+
+    /// <summary>
+    /// Danh sách tất cả recruiter được phân công (1 chính + nhiều hỗ trợ - Scrum 26).
+    /// </summary>
+    public ICollection<RequisitionRecruiter> RequisitionRecruiters { get; set; } = new List<RequisitionRecruiter>();
+
+    /// <summary>
+    /// Lịch sử chuyển giao người phụ trách (Scrum 26).
+    /// </summary>
+    public ICollection<RequisitionHandoverHistory> HandoverHistories { get; set; } = new List<RequisitionHandoverHistory>();
 }

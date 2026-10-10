@@ -781,6 +781,95 @@ public static class DatabaseSeeder
             await context.SaveChangesAsync();
         }
 
+        // 13. Seed Requisition Recruiters & Handover Histories (Scrum 26 - Phân công Recruiter phụ trách yêu cầu tuyển dụng)
+        if (!await context.RequisitionRecruiters.AnyAsync())
+        {
+            var hrManager = await context.Users.FirstOrDefaultAsync(u => u.Email == "phuong.nguyen@noveratech.digital" || u.Email == "hr@noveratech.vn")
+                ?? await context.Users.FirstAsync();
+            var recruiter1 = await context.Users.FirstOrDefaultAsync(u => u.Email == "recruiter.thuydung@gmail.com" || u.Email == "dung.le@noveratech.digital");
+            var recruiter2 = await context.Users.FirstOrDefaultAsync(u => u.Email == "recruiter.quocanh@gmail.com" || u.Email == "anh.pham@noveratech.digital");
+
+            if (recruiter1 != null && recruiter2 != null)
+            {
+                var requisitions = await context.JobRequisitions.OrderBy(r => r.CreatedAt).ToListAsync();
+                if (requisitions.Any())
+                {
+                    int count = requisitions.Count;
+                    for (int i = 0; i < count; i++)
+                    {
+                        var req = requisitions[i];
+                        var isLead1 = i % 2 == 0;
+                        var lead = isLead1 ? recruiter1 : recruiter2;
+                        var support = isLead1 ? recruiter2 : recruiter1;
+
+                        req.AssignedRecruiterId = lead.Id;
+                        req.UpdatedAt = DateTimeOffset.UtcNow;
+
+                        // Add Primary
+                        await context.RequisitionRecruiters.AddAsync(new RequisitionRecruiter
+                        {
+                            Id = Guid.NewGuid(),
+                            RequisitionId = req.Id,
+                            RecruiterId = lead.Id,
+                            IsPrimary = true,
+                            AssignedAt = DateTimeOffset.UtcNow.AddDays(-15),
+                            AssignedById = hrManager.Id,
+                            Notes = "Chỉ định phụ trách chính chịu trách nhiệm chạy tới cùng."
+                        });
+
+                        // Add Support (for even requisitions)
+                        if (i % 2 == 0)
+                        {
+                            await context.RequisitionRecruiters.AddAsync(new RequisitionRecruiter
+                            {
+                                Id = Guid.NewGuid(),
+                                RequisitionId = req.Id,
+                                RecruiterId = support.Id,
+                                IsPrimary = false,
+                                AssignedAt = DateTimeOffset.UtcNow.AddDays(-10),
+                                AssignedById = hrManager.Id,
+                                Notes = "Hỗ trợ sàng lọc hồ sơ và điều phối phỏng vấn."
+                            });
+                        }
+                    }
+
+                    // Seed ít nhất 2 RequisitionHandoverHistory (Lịch sử chuyển giao)
+                    var firstReq = requisitions.First();
+                    await context.RequisitionHandoverHistories.AddAsync(new RequisitionHandoverHistory
+                    {
+                        Id = Guid.NewGuid(),
+                        RequisitionId = firstReq.Id,
+                        FromRecruiterId = null,
+                        ToRecruiterId = recruiter1.Id,
+                        HandoverType = "INITIAL_ASSIGNMENT",
+                        Reason = "Phân công phụ trách ban đầu khi mở yêu cầu tuyển dụng.",
+                        Notes = "Bắt đầu đăng tuyển và tiếp nhận ứng viên.",
+                        TransferredById = hrManager.Id,
+                        TransferredAt = DateTimeOffset.UtcNow.AddDays(-20)
+                    });
+
+                    if (requisitions.Count > 1)
+                    {
+                        var secondReq = requisitions[1];
+                        await context.RequisitionHandoverHistories.AddAsync(new RequisitionHandoverHistory
+                        {
+                            Id = Guid.NewGuid(),
+                            RequisitionId = secondReq.Id,
+                            FromRecruiterId = recruiter1.Id,
+                            ToRecruiterId = recruiter2.Id,
+                            HandoverType = "LEAD_HANDOVER",
+                            Reason = "Điều chuyển khối lượng công việc, tối ưu thời gian phản hồi ứng viên.",
+                            Notes = "Đã bàn giao 03 hồ sơ đang ở vòng phỏng vấn chuyên môn.",
+                            TransferredById = hrManager.Id,
+                            TransferredAt = DateTimeOffset.UtcNow.AddDays(-5)
+                        });
+                    }
+
+                    await context.SaveChangesAsync();
+                }
+            }
+        }
+
         await context.SaveChangesAsync();
     }
 }

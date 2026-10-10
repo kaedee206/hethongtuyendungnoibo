@@ -677,6 +677,16 @@
 
                             <!-- Hồ Sơ Ứng Viên Gần Đây -->
                             <div class="card border-0 shadow-sm p-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                                @if (Model.IsRecruiterScoped)
+                                {
+                                    <div class="alert alert-primary-subtle border border-primary-subtle py-2 px-3 small d-flex align-items-center justify-content-between mb-3" style="border-radius: 8px;">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="bi bi-person-check-fill text-primary fs-6"></i>
+                                            <span>Chế độ Recruiter: Đang hiển thị ứng viên thuộc <strong>@Model.AssignedPositionsCount</strong> vị trí tuyển dụng bạn được phân công.</span>
+                                        </div>
+                                        <span class="badge bg-primary text-white" style="font-size: 0.7rem;">Scrum-26 Scoped</span>
+                                    </div>
+                                }
                                 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 pb-2 gap-2" style="border-bottom: 1px solid #F1F5F9;">
                                     <div>
                                         <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">
@@ -1718,6 +1728,28 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body py-3">
+                @if (Model.IsRecruiterScoped)
+                {
+                    <div class="alert alert-primary-subtle border border-primary-subtle py-2 px-3 small d-flex align-items-center gap-2 mb-3" style="border-radius: 8px;">
+                        <i class="bi bi-person-check-fill text-primary fs-6"></i>
+                        <span>Đang chỉ hiển thị hồ sơ ứng viên thuộc <strong>@Model.AssignedPositionsCount</strong> vị trí tuyển dụng được phân công cho bạn.</span>
+                    </div>
+                }
+                else if (Model.RecruitersFilterList != null && Model.RecruitersFilterList.Any())
+                {
+                    <div class="d-flex align-items-center gap-2 mb-3 p-2 bg-light rounded-3 border">
+                        <label for="filterCandidateRecruiterSelect" class="small text-muted fw-semibold mb-0 text-nowrap">
+                            <i class="bi bi-funnel me-1"></i>Lọc theo Recruiter:
+                        </label>
+                        <select id="filterCandidateRecruiterSelect" class="form-select form-select-sm" style="border-radius: 6px;" onchange="loadCandidatesByStage(window.lastFilteredStage || 'ALL')">
+                            <option value="">-- Tất cả Recruiter phụ trách --</option>
+                            @foreach (var r in Model.RecruitersFilterList)
+                            {
+                                <option value="@r.UserId">@r.FullName (@r.ActiveLeadCount chính / @r.ActiveSupportingCount phụ)</option>
+                            }
+                        </select>
+                    </div>
+                }
                 <div class="d-flex flex-wrap gap-1.5 mb-3">
                     <button type="button" class="btn btn-sm btn-outline-success active" style="border-radius: 6px; font-size: 0.75rem;" onclick="loadCandidatesByStage('ALL', this)">Tất cả</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius: 6px; font-size: 0.75rem;" onclick="loadCandidatesByStage('1', this)">Ứng tuyển mới</button>
@@ -2420,7 +2452,11 @@
             loadCandidatesByStage(stage);
         }
 
+        window.lastFilteredStage = 'ALL';
         async function loadCandidatesByStage(stage, btnElement) {
+            stage = stage || window.lastFilteredStage || 'ALL';
+            window.lastFilteredStage = stage;
+
             if (btnElement) {
                 var group = btnElement.parentElement.querySelectorAll('button');
                 group.forEach(b => {
@@ -2436,8 +2472,16 @@
             var tbody = document.getElementById('filteredCandidatesBody');
             tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Đang truy vấn CSDL...</td></tr>';
 
+            var recSelect = document.getElementById('filterCandidateRecruiterSelect');
+            var recId = recSelect ? recSelect.value : '';
+
+            var url = '/Workspace/FilterCandidates?stage=' + encodeURIComponent(stage);
+            if (recId) {
+                url += '&recruiterId=' + encodeURIComponent(recId);
+            }
+
             try {
-                var res = await fetch('/Workspace/FilterCandidates?stage=' + encodeURIComponent(stage));
+                var res = await fetch(url);
                 var data = await res.json();
                 if (data.success && data.candidates.length > 0) {
                     tbody.innerHTML = data.candidates.map(c => `

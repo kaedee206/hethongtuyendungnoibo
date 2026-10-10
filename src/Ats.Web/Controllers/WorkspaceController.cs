@@ -19,17 +19,30 @@ public class WorkspaceController : Controller
     private readonly IWebHostEnvironment _env;
     private readonly IEmailService _emailService;
     private readonly ILogger<WorkspaceController> _logger;
+    private readonly IRequisitionAssignmentService? _assignmentService;
+
+    [ActivatorUtilitiesConstructor]
+    public WorkspaceController(
+        ApplicationDbContext dbContext,
+        IWebHostEnvironment env,
+        IEmailService emailService,
+        ILogger<WorkspaceController> logger,
+        IRequisitionAssignmentService assignmentService)
+    {
+        _dbContext = dbContext;
+        _env = env;
+        _emailService = emailService;
+        _logger = logger;
+        _assignmentService = assignmentService;
+    }
 
     public WorkspaceController(
         ApplicationDbContext dbContext,
         IWebHostEnvironment env,
         IEmailService emailService,
         ILogger<WorkspaceController> logger)
+        : this(dbContext, env, emailService, logger, null!)
     {
-        _dbContext = dbContext;
-        _env = env;
-        _emailService = emailService;
-        _logger = logger;
     }
 
     #region Role Redirects (Tránh 404 cho các vai trò nội bộ)
@@ -826,10 +839,10 @@ public class WorkspaceController : Controller
     }
 
     /// <summary>
-    /// Lọc danh sách hồ sơ ứng viên theo giai đoạn (Stage).
+    /// Lọc danh sách hồ sơ ứng viên theo giai đoạn (Stage) và phân công Recruiter.
     /// </summary>
     [HttpGet("FilterCandidates")]
-    public async Task<IActionResult> FilterCandidates([FromQuery] string? stage)
+    public async Task<IActionResult> FilterCandidates([FromQuery] string? stage, [FromQuery] Guid? recruiterId)
     {
         try
         {
@@ -838,6 +851,26 @@ public class WorkspaceController : Controller
                 .Include(a => a.JobPosting)
                 .Include(a => a.CurrentStage)
                 .Where(a => !a.IsDeleted);
+
+            var isRecruiterOnly = User.IsInRole(UserRoles.Recruiter) &&
+                                  !User.IsInRole(UserRoles.Admin) &&
+                                  !User.IsInRole(UserRoles.HRManager);
+
+            if (isRecruiterOnly && _assignmentService != null)
+            {
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                _ = Guid.TryParse(userIdStr, out var currentUserId);
+                if (currentUserId != Guid.Empty)
+                {
+                    var assignedReqIds = await _assignmentService.GetAssignedRequisitionIdsForRecruiterAsync(currentUserId);
+                    query = query.Where(a => assignedReqIds.Contains(a.JobPosting.RequisitionId));
+                }
+            }
+            else if (recruiterId.HasValue && recruiterId.Value != Guid.Empty && _assignmentService != null)
+            {
+                var filterReqIds = await _assignmentService.GetAssignedRequisitionIdsForRecruiterAsync(recruiterId.Value);
+                query = query.Where(a => filterReqIds.Contains(a.JobPosting.RequisitionId));
+            }
 
             if (!string.IsNullOrWhiteSpace(stage) && stage != "ALL")
             {
@@ -906,6 +939,23 @@ public class WorkspaceController : Controller
                 return Json(new { success = false, message = "Không tìm thấy hồ sơ ứng viên yêu cầu." });
             }
 
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+            // Scrum 26: Recruiter chỉ được thao tác trên ứng viên của vị trí được giao
+            var isRecruiterOnly = User?.Identity?.IsAuthenticated == true &&
+                                  User.IsInRole(UserRoles.Recruiter) &&
+                                  !User.IsInRole(UserRoles.Admin) &&
+                                  !User.IsInRole(UserRoles.HRManager);
+            if (isRecruiterOnly && _assignmentService != null && currentUserId != Guid.Empty)
+            {
+                var canAccess = await _assignmentService.CanRecruiterAccessApplicationAsync(currentUserId, applicationId);
+                if (!canAccess)
+                {
+                    return Json(new { success = false, message = "Bạn không có quyền chuyển giai đoạn hồ sơ này do không phụ trách vị trí tuyển dụng tương ứng." });
+                }
+            }
+
             var currentStage = application.CurrentStage;
             PipelineStage? targetStage = null;
 
@@ -927,8 +977,6 @@ public class WorkspaceController : Controller
                 return Json(new { success = false, message = "Hồ sơ hiện đã ở giai đoạn cao nhất trong quy trình tuyển dụng." });
             }
 
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            _ = Guid.TryParse(userIdStr, out var currentUserId);
             var effectiveUserId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync());
 
             var prevStageId = application.CurrentStageId;
@@ -1016,6 +1064,23 @@ public class WorkspaceController : Controller
                 return Json(new { success = false, message = "Không tìm thấy hồ sơ ứng viên." });
             }
 
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+            // Scrum 26: Recruiter chỉ được xếp lịch cho ứng viên của vị trí được giao
+            var isRecruiterOnly = User?.Identity?.IsAuthenticated == true &&
+                                  User.IsInRole(UserRoles.Recruiter) &&
+                                  !User.IsInRole(UserRoles.Admin) &&
+                                  !User.IsInRole(UserRoles.HRManager);
+            if (isRecruiterOnly && _assignmentService != null && currentUserId != Guid.Empty)
+            {
+                var canAccess = await _assignmentService.CanRecruiterAccessApplicationAsync(currentUserId, applicationId);
+                if (!canAccess)
+                {
+                    return Json(new { success = false, message = "Bạn không có quyền lên lịch phỏng vấn cho hồ sơ này do không phụ trách vị trí tuyển dụng tương ứng." });
+                }
+            }
+
             var startDto = startTime.HasValue
                 ? new DateTimeOffset(DateTime.SpecifyKind(startTime.Value, DateTimeKind.Utc))
                 : DateTimeOffset.UtcNow.AddDays(2).Date.AddHours(9); // Mặc định 9h sáng ngày kia
@@ -1078,8 +1143,6 @@ public class WorkspaceController : Controller
                 application.CurrentStageId = interviewStage.Id;
                 application.UpdatedAt = DateTimeOffset.UtcNow;
 
-                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                _ = Guid.TryParse(userIdStr, out var currentUserId);
                 var effectiveUserId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync());
 
                 await _dbContext.ApplicationStageHistories.AddAsync(new ApplicationStageHistory
@@ -1163,13 +1226,28 @@ public class WorkspaceController : Controller
                 return Json(new { success = false, message = "Không tìm thấy hồ sơ ứng viên." });
             }
 
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+            // Scrum 26: Recruiter chỉ được tạo Offer cho ứng viên của vị trí được giao
+            var isRecruiterOnly = User?.Identity?.IsAuthenticated == true &&
+                                  User.IsInRole(UserRoles.Recruiter) &&
+                                  !User.IsInRole(UserRoles.Admin) &&
+                                  !User.IsInRole(UserRoles.HRManager);
+            if (isRecruiterOnly && _assignmentService != null && currentUserId != Guid.Empty)
+            {
+                var canAccess = await _assignmentService.CanRecruiterAccessApplicationAsync(currentUserId, applicationId);
+                if (!canAccess)
+                {
+                    return Json(new { success = false, message = "Bạn không có quyền tạo đề xuất Offer cho hồ sơ này do không phụ trách vị trí tuyển dụng tương ứng." });
+                }
+            }
+
             if (baseSalary <= 0)
             {
                 return Json(new { success = false, message = "Mức lương cơ bản phải lớn hơn 0." });
             }
 
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            _ = Guid.TryParse(userIdStr, out var currentUserId);
             var recruiterId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync());
 
             var offer = await _dbContext.JobOffers.FirstOrDefaultAsync(o => o.ApplicationId == application.Id);
@@ -1293,6 +1371,20 @@ public class WorkspaceController : Controller
             _ = Guid.TryParse(userIdStr, out var currentUserId);
             var effectiveUserId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync());
 
+            // Scrum 26: Recruiter chỉ được từ chối ứng viên của vị trí được giao
+            var isRecruiterOnly = User?.Identity?.IsAuthenticated == true &&
+                                  User.IsInRole(UserRoles.Recruiter) &&
+                                  !User.IsInRole(UserRoles.Admin) &&
+                                  !User.IsInRole(UserRoles.HRManager);
+            if (isRecruiterOnly && _assignmentService != null && currentUserId != Guid.Empty)
+            {
+                var canAccess = await _assignmentService.CanRecruiterAccessApplicationAsync(currentUserId, applicationId);
+                if (!canAccess)
+                {
+                    return Json(new { success = false, message = "Bạn không có quyền từ chối hồ sơ này do không phụ trách vị trí tuyển dụng tương ứng." });
+                }
+            }
+
             var prev = application.CurrentStageId;
             application.Status = ApplicationStatus.REJECTED;
             application.UpdatedAt = DateTimeOffset.UtcNow;
@@ -1403,6 +1495,25 @@ public class WorkspaceController : Controller
             if (app == null)
             {
                 return Json(new { success = false, message = "Không tìm thấy hồ sơ." });
+            }
+
+            // Scrum 26: Recruiter chỉ nhìn thấy ứng viên của vị trí được giao
+            var isRecruiterOnly = User?.Identity?.IsAuthenticated == true &&
+                                  User.IsInRole(UserRoles.Recruiter) &&
+                                  !User.IsInRole(UserRoles.Admin) &&
+                                  !User.IsInRole(UserRoles.HRManager);
+            if (isRecruiterOnly && _assignmentService != null)
+            {
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                _ = Guid.TryParse(userIdStr, out var currentUserId);
+                if (currentUserId != Guid.Empty)
+                {
+                    var canAccess = await _assignmentService.CanRecruiterAccessApplicationAsync(currentUserId, appId);
+                    if (!canAccess)
+                    {
+                        return Json(new { success = false, message = "Bạn không có quyền xem chi tiết hồ sơ ứng viên này (chỉ phụ trách các vị trí được phân công)." });
+                    }
+                }
             }
 
             var candName = $"{app.Candidate.FirstName} {app.Candidate.LastName}".Trim();
