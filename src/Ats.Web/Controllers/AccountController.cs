@@ -1,12 +1,15 @@
 using System.Linq;
 using System.Security.Claims;
+using Ats.Web.Common;
 using Ats.Web.Constants;
+using Ats.Web.Data;
 using Ats.Web.Models.DTOs;
 using Ats.Web.Models.ViewModels.Account;
 using Ats.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Ats.Web.Controllers;
 
@@ -14,24 +17,25 @@ namespace Ats.Web.Controllers;
 /// Controller xử lý các chức năng xác thực người dùng (S1-01, S1-02, S1-03, S1-04).
 /// Tuân thủ Clean Controller, Primary Constructor, ValidateAntiForgeryToken.
 /// </summary>
+[Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("AuthRateLimit")]
 public class AccountController(
     IAuthService authService,
     IEmailService emailService,
-    ILogger<AccountController> logger) : Controller
+    ILogger<AccountController> logger,
+    IWebHostEnvironment? webHostEnvironment = null,
+    ApplicationDbContext? dbContext = null,
+    ISecurityAuditService? auditService = null) : Controller
 {
     private readonly IAuthService _authService = authService;
     private readonly IEmailService _emailService = emailService;
     private readonly ILogger<AccountController> _logger = logger;
+    private readonly IWebHostEnvironment? _webHostEnvironment = webHostEnvironment;
+    private readonly ApplicationDbContext? _dbContext = dbContext;
+    private readonly ISecurityAuditService? _auditService = auditService;
 
     private string GetClientIp()
     {
-        var forwarded = Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        if (!string.IsNullOrWhiteSpace(forwarded))
-        {
-            var ip = forwarded.Split(',')[0].Trim();
-            if (!string.IsNullOrWhiteSpace(ip)) return ip;
-        }
-        return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+        return ClientIpHelper.GetClientIpAddress(HttpContext);
     }
 
     private string GetClientDevice()
@@ -92,14 +96,25 @@ public class AccountController(
             return View(model);
         }
 
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+        var ip = GetClientIp();
         var loginDto = new LoginRequestDto(model.Email, model.Password);
 
-        var result = await _authService.AuthenticateAsync(loginDto);
+        var result = await _authService.AuthenticateAsync(loginDto, ip);
 
         if (!result.IsSuccess || result.Data == null)
         {
-            // S1-01 AC: Thông báo lỗi chung, không tiết lộ email tồn tại hay không
+            var isBlocked = result.Message?.Contains("bị tạm khóa", StringComparison.OrdinalIgnoreCase) == true;
+            _auditService?.LogSecurityEvent(new SecurityAuditEvent
+            {
+                EventType = isBlocked ? SecurityAuditEventType.IpBlocked : SecurityAuditEventType.LoginFailed,
+                ClientIp = ip,
+                UserNameOrEmail = model.Email,
+                Action = "LOGIN_STAFF_FAILED",
+                IsSuccess = false,
+                Details = result.Message
+            });
+
+            // Hiển thị thông báo chi tiết bao gồm số lần thử còn lại /5 lần
             ModelState.AddModelError(string.Empty, result.Message ?? "Email hoặc mật khẩu không chính xác.");
             return View(model);
         }
@@ -154,7 +169,18 @@ public class AccountController(
 
         await HttpContext.SignInAsync("AtsCookieScheme", new ClaimsPrincipal(claimsIdentity), authProperties);
 
-        _logger.LogInformation("Người dùng {Email} đăng nhập thành công từ IP {Ip}.", model.Email, ip);
+        _auditService?.LogSecurityEvent(new SecurityAuditEvent
+        {
+            EventType = SecurityAuditEventType.LoginSuccess,
+            UserId = userInfo.Id.ToString(),
+            UserNameOrEmail = userInfo.Email,
+            ClientIp = ip,
+            Action = "LOGIN_STAFF_SUCCESS",
+            IsSuccess = true,
+            Details = $"Đăng nhập thành công với chức danh và vai trò: {userInfo.Role}"
+        });
+
+        _logger.LogInformation("Người dùng {Email} đăng nhập thành công từ IP {Ip}.", PiiMaskingHelper.MaskEmail(model.Email), ip);
         DispatchLoginSuccessAlert(userInfo.Email, userInfo.FullName);
 
         if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
@@ -501,9 +527,9 @@ public class AccountController(
             return View("CandidateAuth", model);
         }
 
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+        var ip = GetClientIp();
         var loginDto = new LoginRequestDto(model.LoginInput.Email, model.LoginInput.Password);
-        var result = await _authService.AuthenticateAsync(loginDto);
+        var result = await _authService.AuthenticateAsync(loginDto, ip);
 
         if (!result.IsSuccess || result.Data == null)
         {
@@ -535,8 +561,13 @@ public class AccountController(
             var norm = UserRoles.NormalizeRole(role);
             if (!string.Equals(norm, role, StringComparison.OrdinalIgnoreCase))
             {
-                claims.Add(new Claim(ClaimTypes.Role, norm));
+                identityClaimsAdd(norm);
             }
+        }
+
+        void identityClaimsAdd(string role)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
         if (!userInfo.Roles.Contains(userInfo.Role, StringComparer.OrdinalIgnoreCase))
@@ -558,7 +589,7 @@ public class AccountController(
 
         await HttpContext.SignInAsync("AtsCookieScheme", new ClaimsPrincipal(claimsIdentity), authProperties);
 
-        _logger.LogInformation("Ứng viên {Email} đăng nhập từ IP {Ip}.", model.LoginInput.Email, ip);
+        _logger.LogInformation("Ứng viên {Email} đăng nhập từ IP {Ip}.", PiiMaskingHelper.MaskEmail(model.LoginInput.Email), ip);
         DispatchLoginSuccessAlert(userInfo.Email, userInfo.FullName);
 
         if (!string.IsNullOrEmpty(model.LoginInput.ReturnUrl) && Url.IsLocalUrl(model.LoginInput.ReturnUrl))
@@ -599,10 +630,13 @@ public class AccountController(
             return View("CandidateAuth", model);
         }
 
+        var ip = GetClientIp();
         var (isSuccess, message) = await _authService.SendRegistrationOtpAsync(
             model.RegisterInput.FullName,
             model.RegisterInput.Email,
-            model.RegisterInput.Password);
+            model.RegisterInput.Password,
+            model.RegisterInput.PhoneNumber,
+            ip);
 
         if (!isSuccess)
         {
@@ -615,7 +649,7 @@ public class AccountController(
             return View("CandidateAuth", model);
         }
 
-        _logger.LogInformation("Đã gửi mã OTP đăng ký tới email ứng viên: {Email}", model.RegisterInput.Email);
+        _logger.LogInformation("Đã gửi mã OTP đăng ký tới email ứng viên: {Email} từ IP {Ip}", PiiMaskingHelper.MaskEmail(model.RegisterInput.Email), ip);
 
         if (IsAjaxRequest())
         {
@@ -657,9 +691,11 @@ public class AccountController(
             return View("CandidateAuth", model);
         }
 
+        var ip = GetClientIp();
         var (isSuccess, message) = await _authService.VerifyRegistrationOtpAsync(
             model.VerifyRegisterOtpInput.Email,
-            model.VerifyRegisterOtpInput.OtpCode);
+            model.VerifyRegisterOtpInput.OtpCode,
+            ip);
 
         if (!isSuccess)
         {
@@ -760,10 +796,12 @@ public class AccountController(
             return View("CandidateAuth", model);
         }
 
+        var ip = GetClientIp();
         var (isSuccess, message) = await _authService.ResetPasswordWithOtpAsync(
             model.ResetPasswordOtpInput.Email,
             model.ResetPasswordOtpInput.OtpCode,
-            model.ResetPasswordOtpInput.NewPassword);
+            model.ResetPasswordOtpInput.NewPassword,
+            ip);
 
         if (!isSuccess)
         {
@@ -831,6 +869,29 @@ public class AccountController(
     [AllowAnonymous]
     public IActionResult ExternalLogin(string provider = "Google", string? returnUrl = null, string userType = "candidate")
     {
+        var isOidc = provider.Equals("NoveraOidcScheme", StringComparison.OrdinalIgnoreCase) ||
+                     provider.Equals("NoveraOidc", StringComparison.OrdinalIgnoreCase) ||
+                     provider.Equals("SSO", StringComparison.OrdinalIgnoreCase);
+
+        if (isOidc)
+        {
+            var oidcAuthority = Environment.GetEnvironmentVariable("OIDC_AUTHORITY")?.Trim();
+            var oidcClientId = Environment.GetEnvironmentVariable("OIDC_CLIENT_ID")?.Trim();
+            bool isOidcConfigured = !string.IsNullOrWhiteSpace(oidcAuthority) && 
+                                    !string.IsNullOrWhiteSpace(oidcClientId) &&
+                                    !oidcClientId.Contains("YOUR_OIDC_CLIENT_ID", StringComparison.OrdinalIgnoreCase);
+
+            if (!isOidcConfigured)
+            {
+                TempData["ErrorMessage"] = "Dịch vụ SSO NoveraTech ID chưa được thiết lập. Vui lòng liên hệ Quản trị viên hệ thống.";
+                return RedirectToAction(nameof(StaffLogin), new { returnUrl });
+            }
+
+            var oidcRedirectUrl = Url.Action(nameof(ExternalCallback), "Account", new { returnUrl, userType, provider = "NoveraOidcScheme" });
+            var oidcProps = new AuthenticationProperties { RedirectUri = oidcRedirectUrl };
+            return Challenge(oidcProps, "NoveraOidcScheme");
+        }
+
         var googleClientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID")?.Trim();
         var googleClientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET")?.Trim();
         bool isConfigured = !string.IsNullOrWhiteSpace(googleClientId) && 
@@ -843,18 +904,22 @@ public class AccountController(
             return RedirectToAction(nameof(GoogleConfigGuide), new { returnUrl, userType });
         }
 
-        var redirectUrl = Url.Action(nameof(ExternalCallback), "Account", new { returnUrl, userType });
+        var redirectUrl = Url.Action(nameof(ExternalCallback), "Account", new { returnUrl, userType, provider = "Google" });
         var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
         return Challenge(properties, provider);
     }
 
     /// <summary>
-    /// GET /Account/ExternalCallback — Nhận kết quả xác thực callback từ Google.
+    /// GET /Account/ExternalCallback — Nhận kết quả xác thực callback từ Google hoặc NoveraTech SSO.
     /// </summary>
     [HttpGet("/Account/ExternalCallback")]
     [AllowAnonymous]
-    public async Task<IActionResult> ExternalCallback(string? returnUrl = null, string userType = "candidate", string? remoteError = null)
+    public async Task<IActionResult> ExternalCallback(string? returnUrl = null, string userType = "candidate", string? remoteError = null, string provider = "Google")
     {
+        var isOidc = provider.Equals("NoveraOidcScheme", StringComparison.OrdinalIgnoreCase) ||
+                     provider.Equals("NoveraOidc", StringComparison.OrdinalIgnoreCase) ||
+                     provider.Equals("SSO", StringComparison.OrdinalIgnoreCase);
+
         var redirectLoginAction = userType.Equals("staff", StringComparison.OrdinalIgnoreCase) 
             ? nameof(StaffLogin) 
             : nameof(CandidateAuth);
@@ -862,7 +927,7 @@ public class AccountController(
         if (remoteError != null)
         {
             _logger.LogError("Lỗi xác thực từ nhà cung cấp liên kết ngoài: {Error}", remoteError);
-            TempData["ErrorMessage"] = $"Lỗi từ dịch vụ Google: {remoteError}";
+            TempData["ErrorMessage"] = isOidc ? $"Lỗi từ dịch vụ SSO NoveraTech: {remoteError}" : $"Lỗi từ dịch vụ Google: {remoteError}";
             return RedirectToAction(redirectLoginAction, new { returnUrl });
         }
 
@@ -870,30 +935,48 @@ public class AccountController(
         if (!authenticateResult.Succeeded || authenticateResult.Principal == null)
         {
             _logger.LogWarning("Không tìm thấy thông tin xác thực từ ExternalCookieScheme.");
-            TempData["ErrorMessage"] = "Không thể lấy thông tin tài khoản từ Google. Vui lòng thử lại.";
+            TempData["ErrorMessage"] = isOidc ? "Không thể lấy thông tin phiên đăng nhập từ SSO NoveraTech. Vui lòng thử lại." : "Không thể lấy thông tin tài khoản từ Google. Vui lòng thử lại.";
             return RedirectToAction(redirectLoginAction, new { returnUrl });
         }
 
         var claims = authenticateResult.Principal.Claims.ToList();
-        var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+        var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value
+                 ?? claims.FirstOrDefault(c => c.Type == "email")?.Value;
         var fullName = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value 
                     ?? claims.FirstOrDefault(c => c.Type == "name")?.Value 
+                    ?? claims.FirstOrDefault(c => c.Type == "preferred_username")?.Value
                     ?? email?.Split('@')[0] 
-                    ?? "Google User";
-        var providerKey = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? Guid.NewGuid().ToString("N");
+                    ?? (isOidc ? "Novera Staff" : "Google User");
+        var providerKey = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value 
+                       ?? claims.FirstOrDefault(c => c.Type == "sub")?.Value 
+                       ?? Guid.NewGuid().ToString("N");
 
         if (string.IsNullOrWhiteSpace(email))
         {
-            TempData["ErrorMessage"] = "Không nhận được địa chỉ email từ tài khoản Google của bạn.";
+            TempData["ErrorMessage"] = isOidc ? "Không nhận được thông tin email từ hệ thống SSO NoveraTech." : "Không nhận được địa chỉ email từ tài khoản Google của bạn.";
             return RedirectToAction(redirectLoginAction, new { returnUrl });
         }
 
+        // Kiểm tra an ninh bắt buộc cho Cổng Nhân sự Nội bộ
+        if (userType.Equals("staff", StringComparison.OrdinalIgnoreCase) || isOidc)
+        {
+            var internalDomain = Environment.GetEnvironmentVariable("INTERNAL_EMAIL_DOMAIN") ?? "@noveratech.digital";
+            if (!email.Trim().EndsWith(internalDomain, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("Từ chối truy cập SSO nhân sự đối với email không thuộc tổ chức: {Email}", email);
+                TempData["ErrorMessage"] = $"Chỉ cho phép tài khoản có đuôi {internalDomain} đăng nhập vào Cổng Nhân sự.";
+                await HttpContext.SignOutAsync("ExternalCookieScheme");
+                return RedirectToAction(nameof(StaffLogin), new { returnUrl });
+            }
+        }
+
         // Xử lý tạo/liên kết tài khoản trong cơ sở dữ liệu
-        var result = await _authService.ProcessExternalLoginAsync(email, fullName, "Google", providerKey);
+        var providerName = isOidc ? "NoveraSSO" : "Google";
+        var result = await _authService.ProcessExternalLoginAsync(email, fullName, providerName, providerKey);
 
         if (!result.IsSuccess || result.Data == null)
         {
-            TempData["ErrorMessage"] = result.Message ?? "Đăng nhập bằng Google không thành công.";
+            TempData["ErrorMessage"] = result.Message ?? "Đăng nhập không thành công.";
             return RedirectToAction(redirectLoginAction, new { returnUrl });
         }
 
@@ -947,7 +1030,7 @@ public class AccountController(
         await HttpContext.SignInAsync("AtsCookieScheme", new ClaimsPrincipal(claimsIdentity), authProperties);
         await HttpContext.SignOutAsync("ExternalCookieScheme");
 
-        _logger.LogInformation("Người dùng {Email} đăng nhập thành công qua Google OAuth.", email);
+        _logger.LogInformation("Người dùng {Email} đăng nhập thành công qua {Provider}.", email, providerName);
         DispatchLoginSuccessAlert(userInfo.Email, userInfo.FullName);
 
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
@@ -955,7 +1038,7 @@ public class AccountController(
             return Redirect(returnUrl);
         }
 
-        if (!string.IsNullOrEmpty(userInfo.RedirectUrl))
+        if (!string.IsNullOrEmpty(userInfo.RedirectUrl) && Url.IsLocalUrl(userInfo.RedirectUrl))
         {
             return Redirect(userInfo.RedirectUrl);
         }
@@ -998,9 +1081,35 @@ public class AccountController(
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DevMockGoogleLogin(string email, string fullName, string? returnUrl = null, string userType = "candidate")
     {
+        // 1. Chỉ cho phép chạy trên môi trường Development
+        if (_webHostEnvironment == null || !_webHostEnvironment.IsDevelopment())
+        {
+            return NotFound();
+        }
+
         if (string.IsNullOrWhiteSpace(email))
         {
             email = "demo.candidate@gmail.com";
+        }
+
+        // 2. Kiểm tra định dạng @gmail.com
+        if (!email.Trim().EndsWith("@gmail.com", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["ErrorMessage"] = "Email giả lập phải có định dạng @gmail.com.";
+            return RedirectToAction(nameof(GoogleConfigGuide), new { returnUrl, userType });
+        }
+
+        // 3. Nghiêm cấm mạo danh tài khoản nội bộ (Admin, HR, BOD...) qua mock endpoint
+        if (_dbContext != null)
+        {
+            var cleanEmail = email.Trim().ToLower();
+            var existingUser = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == cleanEmail);
+            if (existingUser != null && existingUser.Role != UserRoles.Candidate && existingUser.Role != "Candidate" && existingUser.Role != "Ứng viên nội bộ")
+            {
+                _logger.LogWarning("Phát hiện cố gắng mạo danh tài khoản nội bộ {Email} qua DevMockGoogleLogin.", cleanEmail);
+                TempData["ErrorMessage"] = "Không thể sử dụng đăng nhập thử nghiệm cho tài khoản cán bộ nhân sự nội bộ. Vui lòng đăng nhập qua Cổng Nhân sự.";
+                return RedirectToAction(nameof(GoogleConfigGuide), new { returnUrl, userType });
+            }
         }
 
         if (string.IsNullOrWhiteSpace(fullName))
@@ -1073,7 +1182,7 @@ public class AccountController(
             return Redirect(returnUrl);
         }
 
-        if (!string.IsNullOrEmpty(userInfo.RedirectUrl))
+        if (!string.IsNullOrEmpty(userInfo.RedirectUrl) && Url.IsLocalUrl(userInfo.RedirectUrl))
         {
             return Redirect(userInfo.RedirectUrl);
         }

@@ -5,20 +5,47 @@ using Ats.Web.Models.Entities;
 using Ats.Web.Models.Enums;
 using Ats.Web.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System.Security.Cryptography;
 
 namespace Ats.Web.Services;
 
-public class AuthService(ApplicationDbContext dbContext, IEmailService emailService) : IAuthService
+public class AuthService : IAuthService
 {
-    private readonly ApplicationDbContext _dbContext = dbContext;
-    private readonly IEmailService _emailService = emailService;
+    private readonly ApplicationDbContext _dbContext;
+    private readonly IEmailService _emailService;
+    private readonly IMemoryCache _cache;
 
-    public async Task<AuthResponseDto> AuthenticateAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
+    public AuthService(ApplicationDbContext dbContext, IEmailService emailService, IMemoryCache? cache = null)
     {
-        const string generalErrorMessage = "Email hoặc mật khẩu không chính xác.";
-        string dummyHash = "$2a$11$9yC3Q2K5HjC9M3K4H6B8X.K7K8X9Y0Z1A2B3C4D5E6F7G8H9I0J1K";
+        _dbContext = dbContext;
+        _emailService = emailService;
+        _cache = cache ?? new MemoryCache(new MemoryCacheOptions());
+    }
 
+    public async Task<AuthResponseDto> AuthenticateAsync(LoginRequestDto request, string? clientIp = null, CancellationToken cancellationToken = default)
+    {
+        var cleanIp = !string.IsNullOrWhiteSpace(clientIp) ? clientIp.Trim() : "127.0.0.1";
+        if (cleanIp == "::1") cleanIp = "127.0.0.1";
+
+        var ipLockKey = $"ip_lock_{cleanIp}";
+        var ipFailKey = $"ip_fail_{cleanIp}";
+
+        // 1. Kiểm tra nếu IP đang bị tạm khóa 15 phút
+        if (_cache.TryGetValue(ipLockKey, out DateTimeOffset ipLockedUntil))
+        {
+            if (ipLockedUntil > DateTimeOffset.UtcNow)
+            {
+                var remainingMinutes = Math.Max(1, (int)Math.Ceiling((ipLockedUntil - DateTimeOffset.UtcNow).TotalMinutes));
+                return new AuthResponseDto(false, $"Địa chỉ IP của bạn đang bị tạm khóa 15 phút do nhập sai thông tin quá 5 lần liên tiếp. Vui lòng thử lại sau {remainingMinutes} phút.", null);
+            }
+            else
+            {
+                _cache.Remove(ipLockKey);
+            }
+        }
+
+        string dummyHash = "$2a$11$9yC3Q2K5HjC9M3K4H6B8X.K7K8X9Y0Z1A2B3C4D5E6F7G8H9I0J1K";
         var reqEmail = request.Email.Trim().ToLower();
         var user = await _dbContext.Users
             .Include(u => u.UserRoles)
@@ -42,8 +69,8 @@ public class AuthService(ApplicationDbContext dbContext, IEmailService emailServ
             {
                 if (user.LockedUntil.Value > DateTimeOffset.UtcNow)
                 {
-                    var remainingMinutes = Math.Ceiling((user.LockedUntil.Value - DateTimeOffset.UtcNow).TotalMinutes);
-                    return new AuthResponseDto(false, $"Tài khoản tạm thời bị khóa do nhập sai nhiều lần. Vui lòng thử lại sau {remainingMinutes} phút.", null);
+                    var remainingMinutes = Math.Max(1, (int)Math.Ceiling((user.LockedUntil.Value - DateTimeOffset.UtcNow).TotalMinutes));
+                    return new AuthResponseDto(false, $"Tài khoản tạm thời bị khóa 15 phút do nhập sai nhiều lần. Vui lòng thử lại sau {remainingMinutes} phút.", null);
                 }
                 else
                 {
@@ -75,24 +102,51 @@ public class AuthService(ApplicationDbContext dbContext, IEmailService emailServ
 
         if (user == null || !isPasswordValid || user.Status != "ACTIVE")
         {
+            // Tăng bộ đếm thử sai của IP
+            int ipFails = _cache.TryGetValue(ipFailKey, out int currentIpAttempts) ? currentIpAttempts + 1 : 1;
+            _cache.Set(ipFailKey, ipFails, TimeSpan.FromMinutes(30));
+
+            int userFails = 0;
             if (user != null && user.Status == "ACTIVE")
             {
                 user.FailedLoginAttempts += 1;
-                if (user.FailedLoginAttempts >= 5)
+                userFails = user.FailedLoginAttempts;
+            }
+
+            // Lấy số lần sai cao nhất giữa User và IP để bảo vệ hệ thống
+            int effectiveFails = (user != null && user.Status == "ACTIVE")
+                ? Math.Max(userFails, ipFails)
+                : ipFails;
+
+            if (effectiveFails >= 5)
+            {
+                // Khóa IP 15 phút
+                _cache.Set(ipLockKey, DateTimeOffset.UtcNow.AddMinutes(15), TimeSpan.FromMinutes(15));
+                _cache.Remove(ipFailKey);
+
+                if (user != null && user.Status == "ACTIVE")
                 {
                     user.LockedUntil = DateTimeOffset.UtcNow.AddMinutes(15);
+                    user.FailedLoginAttempts = 5;
                     await _dbContext.SaveChangesAsync(cancellationToken);
-                    return new AuthResponseDto(false, "Tài khoản của bạn đã bị tạm khóa 15 phút do nhập sai mật khẩu quá 5 lần liên tiếp.", null);
                 }
+
+                return new AuthResponseDto(false, "Bạn đã nhập sai thông tin 5/5 lần. Địa chỉ IP và tài khoản của bạn đã bị tạm khóa 15 phút để bảo đảm an toàn hệ thống.", null);
+            }
+
+            if (user != null && user.Status == "ACTIVE")
+            {
                 await _dbContext.SaveChangesAsync(cancellationToken);
             }
 
-            return new AuthResponseDto(false, generalErrorMessage, null);
+            int remaining = 5 - effectiveFails;
+            return new AuthResponseDto(false, $"Email hoặc mật khẩu không chính xác. Bạn còn {remaining}/5 lần thử trước khi địa chỉ IP và tài khoản bị tạm khóa 15 phút.", null);
         }
 
-        // Đăng nhập thành công -> Reset số lần đăng nhập sai
+        // Đăng nhập thành công -> Reset số lần đăng nhập sai của User và IP
         user.FailedLoginAttempts = 0;
         user.LockedUntil = null;
+        _cache.Remove(ipFailKey);
         user.LastLoginAt = DateTimeOffset.UtcNow;
         user.LastActivityAt = DateTimeOffset.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -405,18 +459,74 @@ public class AuthService(ApplicationDbContext dbContext, IEmailService emailServ
         return (true, "Đăng ký tài khoản thành công! Vui lòng đăng nhập để bắt đầu ứng tuyển.");
     }
 
-    public async Task<(bool IsSuccess, string Message)> SendRegistrationOtpAsync(string fullName, string email, string password, CancellationToken cancellationToken = default)
+    public Task<(bool IsSuccess, string Message)> SendRegistrationOtpAsync(string fullName, string email, string password, CancellationToken cancellationToken = default)
+    {
+        return SendRegistrationOtpAsync(fullName, email, password, "0900000000", null, cancellationToken);
+    }
+
+    public async Task<(bool IsSuccess, string Message)> SendRegistrationOtpAsync(string fullName, string email, string password, string phoneNumber, string? clientIp = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(email))
             return (false, "Vui lòng nhập địa chỉ email cá nhân.");
 
+        var normalizedEmail = email.Trim().ToLower();
+
+        // Yêu cầu: Email bắt buộc phải có đuôi @gmail.com
+        if (!normalizedEmail.EndsWith("@gmail.com", StringComparison.OrdinalIgnoreCase))
+        {
+            return (false, "Hệ thống chỉ hỗ trợ gửi mã OTP xác thực tới tài khoản email Google (@gmail.com). Vui lòng sử dụng địa chỉ @gmail.com để đăng ký.");
+        }
+
         if (string.IsNullOrWhiteSpace(fullName))
             return (false, "Vui lòng nhập họ và tên của bạn.");
+
+        if (string.IsNullOrWhiteSpace(phoneNumber))
+            return (false, "Vui lòng nhập số điện thoại liên hệ.");
+
+        var cleanPhone = new string(phoneNumber.Where(char.IsDigit).ToArray());
+        if (cleanPhone.Length < 10)
+        {
+            return (false, "Số điện thoại không hợp lệ (yêu cầu tối thiểu 10 chữ số).");
+        }
 
         if (string.IsNullOrWhiteSpace(password) || password.Length < 6)
             return (false, "Mật khẩu phải có độ dài tối thiểu 6 ký tự.");
 
-        var normalizedEmail = email.Trim().ToLower();
+        var cleanIp = !string.IsNullOrWhiteSpace(clientIp) ? clientIp.Trim() : "127.0.0.1";
+        if (cleanIp == "::1") cleanIp = "127.0.0.1";
+
+        // Kiểm tra xem IP có đang bị tạm khóa 15 phút không
+        if (_cache.TryGetValue($"ip_lock_{cleanIp}", out DateTimeOffset ipLockedUntil) && ipLockedUntil > DateTimeOffset.UtcNow)
+        {
+            var remainingMinutes = Math.Max(1, (int)Math.Ceiling((ipLockedUntil - DateTimeOffset.UtcNow).TotalMinutes));
+            return (false, $"Địa chỉ IP của bạn đang bị tạm khóa 15 phút do nhập sai thông tin quá nhiều lần. Vui lòng thử lại sau {remainingMinutes} phút.");
+        }
+
+        // Yêu cầu: 1 IP chỉ có thể tạo tối đa 1 tài khoản (bỏ qua IP loopback/local khi phát triển)
+        bool isLocalOrDev = cleanIp == "127.0.0.1" || cleanIp == "localhost" || cleanIp == "Unknown";
+        if (!isLocalOrDev)
+        {
+            var ipAccountsCount = await _dbContext.AuthAuditLogs.CountAsync(
+                l => l.IpAddress == cleanIp && l.EventType == "CandidateRegisterVerified" && l.IsSuccess,
+                cancellationToken);
+            if (ipAccountsCount >= 1)
+            {
+                return (false, "Địa chỉ IP này đã được sử dụng để đăng ký 1 tài khoản ứng viên. Mỗi địa chỉ IP chỉ được phép tạo tối đa 1 tài khoản để phòng chống spam.");
+            }
+        }
+
+        // Yêu cầu: 1 số điện thoại chỉ liên kết với tối đa 1 tài khoản
+        var phoneUsedInUsers = await _dbContext.Users.AnyAsync(
+            u => u.PhoneNumber == cleanPhone && u.Email.ToLower() != normalizedEmail && u.Status == "ACTIVE", 
+            cancellationToken);
+        var phoneUsedInCandidates = await _dbContext.Candidates.AnyAsync(
+            c => c.Phone == cleanPhone && c.Email.ToLower() != normalizedEmail, 
+            cancellationToken);
+        if (phoneUsedInUsers || phoneUsedInCandidates)
+        {
+            return (false, "Số điện thoại này đã được sử dụng cho một tài khoản khác. Mỗi số điện thoại chỉ có thể liên kết với tối đa 1 tài khoản.");
+        }
+
         var existingUser = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail, cancellationToken);
         
         if (existingUser != null)
@@ -457,6 +567,7 @@ public class AuthService(ApplicationDbContext dbContext, IEmailService emailServ
         if (existingUser != null && existingUser.Status == "PENDING")
         {
             existingUser.FullName = fullName.Trim();
+            existingUser.PhoneNumber = cleanPhone;
             existingUser.PasswordHash = passwordHash;
             existingUser.ActivationToken = otpCode;
             existingUser.PasswordResetTokenExpiresAt = expiresAt;
@@ -469,6 +580,7 @@ public class AuthService(ApplicationDbContext dbContext, IEmailService emailServ
                 Id = Guid.NewGuid(),
                 FullName = fullName.Trim(),
                 Email = normalizedEmail,
+                PhoneNumber = cleanPhone,
                 PasswordHash = passwordHash,
                 Role = UserRoles.Candidate,
                 RoleId = candidateRole.Id,
@@ -524,31 +636,80 @@ public class AuthService(ApplicationDbContext dbContext, IEmailService emailServ
             emailBody
         ), cancellationToken);
 
-        return (true, "Mã xác thực OTP đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư (kể cả mục Spam).");
+        return (true, "Mã xác thực OTP đã được gửi đến email @gmail.com của bạn. Vui lòng kiểm tra hộp thư (kể cả mục Spam).");
     }
 
-    public async Task<(bool IsSuccess, string Message)> VerifyRegistrationOtpAsync(string email, string otpCode, CancellationToken cancellationToken = default)
+    public async Task<(bool IsSuccess, string Message)> VerifyRegistrationOtpAsync(string email, string otpCode, string? clientIp = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(otpCode))
             return (false, "Vui lòng nhập đầy đủ email và mã OTP.");
 
         var normalizedEmail = email.Trim().ToLower();
+        var cleanIp = !string.IsNullOrWhiteSpace(clientIp) ? clientIp.Trim() : "127.0.0.1";
+        if (cleanIp == "::1") cleanIp = "127.0.0.1";
+
+        var otpLockIpKey = $"otp_lock_ip_{cleanIp}";
+        var otpLockEmailKey = $"otp_lock_email_{normalizedEmail}";
+
+        // 1. Kiểm tra nếu IP hoặc Email đang bị tạm khóa 15 phút do sai OTP quá 5 lần
+        if (_cache.TryGetValue(otpLockIpKey, out DateTimeOffset ipLockedUntil) && ipLockedUntil > DateTimeOffset.UtcNow)
+        {
+            var remainingMinutes = Math.Max(1, (int)Math.Ceiling((ipLockedUntil - DateTimeOffset.UtcNow).TotalMinutes));
+            return (false, $"Địa chỉ IP của bạn đang bị tạm khóa thao tác 15 phút do nhập sai mã OTP quá 5 lần liên tiếp. Vui lòng thử lại sau {remainingMinutes} phút.");
+        }
+
+        if (_cache.TryGetValue(otpLockEmailKey, out DateTimeOffset emailLockedUntil) && emailLockedUntil > DateTimeOffset.UtcNow)
+        {
+            var remainingMinutes = Math.Max(1, (int)Math.Ceiling((emailLockedUntil - DateTimeOffset.UtcNow).TotalMinutes));
+            return (false, $"Thao tác cho email này đang bị tạm khóa 15 phút do nhập sai mã OTP quá 5 lần liên tiếp. Vui lòng thử lại sau {remainingMinutes} phút.");
+        }
+
         var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail, cancellationToken);
 
         if (user == null || user.Status != "PENDING")
             return (false, "Không tìm thấy hồ sơ đăng ký đang chờ xác thực cho email này. Vui lòng đăng ký lại.");
 
+        var otpFailIpKey = $"otp_fail_ip_{cleanIp}";
+        var otpFailEmailKey = $"otp_fail_email_{normalizedEmail}";
+
+        // 2. Kiểm tra mã OTP
         if (string.IsNullOrWhiteSpace(user.ActivationToken) || user.ActivationToken.Trim() != otpCode.Trim())
-            return (false, "Mã OTP không chính xác. Vui lòng kiểm tra lại.");
+        {
+            int ipFails = _cache.TryGetValue(otpFailIpKey, out int currentIpFails) ? currentIpFails + 1 : 1;
+            int emailFails = _cache.TryGetValue(otpFailEmailKey, out int currentEmailFails) ? currentEmailFails + 1 : 1;
+
+            _cache.Set(otpFailIpKey, ipFails, TimeSpan.FromMinutes(30));
+            _cache.Set(otpFailEmailKey, emailFails, TimeSpan.FromMinutes(30));
+
+            int effectiveFails = Math.Max(ipFails, emailFails);
+
+            if (effectiveFails >= 5)
+            {
+                _cache.Set(otpLockIpKey, DateTimeOffset.UtcNow.AddMinutes(15), TimeSpan.FromMinutes(15));
+                _cache.Set(otpLockEmailKey, DateTimeOffset.UtcNow.AddMinutes(15), TimeSpan.FromMinutes(15));
+                _cache.Remove(otpFailIpKey);
+                _cache.Remove(otpFailEmailKey);
+
+                return (false, "Bạn đã nhập sai mã OTP 5/5 lần. Địa chỉ IP và tài khoản của bạn đã bị tạm khóa thao tác 15 phút để bảo đảm an toàn.");
+            }
+
+            int remaining = 5 - effectiveFails;
+            return (false, $"Mã OTP không chính xác. Bạn còn {remaining}/5 lần thử trước khi bị tạm khóa thao tác 15 phút.");
+        }
 
         if (!user.PasswordResetTokenExpiresAt.HasValue || user.PasswordResetTokenExpiresAt.Value < DateTimeOffset.UtcNow)
             return (false, "Mã OTP đã hết hạn. Vui lòng bấm 'Gửi lại mã OTP'.");
 
-        // Kích hoạt tài khoản thành ACTIVE
+        // Kích hoạt tài khoản thành ACTIVE & xóa bộ đếm sai OTP
         user.Status = "ACTIVE";
         user.ActivationToken = null;
         user.PasswordResetTokenExpiresAt = null;
+        user.FailedLoginAttempts = 0;
+        user.LockedUntil = null;
         user.UpdatedAt = DateTimeOffset.UtcNow;
+
+        _cache.Remove(otpFailIpKey);
+        _cache.Remove(otpFailEmailKey);
 
         try
         {
@@ -559,9 +720,41 @@ public class AuthService(ApplicationDbContext dbContext, IEmailService emailServ
                 Email = user.Email,
                 EventType = "CandidateRegisterVerified",
                 IsSuccess = true,
+                IpAddress = cleanIp,
                 Reason = "Ứng viên xác thực OTP đăng ký thành công",
                 Timestamp = DateTimeOffset.UtcNow
             });
+
+            // Tự động đồng bộ sang thực thể Candidate
+            var existingCandidate = await _dbContext.Candidates.FirstOrDefaultAsync(
+                c => c.Email.ToLower() == user.Email.ToLower() || c.UserId == user.Id,
+                cancellationToken);
+
+            if (existingCandidate == null)
+            {
+                var nameParts = user.FullName.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                var firstName = nameParts.Length > 1 ? nameParts[1] : nameParts[0];
+                var lastName = nameParts.Length > 1 ? nameParts[0] : "";
+
+                _dbContext.Candidates.Add(new Candidate
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user.Id,
+                    Email = user.Email,
+                    FirstName = firstName,
+                    LastName = lastName,
+                    Phone = user.PhoneNumber,
+                    Source = CandidateSource.PORTAL,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                });
+            }
+            else
+            {
+                existingCandidate.Phone = user.PhoneNumber;
+                existingCandidate.UserId = user.Id;
+                existingCandidate.UpdatedAt = DateTimeOffset.UtcNow;
+            }
         }
         catch { }
 
@@ -650,7 +843,7 @@ public class AuthService(ApplicationDbContext dbContext, IEmailService emailServ
         return (true, standardMessage);
     }
 
-    public async Task<(bool IsSuccess, string Message)> ResetPasswordWithOtpAsync(string email, string otpCode, string newPassword, CancellationToken cancellationToken = default)
+    public async Task<(bool IsSuccess, string Message)> ResetPasswordWithOtpAsync(string email, string otpCode, string newPassword, string? clientIp = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(otpCode))
             return (false, "Vui lòng nhập đầy đủ email và mã OTP.");
@@ -659,16 +852,64 @@ public class AuthService(ApplicationDbContext dbContext, IEmailService emailServ
             return (false, "Mật khẩu mới phải có độ dài tối thiểu 6 ký tự.");
 
         var reqEmail = email.Trim().ToLower();
+        var cleanIp = !string.IsNullOrWhiteSpace(clientIp) ? clientIp.Trim() : "127.0.0.1";
+        if (cleanIp == "::1") cleanIp = "127.0.0.1";
+
+        var otpLockIpKey = $"otp_lock_ip_{cleanIp}";
+        var otpLockEmailKey = $"otp_lock_email_{reqEmail}";
+
+        // 1. Kiểm tra nếu IP hoặc Email đang bị tạm khóa 15 phút
+        if (_cache.TryGetValue(otpLockIpKey, out DateTimeOffset ipLockedUntil) && ipLockedUntil > DateTimeOffset.UtcNow)
+        {
+            var remainingMinutes = Math.Max(1, (int)Math.Ceiling((ipLockedUntil - DateTimeOffset.UtcNow).TotalMinutes));
+            return (false, $"Địa chỉ IP của bạn đang bị tạm khóa thao tác 15 phút do nhập sai mã OTP quá 5 lần liên tiếp. Vui lòng thử lại sau {remainingMinutes} phút.");
+        }
+
+        if (_cache.TryGetValue(otpLockEmailKey, out DateTimeOffset emailLockedUntil) && emailLockedUntil > DateTimeOffset.UtcNow)
+        {
+            var remainingMinutes = Math.Max(1, (int)Math.Ceiling((emailLockedUntil - DateTimeOffset.UtcNow).TotalMinutes));
+            return (false, $"Thao tác cho tài khoản này đang bị tạm khóa 15 phút do nhập sai mã OTP quá 5 lần liên tiếp. Vui lòng thử lại sau {remainingMinutes} phút.");
+        }
+
         var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == reqEmail, cancellationToken);
 
         if (user == null || user.Status != "ACTIVE")
             return (false, "Không tìm thấy tài khoản hợp lệ với email này.");
 
+        var otpFailIpKey = $"otp_fail_ip_{cleanIp}";
+        var otpFailEmailKey = $"otp_fail_email_{reqEmail}";
+
+        // 2. Kiểm tra mã OTP
         if (string.IsNullOrWhiteSpace(user.PasswordResetToken) || user.PasswordResetToken.Trim() != otpCode.Trim())
-            return (false, "Mã OTP không chính xác. Vui lòng kiểm tra lại.");
+        {
+            int ipFails = _cache.TryGetValue(otpFailIpKey, out int currentIpFails) ? currentIpFails + 1 : 1;
+            int emailFails = _cache.TryGetValue(otpFailEmailKey, out int currentEmailFails) ? currentEmailFails + 1 : 1;
+
+            _cache.Set(otpFailIpKey, ipFails, TimeSpan.FromMinutes(30));
+            _cache.Set(otpFailEmailKey, emailFails, TimeSpan.FromMinutes(30));
+
+            int effectiveFails = Math.Max(ipFails, emailFails);
+
+            if (effectiveFails >= 5)
+            {
+                _cache.Set(otpLockIpKey, DateTimeOffset.UtcNow.AddMinutes(15), TimeSpan.FromMinutes(15));
+                _cache.Set(otpLockEmailKey, DateTimeOffset.UtcNow.AddMinutes(15), TimeSpan.FromMinutes(15));
+                _cache.Remove(otpFailIpKey);
+                _cache.Remove(otpFailEmailKey);
+
+                return (false, "Bạn đã nhập sai mã OTP 5/5 lần. Địa chỉ IP và thao tác đặt lại mật khẩu đã bị tạm khóa trong 15 phút.");
+            }
+
+            int remaining = 5 - effectiveFails;
+            return (false, $"Mã OTP không chính xác. Bạn còn {remaining}/5 lần thử trước khi bị tạm khóa thao tác 15 phút.");
+        }
 
         if (!user.PasswordResetTokenExpiresAt.HasValue || user.PasswordResetTokenExpiresAt.Value < DateTimeOffset.UtcNow)
             return (false, "Mã OTP đã hết hạn (chỉ có hiệu lực trong 10 phút). Vui lòng gửi lại mã OTP mới.");
+
+        // Reset bộ đếm sai OTP
+        _cache.Remove(otpFailIpKey);
+        _cache.Remove(otpFailEmailKey);
 
         // Cập nhật mật khẩu mới
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);

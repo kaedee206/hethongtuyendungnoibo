@@ -112,8 +112,14 @@ public class CandidateRegisterInputModel
 
     [Required(ErrorMessage = "Vui lòng nhập địa chỉ email cá nhân.")]
     [EmailAddress(ErrorMessage = "Địa chỉ email không đúng định dạng.")]
+    [RegularExpression(@"^[a-zA-Z0-9._%+-]+@gmail\.com$", ErrorMessage = "Chỉ chấp nhận địa chỉ email Google (@gmail.com).")]
     [Display(Name = "Email cá nhân")]
     public string Email { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Vui lòng nhập số điện thoại.")]
+    [RegularExpression(@"^(0[3|5|7|8|9])[0-9]{8}$", ErrorMessage = "Số điện thoại không hợp lệ (gồm 10 chữ số, ví dụ: 0912345678).")]
+    [Display(Name = "Số điện thoại")]
+    public string PhoneNumber { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Vui lòng nhập mật khẩu.")]
     [StringLength(100, MinimumLength = 6, ErrorMessage = "Mật khẩu phải có độ dài tối thiểu 6 ký tự.")]
@@ -129,7 +135,6 @@ public class CandidateRegisterInputModel
 
     [Display(Name = "Đồng ý điều khoản")]
     public bool AgreeToTerms { get; set; }
-
 
     public string? ReturnUrl { get; set; }
 }

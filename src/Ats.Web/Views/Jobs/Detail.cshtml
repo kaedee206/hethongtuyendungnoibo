@@ -226,6 +226,16 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show p-3 mb-4 shadow-sm" style="border-radius: var(--radius-button); border-left: 5px solid #DC2626;" role="alert">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
+                <div class="fw-semibold">@TempData["ErrorMessage"]</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
     <!-- ── HEADER BANNER CARD ── -->
     <div class="job-header-card">
@@ -317,7 +327,7 @@
                     }
                 </div>
                 <div style="line-height: 1.75; color: #334155; font-size: 0.95rem; white-space: pre-line;">
-                    @Html.Raw(job.Overview)
+                    @HtmlSanitizerHelper.SanitizeToHtmlString(job.Overview)
                 </div>
                 <div class="p-3 bg-light rounded-3 border mt-3" style="border-radius: var(--radius-button); font-size: 0.875rem;">
                     <strong class="text-dark"><i class="bi bi-lightbulb text-warning me-1"></i> Văn hóa Kỹ thuật tại NoveraTech:</strong>
@@ -341,11 +351,11 @@
                 <div style="line-height: 1.75; color: #334155; font-size: 0.95rem; white-space: pre-line;">
                     @if (!string.IsNullOrWhiteSpace(job.PositionDescription))
                     {
-                        @Html.Raw(job.PositionDescription)
+                        @HtmlSanitizerHelper.SanitizeToHtmlString(job.PositionDescription)
                     }
                     else
                     {
-                        @Html.Raw(job.Overview)
+                        @HtmlSanitizerHelper.SanitizeToHtmlString(job.Overview)
                     }
                 </div>
                 <div class="mt-3 p-3 rounded-3 border" style="background: #F8FAFC; border-color: #E2E8F0; border-radius: var(--radius-button); font-size: 0.85rem;">
@@ -488,6 +498,14 @@
                         <div class="col-12">
                             <label class="form-label small fw-semibold text-dark">Lời giới thiệu ngắn hoặc link GitHub / LinkedIn (Tùy chọn)</label>
                             <textarea name="coverLetter" rows="3" class="form-control" style="border-radius: var(--radius-button);" placeholder="Chia sẻ thêm về các dự án tiêu biểu hoặc kinh nghiệm thực chiến của bạn..."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check p-2 bg-light rounded border" style="border-color: #E2E8F0 !important;">
+                                <input class="form-check-input ms-1 me-2" type="checkbox" name="agreeToPrivacyConsent" value="true" id="privacyConsentCheck" required />
+                                <label class="form-check-label small text-muted" for="privacyConsentCheck" style="font-size: 0.8rem; line-height: 1.5;">
+                                    Tôi xác nhận đã đọc và đồng ý cho phép NoveraTech thu thập, lưu trữ và xử lý dữ liệu cá nhân phục vụ quy trình tuyển dụng theo quy định của <strong>Nghị định 13/2023/NĐ-CP</strong> và Chính sách bảo mật dữ liệu. <span class="text-danger">*</span>
+                                </label>
+                            </div>
                         </div>
                         <div class="col-12 pt-2">
                             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">

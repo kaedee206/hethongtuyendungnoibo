@@ -693,3 +693,29 @@ script/
 .DS_Store
 Thumbs.db
 *.swp
+
+# ============================================================
+# Security Hardening & Clean Git Repository
+# Bỏ thư mục test, các file không liên quan, nhạy cảm hoặc file rác
+# ============================================================
+
+# 1. Toàn bộ thư mục kiểm thử & kịch bản test (Tests / Unit tests / E2E)
+tests/
+Tests/
+[Tt]ests/
+**/tests/
+**/Tests/
+*.Tests/
+*Tests/
+playwright.config.ts
+playwright-report/
+test-results/
+
+# 2. File backup migrations & database dump môi trường phát triển
+Migrations_Backup/
+init_database.sql
+scratch.cs
+scratch/
+.agents/
+.agent/
+

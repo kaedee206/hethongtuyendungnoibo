@@ -1,0 +1,135 @@
+version: '3.8'
+
+services:
+  # 1. Cơ sở dữ liệu PostgreSQL dùng chung (tiết kiệm RAM tối đa)
+  postgres:
+    image: postgres:16-alpine
+    container_name: ats-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ats_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_secure_pass_2026}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 300M
+    networks:
+      - novera-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # 2. Hệ thống định danh SSO Authelia (Go - siêu nhẹ ~50MB)
+  authelia:
+    image: authelia/authelia:latest
+    container_name: ats-authelia-sso
+    restart: always
+    volumes:
+      - ./authelia/configuration.yml:/config/configuration.yml:ro
+      - ./authelia/users_database.yml:/config/users_database.yml
+    environment:
+      AUTHELIA_JWT_SECRET: ${AUTHELIA_JWT_SECRET:-jwt_secret_token_change_me_super_random_32_chars}
+      AUTHELIA_STORAGE_ENCRYPTION_KEY: ${AUTHELIA_STORAGE_ENCRYPTION_KEY:-storage_key_change_me_random_32_characters_long}
+    depends_on:
+      - postgres
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 120M
+    networks:
+      - novera-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # 3. Ứng dụng Tuyển dụng ASP.NET Core 9 (Ats.Web)
+  ats-web:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: ats-web-app
+    restart: always
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ats_db
+      DB_USER: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres_secure_pass_2026}
+      OIDC_AUTHORITY: https://sso.noveratech.digital
+      OIDC_CLIENT_ID: ats_portal
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-novera_ats_secret_2026}
+      INTERNAL_EMAIL_DOMAIN: "@noveratech.digital"
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_EMAIL: ${SMTP_EMAIL:-hiring.noveratech@gmail.com}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SESSION_IDLE_TIMEOUT_MINUTES: "30"
+    volumes:
+      - ats_uploads:/app/wwwroot/uploads
+    depends_on:
+      - postgres
+      - authelia
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 450M
+    networks:
+      - novera-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # 4. Nginx Reverse Proxy & SSL Router (Cổng duy nhất mở 80 & 443 ra ngoài)
+  nginx:
+    image: nginx:alpine
+    container_name: ats-nginx-proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
+    depends_on:
+      - ats-web
+      - authelia
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 80M
+    networks:
+      - novera-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  novera-network:
+    name: novera_network
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: ats_postgres_data
+  ats_uploads:
+    name: ats_uploads_data

@@ -20,16 +20,14 @@ WORKDIR /src
 
 COPY src/Ats.Web/Ats.Web.csproj src/Ats.Web/
 
-RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
-    dotnet restore src/Ats.Web/Ats.Web.csproj
+RUN dotnet restore src/Ats.Web/Ats.Web.csproj
 
 FROM restore AS publish
 WORKDIR /src
 
 COPY src/Ats.Web/ src/Ats.Web/
 
-RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
-    dotnet publish src/Ats.Web/Ats.Web.csproj \
+RUN dotnet publish src/Ats.Web/Ats.Web.csproj \
     -c Release \
     --no-restore \
     -o /app/publish \

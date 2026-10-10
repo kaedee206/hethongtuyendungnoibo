@@ -398,7 +398,7 @@
                 <div class="rich-editor-content" 
                      contenteditable="true" 
                      data-placeholder="Nhập trách nhiệm, nhiệm vụ chính, phạm vi quyền hạn và KPI mục tiêu công việc..."
-                     id="jobDescEditorContent">@Html.Raw(Model.JobDescription)</div>
+                     id="jobDescEditorContent">@HtmlSanitizerHelper.SanitizeToHtmlString(Model.JobDescription)</div>
 
                 <div class="rich-editor-footer">
                     <span class="rich-editor-stats">0 từ | 0 ký tự</span>
@@ -461,7 +461,7 @@
                 <div class="rich-editor-content" 
                      contenteditable="true" 
                      data-placeholder="Nhập trình độ học vấn, số năm kinh nghiệm, kỹ năng cốt lõi và chứng chỉ ưu tiên..."
-                     id="requirementsEditorContent">@Html.Raw(Model.Requirements)</div>
+                     id="requirementsEditorContent">@HtmlSanitizerHelper.SanitizeToHtmlString(Model.Requirements)</div>
 
                 <div class="rich-editor-footer">
                     <span class="rich-editor-stats">0 từ | 0 ký tự</span>

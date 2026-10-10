@@ -27,7 +27,8 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var result = await _authService.AuthenticateAsync(request, cancellationToken);
+        var clientIp = Ats.Web.Common.ClientIpHelper.GetClientIpAddress(HttpContext);
+        var result = await _authService.AuthenticateAsync(request, clientIp, cancellationToken);
 
         // SCRUM-85 & SCRUM-95: Ghi log audit cho lần đăng nhập / tạo phiên
         var auditLog = new AuthAuditLog
@@ -38,7 +39,7 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
             IsSuccess = result.IsSuccess,
             EventType = result.IsSuccess ? "SessionCreate" : "LoginFailed",
             Reason = result.Message,
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
+            IpAddress = clientIp,
             UserAgent = Request.Headers["User-Agent"].ToString() ?? "Unknown",
             Timestamp = DateTimeOffset.UtcNow
         };

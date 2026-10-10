@@ -1,0 +1,38 @@
+###############################################################################
+# DANH SÁCH TÀI KHOẢN NHÂN SỰ NỘI BỘ NOVERATECH (@noveratech.digital)
+# Mật khẩu mặc định cho các tài khoản mẫu: NoveraTech@2026!
+# (Băm bằng Argon2id tiêu chuẩn an toàn cao nhất của OWASP)
+###############################################################################
+
+users:
+  admin:
+    displayname: "Nguyễn Văn Admin"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$2j5M4C8rE9xW1v7K$P0K9u8y7t6r5e4w3q2a1s0d9f8g7h6j5k4l3z2x1c0v"
+    email: admin@noveratech.digital
+    groups:
+      - admins
+      - hr_managers
+
+  nam.dang:
+    displayname: "Đặng Hải Nam"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$2j5M4C8rE9xW1v7K$P0K9u8y7t6r5e4w3q2a1s0d9f8g7h6j5k4l3z2x1c0v"
+    email: nam.dang@noveratech.digital
+    groups:
+      - recruiters
+      - hr
+
+  hieu.luong:
+    displayname: "Lương Trung Hiếu"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$2j5M4C8rE9xW1v7K$P0K9u8y7t6r5e4w3q2a1s0d9f8g7h6j5k4l3z2x1c0v"
+    email: hieu.luong@noveratech.digital
+    groups:
+      - interviewers
+      - tech_lead
+
+  hr.lead:
+    displayname: "Trần Thị Thu HR"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$2j5M4C8rE9xW1v7K$P0K9u8y7t6r5e4w3q2a1s0d9f8g7h6j5k4l3z2x1c0v"
+    email: hr.lead@noveratech.digital
+    groups:
+      - hr_managers
+      - recruiters

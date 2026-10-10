@@ -344,7 +344,7 @@
                     else
                     {
                         <div class="content-preview text-dark" style="line-height: 1.7;">
-                            @Html.Raw(Model.JobDescription)
+                            @HtmlSanitizerHelper.SanitizeToHtmlString(Model.JobDescription)
                         </div>
                     }
                 </div>
@@ -366,7 +366,7 @@
                     else
                     {
                         <div class="content-preview text-dark" style="line-height: 1.7;">
-                            @Html.Raw(Model.Requirements)
+                            @HtmlSanitizerHelper.SanitizeToHtmlString(Model.Requirements)
                         </div>
                     }
                 </div>

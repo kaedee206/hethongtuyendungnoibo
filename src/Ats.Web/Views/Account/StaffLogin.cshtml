@@ -301,6 +301,14 @@
                                 <div class="flex-1 h-px bg-[#E2E8F0] dark:bg-[#1E293B]"></div>
                             </div>
 
+                            @* SSO Button: NoveraTech ID SSO (Hệ thống định danh nội bộ) *@
+                            <a href="/Account/ExternalLogin?provider=NoveraOidcScheme&userType=staff&returnUrl=@Model.LoginInput.ReturnUrl"
+                               tabindex="@(activePanel == "forgot" ? "-1" : "0")"
+                               class="flex items-center justify-center gap-2.5 w-full py-2.5 px-3 border border-[#10B981]/50 bg-[#10B981]/10 text-[#0D5C4D] dark:text-[#10B981] text-xs font-semibold rounded-none hover:bg-[#10B981]/20 hover:border-[#10B981] transition-all duration-150 shadow-sm">
+                                <span class="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></span>
+                                <span>Đăng nhập với NoveraTech ID SSO (@@noveratech.digital)</span>
+                            </a>
+
                             @* SSO Button: Microsoft Azure AD *@
                             <a href="/Account/ExternalLogin?provider=AzureAD&returnUrl=@Model.LoginInput.ReturnUrl"
                                tabindex="@(activePanel == "forgot" ? "-1" : "0")"

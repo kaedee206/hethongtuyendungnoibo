@@ -5,8 +5,10 @@ using Ats.Web.Models.Entities;
 using Ats.Web.Models.Enums;
 using Ats.Web.Models.ViewModels.Jobs;
 using Ats.Web.Services.Interfaces;
+using Ats.Web.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ats.Web.Controllers;
@@ -19,19 +21,22 @@ public class JobsController : Controller
     private readonly IWebHostEnvironment _env;
     private readonly IFileStorageService _fileStorageService;
     private readonly ILogger<JobsController> _logger;
+    private readonly ISecurityAuditService? _auditService;
 
     public JobsController(
         IJobService jobService,
         ApplicationDbContext dbContext,
         IWebHostEnvironment env,
         IFileStorageService fileStorageService,
-        ILogger<JobsController> logger)
+        ILogger<JobsController> logger,
+        ISecurityAuditService? auditService = null)
     {
         _jobService = jobService;
         _dbContext = dbContext;
         _env = env;
         _fileStorageService = fileStorageService;
         _logger = logger;
+        _auditService = auditService;
     }
 
     // GET: /Jobs or /jobs
@@ -72,14 +77,46 @@ public class JobsController : Controller
     // POST: /Jobs/QuickApply (Xử lý ứng tuyển nhanh từ form ở trang chi tiết)
     [HttpPost("QuickApply")]
     [ValidateAntiForgeryToken]
+    [EnableRateLimiting("ApplyRateLimit")]
     public async Task<IActionResult> QuickApply(
         [FromForm] string jobId,
         [FromForm] string candidateName,
         [FromForm] string candidateEmail,
         [FromForm] string candidatePhone,
         [FromForm] string? coverLetter,
+        [FromForm] bool agreeToPrivacyConsent,
         IFormFile? cvFile)
     {
+        var clientIp = ClientIpHelper.GetClientIp(HttpContext);
+
+        if (!agreeToPrivacyConsent)
+        {
+            _auditService?.LogSecurityEvent(new SecurityAuditEvent
+            {
+                EventType = SecurityAuditEventType.PrivacyConsentRejected,
+                ClientIp = clientIp,
+                UserNameOrEmail = candidateEmail,
+                ResourcePath = $"/Jobs/Detail/{jobId}",
+                Action = "APPLY_JOB_REJECTED_CONSENT",
+                IsSuccess = false,
+                Details = "Từ chối nộp hồ sơ do chưa đồng ý điều khoản dữ liệu cá nhân theo Nghị định 13/2023/NĐ-CP"
+            });
+
+            TempData["ErrorMessage"] = "Bạn cần đồng ý với điều khoản thu thập và xử lý dữ liệu cá nhân theo Nghị định 13/2023/NĐ-CP để hoàn tất nộp hồ sơ.";
+            return RedirectToAction(nameof(Detail), new { id = jobId });
+        }
+
+        _auditService?.LogSecurityEvent(new SecurityAuditEvent
+        {
+            EventType = SecurityAuditEventType.PrivacyConsentAccepted,
+            ClientIp = clientIp,
+            UserNameOrEmail = candidateEmail,
+            ResourcePath = $"/Jobs/Detail/{jobId}",
+            Action = "APPLY_JOB_CONSENT_RECORDED",
+            IsSuccess = true,
+            Details = "Đã xác nhận sự đồng ý thu thập và xử lý dữ liệu cá nhân theo Nghị định 13/2023/NĐ-CP"
+        });
+
         var jobDetail = await _jobService.GetJobDetailAsync(jobId);
         var jobTitle = jobDetail?.Job.Title ?? "Vị trí tại NoveraTech";
 

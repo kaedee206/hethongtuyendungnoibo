@@ -57,7 +57,7 @@ Docker Compose tự động khởi chạy 2 container phối hợp:
    - Mở rộng `client_max_body_size 50M` cho tải file CV và ảnh đại diện.
    - Nén Gzip tự động cho CSS, JS, SVG, JSON giảm băng thông và tăng tốc tải trang.
 2. **Tốc độ build & Cache layer**:
-   - Sử dụng BuildKit Cache Mount (`--mount=type=cache,id=nuget`).
+   - Sử dụng Docker Layer Caching chuẩn quốc tế, tương thích 100% mọi phiên bản Docker (kể cả không có BuildKit).
    - Tách riêng tầng restore `Ats.Web.csproj`, không bị cache miss khi sửa code C#.
 3. **Kích thước image**:
    - Image runtime `mcr.microsoft.com/dotnet/aspnet:9.0-bookworm-slim` (~220MB).

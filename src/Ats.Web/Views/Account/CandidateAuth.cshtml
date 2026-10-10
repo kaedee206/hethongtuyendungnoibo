@@ -355,10 +355,20 @@
                                 </div>
 
                                 <div>
-                                    <label asp-for="RegisterInput.Email" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1">Email Cá Nhân</label>
-                                    <input asp-for="RegisterInput.Email" id="candRegisterEmail" type="email" autocomplete="email" placeholder="your@email.com"
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label asp-for="RegisterInput.Email" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8]">Email Cá Nhân</label>
+                                        <span class="text-[9px] font-mono text-[#0D5C4D] dark:text-[#10B981] font-semibold">(Chỉ chấp nhận @@gmail.com)</span>
+                                    </div>
+                                    <input asp-for="RegisterInput.Email" id="candRegisterEmail" type="email" autocomplete="email" placeholder="ten_ban@gmail.com"
                                            class="w-full px-3 py-1.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm placeholder-[#94A3B8] rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
                                     <span asp-validation-for="RegisterInput.Email" class="block mt-0.5 text-xs text-red-600 dark:text-red-400 font-mono"></span>
+                                </div>
+
+                                <div>
+                                    <label asp-for="RegisterInput.PhoneNumber" class="block font-mono text-[10px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] mb-1">Số Điện Thoại Liên Hệ</label>
+                                    <input asp-for="RegisterInput.PhoneNumber" id="candRegisterPhone" type="tel" autocomplete="tel" placeholder="0912345678"
+                                           class="w-full px-3 py-1.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm placeholder-[#94A3B8] rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
+                                    <span asp-validation-for="RegisterInput.PhoneNumber" class="block mt-0.5 text-xs text-red-600 dark:text-red-400 font-mono"></span>
                                 </div>
 
                                 <div>

@@ -1,3 +1,4 @@
+using System.Threading.RateLimiting;
 using Ats.Web.Data;
 using Ats.Web.Services;
 using Ats.Web.Services.Interfaces;
@@ -20,7 +21,18 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 });
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute());
+});
+builder.Services.AddMemoryCache();
+
+builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // Cấu hình Antiforgery cho cả Form body và HTTP Header (RequestVerificationToken)
 builder.Services.AddAntiforgery(options =>
@@ -54,6 +66,49 @@ builder.Services.AddScoped<IRequisitionService, RequisitionService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<IApprovalRuleService, ApprovalRuleService>();
+builder.Services.AddScoped<ISecurityAuditService, SecurityAuditService>();
+
+// Cấu hình Rate Limiting bảo vệ các endpoint nhạy cảm (OWASP A04 / A07)
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.ContentType = "application/json; charset=utf-8";
+        context.HttpContext.Response.Headers.RetryAfter = "60";
+        await context.HttpContext.Response.WriteAsync(
+            "{\"success\":false,\"message\":\"Yêu cầu quá nhanh. Vui lòng chờ 1 phút trước khi thử lại để đảm bảo an toàn hệ thống.\"}",
+            token);
+    };
+
+    // Policy 1: Giới hạn đăng nhập & OTP (10 requests / 1 phút / IP)
+    options.AddPolicy("AuthRateLimit", httpContext =>
+    {
+        var clientIp = Ats.Web.Common.ClientIpHelper.GetClientIp(httpContext);
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: clientIp,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+    });
+
+    // Policy 2: Giới hạn nộp hồ sơ ứng tuyển (5 requests / 10 phút / IP)
+    options.AddPolicy("ApplyRateLimit", httpContext =>
+    {
+        var clientIp = Ats.Web.Common.ClientIpHelper.GetClientIp(httpContext);
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: clientIp,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(10),
+                QueueLimit = 0
+            });
+    });
+});
 
 
 // Cấu hình thời gian Session (Idle timeout)
@@ -69,6 +124,7 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 });
 
 // 2. Thêm cấu hình Authentication Cookie & External Google OAuth
@@ -90,6 +146,7 @@ var authBuilder = builder.Services.AddAuthentication(options =>
         options.SlidingExpiration = true; // Tự động gia hạn phiên khi user hoạt động > 50% thời hạn
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     })
     .AddCookie("ExternalCookieScheme", options =>
     {
@@ -97,6 +154,7 @@ var authBuilder = builder.Services.AddAuthentication(options =>
         options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     });
 
 // Kiểm tra xem đã cung cấp ClientId thực tế hay chưa
@@ -116,6 +174,41 @@ if (hasValidGoogleConfig)
     });
 }
 
+// 3. Cấu hình SSO Định danh Nội bộ qua OpenID Connect (Authelia / Self-hosted ID Server)
+var oidcAuthority = Environment.GetEnvironmentVariable("OIDC_AUTHORITY")?.Trim();
+var oidcClientId = Environment.GetEnvironmentVariable("OIDC_CLIENT_ID")?.Trim();
+var oidcClientSecret = Environment.GetEnvironmentVariable("OIDC_CLIENT_SECRET")?.Trim();
+
+bool hasValidOidcConfig = !string.IsNullOrWhiteSpace(oidcAuthority) && 
+                          !string.IsNullOrWhiteSpace(oidcClientId) &&
+                          !oidcClientId.Contains("YOUR_OIDC_CLIENT_ID", StringComparison.OrdinalIgnoreCase);
+
+if (hasValidOidcConfig)
+{
+    authBuilder.AddOpenIdConnect("NoveraOidcScheme", options =>
+    {
+        options.SignInScheme = "ExternalCookieScheme";
+        options.Authority = oidcAuthority!;
+        options.ClientId = oidcClientId!;
+        if (!string.IsNullOrWhiteSpace(oidcClientSecret))
+        {
+            options.ClientSecret = oidcClientSecret;
+        }
+        options.ResponseType = "code";
+        options.ResponseMode = "query";
+        options.CallbackPath = "/signin-oidc";
+        options.SignedOutCallbackPath = "/signout-callback-oidc";
+        options.SaveTokens = true;
+        options.GetClaimsFromUserInfoEndpoint = true;
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment() && (oidcAuthority?.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ?? false);
+        options.Scope.Clear();
+        options.Scope.Add("openid");
+        options.Scope.Add("profile");
+        options.Scope.Add("email");
+        options.Scope.Add("groups");
+    });
+}
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -132,8 +225,16 @@ app.UseMiddleware<Ats.Web.Middlewares.GlobalExceptionMiddleware>();
 // Xử lý status code (401, 403, 404, 500)
 app.UseStatusCodePagesWithReExecute("/errors/{0}");
 
+app.UseForwardedHeaders();
 app.UseHttpsRedirection();
+
+// Bổ sung các HTTP Security Headers (OWASP A05)
+app.UseMiddleware<Ats.Web.Middlewares.SecurityHeadersMiddleware>();
+
 app.UseRouting();
+
+// Áp dụng Rate Limiting bảo vệ hệ thống khỏi DoS và Brute Force
+app.UseRateLimiter();
 
 // Kích hoạt Session & Auth đúng thứ tự pipeline
 app.UseSession();
@@ -142,6 +243,9 @@ app.UseAuthorization();
 
 // Kích hoạt Middleware gia hạn phiên tự động
 app.UseMiddleware<Ats.Web.Middlewares.SessionActivityMiddleware>();
+
+// Bảo vệ tài liệu nhạy cảm của ứng viên (CV/Resume) - Nghị định 13/2023/NĐ-CP & OWASP Top 10 A01 (Broken Access Control)
+app.UseMiddleware<Ats.Web.Middlewares.CandidateDocumentsProtectionMiddleware>();
 
 // Phục vụ tệp tĩnh (bao gồm tệp người dùng tải lên trong wwwroot/uploads)
 app.UseStaticFiles();
