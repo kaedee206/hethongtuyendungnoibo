@@ -1,4 +1,4 @@
-﻿using Ats.Web.Models.Enums;
+using Ats.Web.Models.Enums;
 
 namespace Ats.Web.Models.Entities;
 
@@ -16,6 +16,7 @@ public class Application : BaseEntity
     public int? Rating { get; set; } // 1-5
     
     public DateTimeOffset? AppliedAt { get; set; }
+    public string? TrackingCode { get; set; }
 
     public JobPosting JobPosting { get; set; } = null!;
     public Candidate Candidate { get; set; } = null!;
