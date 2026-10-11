@@ -1,0 +1,37 @@
+@{
+    ViewData["Title"] = "Liên kết không hợp lệ";
+    Layout = "_Layout";
+    var errorMsg = ViewBag.ErrorMessage as string ?? "Liên kết rút hồ sơ không hợp lệ hoặc đã hết hạn.";
+}
+
+<div class="container py-5 text-center" style="max-width: 580px;">
+    <div class="card border-0 shadow-sm bg-white p-5" style="border: 1px solid #E2E8F0 !important; border-radius: 16px;">
+        <div class="d-inline-flex align-items-center justify-content-center mx-auto mb-3"
+             style="width: 64px; height: 64px; border-radius: 50%; background: #FEE2E2; color: #DC2626;">
+            <i class="bi bi-shield-x" style="font-size: 2rem;"></i>
+        </div>
+
+        <h4 class="fw-bold text-dark mb-2">Không thể xử lý yêu cầu</h4>
+        <p class="text-muted small mb-4" style="line-height: 1.6;">
+            @errorMsg
+        </p>
+
+        <div class="p-3 mb-4 bg-light text-start rounded-3 border" style="font-size: 0.82rem; color: #475569;">
+            <div class="fw-bold text-dark mb-1"><i class="bi bi-lightbulb me-1 text-warning"></i>Bạn có thể làm gì?</div>
+            <ul class="mb-0 ps-3">
+                <li>Kiểm tra lại xem bạn đã mở đúng đường link đầy đủ trong email xác nhận nộp hồ sơ chưa.</li>
+                <li>Nếu bạn đã có tài khoản, hãy đăng nhập vào Cổng ứng viên để xem tiến độ hồ sơ.</li>
+                <li>Liên hệ với bộ phận nhân sự qua email: <span class="text-dark font-mono">tuyendung@noveratech.com</span>.</li>
+            </ul>
+        </div>
+
+        <div class="d-flex justify-content-center gap-2">
+            <a href="/gioi-thieu" class="btn btn-light border px-4" style="border-radius: 8px; font-size: 0.85rem;">
+                Trang chủ
+            </a>
+            <a href="/Account/CandidateAuth" class="btn btn-success fw-semibold px-4" style="border-radius: 8px; font-size: 0.85rem; background: #059669;">
+                Đăng nhập Cổng ứng viên
+            </a>
+        </div>
+    </div>
+</div>

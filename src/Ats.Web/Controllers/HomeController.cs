@@ -128,23 +128,28 @@ public class HomeController : Controller
                         _ => 50
                     };
 
+                    var isWithdrawn = activeApp.Status == ApplicationStatus.WITHDRAWN;
                     model.ActiveApplication = new ApplicationTrackerDto
                     {
                         ApplicationId = activeApp.Id,
                         ApplicationCode = $"#NOV-2026-{activeApp.Id.ToString("N")[..4].ToUpper()}",
                         JobTitle = activeApp.JobPosting?.Title ?? "Vị trí tại NoveraTech",
                         JobId = activeApp.JobPostingId.ToString(),
-                        CurrentStageName = activeApp.CurrentStage?.Name ?? "Đang xử lý",
+                        CurrentStageName = isWithdrawn ? "Ứng viên đã rút hồ sơ" : (activeApp.CurrentStage?.Name ?? "Đang xử lý"),
                         CurrentStageOrder = stageOrder,
-                        ProgressPercentage = progress,
-                        StatusDisplay = activeApp.Status.ToString(),
+                        ProgressPercentage = isWithdrawn ? 0 : progress,
+                        StatusDisplay = isWithdrawn ? "Đã rút hồ sơ" : activeApp.Status.ToString(),
                         AppliedDateDisplay = activeApp.AppliedAt?.ToString("dd/MM/yyyy") ?? activeApp.CreatedAt.ToString("dd/MM/yyyy"),
+                        WithdrawToken = activeApp.WithdrawToken,
+                        IsWithdrawn = isWithdrawn,
+                        WithdrawnAt = activeApp.WithdrawnAt,
+                        WithdrawReason = activeApp.WithdrawReason,
                         Steps = new List<StageStepDto>
                         {
                             new() { StepNumber = 1, StepName = "1. Nộp hồ sơ", Status = stageOrder >= 1 ? "completed" : "pending", Subtitle = activeApp.AppliedAt?.ToString("dd/MM/yyyy") ?? "Hoàn tất" },
-                            new() { StepNumber = 2, StepName = "2. Sơ loại CV", Status = stageOrder > 2 ? "completed" : (stageOrder == 2 ? "active" : "pending"), Subtitle = stageOrder >= 2 ? "Đã đạt" : "Chờ xử lý" },
-                            new() { StepNumber = 3, StepName = "3. Phỏng vấn", Status = stageOrder > 4 ? "completed" : (stageOrder is 3 or 4 ? "active" : "pending"), Subtitle = stageOrder is 3 or 4 ? "Vòng chuyên môn" : (stageOrder > 4 ? "Đã đạt" : "Chờ lịch") },
-                            new() { StepNumber = 4, StepName = "4. Đề nghị Offer", Status = stageOrder == 6 ? "completed" : (stageOrder == 5 ? "active" : "pending"), Subtitle = stageOrder == 6 ? "Tuyển dụng thành công" : (stageOrder == 5 ? "Chờ duyệt" : "Chưa mở") }
+                            new() { StepNumber = 2, StepName = "2. Sơ loại CV", Status = isWithdrawn ? "pending" : (stageOrder > 2 ? "completed" : (stageOrder == 2 ? "active" : "pending")), Subtitle = isWithdrawn ? "Đã dừng quy trình" : (stageOrder >= 2 ? "Đã đạt" : "Chờ xử lý") },
+                            new() { StepNumber = 3, StepName = "3. Phỏng vấn", Status = isWithdrawn ? "pending" : (stageOrder > 4 ? "completed" : (stageOrder is 3 or 4 ? "active" : "pending")), Subtitle = isWithdrawn ? "Đã dừng quy trình" : (stageOrder is 3 or 4 ? "Vòng chuyên môn" : (stageOrder > 4 ? "Đã đạt" : "Chờ lịch")) },
+                            new() { StepNumber = 4, StepName = "4. Đề nghị Offer", Status = isWithdrawn ? "pending" : (stageOrder == 6 ? "completed" : (stageOrder == 5 ? "active" : "pending")), Subtitle = isWithdrawn ? "Đã dừng quy trình" : (stageOrder == 6 ? "Tuyển dụng thành công" : (stageOrder == 5 ? "Chờ duyệt" : "Chưa mở")) }
                         }
                     };
 
@@ -186,7 +191,8 @@ public class HomeController : Controller
         {
             // Dành cho nhân sự (Staff / HR / Recruiter / Manager / Approver / Admin)
             model.TotalOpenJobs = await _dbContext.JobPostings.CountAsync(j => j.Status == JobPostingStatus.PUBLISHED);
-            model.TotalApplications = await _dbContext.Applications.CountAsync(a => !a.IsDeleted);
+            // Pipeline đang hoạt động: Loại trừ hồ sơ mà ứng viên đã rút
+            model.TotalApplications = await _dbContext.Applications.CountAsync(a => !a.IsDeleted && a.Status != ApplicationStatus.WITHDRAWN);
 
             var nowUtc = DateTimeOffset.UtcNow;
             var todayUtc = new DateTimeOffset(nowUtc.Year, nowUtc.Month, nowUtc.Day, 0, 0, 0, TimeSpan.Zero);
@@ -200,10 +206,10 @@ public class HomeController : Controller
 
             model.TotalPendingOffers = await _dbContext.JobOffers.CountAsync(o => o.Status == OfferStatus.PENDING_APPROVAL || o.Status == OfferStatus.DRAFT);
 
-            // Phễu tuyển dụng thật
+            // Phễu tuyển dụng thật (chỉ tính hồ sơ đang trong pipeline hoạt động)
             var stages = await _dbContext.PipelineStages.OrderBy(s => s.StageOrder).ToListAsync();
             var appCountsByStage = await _dbContext.Applications
-                .Where(a => !a.IsDeleted)
+                .Where(a => !a.IsDeleted && a.Status != ApplicationStatus.WITHDRAWN)
                 .GroupBy(a => a.CurrentStageId)
                 .Select(g => new { StageId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.StageId, x => x.Count);
@@ -360,12 +366,13 @@ public class HomeController : Controller
                 .ToList();
 
             // Toàn bộ ứng viên cho Bảng Quản Lý Ứng Viên & Tiến Trình Tuyển Dụng
+            // Mặc định hiển thị pipeline đang hoạt động (loại trừ hồ sơ đã rút)
             var allApps = await _dbContext.Applications
                 .Include(a => a.Candidate)
                     .ThenInclude(c => c.Resumes)
                 .Include(a => a.JobPosting)
                 .Include(a => a.CurrentStage)
-                .Where(a => !a.IsDeleted)
+                .Where(a => !a.IsDeleted && a.Status != ApplicationStatus.WITHDRAWN)
                 .OrderByDescending(a => a.AppliedAt)
                 .Take(50)
                 .ToListAsync();
@@ -392,6 +399,27 @@ public class HomeController : Controller
                     ResumeFilePath = primaryResume?.FilePath ?? "#"
                 };
             }).ToList();
+
+            // Load thông báo gần nhất cho nhân sự
+            if (userId != Guid.Empty)
+            {
+                var notifs = await _dbContext.Notifications
+                    .Where(n => n.UserId == userId)
+                    .OrderByDescending(n => n.CreatedAt)
+                    .Take(10)
+                    .ToListAsync();
+
+                model.UnreadNotificationsCount = notifs.Count(n => !n.IsRead);
+                model.RecentNotifications = notifs.Select(n => new NotificationDto
+                {
+                    Id = n.Id,
+                    Title = n.Title,
+                    Content = n.Content,
+                    Link = n.Link,
+                    IsRead = n.IsRead,
+                    CreatedAtDisplay = n.CreatedAt.ToString("HH:mm dd/MM/yyyy")
+                }).ToList();
+            }
         }
         return model;
     }
@@ -427,14 +455,23 @@ public class HomeController : Controller
 
         if (!string.IsNullOrWhiteSpace(stageOrder) && stageOrder != "ALL")
         {
-            if (stageOrder == "REJECTED")
+            if (stageOrder == "WITHDRAWN")
+            {
+                query = query.Where(a => a.Status == ApplicationStatus.WITHDRAWN);
+            }
+            else if (stageOrder == "REJECTED")
             {
                 query = query.Where(a => a.Status == ApplicationStatus.REJECTED);
             }
             else if (int.TryParse(stageOrder, out var order))
             {
-                query = query.Where(a => a.CurrentStage.StageOrder == order);
+                query = query.Where(a => a.CurrentStage.StageOrder == order && a.Status != ApplicationStatus.WITHDRAWN);
             }
+        }
+        else
+        {
+            // Pipeline đang hoạt động mặc định ẩn ứng viên đã rút
+            query = query.Where(a => a.Status != ApplicationStatus.WITHDRAWN);
         }
 
         var totalRecords = await query.CountAsync(cancellationToken);
@@ -493,6 +530,49 @@ public class HomeController : Controller
     public IActionResult LegacyLanding()
     {
         return RedirectPermanent("/gioi-thieu");
+    }
+
+    [HttpGet("/api/notifications/recent")]
+    public async Task<IActionResult> GetRecentNotifications()
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdStr, out var userId))
+        {
+            return Ok(new { success = true, unreadCount = 0, items = Array.Empty<object>() });
+        }
+
+        var notifs = await _dbContext.Notifications
+            .Where(n => n.UserId == userId)
+            .OrderByDescending(n => n.CreatedAt)
+            .Take(10)
+            .ToListAsync();
+
+        return Ok(new
+        {
+            success = true,
+            unreadCount = notifs.Count(n => !n.IsRead),
+            items = notifs.Select(n => new
+            {
+                id = n.Id,
+                title = n.Title,
+                content = n.Content,
+                link = n.Link ?? "/dashboard/ung-vien",
+                isRead = n.IsRead,
+                timeDisplay = n.CreatedAt.ToString("HH:mm dd/MM")
+            })
+        });
+    }
+
+    [HttpPost("/api/notifications/mark-read/{id}")]
+    public async Task<IActionResult> MarkNotificationRead(Guid id)
+    {
+        var notif = await _dbContext.Notifications.FirstOrDefaultAsync(n => n.Id == id);
+        if (notif != null)
+        {
+            notif.IsRead = true;
+            await _dbContext.SaveChangesAsync();
+        }
+        return Ok(new { success = true });
     }
 
     public IActionResult Privacy()

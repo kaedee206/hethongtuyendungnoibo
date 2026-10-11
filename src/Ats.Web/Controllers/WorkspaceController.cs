@@ -276,6 +276,7 @@ public class WorkspaceController : Controller
                 return Json(new { success = false, message = "Bạn đã nộp hồ sơ ứng tuyển vị trí này rồi. Vui lòng theo dõi tiến độ trên hệ thống." });
             }
 
+            var withdrawToken = Guid.NewGuid().ToString("N");
             var application = new Application
             {
                 Id = Guid.NewGuid(),
@@ -286,7 +287,8 @@ public class WorkspaceController : Controller
                 Status = ApplicationStatus.IN_PROCESS,
                 AppliedAt = DateTimeOffset.UtcNow,
                 CreatedAt = DateTimeOffset.UtcNow,
-                UpdatedAt = DateTimeOffset.UtcNow
+                UpdatedAt = DateTimeOffset.UtcNow,
+                WithdrawToken = withdrawToken
             };
 
             await _dbContext.Applications.AddAsync(application);
@@ -306,6 +308,28 @@ public class WorkspaceController : Controller
 
             await _dbContext.ApplicationStageHistories.AddAsync(stageHistory);
             await _dbContext.SaveChangesAsync();
+
+            // SCRUM-291: Gửi email xác nhận tiếp nhận hồ sơ kèm liên kết bảo mật rút hồ sơ
+            var appCode = $"#NOV-2026-{application.Id.ToString("N")[..4].ToUpper()}";
+            var withdrawUrl = Url.Action("Withdraw", "Applications", new { token = withdrawToken }, Request.Scheme)
+                           ?? $"/Applications/Withdraw?token={withdrawToken}";
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _emailService.SendApplicationReceivedAsync(
+                        candidate.Email,
+                        candidate.FirstName,
+                        jobPosting.Title,
+                        appCode,
+                        withdrawUrl);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Không thể gửi email xác nhận ứng tuyển: {Msg}", ex.Message);
+                }
+            });
 
             return Json(new
             {

@@ -276,6 +276,10 @@ using (var scope = app.Services.CreateScope())
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS department_id uuid;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS job_position_id uuid;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS withdraw_token text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS withdrawn_at timestamp with time zone;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS withdraw_reason text;");
+        await dbContext.Database.ExecuteSqlRawAsync("UPDATE applications SET withdraw_token = md5(random()::text || id::text) WHERE withdraw_token IS NULL;");
         
     } catch(Exception e) {
         Console.WriteLine(e.Message);

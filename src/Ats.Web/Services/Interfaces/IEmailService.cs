@@ -20,6 +20,24 @@ public interface IEmailService
         string candidateName,
         string jobTitle,
         string applicationCode,
+        string? withdrawUrl = null,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> SendRecruiterWithdrawalAlertAsync(
+        string recruiterEmail,
+        string recruiterName,
+        string candidateName,
+        string candidateEmail,
+        string jobTitle,
+        string? reason,
+        DateTimeOffset withdrawnAt,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> SendCandidateWithdrawalConfirmedAsync(
+        string candidateEmail,
+        string candidateName,
+        string jobTitle,
+        string? reason,
         CancellationToken cancellationToken = default);
 
     Task<bool> SendScreeningPassedAsync(

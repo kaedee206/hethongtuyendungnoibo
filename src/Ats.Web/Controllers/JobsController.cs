@@ -22,6 +22,7 @@ public class JobsController : Controller
     private readonly IFileStorageService _fileStorageService;
     private readonly ILogger<JobsController> _logger;
     private readonly ISecurityAuditService? _auditService;
+    private readonly IEmailService? _emailService;
 
     public JobsController(
         IJobService jobService,
@@ -29,7 +30,8 @@ public class JobsController : Controller
         IWebHostEnvironment env,
         IFileStorageService fileStorageService,
         ILogger<JobsController> logger,
-        ISecurityAuditService? auditService = null)
+        ISecurityAuditService? auditService = null,
+        IEmailService? emailService = null)
     {
         _jobService = jobService;
         _dbContext = dbContext;
@@ -37,6 +39,7 @@ public class JobsController : Controller
         _fileStorageService = fileStorageService;
         _logger = logger;
         _auditService = auditService;
+        _emailService = emailService;
     }
 
     // GET: /Jobs or /jobs
@@ -229,6 +232,7 @@ public class JobsController : Controller
 
                 if (existingApp == null)
                 {
+                    var withdrawToken = Guid.NewGuid().ToString("N");
                     var application = new Application
                     {
                         Id = Guid.NewGuid(),
@@ -239,7 +243,8 @@ public class JobsController : Controller
                         Status = ApplicationStatus.IN_PROCESS,
                         AppliedAt = DateTimeOffset.UtcNow,
                         CreatedAt = DateTimeOffset.UtcNow,
-                        UpdatedAt = DateTimeOffset.UtcNow
+                        UpdatedAt = DateTimeOffset.UtcNow,
+                        WithdrawToken = withdrawToken
                     };
                     await _dbContext.Applications.AddAsync(application);
 
@@ -256,6 +261,31 @@ public class JobsController : Controller
                     });
 
                     await _dbContext.SaveChangesAsync();
+
+                    // SCRUM-291: Gửi email xác nhận tiếp nhận hồ sơ kèm liên kết bảo mật rút hồ sơ
+                    if (_emailService != null)
+                    {
+                        var appCode = $"#NOV-2026-{application.Id.ToString("N")[..4].ToUpper()}";
+                        var withdrawUrl = Url.Action("Withdraw", "Applications", new { token = withdrawToken }, Request.Scheme)
+                                       ?? $"/Applications/Withdraw?token={withdrawToken}";
+
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await _emailService.SendApplicationReceivedAsync(
+                                    candidate.Email,
+                                    candidate.FirstName,
+                                    jobTitle,
+                                    appCode,
+                                    withdrawUrl);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning("Không thể gửi email xác nhận ứng tuyển: {Msg}", ex.Message);
+                            }
+                        });
+                    }
                 }
             }
 

@@ -29,6 +29,20 @@ public class WorkspaceDashboardViewModel
     public List<PendingOfferDto> PendingOffers { get; set; } = new();
     public List<InterviewEvaluationCandidateDto> EvaluationCandidates { get; set; } = new();
     public List<CandidatePipelineItemDto> CandidatePipelineItems { get; set; } = new();
+
+    // Thông báo dành cho Staff / Recruiter
+    public int UnreadNotificationsCount { get; set; }
+    public List<NotificationDto> RecentNotifications { get; set; } = new();
+}
+
+public class NotificationDto
+{
+    public Guid Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public string? Link { get; set; }
+    public bool IsRead { get; set; }
+    public string CreatedAtDisplay { get; set; } = string.Empty;
 }
 
 public class CandidatePipelineItemDto
@@ -72,6 +86,10 @@ public class ApplicationTrackerDto
     public int ProgressPercentage { get; set; }
     public string StatusDisplay { get; set; } = string.Empty;
     public string AppliedDateDisplay { get; set; } = string.Empty;
+    public string? WithdrawToken { get; set; }
+    public bool IsWithdrawn { get; set; }
+    public DateTimeOffset? WithdrawnAt { get; set; }
+    public string? WithdrawReason { get; set; }
     public List<StageStepDto> Steps { get; set; } = new();
 }
 

@@ -1,4 +1,4 @@
-﻿using Ats.Web.Models.Enums;
+using Ats.Web.Models.Enums;
 
 namespace Ats.Web.Models.Entities;
 
@@ -16,6 +16,21 @@ public class Application : BaseEntity
     public int? Rating { get; set; } // 1-5
     
     public DateTimeOffset? AppliedAt { get; set; }
+
+    /// <summary>
+    /// Mã token bảo mật dùng để rút hồ sơ qua liên kết email xác nhận (SCRUM-291).
+    /// </summary>
+    public string? WithdrawToken { get; set; }
+
+    /// <summary>
+    /// Thời điểm ứng viên thực hiện rút hồ sơ.
+    /// </summary>
+    public DateTimeOffset? WithdrawnAt { get; set; }
+
+    /// <summary>
+    /// Lý do ứng viên rút hồ sơ ứng tuyển.
+    /// </summary>
+    public string? WithdrawReason { get; set; }
 
     public JobPosting JobPosting { get; set; } = null!;
     public Candidate Candidate { get; set; } = null!;
