@@ -20,19 +20,22 @@ public class WorkspaceController : Controller
     private readonly IEmailService _emailService;
     private readonly IFileStorageService _fileStorageService;
     private readonly ILogger<WorkspaceController> _logger;
+    private readonly IApplicationTrackingService _trackingService;
 
     public WorkspaceController(
         ApplicationDbContext dbContext,
         IWebHostEnvironment env,
         IEmailService emailService,
         IFileStorageService fileStorageService,
-        ILogger<WorkspaceController> logger)
+        ILogger<WorkspaceController> logger,
+        IApplicationTrackingService trackingService)
     {
         _dbContext = dbContext;
         _env = env;
         _emailService = emailService;
         _fileStorageService = fileStorageService;
         _logger = logger;
+        _trackingService = trackingService;
     }
 
     #region Role Redirects (Tránh 404 cho các vai trò nội bộ)
@@ -276,6 +279,7 @@ public class WorkspaceController : Controller
                 return Json(new { success = false, message = "Bạn đã nộp hồ sơ ứng tuyển vị trí này rồi. Vui lòng theo dõi tiến độ trên hệ thống." });
             }
 
+            var trackingCode = await _trackingService.GenerateUniqueTrackingCodeAsync();
             var application = new Application
             {
                 Id = Guid.NewGuid(),
@@ -284,6 +288,7 @@ public class WorkspaceController : Controller
                 ResumeId = resume.Id,
                 CurrentStageId = firstStage.Id,
                 Status = ApplicationStatus.IN_PROCESS,
+                TrackingCode = trackingCode,
                 AppliedAt = DateTimeOffset.UtcNow,
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow
@@ -310,7 +315,8 @@ public class WorkspaceController : Controller
             return Json(new
             {
                 success = true,
-                message = $"🎉 Chúc mừng bạn! Hồ sơ ứng tuyển vị trí '{jobPosting.Title}' đã được lưu vào hệ thống thành công. Đội ngũ tuyển dụng sẽ phản hồi trong 48 giờ."
+                trackingCode = trackingCode,
+                message = $"🎉 Chúc mừng bạn! Hồ sơ ứng tuyển vị trí '{jobPosting.Title}' đã được lưu vào hệ thống thành công. Mã tra cứu hồ sơ của bạn là: {trackingCode}. Đội ngũ tuyển dụng sẽ phản hồi trong 48 giờ."
             });
         }
         catch (Exception ex)
