@@ -489,6 +489,7 @@ public static class DatabaseSeeder
                     CurrentStageId = stage4.Id,
                     Status = ApplicationStatus.IN_PROCESS,
                     AppliedAt = DateTimeOffset.UtcNow.AddDays(-7),
+                    TrackingCode = "NOV-APP-202610-0001",
                     CreatedAt = DateTimeOffset.UtcNow.AddDays(-7),
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
@@ -524,6 +525,7 @@ public static class DatabaseSeeder
                     CurrentStageId = stage4.Id,
                     Status = ApplicationStatus.IN_PROCESS,
                     AppliedAt = DateTimeOffset.UtcNow.AddDays(-6),
+                    TrackingCode = "NOV-APP-202610-0002",
                     CreatedAt = DateTimeOffset.UtcNow.AddDays(-6),
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
@@ -551,6 +553,7 @@ public static class DatabaseSeeder
                     CurrentStageId = stage5.Id,
                     Status = ApplicationStatus.IN_PROCESS,
                     AppliedAt = DateTimeOffset.UtcNow.AddDays(-8),
+                    TrackingCode = "NOV-APP-202610-0003",
                     CreatedAt = DateTimeOffset.UtcNow.AddDays(-8),
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
@@ -682,6 +685,19 @@ public static class DatabaseSeeder
             }
         }
         await context.SaveChangesAsync();
+
+        // Tự động bổ sung TrackingCode cho các hồ sơ chưa có mã tra cứu
+        var appsWithoutCode = await context.Applications.Where(a => string.IsNullOrEmpty(a.TrackingCode)).ToListAsync();
+        var codeCounter = 4;
+        foreach (var app in appsWithoutCode)
+        {
+            app.TrackingCode = $"NOV-APP-202610-{codeCounter:D4}";
+            codeCounter++;
+        }
+        if (appsWithoutCode.Any())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // 10. Seed Interviews (Phiên phỏng vấn thật có link Google Meet và phân công hội đồng)
         var adminUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "admin@noveratech.vn" || u.Email == "hieu.luong@noveratech.digital")
