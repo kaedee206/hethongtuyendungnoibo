@@ -228,6 +228,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(e => e.NewValues).HasColumnType("jsonb");
         });
         // Other Indexes
+        modelBuilder.Entity<Application>().HasIndex(a => a.TrackingCode);
         modelBuilder.Entity<Candidate>().HasIndex(c => c.Email);
         modelBuilder.Entity<JobRequisition>().HasIndex(r => r.Code).IsUnique();
         modelBuilder.Entity<JobPosting>().HasIndex(p => p.Slug).IsUnique();
