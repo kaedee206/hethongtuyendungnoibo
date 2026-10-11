@@ -120,6 +120,27 @@
                             Từ chối
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("Index", "Requisitions", new { tab = "paused", search })"
+                           class="nav-link py-2 px-3 fw-medium @(currentTab == "paused" || currentTab == "tam-dung" ? "active" : "")"
+                           style="border-radius: 8px; font-size: 0.9rem;">
+                            Tạm dừng
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("Index", "Requisitions", new { tab = "closed", search })"
+                           class="nav-link py-2 px-3 fw-medium @(currentTab == "closed" || currentTab == "da-dong" ? "active" : "")"
+                           style="border-radius: 8px; font-size: 0.9rem;">
+                            Đã đóng
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("Index", "Requisitions", new { tab = "cancelled", search })"
+                           class="nav-link py-2 px-3 fw-medium @(currentTab == "cancelled" || currentTab == "da-huy" ? "active" : "")"
+                           style="border-radius: 8px; font-size: 0.9rem;">
+                            Đã hủy
+                        </a>
+                    </li>
                 </ul>
 
                 <!-- Search Input Form -->
@@ -233,6 +254,21 @@
                                                     <i class="bi bi-x-circle me-1"></i>Từ chối
                                                 </span>
                                                 break;
+                                            case RequisitionStatus.PAUSED:
+                                                <span class="badge bg-warning-subtle text-dark border border-warning px-2 py-1" style="border-radius: 6px;">
+                                                    <i class="bi bi-pause-circle me-1"></i>Tạm dừng
+                                                </span>
+                                                break;
+                                            case RequisitionStatus.CLOSED:
+                                                <span class="badge bg-secondary-subtle text-secondary border border-secondary px-2 py-1" style="border-radius: 6px;">
+                                                    <i class="bi bi-lock me-1"></i>Đã đóng
+                                                </span>
+                                                break;
+                                            case RequisitionStatus.CANCELLED:
+                                                <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle px-2 py-1" style="border-radius: 6px;">
+                                                    <i class="bi bi-x-circle me-1"></i>Đã hủy
+                                                </span>
+                                                break;
                                             default:
                                                 <span class="badge bg-secondary-subtle text-secondary px-2 py-1" style="border-radius: 6px;">
                                                     @item.Status
@@ -340,6 +376,48 @@
                                                     <i class="bi bi-pencil"></i>
                                                 </a>
                                             }
+
+                                            @* Nút thao tác Quản lý trạng thái Tạm dừng / Đóng / Hủy cho HR Manager (SCRUM-27) *@
+                                            @if (User.IsInRole(Ats.Web.Constants.UserRoles.HRManager) || User.IsInRole("Trưởng phòng nhân sự"))
+                                            {
+                                                @if (item.Status != RequisitionStatus.CLOSED && item.Status != RequisitionStatus.CANCELLED)
+                                                {
+                                                    <div class="dropdown d-inline-block">
+                                                        <button type="button" 
+                                                                class="btn btn-sm btn-outline-danger px-2 py-1 dropdown-toggle" 
+                                                                data-bs-toggle="dropdown" 
+                                                                title="Quản lý trạng thái (HR Manager)" 
+                                                                style="border-radius: 6px;">
+                                                            <i class="bi bi-sliders2-vertical"></i>
+                                                        </button>
+                                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 8px; font-size: 0.85rem;">
+                                                            <li><h6 class="dropdown-header text-muted" style="font-size: 0.75rem;">Trạng thái tuyển dụng</h6></li>
+                                                            @if (item.Status != RequisitionStatus.PAUSED)
+                                                            {
+                                                                <li>
+                                                                    <a class="dropdown-item py-2 text-warning open-status-modal-btn" href="javascript:void(0)"
+                                                                       data-requisition-id="@item.Id" data-requisition-code="@item.Code" data-target-status="PAUSED">
+                                                                        <i class="bi bi-pause-circle me-2"></i>Tạm dừng tuyển
+                                                                    </a>
+                                                                </li>
+                                                            }
+                                                            <li>
+                                                                <a class="dropdown-item py-2 text-secondary open-status-modal-btn" href="javascript:void(0)"
+                                                                   data-requisition-id="@item.Id" data-requisition-code="@item.Code" data-target-status="CLOSED">
+                                                                    <i class="bi bi-lock-fill me-2"></i>Đóng yêu cầu
+                                                                </a>
+                                                            </li>
+                                                            <li><hr class="dropdown-divider my-1"></li>
+                                                            <li>
+                                                                <a class="dropdown-item py-2 text-danger open-status-modal-btn" href="javascript:void(0)"
+                                                                   data-requisition-id="@item.Id" data-requisition-code="@item.Code" data-target-status="CANCELLED">
+                                                                    <i class="bi bi-x-circle-fill me-2"></i>Hủy yêu cầu
+                                                                </a>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                }
+                                            }
                                         </div>
                                     </td>
                                 </tr>
@@ -354,3 +432,7 @@
 
 <!-- Modal Ra quyết định phê duyệt -->
 @await Html.PartialAsync("_ApprovalDecisionModalPartial", new Ats.Web.Models.ViewModels.Requisitions.RequisitionApprovalDecisionInputModel())
+
+<!-- Modal Quản lý trạng thái: Tạm dừng, Đóng, Hủy (SCRUM-27) -->
+@await Html.PartialAsync("_RequisitionStatusChangeModalPartial", new Ats.Web.Models.ViewModels.Requisitions.RequisitionStatusChangeInputModel())
+

@@ -39,6 +39,21 @@
                             <i class="bi bi-x-circle-fill me-1"></i>Từ chối
                         </span>
                         break;
+                    case RequisitionStatus.PAUSED:
+                        <span class="badge bg-warning-subtle text-dark border border-warning px-3 py-2 fs-6" style="border-radius: 8px;">
+                            <i class="bi bi-pause-circle-fill me-1"></i>Tạm dừng tuyển
+                        </span>
+                        break;
+                    case RequisitionStatus.CLOSED:
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary px-3 py-2 fs-6" style="border-radius: 8px;">
+                            <i class="bi bi-lock-fill me-1"></i>Đã đóng tuyển
+                        </span>
+                        break;
+                    case RequisitionStatus.CANCELLED:
+                        <span class="badge bg-danger-subtle text-danger-emphasis border border-danger px-3 py-2 fs-6" style="border-radius: 8px;">
+                            <i class="bi bi-x-circle-fill me-1"></i>Đã hủy yêu cầu
+                        </span>
+                        break;
                     default:
                         <span class="badge bg-secondary-subtle text-secondary px-3 py-2 fs-6" style="border-radius: 8px;">
                             @Model.Status
@@ -59,6 +74,58 @@
                     <i class="bi bi-pencil-square"></i>
                     <span>Chỉnh sửa hồ sơ</span>
                 </a>
+            }
+
+            @* Nút quản lý trạng thái dành riêng cho HR Manager (SCRUM-27) *@
+            @if (User.IsInRole(Ats.Web.Constants.UserRoles.HRManager) || User.IsInRole("Trưởng phòng nhân sự"))
+            {
+                @if (Model.Status != RequisitionStatus.CLOSED && Model.Status != RequisitionStatus.CANCELLED)
+                {
+                    <div class="dropdown">
+                        <button class="btn btn-outline-danger px-3 py-2 fw-medium d-flex align-items-center gap-1 shadow-sm dropdown-toggle" 
+                                type="button" id="statusChangeDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 8px;">
+                            <i class="bi bi-sliders2-vertical"></i>
+                            <span>Quản lý trạng thái</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="statusChangeDropdown" style="border-radius: 10px; font-size: 0.875rem;">
+                            <li><h6 class="dropdown-header text-uppercase text-muted" style="font-size: 0.75rem;">Thao tác HR Manager</h6></li>
+                            @if (Model.Status != RequisitionStatus.PAUSED)
+                            {
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-warning open-status-modal-btn" 
+                                       href="javascript:void(0)" 
+                                       data-requisition-id="@Model.Id" 
+                                       data-requisition-code="@Model.Code" 
+                                       data-target-status="PAUSED">
+                                        <i class="bi bi-pause-circle fs-6"></i>
+                                        <span>Tạm dừng tuyển dụng</span>
+                                    </a>
+                                </li>
+                            }
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-secondary open-status-modal-btn" 
+                                   href="javascript:void(0)" 
+                                   data-requisition-id="@Model.Id" 
+                                   data-requisition-code="@Model.Code" 
+                                   data-target-status="CLOSED">
+                                    <i class="bi bi-lock-fill fs-6"></i>
+                                    <span>Đóng yêu cầu tuyển dụng</span>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger open-status-modal-btn" 
+                                   href="javascript:void(0)" 
+                                   data-requisition-id="@Model.Id" 
+                                   data-requisition-code="@Model.Code" 
+                                   data-target-status="CANCELLED">
+                                    <i class="bi bi-x-circle-fill fs-6"></i>
+                                    <span>Hủy yêu cầu tuyển dụng</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                }
             }
         </div>
     </div>
@@ -606,3 +673,7 @@
         });
     });
 </script>
+
+<!-- Modal Quản lý trạng thái: Tạm dừng, Đóng, Hủy (SCRUM-27) -->
+@await Html.PartialAsync("_RequisitionStatusChangeModalPartial", new Ats.Web.Models.ViewModels.Requisitions.RequisitionStatusChangeInputModel())
+

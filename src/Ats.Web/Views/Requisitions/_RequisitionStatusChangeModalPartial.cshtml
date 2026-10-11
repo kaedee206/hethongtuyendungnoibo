@@ -1,0 +1,431 @@
+@model Ats.Web.Models.ViewModels.Requisitions.RequisitionStatusChangeInputModel
+@using Ats.Web.Models.Enums
+
+<!-- Modal Thay đổi trạng thái yêu cầu tuyển dụng: Tạm dừng, Đóng, Hủy (SCRUM-27) -->
+<div class="modal fade" id="statusChangeModal" tabindex="-1" aria-labelledby="statusChangeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content shadow-lg border-0" style="border-radius: 14px; overflow: hidden;">
+            <div class="modal-header border-bottom py-3 px-4 bg-light">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle" id="statusModalHeaderIcon" style="width: 40px; height: 40px; background-color: #FEF3C7; color: #D97706;">
+                        <i class="bi bi-pause-circle fs-5"></i>
+                    </span>
+                    <div>
+                        <h6 class="modal-title fw-bold text-dark mb-0" id="statusChangeModalLabel">Quản lý trạng thái Yêu cầu tuyển dụng</h6>
+                        <small class="text-muted" id="statusModalSubtitle">Mã yêu cầu: <span class="fw-semibold text-primary font-monospace" id="statusModalRequisitionCode">—</span></small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+
+            <form asp-controller="Requisitions" asp-action="ChangeStatus" method="post" id="statusChangeForm" novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="RequisitionId" id="statusChangeRequisitionId" />
+                <input type="hidden" asp-for="TargetStatus" id="statusChangeTargetStatus" value="@((int)RequisitionStatus.PAUSED)" />
+
+                <div class="modal-body p-4">
+                    <!-- Action Choice Cards: PAUSED, CLOSED, CANCELLED -->
+                    <label class="form-label fw-semibold text-secondary small text-uppercase mb-2">
+                        1. Chọn trạng thái cần chuyển sang <span class="text-danger">*</span>
+                    </label>
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <input type="radio" class="btn-check" name="statusOptionRadio" id="statusOptPaused" value="@((int)RequisitionStatus.PAUSED)" checked autocomplete="off">
+                            <label class="btn btn-outline-warning w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-1 rounded-3 h-100 status-option-label" for="statusOptPaused" style="border-radius: 10px;">
+                                <i class="bi bi-pause-circle-fill fs-3 text-warning"></i>
+                                <span class="fw-bold small text-dark mt-1">Tạm dừng tuyển</span>
+                                <span class="text-muted" style="font-size: 0.7rem;">PAUSED</span>
+                            </label>
+                        </div>
+                        <div class="col-4">
+                            <input type="radio" class="btn-check" name="statusOptionRadio" id="statusOptClosed" value="@((int)RequisitionStatus.CLOSED)" autocomplete="off">
+                            <label class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-1 rounded-3 h-100 status-option-label" for="statusOptClosed" style="border-radius: 10px;">
+                                <i class="bi bi-lock-fill fs-3 text-secondary"></i>
+                                <span class="fw-bold small text-dark mt-1">Đóng yêu cầu</span>
+                                <span class="text-muted" style="font-size: 0.7rem;">CLOSED</span>
+                            </label>
+                        </div>
+                        <div class="col-4">
+                            <input type="radio" class="btn-check" name="statusOptionRadio" id="statusOptCancelled" value="@((int)RequisitionStatus.CANCELLED)" autocomplete="off">
+                            <label class="btn btn-outline-danger w-100 py-3 d-flex flex-column align-items-center justify-content-center gap-1 rounded-3 h-100 status-option-label" for="statusOptCancelled" style="border-radius: 10px;">
+                                <i class="bi bi-x-circle-fill fs-3 text-danger"></i>
+                                <span class="fw-bold small text-dark mt-1">Hủy yêu cầu</span>
+                                <span class="text-muted" style="font-size: 0.7rem;">CANCELLED</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Action Consequence Explainer -->
+                    <div id="statusActionExplainer" class="alert alert-warning d-flex align-items-start gap-2 py-2 px-3 mb-3 small border-0" style="border-radius: 8px; background-color: #FFFBEB;">
+                        <i class="bi bi-info-circle-fill mt-1 text-warning fs-6"></i>
+                        <span id="statusActionExplainerText" class="text-dark">
+                            <strong>Tạm dừng (PAUSED):</strong> Ngừng nhận hồ sơ mới và tạm gỡ tin tuyển dụng khỏi cổng. Kế hoạch có thể mở lại khi bộ phận sẵn sàng.
+                        </span>
+                    </div>
+
+                    <!-- Pipeline Check & Warnings Section (SCRUM-27 Requirement 3 & 4) -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary small text-uppercase mb-2">
+                            2. Tình trạng Pipeline & Tin tuyển dụng liên quan
+                        </label>
+                        
+                        <!-- Loading skeleton -->
+                        <div id="pipelineLoadingIndicator" class="text-center py-3 bg-light rounded-3 d-none">
+                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                            <span class="text-muted small">Đang kiểm tra pipeline ứng viên và các tin đăng liên quan...</span>
+                        </div>
+
+                        <!-- Pipeline Warning Container -->
+                        <div id="pipelineWarningContainer" class="p-3 rounded-3" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+                            <!-- In-Progress Candidates Badge & Summary -->
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2 pb-2 border-bottom">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 fs-6" id="inProgressCandidatesCountBadge">
+                                        <i class="bi bi-people-fill me-1"></i>0 ứng viên
+                                    </span>
+                                    <span class="fw-semibold text-dark small" id="pipelineSummaryTitle">đang trong pipeline dở dang</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-1" id="pipelineStageBreakdown">
+                                    <span class="badge bg-secondary-subtle text-secondary small" id="screeningCountBadge" title="Đang ở vòng sơ loại">Sơ loại: 0</span>
+                                    <span class="badge bg-info-subtle text-info-emphasis small" id="interviewCountBadge" title="Đang ở vòng phỏng vấn">Phỏng vấn: 0</span>
+                                    <span class="badge bg-success-subtle text-success small" id="offerCountBadge" title="Đang ở vòng offer">Offer: 0</span>
+                                </div>
+                            </div>
+
+                            <!-- Job Postings Unpublishing Notice -->
+                            <div class="d-flex align-items-center gap-2 text-muted small mb-2" id="jobPostingsNotice">
+                                <i class="bi bi-megaphone-fill text-primary"></i>
+                                <span>Tin tuyển dụng liên quan: <strong class="text-dark" id="activePostingsCountDisplay">0 tin đăng</strong> đang mở trên cổng việc làm sẽ <span class="text-danger fw-semibold">tự động được gỡ bỏ</span>.</span>
+                            </div>
+
+                            <!-- Detailed Warning Box if has in-progress candidates -->
+                            <div id="inProgressWarningBox" class="alert alert-danger d-none py-2 px-3 mb-2 small border-0" style="border-radius: 8px;">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                <span id="inProgressWarningText">Có ứng viên đang phỏng vấn/xét duyệt! Vui lòng lưu ý liên hệ thông báo cho ứng viên nếu cần trước khi kết thúc tuyển dụng.</span>
+                            </div>
+
+                            <!-- Sample candidates list (collapsible) -->
+                            <div id="candidatesListCollapseContainer" class="d-none mt-2">
+                                <a class="text-decoration-none small text-primary fw-medium" data-bs-toggle="collapse" href="#candidatesListCollapse" role="button" aria-expanded="false">
+                                    <i class="bi bi-chevron-down me-1"></i>Xem danh sách ứng viên dở dang
+                                </a>
+                                <div class="collapse mt-2" id="candidatesListCollapse">
+                                    <div class="table-responsive border rounded-2 bg-white" style="max-height: 160px; overflow-y: auto;">
+                                        <table class="table table-sm table-hover mb-0" style="font-size: 0.8rem;">
+                                            <thead class="table-light sticky-top">
+                                                <tr>
+                                                    <th>Họ tên</th>
+                                                    <th>Email</th>
+                                                    <th>Giai đoạn</th>
+                                                    <th>Ngày ứng tuyển</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="candidatesTableBody">
+                                                <!-- Dynamic rows from AJAX -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mandatory Checkbox if has in-progress candidates -->
+                            <div class="form-check mt-3 pt-2 border-top d-none" id="confirmCheckboxWrapper">
+                                <input class="form-check-input" type="checkbox" asp-for="ConfirmInProgressCandidates" id="confirmInProgressCandidates" required>
+                                <label class="form-check-label small fw-semibold text-danger" for="confirmInProgressCandidates">
+                                    Tôi đã kiểm tra danh sách ứng viên dở dang và đồng ý tiếp tục chuyển trạng thái yêu cầu tuyển dụng này. <span class="text-danger">*</span>
+                                </label>
+                                <div class="invalid-feedback" id="confirmCheckboxError">
+                                    Bạn bắt buộc phải xác nhận đồng ý xử lý ứng viên dở dang trước khi tiếp tục.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mandatory Reason Input Box (SCRUM-27 Requirement 2) -->
+                    <div class="mb-2">
+                        <label asp-for="Reason" class="form-label fw-semibold text-dark small">
+                            3. Lý do thay đổi trạng thái <span class="text-danger">(*)</span>
+                        </label>
+                        <textarea asp-for="Reason" id="statusChangeReason" rows="3" class="form-control" 
+                                  placeholder="Nhập chi tiết lý do (ví dụ: Thay đổi cơ cấu nhân sự, hoãn ngân sách quý 4, đã tuyển đủ qua nguồn nội bộ... tối thiểu 5 ký tự)" 
+                                  style="border-radius: 8px; resize: vertical;" required minlength="5" maxlength="1000"></textarea>
+                        <span asp-validation-for="Reason" class="text-danger small"></span>
+                        <div class="invalid-feedback" id="reasonClientError">
+                            Lý do là bắt buộc và phải có ít nhất 5 ký tự để lưu vết kiểm toán (Audit Log).
+                        </div>
+                        <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">
+                            <i class="bi bi-shield-lock-fill text-secondary me-1"></i>
+                            Lý do này bắt buộc phải nhập và sẽ được ghi vết vĩnh viễn vào hệ thống Audit Log cùng thời điểm gỡ tin tuyển dụng.
+                        </small>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-top py-2 px-4 bg-light d-flex justify-content-between align-items-center">
+                    <small class="text-muted" style="font-size: 0.75rem;">
+                        <i class="bi bi-person-check-fill me-1"></i>Thực hiện bởi: <strong>Trưởng phòng Nhân sự</strong>
+                    </small>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary px-3 py-2" data-bs-dismiss="modal" style="border-radius: 8px;">
+                            Đóng
+                        </button>
+                        <button type="submit" class="btn btn-warning px-4 py-2 fw-semibold shadow-sm d-flex align-items-center gap-1" id="submitStatusChangeBtn" style="border-radius: 8px;">
+                            <i class="bi bi-check2-circle me-1" id="submitStatusBtnIcon"></i>
+                            <span id="submitStatusBtnText">Xác nhận Tạm dừng</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const modalEl = document.getElementById('statusChangeModal');
+        if (!modalEl) return;
+
+        const form = document.getElementById('statusChangeForm');
+        const requisitionIdInput = document.getElementById('statusChangeRequisitionId');
+        const targetStatusInput = document.getElementById('statusChangeTargetStatus');
+        const reasonInput = document.getElementById('statusChangeReason');
+        const confirmCheckbox = document.getElementById('confirmInProgressCandidates');
+        const confirmCheckboxWrapper = document.getElementById('confirmCheckboxWrapper');
+        const confirmCheckboxError = document.getElementById('confirmCheckboxError');
+        const reasonClientError = document.getElementById('reasonClientError');
+        const submitBtn = document.getElementById('submitStatusChangeBtn');
+        const submitBtnText = document.getElementById('submitStatusBtnText');
+        const submitBtnIcon = document.getElementById('submitStatusBtnIcon');
+        const modalSubtitleCode = document.getElementById('statusModalRequisitionCode');
+        const modalHeaderIcon = document.getElementById('statusModalHeaderIcon');
+        const explainerBox = document.getElementById('statusActionExplainer');
+        const explainerText = document.getElementById('statusActionExplainerText');
+
+        // Pipeline indicators
+        const pipelineLoadingIndicator = document.getElementById('pipelineLoadingIndicator');
+        const inProgressCountBadge = document.getElementById('inProgressCandidatesCountBadge');
+        const screeningBadge = document.getElementById('screeningCountBadge');
+        const interviewBadge = document.getElementById('interviewCountBadge');
+        const offerBadge = document.getElementById('offerCountBadge');
+        const activePostingsCountDisplay = document.getElementById('activePostingsCountDisplay');
+        const inProgressWarningBox = document.getElementById('inProgressWarningBox');
+        const inProgressWarningText = document.getElementById('inProgressWarningText');
+        const candidatesListCollapseContainer = document.getElementById('candidatesListCollapseContainer');
+        const candidatesTableBody = document.getElementById('candidatesTableBody');
+
+        let currentPipelineData = null;
+
+        // Triggers click event for all buttons opening this modal
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.open-status-modal-btn');
+            if (!btn) return;
+
+            e.preventDefault();
+            const reqId = btn.getAttribute('data-requisition-id');
+            const reqCode = btn.getAttribute('data-requisition-code');
+            const targetStatus = btn.getAttribute('data-target-status') || 'PAUSED';
+
+            openStatusModal(reqId, reqCode, targetStatus);
+        });
+
+        window.openRequisitionStatusModal = function (reqId, reqCode, targetStatus) {
+            openStatusModal(reqId, reqCode, targetStatus || 'PAUSED');
+        };
+
+        function openStatusModal(reqId, reqCode, targetStatus) {
+            requisitionIdInput.value = reqId;
+            modalSubtitleCode.textContent = reqCode || reqId;
+            reasonInput.value = '';
+            reasonInput.classList.remove('is-invalid');
+            confirmCheckbox.checked = false;
+            confirmCheckbox.classList.remove('is-invalid');
+
+            // Select radio button matching targetStatus
+            let statusVal = 8; // PAUSED
+            if (targetStatus === 'CLOSED' || targetStatus === '9') statusVal = 9;
+            else if (targetStatus === 'CANCELLED' || targetStatus === '6') statusVal = 6;
+
+            const radio = modalEl.querySelector(`input[name="statusOptionRadio"][value="${statusVal}"]`);
+            if (radio) {
+                radio.checked = true;
+            }
+            updateStatusAppearance(statusVal);
+
+            // Fetch pipeline check warning via AJAX (SCRUM-27 Requirement 3)
+            loadPipelineCheck(reqId);
+
+            const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modalInstance.show();
+        }
+
+        // Listen for radio selection changes
+        const radios = modalEl.querySelectorAll('input[name="statusOptionRadio"]');
+        radios.forEach(r => {
+            r.addEventListener('change', function () {
+                if (this.checked) {
+                    updateStatusAppearance(parseInt(this.value));
+                }
+            });
+        });
+
+        function updateStatusAppearance(statusVal) {
+            targetStatusInput.value = statusVal;
+
+            if (statusVal === 8) { // PAUSED
+                modalHeaderIcon.style.backgroundColor = '#FEF3C7';
+                modalHeaderIcon.style.color = '#D97706';
+                modalHeaderIcon.innerHTML = '<i class="bi bi-pause-circle fs-5"></i>';
+
+                explainerBox.className = 'alert alert-warning d-flex align-items-start gap-2 py-2 px-3 mb-3 small border-0';
+                explainerBox.style.backgroundColor = '#FFFBEB';
+                explainerText.innerHTML = '<strong>Tạm dừng tuyển (PAUSED):</strong> Ngừng nhận hồ sơ mới và tự động gỡ tin đăng tuyển khỏi cổng. Có thể mở lại bất cứ lúc nào khi kế hoạch tiếp tục.';
+
+                submitBtn.className = 'btn btn-warning px-4 py-2 fw-semibold shadow-sm text-dark d-flex align-items-center gap-1';
+                submitBtnText.textContent = 'Xác nhận Tạm dừng';
+                submitBtnIcon.className = 'bi bi-pause-circle me-1';
+            } else if (statusVal === 9) { // CLOSED
+                modalHeaderIcon.style.backgroundColor = '#E2E8F0';
+                modalHeaderIcon.style.color = '#475569';
+                modalHeaderIcon.innerHTML = '<i class="bi bi-lock-fill fs-5"></i>';
+
+                explainerBox.className = 'alert alert-secondary d-flex align-items-start gap-2 py-2 px-3 mb-3 small border-0';
+                explainerBox.style.backgroundColor = '#F1F5F9';
+                explainerText.innerHTML = '<strong>Đóng yêu cầu tuyển (CLOSED):</strong> Kết thúc hoàn toàn kỳ tuyển dụng; gỡ toàn bộ tin tuyển dụng ngoài cổng để tránh ứng viên nộp tiếp.';
+
+                submitBtn.className = 'btn btn-secondary px-4 py-2 fw-semibold shadow-sm text-white d-flex align-items-center gap-1';
+                submitBtnText.textContent = 'Xác nhận Đóng tuyển';
+                submitBtnIcon.className = 'bi bi-lock-fill me-1';
+            } else if (statusVal === 6) { // CANCELLED
+                modalHeaderIcon.style.backgroundColor = '#FEE2E2';
+                modalHeaderIcon.style.color = '#DC2626';
+                modalHeaderIcon.innerHTML = '<i class="bi bi-x-circle-fill fs-5"></i>';
+
+                explainerBox.className = 'alert alert-danger d-flex align-items-start gap-2 py-2 px-3 mb-3 small border-0';
+                explainerBox.style.backgroundColor = '#FEF2F2';
+                explainerText.innerHTML = '<strong>Hủy yêu cầu tuyển (CANCELLED):</strong> Yêu cầu bị hủy bỏ vĩnh viễn (do ngân sách/kế hoạch đổi); gỡ toàn bộ tin đăng tuyển liên quan.';
+
+                submitBtn.className = 'btn btn-danger px-4 py-2 fw-semibold shadow-sm text-white d-flex align-items-center gap-1';
+                submitBtnText.textContent = 'Xác nhận Hủy yêu cầu';
+                submitBtnIcon.className = 'bi bi-x-circle-fill me-1';
+            }
+        }
+
+        function loadPipelineCheck(reqId) {
+            pipelineLoadingIndicator.classList.remove('d-none');
+            candidatesTableBody.innerHTML = '';
+
+            fetch(`/yeu-cau-tuyen-dung/kiem-tra-pipeline/${reqId}`, {
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(res => {
+                pipelineLoadingIndicator.classList.add('d-none');
+                if (res.success && res.data) {
+                    currentPipelineData = res.data;
+                    renderPipelineWarning(res.data);
+                }
+            })
+            .catch(err => {
+                pipelineLoadingIndicator.classList.add('d-none');
+                console.error('Lỗi kiểm tra pipeline:', err);
+            });
+        }
+
+        function renderPipelineWarning(data) {
+            const inProgressTotal = data.totalInProgressCandidates || 0;
+            inProgressCountBadge.innerHTML = `<i class="bi bi-people-fill me-1"></i>${inProgressTotal} ứng viên`;
+
+            if (inProgressTotal > 0) {
+                inProgressCountBadge.className = 'badge bg-danger text-white px-2 py-1 fs-6';
+                inProgressWarningBox.classList.remove('d-none');
+                inProgressWarningText.textContent = data.warningMessage || `Có ${inProgressTotal} ứng viên đang trong quá trình xét tuyển dở dang!`;
+                confirmCheckboxWrapper.classList.remove('d-none');
+                confirmCheckbox.setAttribute('required', 'required');
+            } else {
+                inProgressCountBadge.className = 'badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fs-6';
+                inProgressWarningBox.classList.add('d-none');
+                confirmCheckboxWrapper.classList.add('d-none');
+                confirmCheckbox.removeAttribute('required');
+            }
+
+            screeningBadge.textContent = `Sơ loại: ${data.screeningCandidatesCount || 0}`;
+            interviewBadge.textContent = `Phỏng vấn: ${data.interviewingCandidatesCount || 0}`;
+            offerBadge.textContent = `Offer: ${data.offeringCandidatesCount || 0}`;
+
+            const activePostings = data.activeJobPostingsCount || 0;
+            activePostingsCountDisplay.textContent = `${activePostings} tin tuyển dụng`;
+
+            // Render candidates table preview
+            if (data.inProgressCandidates && data.inProgressCandidates.length > 0) {
+                candidatesListCollapseContainer.classList.remove('d-none');
+                let rowsHtml = '';
+                data.inProgressCandidates.forEach(c => {
+                    rowsHtml += `
+                        <tr>
+                            <td class="fw-medium">${escapeHtml(c.candidateFullName)}</td>
+                            <td class="text-muted">${escapeHtml(c.candidateEmail)}</td>
+                            <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.7rem;">${escapeHtml(c.currentStageName)}</span></td>
+                            <td class="text-muted small">${escapeHtml(c.appliedAtDisplay)}</td>
+                        </tr>
+                    `;
+                });
+                candidatesTableBody.innerHTML = rowsHtml;
+            } else {
+                candidatesListCollapseContainer.classList.add('d-none');
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '—';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // Form Validation on Submit
+        form.addEventListener('submit', function (e) {
+            let isValid = true;
+
+            const reasonVal = reasonInput.value ? reasonInput.value.trim() : '';
+            if (reasonVal.length < 5) {
+                reasonInput.classList.add('is-invalid');
+                reasonClientError.style.display = 'block';
+                isValid = false;
+            } else {
+                reasonInput.classList.remove('is-invalid');
+                reasonClientError.style.display = 'none';
+            }
+
+            if (currentPipelineData && currentPipelineData.totalInProgressCandidates > 0) {
+                if (!confirmCheckbox.checked) {
+                    confirmCheckbox.classList.add('is-invalid');
+                    confirmCheckboxError.style.display = 'block';
+                    isValid = false;
+                } else {
+                    confirmCheckbox.classList.remove('is-invalid');
+                    confirmCheckboxError.style.display = 'none';
+                }
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Đang xử lý...';
+        });
+
+        reasonInput.addEventListener('input', function () {
+            if (this.value && this.value.trim().length >= 5) {
+                this.classList.remove('is-invalid');
+                reasonClientError.style.display = 'none';
+            }
+        });
+
+        confirmCheckbox.addEventListener('change', function () {
+            if (this.checked) {
+                this.classList.remove('is-invalid');
+                confirmCheckboxError.style.display = 'none';
+            }
+        });
+    })();
+</script>

@@ -908,6 +908,33 @@ public class RequisitionService(
             currentWaitingDurationDisplay = "Đã dừng";
             currentStageSummary = "Yêu cầu tuyển dụng đã bị từ chối phê duyệt";
         }
+        else if (requisition.Status == RequisitionStatus.PAUSED)
+        {
+            currentApproverName = "Trưởng phòng Nhân sự";
+            currentApproverRole = "Đã tạm dừng tuyển";
+            currentApproverEmail = string.Empty;
+            currentPendingSinceDisplay = requisition.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+            currentWaitingDurationDisplay = "Tạm dừng";
+            currentStageSummary = "Yêu cầu tuyển dụng đang tạm dừng; các tin đăng liên quan đã được gỡ bỏ khỏi cổng";
+        }
+        else if (requisition.Status == RequisitionStatus.CLOSED)
+        {
+            currentApproverName = "Trưởng phòng Nhân sự";
+            currentApproverRole = "Đã đóng tuyển";
+            currentApproverEmail = string.Empty;
+            currentPendingSinceDisplay = requisition.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+            currentWaitingDurationDisplay = "Đã đóng";
+            currentStageSummary = "Yêu cầu tuyển dụng đã đóng; ngừng tiếp nhận ứng viên và gỡ toàn bộ tin đăng";
+        }
+        else if (requisition.Status == RequisitionStatus.CANCELLED)
+        {
+            currentApproverName = "Trưởng phòng Nhân sự";
+            currentApproverRole = "Đã hủy yêu cầu";
+            currentApproverEmail = string.Empty;
+            currentPendingSinceDisplay = requisition.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+            currentWaitingDurationDisplay = "Đã hủy";
+            currentStageSummary = "Yêu cầu tuyển dụng đã bị hủy bỏ; toàn bộ tin tuyển dụng liên quan đã bị gỡ";
+        }
 
         var steps = requisition.Approvals
             .Where(a => !a.IsDeleted)
@@ -1088,6 +1115,21 @@ public class RequisitionService(
                 approvalChainProgress = "Từ chối duyệt";
                 waitingDurationDisplay = "Đã dừng";
             }
+            else if (r.Status == RequisitionStatus.PAUSED)
+            {
+                approvalChainProgress = "Tạm dừng tuyển";
+                waitingDurationDisplay = "Tạm dừng";
+            }
+            else if (r.Status == RequisitionStatus.CLOSED)
+            {
+                approvalChainProgress = "Đã đóng tuyển";
+                waitingDurationDisplay = "Đã đóng";
+            }
+            else if (r.Status == RequisitionStatus.CANCELLED)
+            {
+                approvalChainProgress = "Đã hủy yêu cầu";
+                waitingDurationDisplay = "Đã hủy";
+            }
 
             var latestComment = r.Approvals
                 .Where(a => a.Status == ApprovalStatus.CHANGES_REQUESTED || a.Status == ApprovalStatus.REJECTED)
@@ -1135,6 +1177,9 @@ public class RequisitionService(
                 "approved" or "da-duyet" => r.Status == RequisitionStatus.APPROVED,
                 "changes-requested" or "yeu-cau-bo-sung" => r.Status == RequisitionStatus.CHANGES_REQUESTED,
                 "rejected" or "tu-choi" => r.Status == RequisitionStatus.REJECTED,
+                "paused" or "tam-dung" => r.Status == RequisitionStatus.PAUSED,
+                "closed" or "da-dong" => r.Status == RequisitionStatus.CLOSED,
+                "cancelled" or "da-huy" => r.Status == RequisitionStatus.CANCELLED,
                 _ => true
             };
 
@@ -1329,4 +1374,336 @@ public class RequisitionService(
 
         return System.Text.RegularExpressions.Regex.Replace(decoded, "<.*?>", string.Empty).Trim();
     }
+
+    /// <summary>
+    /// SCRUM-27: Kiểm tra ứng viên dở dang (đang phỏng vấn/xét duyệt) và các tin tuyển dụng liên quan trước khi đóng/tạm dừng/hủy.
+    /// </summary>
+    public async Task<RequisitionPipelineWarningViewModel> CheckPipelineBeforeStatusChangeAsync(
+        Guid requisitionId,
+        CancellationToken cancellationToken = default)
+    {
+        var requisition = await _dbContext.JobRequisitions
+            .Include(r => r.JobPosition)
+            .Include(r => r.Department)
+            .FirstOrDefaultAsync(r => r.Id == requisitionId && !r.IsDeleted, cancellationToken);
+
+        if (requisition == null)
+        {
+            return new RequisitionPipelineWarningViewModel
+            {
+                RequisitionId = requisitionId,
+                WarningMessage = "Không tìm thấy yêu cầu tuyển dụng tương ứng trong hệ thống."
+            };
+        }
+
+        // Lấy danh sách tin tuyển dụng liên quan
+        var relatedPostings = await _dbContext.JobPostings
+            .Where(p => p.RequisitionId == requisitionId && !p.IsDeleted)
+            .ToListAsync(cancellationToken);
+
+        var postingIds = relatedPostings.Select(p => p.Id).ToList();
+        var activePostings = relatedPostings
+            .Where(p => p.Status == JobPostingStatus.PUBLISHED)
+            .Select(p => p.Title)
+            .ToList();
+
+        // Lấy danh sách ứng viên đang dở dang (ApplicationStatus.IN_PROCESS)
+        var inProgressApplications = await _dbContext.Applications
+            .Include(a => a.Candidate)
+            .Include(a => a.CurrentStage)
+            .Include(a => a.JobPosting)
+            .Where(a => postingIds.Contains(a.JobPostingId) && a.Status == ApplicationStatus.IN_PROCESS && !a.IsDeleted)
+            .OrderByDescending(a => a.AppliedAt)
+            .ToListAsync(cancellationToken);
+
+        int screeningCount = 0;
+        int interviewCount = 0;
+        int offerCount = 0;
+        int otherCount = 0;
+
+        var candidateSummaries = new List<RequisitionCandidateSummaryDto>();
+
+        foreach (var app in inProgressApplications)
+        {
+            var stageName = app.CurrentStage?.Name?.Trim() ?? "Chưa phân giai đoạn";
+            var stageLower = stageName.ToLowerInvariant();
+
+            if (stageLower.Contains("screen") || stageLower.Contains("sơ loại") || stageLower.Contains("hồ sơ"))
+            {
+                screeningCount++;
+            }
+            else if (stageLower.Contains("interview") || stageLower.Contains("phỏng vấn"))
+            {
+                interviewCount++;
+            }
+            else if (stageLower.Contains("offer") || stageLower.Contains("đề nghị") || stageLower.Contains("thư mời"))
+            {
+                offerCount++;
+            }
+            else
+            {
+                otherCount++;
+            }
+
+            var candidateName = app.Candidate != null
+                ? $"{app.Candidate.LastName} {app.Candidate.FirstName}".Trim()
+                : "Ứng viên chưa rõ";
+            if (string.IsNullOrWhiteSpace(candidateName))
+            {
+                candidateName = "Ứng viên chưa rõ";
+            }
+
+            candidateSummaries.Add(new RequisitionCandidateSummaryDto
+            {
+                ApplicationId = app.Id,
+                CandidateFullName = candidateName,
+                CandidateEmail = app.Candidate?.Email ?? "—",
+                CurrentStageName = stageName,
+                JobPostingTitle = app.JobPosting?.Title,
+                AppliedAtDisplay = app.AppliedAt.HasValue
+                    ? app.AppliedAt.Value.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")
+                    : "—"
+            });
+        }
+
+        var warningMessage = string.Empty;
+        if (inProgressApplications.Count > 0)
+        {
+            warningMessage = $"Cảnh báo: Hiện có {inProgressApplications.Count} ứng viên đang trong pipeline tuyển dụng dở dang (Sơ loại: {screeningCount}, Phỏng vấn: {interviewCount}, Đề nghị: {offerCount}).";
+            if (activePostings.Count > 0)
+            {
+                warningMessage += $" Đồng thời {activePostings.Count} tin đăng tuyển dụng công khai sẽ được tự động gỡ bỏ khỏi cổng thông tin.";
+            }
+        }
+        else if (activePostings.Count > 0)
+        {
+            warningMessage = $"Lưu ý: Có {activePostings.Count} tin tuyển dụng công khai sẽ tự động được gỡ bỏ khỏi cổng khi bạn thay đổi trạng thái.";
+        }
+
+        return new RequisitionPipelineWarningViewModel
+        {
+            RequisitionId = requisition.Id,
+            RequisitionCode = requisition.Code,
+            PositionTitle = requisition.JobPosition?.Title ?? "Chưa xác định",
+            DepartmentName = requisition.Department?.Name ?? "Chưa phân bổ",
+            CurrentStatus = requisition.Status,
+            CurrentStatusDisplay = GetStatusDisplayName(requisition.Status),
+            TotalInProgressCandidates = inProgressApplications.Count,
+            ScreeningCandidatesCount = screeningCount,
+            InterviewingCandidatesCount = interviewCount,
+            OfferingCandidatesCount = offerCount,
+            OtherStagesCandidatesCount = otherCount,
+            ActiveJobPostingsCount = activePostings.Count,
+            ActiveJobPostingTitles = activePostings,
+            InProgressCandidates = candidateSummaries,
+            WarningMessage = warningMessage
+        };
+    }
+
+    /// <summary>
+    /// SCRUM-27: Thực hiện tạm dừng (PAUSED), đóng (CLOSED) hoặc hủy (CANCELLED) yêu cầu tuyển dụng.
+    /// Bắt buộc nhập lý do (lưu audit_logs) và tự động gỡ tin tuyển dụng liên quan trong cùng một Database Transaction.
+    /// Chỉ HR Manager mới có quyền thực thi.
+    /// </summary>
+    public async Task<RequisitionStatusChangeResultDto> ChangeRequisitionStatusAsync(
+        Guid requisitionId,
+        Guid currentUserId,
+        RequisitionStatusChangeInputModel input,
+        CancellationToken cancellationToken = default)
+    {
+        // 1. Kiểm tra Role Authorization: Chỉ HR Manager mới có quyền thao tác
+        var currentUser = await _dbContext.Users
+            .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.Id == currentUserId, cancellationToken);
+
+        if (currentUser == null)
+        {
+            return new RequisitionStatusChangeResultDto
+            {
+                Success = false,
+                Message = "Không xác định được danh tính người dùng thực hiện."
+            };
+        }
+
+        var userRole = currentUser.Role ?? string.Empty;
+        var isHrManager = userRole.Equals(UserRoles.HRManager, StringComparison.OrdinalIgnoreCase) ||
+                          userRole.Equals("Trưởng phòng nhân sự", StringComparison.OrdinalIgnoreCase) ||
+                          userRole.Equals("Trưởng phòng Nhân sự", StringComparison.OrdinalIgnoreCase) ||
+                          userRole.Equals("HR_MANAGER", StringComparison.OrdinalIgnoreCase) ||
+                          currentUser.UserRoles.Any(r => r.Role != null && (
+                              r.Role.Name == UserRoles.HRManager ||
+                              r.Role.Code == RoleCode.HR_MANAGER ||
+                              r.Role.Name == "Trưởng phòng nhân sự" ||
+                              r.Role.Name == "Trưởng phòng Nhân sự"));
+
+        if (!isHrManager)
+        {
+            return new RequisitionStatusChangeResultDto
+            {
+                Success = false,
+                Message = "Quyền truy cập bị từ chối: Chỉ Trưởng phòng Nhân sự (HR Manager) mới có quyền tạm dừng, đóng hoặc huỷ yêu cầu tuyển dụng."
+            };
+        }
+
+        // 2. Kiểm tra tính hợp lệ của trạng thái đích (PAUSED, CLOSED, CANCELLED)
+        if (input.TargetStatus != RequisitionStatus.PAUSED &&
+            input.TargetStatus != RequisitionStatus.CLOSED &&
+            input.TargetStatus != RequisitionStatus.CANCELLED)
+        {
+            return new RequisitionStatusChangeResultDto
+            {
+                Success = false,
+                Message = "Trạng thái không hợp lệ. Chỉ cho phép chuyển sang Tạm dừng (PAUSED), Đóng (CLOSED) hoặc Huỷ (CANCELLED)."
+            };
+        }
+
+        // 3. Kiểm tra tính hợp lệ của lý do
+        if (string.IsNullOrWhiteSpace(input.Reason) || input.Reason.Trim().Length < 5)
+        {
+            return new RequisitionStatusChangeResultDto
+            {
+                Success = false,
+                Message = "Lý do thay đổi trạng thái là bắt buộc và phải có ít nhất 5 ký tự."
+            };
+        }
+
+        // 4. Kiểm tra sự tồn tại của yêu cầu tuyển dụng
+        var requisition = await _dbContext.JobRequisitions
+            .Include(r => r.JobPosition)
+            .Include(r => r.Department)
+            .FirstOrDefaultAsync(r => r.Id == requisitionId && !r.IsDeleted, cancellationToken);
+
+        if (requisition == null)
+        {
+            return new RequisitionStatusChangeResultDto
+            {
+                Success = false,
+                Message = "Không tìm thấy yêu cầu tuyển dụng tương ứng trong hệ thống."
+            };
+        }
+
+        if (requisition.Status == input.TargetStatus)
+        {
+            return new RequisitionStatusChangeResultDto
+            {
+                Success = false,
+                Message = $"Yêu cầu tuyển dụng {requisition.Code} đã ở trạng thái {GetStatusDisplayName(input.TargetStatus)} rồi."
+            };
+        }
+
+        // 5. Kiểm tra pipeline ứng viên dở dang
+        var relatedPostings = await _dbContext.JobPostings
+            .Where(p => p.RequisitionId == requisitionId && !p.IsDeleted)
+            .ToListAsync(cancellationToken);
+
+        var postingIds = relatedPostings.Select(p => p.Id).ToList();
+
+        var inProgressCandidatesCount = await _dbContext.Applications
+            .CountAsync(a => postingIds.Contains(a.JobPostingId) && a.Status == ApplicationStatus.IN_PROCESS && !a.IsDeleted, cancellationToken);
+
+        // 6. Thực thi cập nhật trạng thái và gỡ tin tuyển dụng trong cùng một Database Transaction
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var oldStatus = requisition.Status;
+            var now = DateTimeOffset.UtcNow;
+            var trimmedReason = input.Reason.Trim();
+
+            // 6.1. Cập nhật trạng thái Requisition
+            requisition.Status = input.TargetStatus;
+            requisition.UpdatedAt = now;
+            requisition.UpdatedById = currentUserId;
+
+            // 6.2. Cập nhật các tin tuyển dụng liên quan thành gỡ bỏ/ẩn (CLOSED)
+            int closedPostingsCount = 0;
+            foreach (var posting in relatedPostings)
+            {
+                if (posting.Status == JobPostingStatus.PUBLISHED)
+                {
+                    posting.Status = JobPostingStatus.CLOSED;
+                    posting.UpdatedAt = now;
+                    posting.UpdatedById = currentUserId;
+                    closedPostingsCount++;
+                }
+            }
+
+            // 6.3. Lưu vết AuditLog bắt buộc (audit trail)
+            var auditLog = new AuditLog
+            {
+                Id = Guid.NewGuid(),
+                UserId = currentUserId,
+                Action = $"REQUISITION_STATUS_CHANGE_{input.TargetStatus}",
+                EntityName = "JobRequisition",
+                EntityId = requisition.Id.ToString(),
+                OldValues = JsonSerializer.Serialize(new
+                {
+                    Status = oldStatus.ToString(),
+                    StatusValue = (int)oldStatus,
+                    StatusDisplayName = GetStatusDisplayName(oldStatus)
+                }),
+                NewValues = JsonSerializer.Serialize(new
+                {
+                    Status = input.TargetStatus.ToString(),
+                    StatusValue = (int)input.TargetStatus,
+                    StatusDisplayName = GetStatusDisplayName(input.TargetStatus),
+                    Reason = trimmedReason,
+                    ClosedJobPostingsCount = closedPostingsCount,
+                    InProgressCandidatesCount = inProgressCandidatesCount,
+                    ConfirmedByHRManager = input.ConfirmInProgressCandidates,
+                    ActionByUser = currentUser.FullName,
+                    ActionByEmail = currentUser.Email,
+                    ActionAtUtc = now
+                }, new JsonSerializerOptions
+                {
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                }),
+                CreatedAt = now
+            };
+
+            await _dbContext.AuditLogs.AddAsync(auditLog, cancellationToken);
+
+            // 6.4. Lưu thay đổi và Commit Transaction
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            _logger.LogInformation("Trưởng phòng Nhân sự {HRManager} ({UserId}) đã chuyển trạng thái yêu cầu tuyển dụng {Code} từ {OldStatus} sang {NewStatus}. Lý do: {Reason}. Đã gỡ {ClosedPostings} tin đăng.",
+                currentUser.FullName, currentUserId, requisition.Code, oldStatus, input.TargetStatus, trimmedReason, closedPostingsCount);
+
+            return new RequisitionStatusChangeResultDto
+            {
+                Success = true,
+                Message = $"Đã chuyển trạng thái yêu cầu tuyển dụng {requisition.Code} sang {GetStatusDisplayName(input.TargetStatus)} thành công. Đã tự động gỡ {closedPostingsCount} tin tuyển dụng liên quan khỏi cổng.",
+                NewStatus = input.TargetStatus,
+                ClosedPostingsCount = closedPostingsCount,
+                InProgressCandidatesCount = inProgressCandidatesCount
+            };
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex, "Lỗi khi cập nhật trạng thái yêu cầu tuyển dụng {RequisitionId}", requisitionId);
+
+            return new RequisitionStatusChangeResultDto
+            {
+                Success = false,
+                Message = "Đã xảy ra lỗi trong quá trình cập nhật trạng thái yêu cầu tuyển dụng. Mọi thao tác đã được rollback an toàn."
+            };
+        }
+    }
+
+    private static string GetStatusDisplayName(RequisitionStatus status) => status switch
+    {
+        RequisitionStatus.DRAFT => "Bản nháp",
+        RequisitionStatus.PENDING_APPROVAL => "Chờ phê duyệt",
+        RequisitionStatus.APPROVED => "Đã phê duyệt",
+        RequisitionStatus.REJECTED => "Từ chối duyệt",
+        RequisitionStatus.IN_PROGRESS => "Đang tuyển dụng",
+        RequisitionStatus.FULFILLED => "Đã tuyển đủ",
+        RequisitionStatus.CANCELLED => "Đã hủy",
+        RequisitionStatus.CHANGES_REQUESTED => "Yêu cầu chỉnh sửa",
+        RequisitionStatus.PAUSED => "Tạm dừng tuyển",
+        RequisitionStatus.CLOSED => "Đã đóng tuyển",
+        _ => status.ToString()
+    };
 }

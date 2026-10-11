@@ -444,5 +444,95 @@ public class RequisitionsController(
             }
         });
     }
+
+    /// <summary>
+    /// GET: /yeu-cau-tuyen-dung/kiem-tra-pipeline/{id} hoặc /requisitions/check-pipeline-warning/{id}
+    /// SCRUM-27: Kiểm tra ứng viên dở dang và các tin đăng liên quan trước khi mở Modal thay đổi trạng thái.
+    /// </summary>
+    [HttpGet("kiem-tra-pipeline/{id:guid}")]
+    [HttpGet("check-pipeline-warning/{id:guid}")]
+    public async Task<IActionResult> CheckPipelineWarning(Guid id, CancellationToken cancellationToken = default)
+    {
+        var warning = await _requisitionService.CheckPipelineBeforeStatusChangeAsync(id, cancellationToken);
+
+        var isAjax = Request.Headers.Accept.Any(h => h?.Contains("application/json") == true) ||
+                     Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+
+        if (isAjax)
+        {
+            return Json(new { success = true, data = warning });
+        }
+
+        return PartialView("_RequisitionStatusChangeModalPartial", new RequisitionStatusChangeInputModel
+        {
+            RequisitionId = id
+        });
+    }
+
+    /// <summary>
+    /// POST: /yeu-cau-tuyen-dung/thay-doi-trang-thai hoặc /requisitions/change-status
+    /// SCRUM-27: Trưởng phòng Nhân sự tạm dừng (PAUSED), đóng (CLOSED) hoặc hủy (CANCELLED) yêu cầu tuyển dụng.
+    /// </summary>
+    [HttpPost("thay-doi-trang-thai")]
+    [HttpPost("change-status")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.HRManager},{UserRoles.Admin}")]
+    public async Task<IActionResult> ChangeStatus(
+        [FromForm] RequisitionStatusChangeInputModel model,
+        CancellationToken cancellationToken = default)
+    {
+        var isAjax = Request.Headers.Accept.Any(h => h?.Contains("application/json") == true) ||
+                     Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .ToList();
+
+            var errorMsg = string.Join("; ", errors);
+
+            if (isAjax)
+            {
+                return BadRequest(new { success = false, message = errorMsg, errors });
+            }
+
+            TempData["ErrorMessage"] = errorMsg;
+            return RedirectToAction(nameof(Details), new { id = model.RequisitionId });
+        }
+
+        var userId = GetCurrentUserId();
+        var result = await _requisitionService.ChangeRequisitionStatusAsync(model.RequisitionId, userId, model, cancellationToken);
+
+        if (isAjax)
+        {
+            if (result.Success)
+            {
+                return Ok(new
+                {
+                    success = true,
+                    message = result.Message,
+                    newStatus = result.NewStatus?.ToString(),
+                    closedPostingsCount = result.ClosedPostingsCount,
+                    inProgressCandidatesCount = result.InProgressCandidatesCount,
+                    redirectUrl = Url.Action(nameof(Details), new { id = model.RequisitionId })
+                });
+            }
+
+            return BadRequest(new { success = false, message = result.Message });
+        }
+
+        if (result.Success)
+        {
+            TempData["SuccessMessage"] = result.Message;
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Message;
+        }
+
+        return RedirectToAction(nameof(Details), new { id = model.RequisitionId });
+    }
 }
 
