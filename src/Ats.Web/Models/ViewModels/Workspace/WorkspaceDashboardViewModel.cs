@@ -11,6 +11,7 @@ public class WorkspaceDashboardViewModel
     public string UserFullName { get; set; } = string.Empty;
     public string UserEmail { get; set; } = string.Empty;
     public List<string> UserRolesList { get; set; } = new();
+    public string PrimaryRoleDisplayName { get; set; } = string.Empty;
 
     // Dành cho Phân hệ Ứng viên
     public CandidateProfileDto? CandidateProfile { get; set; }

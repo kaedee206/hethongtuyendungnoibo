@@ -80,14 +80,73 @@ header.sticky-top {
 }
 
 .ats-navbar {
-  height: var(--navbar-height, 56px);
   min-height: var(--navbar-height, 56px);
-  max-height: var(--navbar-height, 56px);
   padding-top: 0 !important;
   padding-bottom: 0 !important;
   background-color: #FFFFFF !important;
   border-bottom: 1px solid var(--border-default) !important;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+}
+
+@media (min-width: 992px) {
+  .ats-navbar {
+    height: var(--navbar-height, 56px);
+    max-height: var(--navbar-height, 56px);
+  }
+}
+
+@media (max-width: 991.98px) {
+  .ats-navbar {
+    height: auto !important;
+    max-height: none !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+
+  .ats-navbar > .container-fluid {
+    height: auto;
+  }
+
+  /* Drawer Container độc lập cho Menu Mobile (RULE.md Compliant) */
+  .ats-navbar .navbar-collapse {
+    background-color: #FFFFFF !important;
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-top: 0.75rem;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+    position: relative;
+    z-index: 1050;
+  }
+
+  .ats-navbar .navbar-nav {
+    width: 100%;
+    align-items: stretch !important;
+    gap: 0.4rem !important;
+  }
+
+  .ats-navbar .navbar-nav .nav-item {
+    width: 100%;
+  }
+
+  .ats-navbar .navbar-nav .ats-nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0.65rem 0.85rem !important;
+    width: 100%;
+    border-radius: 8px;
+  }
+
+  .ats-navbar .navbar-nav .btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.35rem;
+    padding: 0.65rem 1rem !important;
+    border-radius: 8px !important;
+  }
 }
 
 .ats-navbar > .container-fluid {

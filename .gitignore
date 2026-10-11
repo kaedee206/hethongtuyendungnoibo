@@ -719,3 +719,11 @@ scratch/
 .agents/
 .agent/
 
+# 3. Scripts thao tác cơ sở dữ liệu & chứa thông tin nhạy cảm (Connection strings, pass)
+*update_passwords*.sh
+update_passwords.sh
+deploy/update_passwords.sh
+*.sh.secret
+*.secret.sh
+
+

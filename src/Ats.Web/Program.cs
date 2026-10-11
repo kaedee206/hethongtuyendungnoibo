@@ -67,6 +67,7 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<IApprovalRuleService, ApprovalRuleService>();
 builder.Services.AddScoped<ISecurityAuditService, SecurityAuditService>();
+builder.Services.AddScoped<IRecruitmentCatalogService, RecruitmentCatalogService>();
 
 // Cấu hình Rate Limiting bảo vệ các endpoint nhạy cảm (OWASP A04 / A07)
 builder.Services.AddRateLimiter(options =>
@@ -264,10 +265,17 @@ using (var scope = app.Services.CreateScope())
     storageService.EnsureStorageDirectories();
 
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    // Fix pending migrations in EFHistory
+    try
+    {
+        await dbContext.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[DB_MIGRATE_WARN] {ex.Message}");
+    }
+
+    // Ensure database columns and custom tables
     try {
-        await dbContext.Database.ExecuteSqlRawAsync("INSERT INTO \"__EFMigrationsHistory\" (migration_id, product_version) VALUES ('20261002010046_FixMissingColumns', '9.0.0') ON CONFLICT DO NOTHING;");
-        await dbContext.Database.ExecuteSqlRawAsync("INSERT INTO \"__EFMigrationsHistory\" (migration_id, product_version) VALUES ('20261002163707_InitialCreate', '9.0.0') ON CONFLICT DO NOTHING;");
         
         // Add missing columns manually
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE departments ADD COLUMN IF NOT EXISTS level integer NOT NULL DEFAULT 1;");

@@ -1,10 +1,32 @@
+@using System.Security.Claims
 @using Ats.Web.Constants
 @model Ats.Web.Models.ViewModels.Jobs.JobDetailViewModel
 @{
     ViewData["Title"] = $"{Model.Job.Title} — Tuyển Dụng NoveraTech";
     ViewData["BodyClass"] = "job-detail-page";
     var job = Model.Job;
-    var canEditJob = User.Identity?.IsAuthenticated == true && (User.IsInRole(UserRoles.Recruiter) || User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Admin));
+
+    var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    _ = Guid.TryParse(currentUserIdStr, out var currentUserId);
+    var userDept = User.FindFirstValue("Department") ?? "";
+    var userEmail = User.FindFirstValue(ClaimTypes.Email) ?? "";
+
+    var isRecruiterOrHr = User.Identity?.IsAuthenticated == true && (
+        User.IsInRole(UserRoles.Recruiter) || 
+        User.IsInRole(UserRoles.HRManager) || 
+        User.IsInRole(UserRoles.Admin) || 
+        userDept.Equals("HR", StringComparison.OrdinalIgnoreCase) || 
+        userDept.Contains("Nhân sự", StringComparison.OrdinalIgnoreCase)
+    );
+
+    var isAdmin = User.Identity?.IsAuthenticated == true && (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager));
+    var isAuthor = !string.IsNullOrEmpty(userEmail) && (
+        string.Equals(userEmail, job.RecruiterEmail, StringComparison.OrdinalIgnoreCase) ||
+        string.IsNullOrEmpty(job.Id)
+    );
+
+    // CanEdit = (user.role == 'Recruiter' || user.department == 'HR') && (isAuthor || isAdmin)
+    var canEditJob = isRecruiterOrHr && (isAuthor || isAdmin);
 }
 
 @* ══════════════════════════════════════════════════════════
@@ -243,6 +265,12 @@
             <div class="col-12 col-lg-8">
                 <!-- Badges -->
                 <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                    @if (!string.IsNullOrWhiteSpace(job.Code))
+                    {
+                        <span class="badge font-monospace px-2.5 py-1 text-xs" style="background: #0F172A; color: #38BDF8; border-radius: var(--radius-badge); font-weight: 700; letter-spacing: 0.05em;" title="Mã định danh vị trí tuyển dụng chính thức">
+                            <i class="bi bi-upc-scan me-1"></i> REF: @job.Code
+                        </span>
+                    }
                     <span class="badge px-2.5 py-1 text-xs" style="background: #EFF6FF; color: #1D4ED8; border-radius: var(--radius-badge); font-weight: 600;">
                         <i class="bi bi-building me-1"></i> @job.Department
                     </span>
@@ -529,6 +557,16 @@
                 <h5 class="fw-bold mb-3 pb-2 border-bottom" style="font-size: 1rem; color: var(--color-text-main);">
                     <i class="bi bi-briefcase text-success me-1.5"></i> Thông tin tuyển dụng
                 </h5>
+                @if (!string.IsNullOrWhiteSpace(job.Code))
+                {
+                    <div class="info-row">
+                        <i class="bi bi-upc-scan text-primary"></i>
+                        <div>
+                            <div class="text-muted small">Mã định danh tuyển dụng:</div>
+                            <div class="fw-bold font-monospace text-primary">@job.Code</div>
+                        </div>
+                    </div>
+                }
                 <div class="info-row">
                     <i class="bi bi-currency-dollar"></i>
                     <div>
@@ -698,7 +736,17 @@
 
                             <div class="col-12">
                                 <label class="form-label small fw-bold text-dark">Địa điểm làm việc & Chế độ</label>
-                                <input type="text" name="WorkLocation" class="form-control" value="@job.WorkLocation" placeholder="VD: Hà Nội (Hybrid 2 ngày WFH)" style="border-radius: 8px;" />
+                                <input type="text" name="WorkLocation" list="locationOptionsList" class="form-control" value="@job.WorkLocation" placeholder="Chọn hoặc nhập địa điểm làm việc..." style="border-radius: 8px;" />
+                                <datalist id="locationOptionsList">
+                                    @if (ViewBag.Locations != null)
+                                    {
+                                        foreach (var loc in (List<SelectListItem>)ViewBag.Locations)
+                                        {
+                                            <option value="@loc.Value">@loc.Text</option>
+                                        }
+                                    }
+                                </datalist>
+                                <div class="form-text text-muted small">Gợi ý tự động từ Danh mục địa điểm dùng chung.</div>
                             </div>
 
                             <!-- 1. Tổng quan vị trí -->
@@ -764,12 +812,39 @@
             spinner.classList.remove('d-none');
 
             var formData = new FormData(form);
+            var jobId = form.querySelector('[name="JobId"]')?.value || '';
+            var payload = {
+                title: form.querySelector('[name="Title"]')?.value || '',
+                department: form.querySelector('[name="Department"]')?.value || '',
+                experienceLevel: form.querySelector('[name="ExperienceLevel"]')?.value || '',
+                salaryDisplay: form.querySelector('[name="SalaryDisplay"]')?.value || '',
+                deadline: form.querySelector('[name="Deadline"]')?.value || null,
+                workLocation: form.querySelector('[name="WorkLocation"]')?.value || '',
+                overview: form.querySelector('[name="Overview"]')?.value || '',
+                positionDescription: form.querySelector('[name="PositionDescription"]')?.value || '',
+                responsibilities: form.querySelector('[name="Responsibilities"]')?.value || '',
+                requirements: form.querySelector('[name="Requirements"]')?.value || '',
+                techStack: form.querySelector('[name="TechStack"]')?.value || '',
+                benefits: form.querySelector('[name="Benefits"]')?.value || ''
+            };
 
             try {
-                var res = await fetch('/Jobs/UpdatePosting', {
-                    method: 'POST',
-                    body: formData
+                // Ưu tiên gọi API chuẩn RESTful PATCH /api/jobs/{id}
+                var res = await fetch('/api/jobs/' + encodeURIComponent(jobId), {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
                 });
+
+                // Fallback nếu cần
+                if (res.status === 404 || res.status === 405) {
+                    res = await fetch('/Jobs/UpdatePosting', {
+                        method: 'POST',
+                        body: formData
+                    });
+                }
 
                 var data = await res.json();
                 if (data.success) {

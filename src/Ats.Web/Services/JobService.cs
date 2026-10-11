@@ -87,7 +87,8 @@ public class JobService : IJobService
 
         var job = allJobs.FirstOrDefault(j => 
             j.Id.Equals(normalized, StringComparison.OrdinalIgnoreCase) || 
-            j.Slug.Equals(normalized, StringComparison.OrdinalIgnoreCase));
+            j.Slug.Equals(normalized, StringComparison.OrdinalIgnoreCase) ||
+            (!string.IsNullOrWhiteSpace(j.Code) && j.Code.Equals(normalized, StringComparison.OrdinalIgnoreCase)));
 
         if (job == null) return null;
 
@@ -135,8 +136,15 @@ public class JobService : IJobService
 
         // 2. Fallback: Danh sách 12 vị trí việc làm chuyên sâu của NoveraTech
         var standardJobs = GetStandardNoveraTechJobs();
-        foreach (var sj in standardJobs)
+        for (int i = 0; i < standardJobs.Count; i++)
         {
+            var sj = standardJobs[i];
+            if (string.IsNullOrWhiteSpace(sj.Code))
+            {
+                var codeIdx = (i + 1).ToString("D2");
+                var catPrefix = sj.DepartmentCategory.ToUpper();
+                sj.Code = $"NT-2610-{catPrefix}{codeIdx}";
+            }
             if (string.IsNullOrWhiteSpace(sj.PositionDescription))
             {
                 sj.PositionDescription = $"Vị trí {sj.Title} thuộc {sj.Department}, đảm nhiệm vai trò chủ chốt trong việc hoạch định giải pháp kỹ thuật, triển khai công nghệ lõi và tối ưu hóa quy trình nghiệp vụ theo tiêu chuẩn quốc tế.";
@@ -199,9 +207,14 @@ public class JobService : IJobService
             ? postJobDesc 
             : (!string.IsNullOrWhiteSpace(resolvedPosDesc) ? resolvedPosDesc : "NoveraTech tuyển dụng nhân tài cùng phát triển các giải pháp công nghệ cao.");
 
+        var jobCode = !string.IsNullOrWhiteSpace(entity.Code) 
+            ? entity.Code 
+            : (!string.IsNullOrWhiteSpace(entity.Requisition?.Code) ? entity.Requisition.Code : "NT-" + entity.Id.ToString("N")[..6].ToUpper());
+
         return new JobItemViewModel
         {
             Id = entity.Id.ToString(),
+            Code = jobCode,
             Title = entity.Title,
             Slug = string.IsNullOrWhiteSpace(entity.Slug) ? entity.Id.ToString() : entity.Slug,
             Department = deptName,

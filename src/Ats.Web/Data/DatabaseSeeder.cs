@@ -42,28 +42,29 @@ public static class DatabaseSeeder
         var hrDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "HR") ?? await context.Departments.FirstAsync();
         var salesDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "SALES") ?? await context.Departments.FirstAsync();
 
-        // 3. Seed JobPositions (Standard base positions)
-        var initialPositions = new List<(string Code, string Title, Guid DeptId, string Level)>
+        // 3. Seed JobPositions (Standard base positions) with real salary benchmarks
+        var initialPositions = new List<(string Code, string Title, Guid DeptId, string Level, decimal MinSal, decimal MaxSal)>
         {
-            ("SWE-SENIOR", "Senior Software Engineer (.NET & React)", itDept.Id, "SENIOR"),
-            ("QA-MID", "Middle QA Engineer", itDept.Id, "MIDDLE"),
-            ("REC-SENIOR", "Senior Recruiter", hrDept.Id, "SENIOR"),
-            ("HR-MANAGER", "HR Manager", hrDept.Id, "LEAD"),
-            ("AI-ENG", "AI / LLM Application Engineer", itDept.Id, "SENIOR"),
-            ("PO-FINTECH", "Product Owner (Fintech & AI Platforms)", itDept.Id, "SENIOR"),
-            ("DEVOPS-SR", "Senior DevOps & Cloud Platform Engineer", itDept.Id, "SENIOR"),
-            ("LEAD-ARCH", "Lead Solution Architect", itDept.Id, "LEAD"),
-            ("QA-LEAD", "QA / Test Automation Lead", itDept.Id, "LEAD"),
-            ("MOB-SR", "Senior Mobile Engineer (Flutter & iOS)", itDept.Id, "SENIOR"),
-            ("DATA-ENG", "Senior Data Engineer & Lakehouse Architect", itDept.Id, "SENIOR"),
-            ("CYBER-SEC", "Cybersecurity & DevSecOps Specialist", itDept.Id, "SENIOR"),
-            ("UIUX-SR", "Senior UI/UX Product Designer", itDept.Id, "SENIOR"),
-            ("SALES-LEAD", "Technical Customer Success Lead", salesDept.Id, "LEAD")
+            ("SWE-SENIOR", "Senior Software Engineer (.NET & React)", itDept.Id, "SENIOR", 35000000m, 55000000m),
+            ("QA-MID", "Middle QA Engineer", itDept.Id, "MIDDLE", 18000000m, 28000000m),
+            ("REC-SENIOR", "Senior Recruiter", hrDept.Id, "SENIOR", 20000000m, 35000000m),
+            ("HR-MANAGER", "HR Manager", hrDept.Id, "LEAD", 40000000m, 65000000m),
+            ("AI-ENG", "AI / LLM Application Engineer", itDept.Id, "SENIOR", 38000000m, 60000000m),
+            ("PO-FINTECH", "Product Owner (Fintech & AI Platforms)", itDept.Id, "SENIOR", 35000000m, 55000000m),
+            ("DEVOPS-SR", "Senior DevOps & Cloud Platform Engineer", itDept.Id, "SENIOR", 35000000m, 52000000m),
+            ("LEAD-ARCH", "Lead Solution Architect", itDept.Id, "LEAD", 55000000m, 85000000m),
+            ("QA-LEAD", "QA / Test Automation Lead", itDept.Id, "LEAD", 40000000m, 60000000m),
+            ("MOB-SR", "Senior Mobile Engineer (Flutter & iOS)", itDept.Id, "SENIOR", 32000000m, 48000000m),
+            ("DATA-ENG", "Senior Data Engineer & Lakehouse Architect", itDept.Id, "SENIOR", 35000000m, 55000000m),
+            ("CYBER-SEC", "Cybersecurity & DevSecOps Specialist", itDept.Id, "SENIOR", 35000000m, 55000000m),
+            ("UIUX-SR", "Senior UI/UX Product Designer", itDept.Id, "SENIOR", 28000000m, 45000000m),
+            ("SALES-LEAD", "Technical Customer Success Lead", salesDept.Id, "LEAD", 35000000m, 60000000m)
         };
 
         foreach (var p in initialPositions)
         {
-            if (!await context.JobPositions.AnyAsync(jp => jp.Code == p.Code))
+            var existingPos = await context.JobPositions.FirstOrDefaultAsync(jp => jp.Code == p.Code);
+            if (existingPos == null)
             {
                 await context.JobPositions.AddAsync(new JobPosition
                 {
@@ -72,10 +73,17 @@ public static class DatabaseSeeder
                     Title = p.Title,
                     DepartmentId = p.DeptId,
                     JobLevel = p.Level,
+                    MinSalary = p.MinSal,
+                    MaxSalary = p.MaxSal,
                     IsActive = true,
                     CreatedAt = DateTimeOffset.UtcNow,
                     UpdatedAt = DateTimeOffset.UtcNow
                 });
+            }
+            else if (existingPos.MinSalary == null || existingPos.MaxSalary == null)
+            {
+                existingPos.MinSalary = p.MinSal;
+                existingPos.MaxSalary = p.MaxSal;
             }
         }
         await context.SaveChangesAsync();
@@ -140,6 +148,10 @@ public static class DatabaseSeeder
             ("admin@noveratech.vn", "Lường Minh Hiếu", "123456@@", RoleCode.ADMIN, "BOD", null),
             ("nam.dang@noveratech.digital", "Lường Minh Hiếu", "123456@@", RoleCode.ADMIN, "BOD", null),
             ("hieu.luong@noveratech.digital", "Lường Minh Hiếu", "123456@@", RoleCode.ADMIN, "BOD", null),
+            ("luong.hieu@noveratech.digital", "Lường Minh Hiếu", "123456@@", RoleCode.ADMIN, "BOD", null),
+            ("security@noveratech.digital", "Lường Minh Hiếu", "123456@@", RoleCode.ADMIN, "BOD", null),
+            ("duc.anh@noveratech.digital", "Nguyễn Đức Anh", "123456@@", RoleCode.ADMIN, "IT", null),
+            ("duc.hieu@noveratech.digital", "Nguyễn Đức Hiếu", "123456@@", RoleCode.RECRUITER, "HR", null),
 
             // [2] Người phê duyệt cấp cao (Approver / Ban Giám Đốc) - Trần Đức Minh
             ("bod@noveratech.vn", "Trần Đức Minh", "123456@@", RoleCode.APPROVER, "BOD", null),
@@ -239,6 +251,74 @@ public static class DatabaseSeeder
         }
         await context.SaveChangesAsync();
 
+        // Đồng bộ vai trò chính xác cho các tài khoản đặc thù (SSO & Nội bộ)
+        var luongHieuUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "luong.hieu@noveratech.digital");
+        if (luongHieuUser != null)
+        {
+            var targetRoles = new[] { RoleCode.ADMIN, RoleCode.HR_MANAGER, RoleCode.RECRUITER, RoleCode.HIRING_MANAGER, RoleCode.INTERVIEWER, RoleCode.APPROVER };
+            var existingRoleIds = await context.UserRoles.Where(ur => ur.UserId == luongHieuUser.Id).Select(ur => ur.RoleId).ToListAsync();
+            
+            // Đảm bảo không gắn quyền Ứng viên cho luong.hieu
+            if (rolesMap.TryGetValue(RoleCode.CANDIDATE, out var candidateRoleId))
+            {
+                var candidateUr = await context.UserRoles.FirstOrDefaultAsync(ur => ur.UserId == luongHieuUser.Id && ur.RoleId == candidateRoleId);
+                if (candidateUr != null)
+                {
+                    context.UserRoles.Remove(candidateUr);
+                }
+            }
+
+            foreach (var rCode in targetRoles)
+            {
+                if (rolesMap.TryGetValue(rCode, out var rId) && !existingRoleIds.Contains(rId))
+                {
+                    context.UserRoles.Add(new UserRole { UserId = luongHieuUser.Id, RoleId = rId });
+                }
+            }
+        }
+
+        var ducAnhUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "duc.anh@noveratech.digital");
+        if (ducAnhUser != null)
+        {
+            var targetRoles = new[] { RoleCode.ADMIN, RoleCode.RECRUITER };
+            var existingRoleIds = await context.UserRoles.Where(ur => ur.UserId == ducAnhUser.Id).Select(ur => ur.RoleId).ToListAsync();
+            foreach (var rCode in targetRoles)
+            {
+                if (rolesMap.TryGetValue(rCode, out var rId) && !existingRoleIds.Contains(rId))
+                {
+                    context.UserRoles.Add(new UserRole { UserId = ducAnhUser.Id, RoleId = rId });
+                }
+            }
+        }
+
+        var ducHieuUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "duc.hieu@noveratech.digital");
+        if (ducHieuUser != null)
+        {
+            var targetRoles = new[] { RoleCode.RECRUITER, RoleCode.INTERVIEWER };
+            var existingRoleIds = await context.UserRoles.Where(ur => ur.UserId == ducHieuUser.Id).Select(ur => ur.RoleId).ToListAsync();
+            foreach (var rCode in targetRoles)
+            {
+                if (rolesMap.TryGetValue(rCode, out var rId) && !existingRoleIds.Contains(rId))
+                {
+                    context.UserRoles.Add(new UserRole { UserId = ducHieuUser.Id, RoleId = rId });
+                }
+            }
+        }
+
+        var securityUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "security@noveratech.digital");
+        if (securityUser != null)
+        {
+            if (rolesMap.TryGetValue(RoleCode.ADMIN, out var adminRoleId))
+            {
+                var existingRoleIds = await context.UserRoles.Where(ur => ur.UserId == securityUser.Id).Select(ur => ur.RoleId).ToListAsync();
+                if (!existingRoleIds.Contains(adminRoleId))
+                {
+                    context.UserRoles.Add(new UserRole { UserId = securityUser.Id, RoleId = adminRoleId });
+                }
+            }
+        }
+        await context.SaveChangesAsync();
+
         // 7. Seed 12 JobRequisitions & JobPostings (đầy đủ dữ liệu tương tác thực tế)
         var standardJobs = JobService.GetStandardNoveraTechJobs();
         var itManager = await context.Users.FirstOrDefaultAsync(u => u.Email == "long.vu@noveratech.digital" || u.Email == "it@noveratech.vn")
@@ -291,6 +371,7 @@ public static class DatabaseSeeder
                 {
                     Id = Guid.NewGuid(),
                     RequisitionId = requisition.Id,
+                    Code = !string.IsNullOrWhiteSpace(stdJob.Code) ? stdJob.Code : $"NT-2610-JOB{jobIndex:D2}",
                     Title = stdJob.Title,
                     Slug = stdJob.Slug,
                     WorkLocation = stdJob.WorkLocation,
@@ -307,6 +388,11 @@ public static class DatabaseSeeder
                 };
                 await context.JobPostings.AddAsync(posting);
                 await context.SaveChangesAsync();
+            }
+            else if (string.IsNullOrWhiteSpace(posting.Code))
+            {
+                posting.Code = !string.IsNullOrWhiteSpace(stdJob.Code) ? stdJob.Code : $"NT-2610-JOB{jobIndex:D2}";
+                posting.UpdatedAt = DateTimeOffset.UtcNow;
             }
             jobIndex++;
         }

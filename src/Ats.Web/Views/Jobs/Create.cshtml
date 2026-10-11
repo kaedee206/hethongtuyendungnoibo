@@ -185,6 +185,26 @@
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="TechStack" id="hiddenTechStackInput" />
 
+        <!-- Khối Mẫu JD Chuẩn Ngành (Pre-fill Templates) -->
+        <div class="p-3 mb-4 bg-white border shadow-sm d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3" style="border-left: 4px solid var(--color-accent) !important; border-radius: 10px;">
+            <div>
+                <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-magic text-success fs-5"></i> Nạp nhanh bản mẫu tuyển dụng chuẩn ngành (Pre-fill JD Templates)
+                </div>
+                <div class="text-muted small">
+                    Tiết kiệm thời gian với các mẫu Job Description chuẩn NoveraTech, đã điền sẵn mức lương, trách nhiệm và Tech Stack thực tế.
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-sm btn-outline-success fw-semibold d-inline-flex align-items-center gap-1.5" onclick="applyJdTemplate('frontend')" style="border-radius: 6px;">
+                    <i class="bi bi-file-earmark-code"></i> Mẫu: Senior Frontend Engineer
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary fw-semibold d-inline-flex align-items-center gap-1.5" onclick="applyJdTemplate('backend')" style="border-radius: 6px;">
+                    <i class="bi bi-hdd-network"></i> Mẫu: Senior Backend Engineer
+                </button>
+            </div>
+        </div>
+
         <!-- Phần 1: Thông tin cơ bản (Overview & Vị trí) -->
         <div class="form-card">
             <div class="form-section-title">
@@ -234,17 +254,38 @@
                 </div>
 
                 <div class="col-12 col-md-6">
-                    <label asp-for="WorkLocation" class="form-label">Địa điểm làm việc & Hình thức</label>
-                    <input asp-for="WorkLocation" class="form-control" id="jobLocationInput" value="Hà Nội (Hybrid 2 ngày WFH)" required />
+                    <label asp-for="WorkLocation" class="form-label">Địa điểm làm việc & Văn phòng <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <select asp-for="WorkLocation" class="form-select" id="jobLocationSelect">
+                            <option value="">-- Chọn từ danh mục địa điểm chuẩn --</option>
+                            @if (ViewBag.Locations != null)
+                            {
+                                foreach (var loc in (List<SelectListItem>)ViewBag.Locations)
+                                {
+                                    <option value="@loc.Value" selected="@(loc.Selected || Model.WorkLocation == loc.Value)">@loc.Text</option>
+                                }
+                            }
+                        </select>
+                        <input type="text" asp-for="WorkLocation" class="form-control d-none" id="jobLocationInput" placeholder="Hoặc nhập địa điểm tùy biến..." />
+                        <button type="button" class="btn btn-outline-secondary" id="btnToggleCustomLocation" title="Chuyển đổi nhập tự do hoặc chọn danh mục">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                    </div>
+                    <div class="form-text text-muted small">Đồng bộ tự động từ Danh mục địa điểm tuyển dụng chung.</div>
                 </div>
                 <div class="col-12 col-md-6">
-                    <label asp-for="EmploymentType" class="form-label">Hình thức hợp đồng</label>
-                    <select asp-for="EmploymentType" class="form-select" id="jobTypeInput">
-                        <option value="Toàn thời gian (Full-time)" selected>Toàn thời gian (Full-time)</option>
-                        <option value="Bán thời gian (Part-time)">Bán thời gian (Part-time)</option>
-                        <option value="Hợp đồng chuyên gia (Contractor)">Hợp đồng chuyên gia (Contractor)</option>
-                        <option value="Thực tập sinh (Internship)">Thực tập sinh (Internship)</option>
+                    <label asp-for="EmploymentType" class="form-label">Hình thức làm việc / Hợp đồng <span class="text-danger">*</span></label>
+                    <select asp-for="EmploymentType" class="form-select" id="jobTypeInput" required>
+                        <option value="">-- Chọn hình thức làm việc --</option>
+                        @if (ViewBag.EmploymentTypes != null)
+                        {
+                            foreach (var et in (List<SelectListItem>)ViewBag.EmploymentTypes)
+                            {
+                                <option value="@et.Value" selected="@(et.Selected || Model.EmploymentType == et.Value)">@et.Text</option>
+                            }
+                        }
                     </select>
+                    <div class="form-text text-muted small">Đồng bộ tự động từ Danh mục hình thức làm việc chung.</div>
                 </div>
             </div>
         </div>
@@ -628,6 +669,76 @@ Du lịch nghỉ dưỡng hàng năm chuẩn resort 5 sao, teambuilding sôi đ�
             modal.show();
         }
 
+        function applyJdTemplate(type) {
+            if (type === 'frontend') {
+                document.getElementById('jobTitleInput').value = 'Senior Frontend Engineer (React 19 & TypeScript)';
+                document.getElementById('jobDeptInput').value = 'Công nghệ Thông tin (IT)';
+                document.getElementById('jobLevelInput').value = 'SENIOR';
+                document.getElementById('jobSalaryInput').value = '35 – 50 Triệu VNĐ';
+                document.getElementById('jobLocationInput').value = 'Hà Nội (Hybrid 2 ngày WFH)';
+                document.getElementById('jobTypeInput').value = 'Toàn thời gian (Full-time)';
+                document.getElementById('jobQuantityInput').value = '2';
+
+                document.getElementById('jobOverviewInput').value = 
+                    'NoveraTech đang tìm kiếm Senior Frontend Engineer tài năng tham gia phát triển thế hệ cổng thông tin và nền tảng trải nghiệm số tốc độ cao, xử lý dữ liệu realtime phục vụ hàng triệu người dùng.';
+
+                document.getElementById('jobPositionDescInput').value = 
+                    'Chịu trách nhiệm thiết kế kiến trúc giao diện người dùng (Frontend Architecture), tối ưu hóa trải nghiệm khách hàng (Core Web Vitals), xây dựng thư viện thành phần Design System và cố vấn kỹ thuật cho đội ngũ lập trình viên.';
+
+                document.getElementById('jobResponsibilitiesInput').value = 
+                    'Thiết kế và phát triển các ứng dụng web SPA/SSR quy mô lớn bằng React 19, TypeScript và Next.js.\n' +
+                    'Xây dựng và duy trì Design System nhất quán, tuân thủ tiêu chuẩn Accessibility (WCAG 2.2) và Responsive đa thiết bị.\n' +
+                    'Tối ưu hóa hiệu năng render, bundle size, giảm thiểu First Contentful Paint (FCP) và Cumulative Layout Shift (CLS).\n' +
+                    'Tích hợp các RESTful APIs và WebSockets bảo mật cao, xử lý trạng thái phức tạp với TanStack Query và Zustand.\n' +
+                    'Thực hiện viết kiểm thử tự động (Unit test với Vitest/Jest, E2E test với Playwright).\n' +
+                    'Tham gia review code chất lượng cao, chia sẻ kiến thức chuyên sâu và mentoring cho kỹ sư trẻ.';
+
+                document.getElementById('jobRequirementsInput').value = 
+                    'Tối thiểu 4+ năm kinh nghiệm phát triển web frontend chuyên sâu với React, TypeScript và hệ sinh thái JavaScript hiện đại.\n' +
+                    'Nắm vững React 19, Hooks, Concurrent Features, Server Components và cơ chế quản lý state.\n' +
+                    'Thành thạo CSS3/HTML5 ngữ nghĩa, Flexbox, CSS Grid, Tailwind CSS và Vanilla CSS tối ưu.\n' +
+                    'Hiểu biết sâu sắc về bảo mật Web (XSS, CSRF, CSP, CORS, Token Storage) và các nguyên lý Web Performance.\n' +
+                    'Kinh nghiệm sử dụng Git, Docker, CI/CD và quy trình Agile/Scrum chuyên nghiệp.\n' +
+                    'Khả năng tư duy phản biện, kỹ năng giải quyết vấn đề xuất sắc và tinh thần làm việc đồng đội cao.';
+
+                currentTags = ['React 19', 'TypeScript', 'Next.js', 'Tailwind CSS', 'TanStack Query', 'Vite', 'Playwright'];
+                renderTags();
+            } else if (type === 'backend') {
+                document.getElementById('jobTitleInput').value = 'Senior Backend Engineer (.NET 9 & Distributed Systems)';
+                document.getElementById('jobDeptInput').value = 'Công nghệ Thông tin (IT)';
+                document.getElementById('jobLevelInput').value = 'SENIOR';
+                document.getElementById('jobSalaryInput').value = '40 – 60 Triệu VNĐ';
+                document.getElementById('jobLocationInput').value = 'Hà Nội (Hybrid 2 ngày WFH)';
+                document.getElementById('jobTypeInput').value = 'Toàn thời gian (Full-time)';
+                document.getElementById('jobQuantityInput').value = '2';
+
+                document.getElementById('jobOverviewInput').value = 
+                    'NoveraTech tìm kiếm Senior Backend Engineer xuất sắc cùng đội ngũ Kỹ sư giải pháp thiết kế và vận hành các dịch vụ microservices phân tán chịu tải cao, đảm bảo độ sẵn sàng 99.99% và an toàn bảo mật cấp doanh nghiệp.';
+
+                document.getElementById('jobPositionDescInput').value = 
+                    'Chịu trách nhiệm thiết kế kiến trúc backend, phát triển các dịch vụ xử lý giao dịch lõi, xây dựng Data Pipeline và bảo vệ tài nguyên hệ thống thông qua các giải pháp định danh SSO/OAuth2/OIDC.';
+
+                document.getElementById('jobResponsibilitiesInput').value = 
+                    'Thiết kế và triển khai các dịch vụ Microservices hiệu năng cao sử dụng .NET 9 (C#) theo nguyên lý Clean Architecture và DDD.\n' +
+                    'Tối ưu hóa cơ sở dữ liệu quan hệ PostgreSQL (Index tuning, Partitioning, Execution Plan) và caching Redis phân tán.\n' +
+                    'Thiết kế các API RESTful/gRPC chuẩn OpenAPI 3.1, tích hợp Message Queue (RabbitMQ / Apache Kafka) cho kiến trúc Event-Driven.\n' +
+                    'Tích hợp và bảo vệ hệ thống xác thực định danh SSO (OpenID Connect / OAuth 2.0 / Authelia) an toàn tuyệt đối.\n' +
+                    'Viết bộ test tự động toàn diện (xUnit, Moq, Testcontainers) đạt độ bao phủ mã nguồn >= 80%.\n' +
+                    'Đóng gói ứng dụng vào Docker container và phối hợp triển khai an toàn lên cụm Kubernetes qua GitLab CI / GitHub Actions.';
+
+                document.getElementById('jobRequirementsInput').value = 
+                    'Tối thiểu 4+ năm kinh nghiệm lập trình backend thực chiến với .NET Core / .NET 8 / .NET 9 (C#).\n' +
+                    'Nắm vững lập trình bất đồng bộ (async/await, Task Parallel Library), Dependency Injection và Entity Framework Core 9.\n' +
+                    'Kinh nghiệm chuyên sâu với PostgreSQL, Redis, Kafka hoặc RabbitMQ trong các hệ thống phân tán chịu tải lớn.\n' +
+                    'Am hiểu sâu sắc về bảo mật thông tin (OWASP Top 10, JWT, OAuth 2.0, Data Encryption at Rest & in Transit).\n' +
+                    'Có kinh nghiệm vận hành Docker, Linux CLI và am hiểu hệ thống giám sát Prometheus / Grafana / OpenTelemetry.\n' +
+                    'Tinh thần trách nhiệm cao, tác phong làm việc chuẩn mực của Senior Engineer.';
+
+                currentTags = ['.NET 9', 'C#', 'PostgreSQL', 'Redis', 'Kafka', 'Clean Architecture', 'Docker', 'Kubernetes'];
+                renderTags();
+            }
+        }
+
         function submitJobPostingForm() {
             var form = document.getElementById('createJobForm');
             if (form.checkValidity()) {
@@ -639,6 +750,26 @@ Du lịch nghỉ dưỡng hàng năm chuẩn resort 5 sao, teambuilding sôi đ�
 
         document.addEventListener('DOMContentLoaded', function () {
             renderTags();
+
+            var btnToggleLoc = document.getElementById('btnToggleCustomLocation');
+            var selLoc = document.getElementById('jobLocationSelect');
+            var inpLoc = document.getElementById('jobLocationInput');
+            if (btnToggleLoc && selLoc && inpLoc) {
+                btnToggleLoc.addEventListener('click', function () {
+                    if (inpLoc.classList.contains('d-none')) {
+                        inpLoc.classList.remove('d-none');
+                        selLoc.classList.add('d-none');
+                        if (selLoc.value) inpLoc.value = selLoc.value;
+                        inpLoc.focus();
+                    } else {
+                        inpLoc.classList.add('d-none');
+                        selLoc.classList.remove('d-none');
+                    }
+                });
+                selLoc.addEventListener('change', function () {
+                    inpLoc.value = selLoc.value;
+                });
+            }
         });
     </script>
 }

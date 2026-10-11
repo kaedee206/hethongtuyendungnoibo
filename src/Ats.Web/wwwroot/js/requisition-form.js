@@ -205,7 +205,6 @@ function setupRequisitionForm(form) {
             maxSalaryInput.classList.add('is-valid');
         }
 
-        if (!isNaN(minVal) && !isNaN(maxVal)) {
             if (maxVal < minVal) {
                 maxSalaryInput.classList.add('is-invalid');
                 maxSalaryInput.classList.remove('is-valid');
@@ -218,6 +217,30 @@ function setupRequisitionForm(form) {
                 if (salaryErrorMsg) {
                     salaryErrorMsg.classList.add('d-none');
                 }
+
+                // Kiểm tra vượt trần dải lương chuẩn của Chức danh
+                const explanationContainer = form.querySelector('#salaryExplanationContainer');
+                const explanationInput = form.querySelector('#reqSalaryExplanation');
+                if (positionSelect && positionSelect.selectedIndex > 0) {
+                    const selectedOpt = positionSelect.options[positionSelect.selectedIndex];
+                    const posMaxSalary = parseFloat(selectedOpt.getAttribute('data-max-salary') || '0');
+                    if (posMaxSalary > 0 && maxVal > posMaxSalary) {
+                        if (explanationContainer) {
+                            explanationContainer.classList.remove('d-none');
+                        }
+                        if (explanationInput) {
+                            explanationInput.setAttribute('required', 'required');
+                        }
+                    } else {
+                        if (explanationContainer && (!explanationInput || !explanationInput.value.trim())) {
+                            explanationContainer.classList.add('d-none');
+                        }
+                        if (explanationInput) {
+                            explanationInput.removeAttribute('required');
+                        }
+                    }
+                }
+
                 return true;
             }
         }
@@ -464,6 +487,20 @@ function setupRequisitionForm(form) {
             } else {
                 reviewReasonDetail.textContent = '(Không có ghi chú mục tiêu bổ sung)';
                 reviewReasonDetail.classList.add('fst-italic', 'text-secondary');
+            }
+        }
+
+        // Giải trình vượt dải lương
+        const revExpWrapper = form.querySelector('#reviewSalaryExplanationWrapper');
+        const revExpText = form.querySelector('#reviewSalaryExplanation');
+        const expInput = form.querySelector('#reqSalaryExplanation');
+        if (revExpWrapper && revExpText) {
+            const expVal = expInput ? expInput.value.trim() : '';
+            if (expVal) {
+                revExpText.textContent = expVal;
+                revExpWrapper.classList.remove('d-none');
+            } else {
+                revExpWrapper.classList.add('d-none');
             }
         }
 

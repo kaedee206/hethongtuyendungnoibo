@@ -140,25 +140,6 @@
                      aria-hidden="@(activePanel == "signin" ? "false" : "true")">
 
                     <div class="w-full max-w-md mx-auto my-auto">
-                        @* Portal Switcher Header *@
-                        <div class="flex items-center justify-between mb-4 pb-2.5 border-b border-[#E2E8F0] dark:border-[#1E293B]">
-                            <div class="flex items-center gap-2">
-                                <a href="/gioi-thieu" class="inline-flex items-center gap-1 text-xs font-semibold text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors" title="Quay lại Trang chủ">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                                    </svg>
-                                    <span>Trang chủ</span>
-                                </a>
-                                <span class="text-[#CBD5E1] dark:text-[#334155]">·</span>
-                                <span class="text-xs font-mono tracking-widest uppercase text-[#0D5C4D] dark:text-[#10B981] font-semibold">
-                                    Cổng Ứng Viên
-                                </span>
-                            </div>
-                            <a asp-controller="Account" asp-action="StaffLogin"
-                               class="inline-flex items-center gap-1 text-xs font-medium text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] hover:underline underline-offset-4 transition-colors">
-                                <span>Nhân sự Nội bộ &rarr;</span>
-                            </a>
-                        </div>
 
                         <div class="mb-4">
                             <a href="/gioi-thieu" class="inline-block mb-3 group cursor-pointer" title="Quay lại Trang chủ NoveraTech">
@@ -189,24 +170,6 @@
                             @(activePanel == "signin" && Model.IsSuccess ? Model.StatusMessage : "")
                         </div>
 
-                        @* Google SSO Button *@
-                        <a href="/Account/ExternalLogin?provider=Google&userType=candidate&returnUrl=@Model.LoginInput?.ReturnUrl"
-                           class="flex items-center justify-center gap-2.5 w-full py-2 px-3 border border-[#E2E8F0] dark:border-[#1E293B] bg-white dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-xs font-medium rounded-none hover:border-[#0D5C4D] dark:hover:border-[#10B981] transition-colors mb-3">
-                            <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                            </svg>
-                            <span>Tiếp tục với Google</span>
-                        </a>
-
-                        @* Divider *@
-                        <div class="flex items-center gap-3 mb-3">
-                            <div class="flex-1 h-px bg-[#E2E8F0] dark:bg-[#1E293B]"></div>
-                            <span class="font-mono text-[9px] tracking-[0.2em] uppercase text-[#94A3B8] dark:text-[#475569] whitespace-nowrap">OR SIGN IN WITH EMAIL</span>
-                            <div class="flex-1 h-px bg-[#E2E8F0] dark:bg-[#1E293B]"></div>
-                        </div>
 
                         <form asp-controller="Account" asp-action="CandidateLogin" method="post" novalidate autocomplete="on" class="space-y-3">
                             @Html.AntiForgeryToken()
@@ -268,11 +231,27 @@
                                 </button>
                             </p>
 
-                            @* Switcher to Staff Portal *@
-                            <div class="pt-1.5 text-center border-t border-[#E2E8F0] dark:border-[#1E293B]">
+                            @* Cổng Chuyển Hướng Cán Bộ Nhân Sự Nội Bộ (Security Shield Icon / Tấm khiên bảo mật) *@
+                            <div class="mt-4 pt-3 border-t border-[#E2E8F0] dark:border-[#1E293B]">
                                 <a asp-controller="Account" asp-action="StaffLogin"
-                                   class="text-xs text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors">
-                                    Bạn là nhân sự NoveraTech? <span class="font-medium text-[#0D5C4D] dark:text-[#10B981] underline underline-offset-2">Cổng Nội bộ &rarr;</span>
+                                   class="flex items-center gap-3 p-2.5 bg-[#F8FAFC] dark:bg-[#0B0F17] border border-[#E2E8F0] dark:border-[#1E293B] hover:border-[#0D5C4D] dark:hover:border-[#10B981] transition-all group text-decoration-none shadow-sm"
+                                   style="border-radius: 8px;"
+                                   title="Chuyển đến Cổng Quản trị & Xác thực dành cho Cán bộ Nhân viên Nội bộ">
+                                    <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded bg-[#0D5C4D]/10 text-[#0D5C4D] dark:bg-[#10B981]/15 dark:text-[#10B981] group-hover:scale-105 transition-transform" style="border-radius: 6px;">
+                                        @* Icon Tấm Khiên Bảo Mật (Security Shield) *@
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0 text-left">
+                                        <div class="text-xs font-semibold text-[#0F172A] dark:text-[#F8FAFC] group-hover:text-[#0D5C4D] dark:group-hover:text-[#10B981] transition-colors flex items-center justify-between">
+                                            <span>Cổng Cán Bộ Nhân Sự Nội Bộ</span>
+                                            <span class="text-[10px] font-mono text-[#0D5C4D] dark:text-[#10B981] group-hover:translate-x-0.5 transition-transform">&rarr;</span>
+                                        </div>
+                                        <p class="text-[11px] text-[#64748B] dark:text-[#94A3B8] m-0 truncate">
+                                            Dành cho Recruiter, Hiring Manager, Approver (@@noveratech.digital)
+                                        </p>
+                                    </div>
                                 </a>
                             </div>
                         </form>
@@ -287,16 +266,6 @@
                      aria-hidden="@(activePanel == "signup" ? "false" : "true")">
 
                     <div class="w-full max-w-md mx-auto my-auto">
-                        @* Portal Switcher Header *@
-                        <div class="flex items-center justify-between mb-3 pb-2 border-b border-[#E2E8F0] dark:border-[#1E293B]">
-                            <span class="text-xs font-mono tracking-widest uppercase text-[#0D5C4D] dark:text-[#10B981] font-semibold">
-                                Cổng Ứng Viên
-                            </span>
-                            <a asp-controller="Account" asp-action="StaffLogin"
-                               class="inline-flex items-center gap-1 text-xs font-medium text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] hover:underline underline-offset-4 transition-colors">
-                                <span>Nhân sự Nội bộ &rarr;</span>
-                            </a>
-                        </div>
 
                         @{
                             var isSignupVerifyStep = activePanel == "signup" && Model.OtpStep == "verify";
@@ -321,26 +290,6 @@
                                 @(activePanel == "signup" && !isSignupVerifyStep && !Model.IsSuccess ? Model.StatusMessage : "")
                             </div>
 
-                            @* Google Sign Up Button *@
-                            <a href="/Account/ExternalLogin?provider=Google&userType=candidate&returnUrl=@Model.RegisterInput?.ReturnUrl"
-                               class="flex items-center justify-center gap-2.5 w-full py-2 px-3 border border-[#E2E8F0] dark:border-[#1E293B] bg-white dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-xs font-medium rounded-none hover:border-[#0D5C4D] dark:hover:border-[#10B981] transition-colors mb-2.5">
-                                <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                                </svg>
-                                <span>Đăng ký nhanh bằng Google</span>
-                            </a>
-
-                            @* Divider *@
-                            <div class="flex items-center gap-3 mb-2.5">
-                                <div class="flex-1 h-px bg-[#E2E8F0] dark:bg-[#1E293B]"></div>
-                                <span class="font-mono text-[9px] tracking-[0.2em] uppercase text-[#94A3B8] dark:text-[#475569] whitespace-nowrap">
-                                    HOẶC ĐĂNG KÝ BẰNG EMAIL
-                                </span>
-                                <div class="flex-1 h-px bg-[#E2E8F0] dark:bg-[#1E293B]"></div>
-                            </div>
 
                             <form id="formCandidateRegister" asp-controller="Account" asp-action="CandidateRegister" method="post" novalidate autocomplete="on" class="space-y-2.5">
                                 @Html.AntiForgeryToken()
@@ -446,11 +395,27 @@
                                     </button>
                                 </p>
 
-                                @* Switcher to Staff Portal *@
-                                <div class="pt-1.5 text-center border-t border-[#E2E8F0] dark:border-[#1E293B]">
+                                @* Cổng Chuyển Hướng Cán Bộ Nhân Sự Nội Bộ (Security Shield Icon / Tấm khiên bảo mật) *@
+                                <div class="mt-4 pt-3 border-t border-[#E2E8F0] dark:border-[#1E293B]">
                                     <a asp-controller="Account" asp-action="StaffLogin"
-                                       class="text-xs text-[#64748B] dark:text-[#94A3B8] hover:text-[#0D5C4D] dark:hover:text-[#10B981] transition-colors">
-                                        Bạn là nhân sự NoveraTech? <span class="font-medium text-[#0D5C4D] dark:text-[#10B981] underline underline-offset-2">Cổng Nội bộ &rarr;</span>
+                                       class="flex items-center gap-3 p-2.5 bg-[#F8FAFC] dark:bg-[#0B0F17] border border-[#E2E8F0] dark:border-[#1E293B] hover:border-[#0D5C4D] dark:hover:border-[#10B981] transition-all group text-decoration-none shadow-sm"
+                                       style="border-radius: 8px;"
+                                       title="Chuyển đến Cổng Quản trị & Xác thực dành cho Cán bộ Nhân viên Nội bộ">
+                                        <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded bg-[#0D5C4D]/10 text-[#0D5C4D] dark:bg-[#10B981]/15 dark:text-[#10B981] group-hover:scale-105 transition-transform" style="border-radius: 6px;">
+                                            @* Icon Tấm Khiên Bảo Mật (Security Shield) *@
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="flex-1 min-w-0 text-left">
+                                            <div class="text-xs font-semibold text-[#0F172A] dark:text-[#F8FAFC] group-hover:text-[#0D5C4D] dark:group-hover:text-[#10B981] transition-colors flex items-center justify-between">
+                                                <span>Cổng Cán Bộ Nhân Sự Nội Bộ</span>
+                                                <span class="text-[10px] font-mono text-[#0D5C4D] dark:text-[#10B981] group-hover:translate-x-0.5 transition-transform">&rarr;</span>
+                                            </div>
+                                            <p class="text-[11px] text-[#64748B] dark:text-[#94A3B8] m-0 truncate">
+                                                Dành cho Recruiter, Hiring Manager, Approver (@@noveratech.digital)
+                                            </p>
+                                        </div>
                                     </a>
                                 </div>
                             </form>

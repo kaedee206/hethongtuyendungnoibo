@@ -20,6 +20,7 @@ public class JobsController : Controller
     private readonly ApplicationDbContext _dbContext;
     private readonly IWebHostEnvironment _env;
     private readonly IFileStorageService _fileStorageService;
+    private readonly IRecruitmentCatalogService _catalogService;
     private readonly ILogger<JobsController> _logger;
     private readonly ISecurityAuditService? _auditService;
 
@@ -28,6 +29,7 @@ public class JobsController : Controller
         ApplicationDbContext dbContext,
         IWebHostEnvironment env,
         IFileStorageService fileStorageService,
+        IRecruitmentCatalogService catalogService,
         ILogger<JobsController> logger,
         ISecurityAuditService? auditService = null)
     {
@@ -35,6 +37,7 @@ public class JobsController : Controller
         _dbContext = dbContext;
         _env = env;
         _fileStorageService = fileStorageService;
+        _catalogService = catalogService;
         _logger = logger;
         _auditService = auditService;
     }
@@ -70,6 +73,9 @@ public class JobsController : Controller
             TempData["ErrorMessage"] = "Không tìm thấy thông tin vị trí tuyển dụng yêu cầu hoặc vị trí đã hết hạn ứng tuyển.";
             return RedirectToAction(nameof(Index));
         }
+
+        ViewBag.Locations = await _catalogService.GetSelectListByTypeAsync("LOCATION", model.Job?.WorkLocation);
+        ViewBag.EmploymentTypes = await _catalogService.GetSelectListByTypeAsync("WORK_TYPE", model.Job?.EmploymentType);
 
         return View(model);
     }
@@ -277,9 +283,10 @@ public class JobsController : Controller
     // GET: /Jobs/Create
     [HttpGet("Create")]
     [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin}")]
-    public IActionResult Create()
+    public async Task<IActionResult> Create()
     {
         var model = new CreateJobViewModel();
+        await PopulateJobFormCatalogsAsync(model);
         return View(model);
     }
 
@@ -296,6 +303,7 @@ public class JobsController : Controller
 
         if (!ModelState.IsValid)
         {
+            await PopulateJobFormCatalogsAsync(model);
             return View(model);
         }
 
@@ -374,17 +382,23 @@ public class JobsController : Controller
             var respBlock = string.IsNullOrWhiteSpace(model.Responsibilities) ? "" : $"[RESPONSIBILITIES]{model.Responsibilities.Trim()}[/RESPONSIBILITIES]\n";
             var combinedReqs = $"{techTags}{respBlock}{model.Requirements ?? ""}".Trim();
 
-            // 5. Sinh Slug thân thiện
+            // 5. Sinh Mã Tin Tuyển Dụng chuẩn Enterprise (Job Reference Code) & Slug thân thiện
+            var deptCode = !string.IsNullOrWhiteSpace(dept.Code) ? dept.Code.ToUpper() : "IT";
+            var dateSuffix = DateTime.UtcNow.ToString("yyMM");
+            var randNum = System.Security.Cryptography.RandomNumberGenerator.GetInt32(10, 99);
+            var jobCode = $"NT-{dateSuffix}-{deptCode}{randNum}";
+
             var cleanTitle = System.Text.RegularExpressions.Regex.Replace(model.Title.ToLower(), @"[^a-z0-9\s-]", "");
             var baseSlug = cleanTitle.Trim().Replace(" ", "-");
             if (string.IsNullOrWhiteSpace(baseSlug)) baseSlug = "job";
-            var slug = $"{baseSlug}-{Guid.NewGuid().ToString("N")[..6]}";
+            var slug = $"{baseSlug}-{jobCode.ToLower().Replace("nt-", "")}";
 
             // 6. Tạo JobPosting với Status PUBLISHED
             var posting = new JobPosting
             {
                 Id = Guid.NewGuid(),
                 RequisitionId = req.Id,
+                Code = jobCode,
                 Title = model.Title.Trim(),
                 Slug = slug,
                 WorkLocation = string.IsNullOrWhiteSpace(model.WorkLocation) ? "Hà Nội (Hybrid 2 ngày WFH)" : model.WorkLocation.Trim(),
@@ -412,20 +426,186 @@ public class JobsController : Controller
         {
             _logger.LogError(ex, "Lỗi khi tạo tin tuyển dụng mới");
             ModelState.AddModelError("", "Đã có lỗi xảy ra khi tạo tin tuyển dụng: " + ex.Message);
+            await PopulateJobFormCatalogsAsync(model);
             return View(model);
         }
+    }
+
+    private async Task PopulateJobFormCatalogsAsync(CreateJobViewModel? model = null)
+    {
+        ViewBag.Locations = await _catalogService.GetSelectListByTypeAsync("LOCATION", model?.WorkLocation);
+        ViewBag.EmploymentTypes = await _catalogService.GetSelectListByTypeAsync("WORK_TYPE", model?.EmploymentType);
+    }
+
+    /// <summary>
+    /// PATCH /api/jobs/{id} - RESTful Endpoint cập nhật bài đăng tuyển dụng
+    /// RBAC Policy Guard: (user.role == 'Recruiter' || user.department == 'HR') && (isAuthor || isAdmin)
+    /// </summary>
+    [HttpPatch("/api/jobs/{id}")]
+    [Authorize]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> PatchJob(string id, [FromBody] PatchJobPostingDto dto)
+    {
+        if (dto == null)
+        {
+            return BadRequest(new { success = false, message = "Payload không hợp lệ." });
+        }
+
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        _ = Guid.TryParse(userIdStr, out var currentUserId);
+        var userDept = User.FindFirstValue("Department") ?? "";
+        
+        var isRecruiterOrHr = User.IsInRole(UserRoles.Recruiter) || 
+                              User.IsInRole(UserRoles.HRManager) || 
+                              User.IsInRole(UserRoles.Admin) || 
+                              userDept.Equals("HR", StringComparison.OrdinalIgnoreCase) ||
+                              userDept.Contains("Nhân sự", StringComparison.OrdinalIgnoreCase);
+
+        var isAdmin = User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager);
+
+        JobPosting? posting = null;
+        if (Guid.TryParse(id, out var jobGuid))
+        {
+            posting = await _dbContext.JobPostings
+                .Include(j => j.Requisition)
+                    .ThenInclude(r => r.Department)
+                .Include(j => j.Requisition)
+                    .ThenInclude(r => r.JobPosition)
+                .FirstOrDefaultAsync(j => j.Id == jobGuid);
+        }
+
+        if (posting == null)
+        {
+            posting = await _dbContext.JobPostings
+                .Include(j => j.Requisition)
+                    .ThenInclude(r => r.Department)
+                .Include(j => j.Requisition)
+                    .ThenInclude(r => r.JobPosition)
+                .FirstOrDefaultAsync(j => j.Slug == id);
+        }
+
+        if (posting == null)
+        {
+            return NotFound(new { success = false, message = "Không tìm thấy bài đăng tuyển dụng cần cập nhật." });
+        }
+
+        var isAuthor = (posting.CreatedById.HasValue && posting.CreatedById == currentUserId) ||
+                       (posting.Requisition != null && posting.Requisition.HiringManagerId == currentUserId);
+
+        if (!isRecruiterOrHr || (!isAuthor && !isAdmin))
+        {
+            _logger.LogWarning("Truy cập trái phép: User {UserId} cố gắng sửa bài đăng {PostingId} nhưng không thỏa mãn RBAC policy.", currentUserId, posting.Id);
+            return StatusCode(StatusCodes.Status403Forbidden, new { 
+                success = false, 
+                message = "Bạn không có quyền chỉnh sửa bài đăng này (Yêu cầu vai trò Recruiter/HR và là tác giả hoặc Quản trị viên)." 
+            });
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.Title))
+        {
+            posting.Title = HtmlSanitizerHelper.SanitizeHtml(dto.Title.Trim());
+        }
+        if (!string.IsNullOrWhiteSpace(dto.SalaryDisplay))
+        {
+            posting.SalaryDisplay = dto.SalaryDisplay.Trim();
+        }
+        if (!string.IsNullOrWhiteSpace(dto.WorkLocation))
+        {
+            posting.WorkLocation = dto.WorkLocation.Trim();
+        }
+        if (dto.Deadline.HasValue)
+        {
+            posting.ExpiredAt = new DateTimeOffset(dto.Deadline.Value, TimeSpan.Zero);
+        }
+        if (dto.Overview != null)
+        {
+            posting.JobDescription = HtmlSanitizerHelper.SanitizeHtml(dto.Overview.Trim());
+        }
+
+        var techTags = string.IsNullOrWhiteSpace(dto.TechStack) ? "" : $"[TECHSTACK]{dto.TechStack.Trim()}[/TECHSTACK]\n";
+        var respBlock = string.IsNullOrWhiteSpace(dto.Responsibilities) ? "" : $"[RESPONSIBILITIES]{dto.Responsibilities.Trim()}[/RESPONSIBILITIES]\n";
+        if (!string.IsNullOrWhiteSpace(dto.Requirements) || !string.IsNullOrWhiteSpace(dto.TechStack) || !string.IsNullOrWhiteSpace(dto.Responsibilities))
+        {
+            posting.Requirements = $"{techTags}{respBlock}{dto.Requirements ?? ""}".Trim();
+        }
+
+        if (dto.Benefits != null)
+        {
+            posting.Benefits = dto.Benefits.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.Status) && Enum.TryParse<JobPostingStatus>(dto.Status, true, out var parsedStatus))
+        {
+            posting.Status = parsedStatus;
+        }
+
+        posting.UpdatedAt = DateTimeOffset.UtcNow;
+        posting.UpdatedById = currentUserId;
+
+        if (posting.Requisition != null)
+        {
+            if (dto.PositionDescription != null)
+            {
+                posting.Requisition.JobDescription = HtmlSanitizerHelper.SanitizeHtml(dto.PositionDescription.Trim());
+            }
+            if (dto.Requirements != null)
+            {
+                posting.Requisition.Requirements = dto.Requirements.Trim();
+            }
+            if (dto.Deadline.HasValue)
+            {
+                posting.Requisition.TargetHireDate = DateOnly.FromDateTime(dto.Deadline.Value);
+            }
+            posting.Requisition.UpdatedAt = DateTimeOffset.UtcNow;
+            posting.Requisition.UpdatedById = currentUserId;
+
+            if (posting.Requisition.JobPosition != null)
+            {
+                if (!string.IsNullOrWhiteSpace(dto.Title))
+                {
+                    posting.Requisition.JobPosition.Title = posting.Title;
+                }
+                if (!string.IsNullOrWhiteSpace(dto.ExperienceLevel))
+                {
+                    posting.Requisition.JobPosition.JobLevel = dto.ExperienceLevel.Trim();
+                }
+                if (dto.PositionDescription != null)
+                {
+                    posting.Requisition.JobPosition.Description = HtmlSanitizerHelper.SanitizeHtml(dto.PositionDescription.Trim());
+                }
+                posting.Requisition.JobPosition.UpdatedAt = DateTimeOffset.UtcNow;
+                posting.Requisition.JobPosition.UpdatedById = currentUserId;
+            }
+        }
+
+        await _dbContext.SaveChangesAsync();
+        _logger.LogInformation("Đã cập nhật bài đăng {Title} (Slug: {Slug}) bởi User {UserId} qua PATCH /api/jobs/{JobId}", posting.Title, posting.Slug, currentUserId, id);
+
+        return Ok(new { success = true, message = "Cập nhật bài đăng tuyển dụng thành công!", slug = posting.Slug });
     }
 
     // POST: /Jobs/UpdatePosting
     [HttpPost("UpdatePosting")]
     [ValidateAntiForgeryToken]
-    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin}")]
+    [Authorize]
     public async Task<IActionResult> UpdatePosting([FromForm] UpdateJobPostingRequest model)
     {
         if (string.IsNullOrWhiteSpace(model.JobId) || string.IsNullOrWhiteSpace(model.Title))
         {
             return Json(new { success = false, message = "Vui lòng nhập đầy đủ tiêu đề và thông tin bài đăng." });
         }
+
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        _ = Guid.TryParse(userIdStr, out var currentUserId);
+        var userDept = User.FindFirstValue("Department") ?? "";
+        
+        var isRecruiterOrHr = User.IsInRole(UserRoles.Recruiter) || 
+                              User.IsInRole(UserRoles.HRManager) || 
+                              User.IsInRole(UserRoles.Admin) || 
+                              userDept.Equals("HR", StringComparison.OrdinalIgnoreCase) ||
+                              userDept.Contains("Nhân sự", StringComparison.OrdinalIgnoreCase);
+
+        var isAdmin = User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager);
 
         try
         {
@@ -448,6 +628,20 @@ public class JobsController : Controller
                     .Include(j => j.Requisition)
                         .ThenInclude(r => r.JobPosition)
                     .FirstOrDefaultAsync(j => j.Slug == model.JobId);
+            }
+
+            if (posting != null)
+            {
+                var isAuthor = (posting.CreatedById.HasValue && posting.CreatedById == currentUserId) ||
+                               (posting.Requisition != null && posting.Requisition.HiringManagerId == currentUserId);
+
+                if (!isRecruiterOrHr || (!isAuthor && !isAdmin))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, new { 
+                        success = false, 
+                        message = "Bạn không có quyền chỉnh sửa bài đăng này (Yêu cầu vai trò Recruiter/HR và là tác giả hoặc Quản trị viên)." 
+                    });
+                }
             }
 
             var techTags = string.IsNullOrWhiteSpace(model.TechStack) ? "" : $"[TECHSTACK]{model.TechStack.Trim()}[/TECHSTACK]\n";
@@ -510,9 +704,10 @@ public class JobsController : Controller
                 };
                 await _dbContext.JobPositions.AddAsync(jobPos);
 
-                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                _ = Guid.TryParse(userIdStr, out var currentUserId);
-                if (currentUserId == Guid.Empty) currentUserId = await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync();
+                if (currentUserId == Guid.Empty)
+                {
+                    currentUserId = await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync();
+                }
 
                 var req = new JobRequisition
                 {

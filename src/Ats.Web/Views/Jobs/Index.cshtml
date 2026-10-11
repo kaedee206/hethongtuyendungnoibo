@@ -356,6 +356,10 @@
                         <!-- Header: Dept + Salary -->
                         <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
                             <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                @if (!string.IsNullOrWhiteSpace(job.Code))
+                                {
+                                    <span class="badge font-monospace px-2 py-0.5" style="background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; border-radius: 4px; font-size: 0.72rem; font-weight: 700;">@job.Code</span>
+                                }
                                 <span class="badge-dept">@job.Department</span>
                                 @if (job.IsHot)
                                 {

@@ -65,8 +65,17 @@ public class HomeController : Controller
             IsAuthenticated = true
         };
 
-        var isCandidate = User.IsInRole(UserRoles.Candidate);
-        var isStaff = !isCandidate;
+        var allUserRoles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+        var primaryRoleCode = UserRoles.GetPrimaryRole(allUserRoles);
+
+        var hasStaffRole = User.IsInRole(UserRoles.Admin) || 
+                           User.IsInRole(UserRoles.HRManager) || 
+                           User.IsInRole(UserRoles.Recruiter) || 
+                           User.IsInRole(UserRoles.HiringManager) || 
+                           User.IsInRole(UserRoles.Interviewer) || 
+                           User.IsInRole(UserRoles.Approver);
+        var isCandidate = !hasStaffRole && User.IsInRole(UserRoles.Candidate);
+        var isStaff = hasStaffRole || !isCandidate;
         var userEmail = User.FindFirstValue(ClaimTypes.Email) ?? "";
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         _ = Guid.TryParse(userIdStr, out var userId);
@@ -75,10 +84,11 @@ public class HomeController : Controller
         model.IsStaff = isStaff;
         model.UserFullName = User.Identity?.Name ?? "Người dùng";
         model.UserEmail = userEmail;
-        model.UserRolesList = User.FindAll(ClaimTypes.Role)
-            .Select(c => UserRoles.GetDisplayName(c.Value))
+        model.UserRolesList = allUserRoles
+            .Select(c => UserRoles.GetDisplayName(c))
             .Distinct()
             .ToList();
+        model.PrimaryRoleDisplayName = UserRoles.GetDisplayName(primaryRoleCode);
 
         // Đồng bộ tổng số vị trí đang mở trên toàn hệ thống cho mọi vai trò
         model.TotalOpenJobs = await _dbContext.JobPostings.CountAsync(j => j.Status == JobPostingStatus.PUBLISHED);

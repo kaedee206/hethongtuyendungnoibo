@@ -3,8 +3,8 @@
 ###############################################################################
 
 server:
-  host: 0.0.0.0
-  port: 9091
+  address: 'tcp://0.0.0.0:9091/'
+  asset_path: /config/assets
 
 log:
   level: info
@@ -18,11 +18,12 @@ theme: dark
 # 1. Quản lý phiên làm việc SSO (Session Cookie)
 session:
   name: authelia_session
-  domain: noveratech.digital
   same_site: lax
   expiration: 1h
   inactivity: 30m
   remember_me: 1M
+  # Secret tối thiểu 32 ký tự bắt buộc từ Authelia v4.38+
+  secret: novera_authelia_session_secret_32_characters_long_2026!
   cookies:
     - domain: noveratech.digital
       authelia_url: https://sso.noveratech.digital
@@ -57,12 +58,12 @@ access_control:
 
 # 4. Storage Engine (Sử dụng PostgreSQL nội bộ của VPS)
 storage:
+  encryption_key: storage_key_change_me_random_32_characters_long
   postgres:
-    host: postgres
-    port: 5432
+    address: 'tcp://postgres:5432'
     database: authelia_db
     username: postgres
-    password: authelia_db_secure_password_change_me
+    password: postgres_secure_pass_2026
     timeout: 5s
 
 # 5. Thông báo / Notifier (Gửi link qua file log nội bộ hoặc SMTP)
@@ -70,15 +71,53 @@ notifier:
   filesystem:
     filename: /config/notification.txt
 
+# Khóa JWT cho xác thực danh tính
+identity_validation:
+  reset_password:
+    jwt_secret: jwt_secret_token_change_me_super_random_32_chars
+
 # 6. OPENID CONNECT PROVIDER (OIDC / OAuth 2.0)
 identity_providers:
   oidc:
     hmac_secret: novera_hmac_secret_key_change_me_32chars_long!
-    issuer: https://sso.noveratech.digital
-    access_token_lifespan: 1h
-    authorize_code_lifespan: 5m
-    id_token_lifespan: 1h
-    refresh_token_lifespan: 24h
+    jwks:
+      - key_id: authelia-rsa-key
+        algorithm: RS256
+        use: sig
+        key: |
+          -----BEGIN PRIVATE KEY-----
+          MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCaqyAw3jZLHb8o
+          1RBj989sAsHx2D7/jCCEeaRMfAp/WDZSJiw/wZs6wXPYEwj93OcDdgej0ry2ksQE
+          X9w/Awyf8qeczEFkNft2NOTTR1nBkpWfATLXbXpfwS5NFaK8zh/U1fpwyq7fb9vP
+          gxEW9OZXfm2NMT9HCq3VN0eX5KwNA3ltS/QKN1A8uSVB/kyh1LKDLEasovUei0TR
+          9Cx/Zx0L0KMBD7hHfHEdvDior7SeOLt97J/UGr7VuSUOzXl7WFQecqmjD7mM5iXT
+          LCRhYywgEmpoiivwDiepQohStB7t1Dsb4ROkt/tTmIZt1qj1oG9U/uV47r32d/1g
+          EzwGZ48HAgMBAAECggEAD2dholxPLfX9dtSZeEtS5h/0LuDpjUvoZSk0OsXTydEA
+          P/g7SfI/Qn/HyMpEh/v7KfYUVrWDQ++kBAeECOaF2FwzY0NYc+GIdMJZ08z0XHn7
+          2sUkyh3GJUk5EkZIWeNxeiIBekBFYE1kp+sWxaGIW0hlIr233pxqqaSCxdbpZ7Y8
+          O7s/IbkRUli0k+1YE7OmA1TgUZsCCBWwBcSErOxKyf+kkvt2Kyv/QdDGx2GW5Kf2
+          4dDbDatXhizzqW/HBNnJpxJukzo/pN0ARiKDM15oURHqrxnbwOli92+5zUZOm4Vm
+          jdE4aNKQT2q3Ny2F/lk3d/xzV2UMhU/2ry7m3VPfIQKBgQDIZWkRhpy+ww2w4+tS
+          arGSiL7rdC7ayCQFkwRvxx9E+7fqX5shscGJgeugtl3h5iEZKJ+WPOt+SlJcT0G6
+          2vzk4Kh09CH1xYM/kXD1hImEiVHl+DA7RVRSmdiNP1BtXT40V8eh3x06+b4E9yf/
+          ublp/FfpOvc7exvCXqR/fwfY1wKBgQDFlZNPMtandl/CeOejJDQykfHmcErbG8cj
+          z+Du6APENI5JD0ZXBVk50x24JDH23zOyG+QBw82pNPo5kuT0xFS/QlYVjf1NNRBp
+          LGcoMx007NWg1a3NQjvbYcCctVTfV98D2uVjakIa6iYtxMhsSdtrHl88ajGPpW0Y
+          kC0x8xZFUQKBgCTGj4ia1osfipSqzxW55MqKc9cL5ElcL1giic7lkPR86VyGnRaK
+          44STpiVBMmtxayON0/OjTGhJxWGRXfOnmn96Rw/neY/75kE1NLCp2P7MoI3+hQNr
+          jrT17MrHEsBvOyop7cXkBx46lMeef+WrNL6hg5SWsKZmykpaSf/n1Q3TAoGAKQUi
+          riCZ2+6Bdvhu7rnHdHBETlkl0VN1BoRT6IWWspdOqvBW5B4iJhUkaGRrUxuHugR8
+          U7l46xYqlOVgT0irZ4G4KYVu/yZzH8KuL/Rcre41c8yo5qJHlwY2XNJwqmWt0TkS
+          wo7+5mOSRZJDIeg7e4O0tfA+Fdp8Scs09tfG2eECgYBOJxwypkQUCgcUmEkf93+N
+          CX1UiWoLN+mD0rx71LR9IQbSyv+darIqzx9jIg6Btimeb5AHgd80Po1jBzbQTkh9
+          7yaARx5HWoqdtWNGRt1LhGJIZdRTDjJRHQA0uhwZvbyIPhVVBeiSrKPnJ0OYoZEp
+          IBwcf3ox+ocbt1ln2YIsnQ==
+          -----END PRIVATE KEY-----
+    lifespans:
+      access_token: 1h
+      authorize_code: 5m
+      id_token: 1h
+      refresh_token: 24h
     enable_client_debug_messages: false
     minimum_parameter_entropy: 8
     
@@ -87,10 +126,10 @@ identity_providers:
       - client_id: ats_portal
         client_name: NoveraTech Internal Recruitment Portal
         # Hash argon2id của secret: novera_ats_secret_2026
-        # Tạo bằng lệnh: docker run authelia/authelia:latest authelia crypto hash generate argon2 --password 'novera_ats_secret_2026'
-        client_secret: "$argon2id$v=19$m=65536,t=3,p=4$qFq8P2yM0WvD1s5H$V9Z3M+ZpD0H9kU3J8y3L8a7m2p1v0x9s8b7n6c5m4l3"
+        client_secret: "$argon2id$v=19$m=65536,t=3,p=4$yM+olroeqL+JTFSG+lWP1w$HHsDdwzqHptFCvQJYPkRQ+M+/ekfayhOnhHDUwhmEbE"
         public: false
         authorization_policy: one_factor
+        token_endpoint_auth_method: client_secret_post
         redirect_uris:
           - https://tuyendung.noveratech.digital/signin-oidc
           - https://tuyendung.noveratech.digital/Account/ExternalCallback

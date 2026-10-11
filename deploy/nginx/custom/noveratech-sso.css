@@ -1,0 +1,321 @@
+/* ==============================================================================
+   NOVERATECH ID - ENTERPRISE SINGLE SIGN-ON (SSO) DESIGN SYSTEM
+   Standardized according to docs/RULE.md (NoveraTech Design Guidelines v2.0)
+   High-Tech Cyber Meteors & Digital Space Edition
+   ============================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
+
+/* --- 1. CSS VARIABLES OVERRIDE (SHADCN & TAILWIND V4 THEME COMPATIBILITY) --- */
+:root,
+[data-theme="dark"],
+body[data-theme="dark"] {
+  --nt-font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --nt-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --nt-bg-canvas: #0B0F17;
+  --nt-bg-card: rgba(17, 24, 39, 0.88);
+  --nt-bg-subtle: #1E293B;
+  --nt-border: #334155;
+  --nt-border-subtle: #1E293B;
+  --nt-text-primary: #F8FAFC;
+  --nt-text-secondary: #94A3B8;
+  --nt-brand: #059669;
+  --nt-brand-hover: #10B981;
+  --nt-brand-focus: rgba(16, 185, 129, 0.25);
+  --nt-radius-md: 8px;
+  --nt-radius-lg: 12px;
+
+  /* Authelia Tailwind/Shadcn tokens mapping */
+  --background: #0B0F17 !important;
+  --foreground: #F8FAFC !important;
+  --card: #111827 !important;
+  --card-foreground: #F8FAFC !important;
+  --popover: #111827 !important;
+  --popover-foreground: #F8FAFC !important;
+  --primary: #059669 !important;
+  --primary-foreground: #FFFFFF !important;
+  --border: #334155 !important;
+  --input: #334155 !important;
+  --muted: #1E293B !important;
+  --muted-foreground: #94A3B8 !important;
+  --ring: rgba(16, 185, 129, 0.3) !important;
+}
+
+/* --- 2. CANVAS & BASE PAGE (HIGH-TECH CYBER GRID & AMBIENT DEPTH) --- */
+html, body {
+  font-family: var(--nt-font-sans) !important;
+  background-color: var(--nt-bg-canvas) !important;
+  background-image: 
+    radial-gradient(ellipse at 50% -10%, #17253D 0%, #0B0F17 80%),
+    linear-gradient(rgba(16, 185, 129, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.035) 1px, transparent 1px) !important;
+  background-size: 100% 100%, 48px 48px, 48px 48px !important;
+  background-position: 0 0, 0 0, 0 0 !important;
+  color: var(--nt-text-primary) !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  overflow-x: hidden !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+/* Hiệu ứng Canvas Sao băng công nghệ nằm phía sau */
+#nt-cyber-canvas {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+#root {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* --- 3. LOGIN CARD CONTAINER (RULE 3.5 & 4.1: Kính mờ #111827, Bo góc 12px, Viền #1E293B) --- */
+#first-factor-stage,
+div[class*="min-h-[90vh]"] {
+  position: relative !important;
+  z-index: 5 !important;
+}
+
+#first-factor-stage > div,
+div[class*="min-h"] > div[class*="max-w"],
+div[class*="min-h-[90vh]"] > div {
+  background: var(--nt-bg-card) !important;
+  background-color: var(--nt-bg-card) !important;
+  border: 1px solid rgba(51, 65, 85, 0.75) !important;
+  border-radius: var(--nt-radius-lg) !important;
+  padding: 2.75rem 2.25rem 2.25rem 2.25rem !important;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(16, 185, 129, 0.08),
+    0 0 25px rgba(16, 185, 129, 0.04) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  max-width: 440px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+/* --- 4. BRAND LOGO (RULE 2.1 & 2.2: Kích thước 32-34px, filter trắng trên nền tối) --- */
+img[src*="logo"],
+div[class*="w-full"] img {
+  filter: brightness(0) invert(1) drop-shadow(0 0 8px rgba(16, 185, 129, 0.25)) !important;
+  width: auto !important;
+  max-width: 165px !important;
+  height: 34px !important;
+  object-fit: contain !important;
+  margin: 0 auto 1.25rem auto !important;
+  display: block !important;
+}
+
+/* --- 5. TIÊU ĐỀ "ĐĂNG NHẬP" --- */
+#first-factor-stage h5,
+div[class*="min-h"] h5,
+div[class*="min-h"] div[class*="w-full"] > div {
+  font-family: var(--nt-font-sans) !important;
+  color: var(--nt-text-primary) !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.4px !important;
+  margin-bottom: 0.75rem !important;
+}
+
+/* --- 6. FLOATING INPUT & PLACEHOLDER COLLISION FIX --- */
+/* Triệt tiêu hoàn toàn placeholder trình duyệt để tránh đè chữ lên Floating Label */
+input[data-slot="floating-input"]::placeholder {
+  color: transparent !important;
+  opacity: 0 !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+input[data-slot="floating-input"]::-webkit-input-placeholder {
+  color: transparent !important;
+  opacity: 0 !important;
+}
+
+input[data-slot="floating-input"]::-moz-placeholder {
+  color: transparent !important;
+  opacity: 0 !important;
+}
+
+/* Ô nhập liệu chuẩn NoveraTech (RULE 3.5 & 4.1: Nền #1E293B, Bo góc 8px, Viền #334155) */
+input[data-slot="floating-input"] {
+  font-family: var(--nt-font-sans) !important;
+  height: 54px !important;
+  min-height: 54px !important;
+  padding-top: 20px !important;
+  padding-bottom: 6px !important;
+  padding-left: 14px !important;
+  padding-right: 44px !important;
+  background-color: var(--nt-bg-subtle) !important;
+  border: 1px solid var(--nt-border) !important;
+  border-radius: var(--nt-radius-md) !important;
+  color: var(--nt-text-primary) !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+input[data-slot="floating-input"]:focus {
+  border-color: var(--nt-brand-hover) !important;
+  box-shadow: 0 0 0 3px var(--nt-brand-focus) !important;
+  outline: none !important;
+}
+
+/* Label mặc định (khi trống và chưa focus) - Căn giữa ô input */
+input[data-slot="floating-input"] ~ label {
+  font-family: var(--nt-font-sans) !important;
+  left: 14px !important;
+  color: var(--nt-text-secondary) !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Khi có focus hoặc đã có ký tự nhập: Thu nhỏ và nổi lên đỉnh */
+input[data-slot="floating-input"]:focus ~ label,
+input[data-slot="floating-input"]:not(:placeholder-shown) ~ label {
+  top: 7px !important;
+  transform: translateY(0) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.3px !important;
+  color: var(--nt-brand-hover) !important;
+}
+
+/* Khi trống và không focus: Căn giữa theo chiều dọc chuẩn xác */
+input[data-slot="floating-input"]:placeholder-shown:not(:focus) ~ label {
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  color: var(--nt-text-secondary) !important;
+}
+
+/* --- 7. NÚT TOGGLE HIỂN THỊ MẬT KHẨU --- */
+button[data-slot="password-visibility-toggle"],
+div[class*="relative"] > button:has(svg),
+div[class*="relative"] > button[type="button"] {
+  color: var(--nt-text-secondary) !important;
+  right: 12px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  transition: color 0.15s ease !important;
+  padding: 6px !important;
+}
+
+button[data-slot="password-visibility-toggle"]:hover,
+div[class*="relative"] > button:has(svg):hover,
+div[class*="relative"] > button[type="button"]:hover {
+  color: var(--nt-text-primary) !important;
+}
+
+/* --- 8. NÚT ĐĂNG NHẬP (RULE 3.5 & 4.1: Emerald-600 #059669, Bo góc 8px rounded-lg) --- */
+#sign-in-button,
+button[type="submit"] {
+  font-family: var(--nt-font-sans) !important;
+  height: 48px !important;
+  background: var(--nt-brand) !important;
+  background-color: var(--nt-brand) !important;
+  border-radius: var(--nt-radius-md) !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.4) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  margin-top: 0.5rem !important;
+  width: 100% !important;
+}
+
+#sign-in-button:hover,
+button[type="submit"]:hover {
+  background: var(--nt-brand-hover) !important;
+  background-color: var(--nt-brand-hover) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5) !important;
+}
+
+#sign-in-button:active,
+button[type="submit"]:active {
+  transform: translateY(0) !important;
+  background: #047857 !important;
+}
+
+/* --- 9. CHECKBOX "GHI NHỚ TÔI" (RADIX / SHADCN CHECKBOX) --- */
+button[role="checkbox"]#remember-checkbox,
+button[role="checkbox"] {
+  border-radius: 4px !important;
+  border: 1px solid var(--nt-border) !important;
+  background-color: var(--nt-bg-subtle) !important;
+  width: 18px !important;
+  height: 18px !important;
+  transition: all 0.15s ease !important;
+}
+
+button[role="checkbox"][data-state="checked"] {
+  background-color: var(--nt-brand) !important;
+  border-color: var(--nt-brand) !important;
+  color: #FFFFFF !important;
+}
+
+label[for="remember-checkbox"],
+label:has(input[type="checkbox"]),
+div:has(input[type="checkbox"]) label {
+  color: var(--nt-text-secondary) !important;
+  font-size: 13.5px !important;
+  cursor: pointer !important;
+  user-select: none !important;
+}
+
+/* --- 10. NÚT CHỌN NGÔN NGỮ (HEADER) --- */
+header,
+div[class*="userInfo"] {
+  position: relative !important;
+  z-index: 25 !important;
+}
+
+header button,
+div[class*="userInfo"] button,
+button:has(svg[class*="lucide-languages"]) {
+  background-color: rgba(30, 41, 59, 0.85) !important;
+  border: 1px solid var(--nt-border-subtle) !important;
+  border-radius: var(--nt-radius-md) !important;
+  color: var(--nt-text-secondary) !important;
+  backdrop-filter: blur(8px) !important;
+  transition: all 0.15s ease !important;
+}
+
+header button:hover,
+button:has(svg[class*="lucide-languages"]):hover {
+  border-color: var(--nt-border) !important;
+  color: var(--nt-text-primary) !important;
+  background-color: var(--nt-bg-subtle) !important;
+}
+
+/* --- 11. FOOTER "POWERED BY AUTHELIA" --- */
+footer a,
+div[class*="flex"] > a[href*="authelia"] {
+  color: #64748B !important;
+  font-size: 12px !important;
+  text-decoration: none !important;
+  transition: color 0.15s ease !important;
+  margin-top: 1rem !important;
+}
+
+footer a:hover,
+div[class*="flex"] > a[href*="authelia"]:hover {
+  color: var(--nt-text-secondary) !important;
+  text-decoration: underline !important;
+}

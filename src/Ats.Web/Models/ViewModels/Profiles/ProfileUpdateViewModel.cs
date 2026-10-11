@@ -6,6 +6,7 @@ public class ProfileUpdateViewModel
     public string Email { get; set; } = string.Empty;
     public string? DepartmentName { get; set; }
     public string? RoleName { get; set; }
+    public List<string> Roles { get; set; } = new();
 
     // CÁC TRƯỜNG CHO PHÉP EDIT
     public string FullName { get; set; } = string.Empty;

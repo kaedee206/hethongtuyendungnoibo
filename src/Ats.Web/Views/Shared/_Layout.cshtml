@@ -140,17 +140,12 @@
 
                         <!-- User Profile & Action Dropdown (S1-04, S1-09) -->
                         <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-2 mt-3 mt-lg-0">
-                            <!-- Role Badges for Multi-role representation -->
-                            <div class="d-flex flex-wrap gap-1 me-lg-2">
+                            <!-- Primary Role Badge (Chỉ hiển thị vai trò có quyền cao nhất trên Navbar) -->
+                            <div class="d-flex align-items-center me-lg-2">
                                 @{
-                                    var distinctRoles = User.FindAll(ClaimTypes.Role)
-                                        .Select(c => UserRoles.NormalizeRole(c.Value))
-                                        .Distinct()
-                                        .ToList();
-                                }
-                                @foreach (var rName in distinctRoles)
-                                {
-                                    var badgeStyle = rName switch
+                                    var userRoleClaims = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+                                    var primaryRoleName = UserRoles.GetPrimaryRole(userRoleClaims);
+                                    var badgeStyle = primaryRoleName switch
                                     {
                                         UserRoles.Admin => "badge-admin",
                                         UserRoles.HRManager => "badge-hrmanager",
@@ -160,10 +155,10 @@
                                         UserRoles.Approver => "badge-approver",
                                         _ => "bg-light text-secondary border"
                                     };
-                                    <span class="badge @badgeStyle px-2 py-1 text-xs" style="border-radius:6px;">
-                                        @UserRoles.GetDisplayName(rName)
-                                    </span>
                                 }
+                                <span class="badge @badgeStyle px-2.5 py-1 text-xs fw-semibold" style="border-radius:6px;" title="Vai trò quyền cao nhất: @UserRoles.GetDisplayName(primaryRoleName)">
+                                    @UserRoles.GetDisplayName(primaryRoleName)
+                                </span>
                             </div>
 
                             <!-- Dropdown User (RULE.MD: 8px radius, clean neutral, full navigation inside) -->
@@ -185,6 +180,11 @@
                                     <li>
                                         <a class="dropdown-item py-2 fw-semibold text-success" href="/dashboard">
                                             <i class="bi bi-speedometer2 me-2"></i> Bàn làm việc
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-2" href="/ho-so">
+                                            <i class="bi bi-person-badge me-2 text-muted"></i> Thông tin cá nhân &amp; Vai trò
                                         </a>
                                     </li>
                                     <li>

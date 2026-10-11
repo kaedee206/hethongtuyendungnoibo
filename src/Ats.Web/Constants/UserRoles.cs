@@ -44,4 +44,25 @@ public static class UserRoles
         "ỨNG VIÊN NỘI BỘ" or "CANDIDATE" => Candidate,
         _ => role ?? Candidate
     };
+
+    public static int GetRolePriority(string? role) => NormalizeRole(role) switch
+    {
+        Admin => 1,
+        HRManager => 2,
+        HiringManager => 3,
+        Recruiter => 4,
+        Approver => 5,
+        Interviewer => 6,
+        Candidate => 7,
+        _ => 99
+    };
+
+    public static string GetPrimaryRole(IEnumerable<string>? roles)
+    {
+        if (roles == null || !roles.Any()) return Candidate;
+        return roles
+            .Select(NormalizeRole)
+            .OrderBy(GetRolePriority)
+            .FirstOrDefault() ?? Candidate;
+    }
 }

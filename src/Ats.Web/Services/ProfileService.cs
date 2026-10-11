@@ -40,6 +40,18 @@ public partial class ProfileService : IProfileService
         if (user == null)
             return null;
 
+        var assignedRoles = await _dbContext.UserRoles
+            .Where(ur => ur.UserId == userId)
+            .Include(ur => ur.Role)
+            .Select(ur => ur.Role.Name)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        if (!assignedRoles.Any() && !string.IsNullOrWhiteSpace(user.Role))
+        {
+            assignedRoles.Add(user.Role);
+        }
+
         return new ProfileUpdateViewModel
         {
             FullName = user.FullName,
@@ -48,7 +60,8 @@ public partial class ProfileService : IProfileService
             JobTitle = user.JobTitle,
             DepartmentName = user.DepartmentEntity?.Name ?? user.Department ?? "Chưa phân bổ",
             RoleName = user.RoleEntity?.Name ?? user.Role ?? "Nhân viên",
-            AvatarUrl = user.AvatarUrl
+            AvatarUrl = user.AvatarUrl,
+            Roles = assignedRoles
         };
     }
 

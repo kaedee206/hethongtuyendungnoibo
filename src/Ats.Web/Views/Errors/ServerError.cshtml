@@ -2,25 +2,35 @@
     ViewData["Title"] = "Lỗi hệ thống - 500";
 }
 
-<div class="container py-5 text-center" style="max-width: 600px;">
-    <div class="card border-0 shadow-sm p-4 p-md-5" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
-        <div class="mb-4">
-            <span class="display-3 fw-bold text-danger d-block">500</span>
-            <div class="badge bg-danger-subtle text-danger px-3 py-1.5 mt-2" style="border-radius: 6px;">
-                <i class="bi bi-exclamation-octagon me-1"></i> Sự cố máy chủ
+<div class="container py-5 d-flex justify-content-center align-items-center" style="min-height: 65vh; max-width: 640px;">
+    <div class="card bg-white border-0 shadow-sm p-4 p-md-5 d-flex flex-column align-items-center text-center w-100" 
+         style="border: 1px solid #E2E8F0 !important; border-radius: 12px; gap: 1.25rem;">
+        
+        <!-- Node 1: Mã lỗi & Badge trạng thái riêng biệt -->
+        <div class="d-flex flex-column align-items-center gap-2">
+            <span class="display-3 fw-bold text-danger font-monospace m-0" style="line-height: 1;">500</span>
+            <div class="d-flex flex-wrap justify-content-center gap-2">
+                <span class="badge bg-danger-subtle text-danger px-3 py-1.5" 
+                      style="border-radius: 6px; font-weight: 600; white-space: nowrap; font-size: 0.82rem;">
+                    <i class="bi bi-exclamation-octagon me-1"></i> Sự cố máy chủ
+                </span>
             </div>
         </div>
 
-        <h3 class="fw-bold text-dark mb-2">Hệ thống đang gặp sự cố</h3>
-        <p class="text-muted mb-4">
-            Đã xảy ra lỗi ngoài dự kiến trong quá trình xử lý yêu cầu của bạn. Quản trị viên hệ thống đã được ghi nhận nhật ký lỗi để khắc phục.
-        </p>
+        <!-- Node 2: Tiêu đề & Thông điệp -->
+        <div class="d-flex flex-column align-items-center gap-2">
+            <h3 class="fw-bold text-dark mb-0">Hệ thống đang gặp sự cố</h3>
+            <p class="text-muted mb-0 small" style="line-height: 1.6; max-width: 460px;">
+                Đã xảy ra lỗi ngoài dự kiến trong quá trình xử lý yêu cầu của bạn. Quản trị viên hệ thống đã ghi nhận nhật ký lỗi để khắc phục trong thời gian sớm nhất.
+            </p>
+        </div>
 
-        <div class="d-flex justify-content-center gap-2">
-            <a asp-controller="Home" asp-action="Index" class="btn btn-primary px-4 py-2" style="border-radius: 8px;">
+        <!-- Node 3: Nhóm nút hành động độc lập, không che khuất -->
+        <div class="d-flex flex-wrap justify-content-center align-items-center gap-2 w-100 pt-3 border-top">
+            <a asp-controller="Home" asp-action="Index" class="btn btn-primary px-4 py-2" style="border-radius: 8px; font-weight: 500; white-space: nowrap;">
                 <i class="bi bi-house-door me-1"></i> Về trang chủ
             </a>
-            <button onclick="location.reload()" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 8px;">
+            <button type="button" onclick="location.reload()" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 8px; font-weight: 500; white-space: nowrap;">
                 <i class="bi bi-arrow-clockwise me-1"></i> Tải lại trang
             </button>
         </div>

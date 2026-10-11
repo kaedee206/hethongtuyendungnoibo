@@ -3,6 +3,7 @@ namespace Ats.Web.Models.ViewModels.Jobs;
 public class JobItemViewModel
 {
     public string Id { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
     public string Department { get; set; } = string.Empty;
@@ -82,5 +83,23 @@ public class UpdateJobPostingRequest
     public string Requirements { get; set; } = string.Empty;
     public string TechStack { get; set; } = string.Empty;
     public string Benefits { get; set; } = string.Empty;
+}
+
+public class PatchJobPostingDto
+{
+    public string? Title { get; set; }
+    public string? Department { get; set; }
+    public string? WorkLocation { get; set; }
+    public string? EmploymentType { get; set; }
+    public string? ExperienceLevel { get; set; }
+    public string? SalaryDisplay { get; set; }
+    public DateTime? Deadline { get; set; }
+    public string? Overview { get; set; }
+    public string? PositionDescription { get; set; }
+    public string? Responsibilities { get; set; }
+    public string? Requirements { get; set; }
+    public string? TechStack { get; set; }
+    public string? Benefits { get; set; }
+    public string? Status { get; set; }
 }
 

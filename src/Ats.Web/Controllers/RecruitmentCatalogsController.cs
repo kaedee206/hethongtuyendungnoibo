@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+using Ats.Web.Services.Interfaces;
+
 namespace Ats.Web.Controllers;
 
 [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager}")]
@@ -13,11 +15,16 @@ namespace Ats.Web.Controllers;
 public class RecruitmentCatalogsController : Controller
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly IRecruitmentCatalogService _catalogService;
     private readonly ILogger<RecruitmentCatalogsController> _logger;
 
-    public RecruitmentCatalogsController(ApplicationDbContext dbContext, ILogger<RecruitmentCatalogsController> logger)
+    public RecruitmentCatalogsController(
+        ApplicationDbContext dbContext,
+        IRecruitmentCatalogService catalogService,
+        ILogger<RecruitmentCatalogsController> logger)
     {
         _dbContext = dbContext;
+        _catalogService = catalogService;
         _logger = logger;
     }
 
@@ -32,6 +39,26 @@ public class RecruitmentCatalogsController : Controller
             .ToListAsync();
 
         return View(catalogs);
+    }
+
+    [HttpGet("api/by-type")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetByType([FromQuery] string type)
+    {
+        if (string.IsNullOrWhiteSpace(type))
+        {
+            return BadRequest(new { message = "Loại danh mục là bắt buộc." });
+        }
+
+        var items = await _catalogService.GetByTypeAsync(type, true);
+        return Ok(items.Select(i => new
+        {
+            id = i.Id,
+            code = i.Code,
+            name = i.Name,
+            description = i.Description,
+            displayOrder = i.DisplayOrder
+        }));
     }
 
     [HttpGet("api/items")]
@@ -112,6 +139,7 @@ public class RecruitmentCatalogsController : Controller
 
         _dbContext.RecruitmentCatalogs.Add(entity);
         await _dbContext.SaveChangesAsync();
+        _catalogService.InvalidateCache(entity.CatalogType);
 
         return Ok(entity);
     }
@@ -151,6 +179,7 @@ public class RecruitmentCatalogsController : Controller
         item.UpdatedAt = DateTimeOffset.UtcNow;
 
         await _dbContext.SaveChangesAsync();
+        _catalogService.InvalidateCache(item.CatalogType);
         return Ok(item);
     }
 
@@ -169,8 +198,10 @@ public class RecruitmentCatalogsController : Controller
             return StatusCode(409, new { message = "Mục danh mục hệ thống mặc định được bảo vệ và không thể xóa. Bạn có thể vô hiệu hóa trạng thái để ẩn." });
         }
 
+        var catType = item.CatalogType;
         _dbContext.RecruitmentCatalogs.Remove(item);
         await _dbContext.SaveChangesAsync();
+        _catalogService.InvalidateCache(catType);
 
         return Ok(new { message = "Đã xóa mục danh mục thành công." });
     }
@@ -188,6 +219,7 @@ public class RecruitmentCatalogsController : Controller
         item.IsActive = !item.IsActive;
         item.UpdatedAt = DateTimeOffset.UtcNow;
         await _dbContext.SaveChangesAsync();
+        _catalogService.InvalidateCache(item.CatalogType);
 
         return Ok(new { id = item.Id, isActive = item.IsActive });
     }

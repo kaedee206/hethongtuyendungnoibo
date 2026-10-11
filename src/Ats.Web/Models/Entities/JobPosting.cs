@@ -1,4 +1,4 @@
-﻿using Ats.Web.Models.Enums;
+using Ats.Web.Models.Enums;
 
 namespace Ats.Web.Models.Entities;
 
@@ -6,6 +6,7 @@ public class JobPosting : BaseEntity
 {
     public Guid Id { get; set; }
     public Guid RequisitionId { get; set; }
+    public string? Code { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
     public string WorkLocation { get; set; } = string.Empty;

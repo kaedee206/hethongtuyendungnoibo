@@ -1268,7 +1268,9 @@ public class WorkspaceController : Controller
     [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager}")]
     public async Task<IActionResult> RejectApplication(
         [FromForm] Guid applicationId,
+        [FromForm] Guid? rejectionReasonId,
         [FromForm] string? reason,
+        [FromForm] string? feedbackNote,
         [FromForm] bool sendEmail = true)
     {
         try
@@ -1298,9 +1300,43 @@ public class WorkspaceController : Controller
                 application.CurrentStageId = rejectStage.Id;
             }
 
-            var rejectReason = string.IsNullOrWhiteSpace(reason)
-                ? "Hồ sơ chưa phù hợp với tiêu chuẩn yêu cầu của vị trí ở thời điểm hiện tại."
-                : reason.Trim();
+            // Gắn mã lý do từ danh mục dùng chung (RecruitmentCatalogs REJECTION_REASON)
+            string rejectReasonTitle = reason?.Trim() ?? string.Empty;
+            if (rejectionReasonId.HasValue && rejectionReasonId.Value != Guid.Empty)
+            {
+                var catReason = await _dbContext.RecruitmentCatalogs.FirstOrDefaultAsync(c => c.Id == rejectionReasonId.Value);
+                if (catReason != null)
+                {
+                    application.RejectionReasonId = catReason.Id;
+                    if (string.IsNullOrWhiteSpace(rejectReasonTitle))
+                    {
+                        rejectReasonTitle = catReason.Name;
+                    }
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(rejectReasonTitle))
+            {
+                var catReason = await _dbContext.RecruitmentCatalogs
+                    .FirstOrDefaultAsync(c => c.CatalogType == "REJECTION_REASON" && c.Name.ToLower() == rejectReasonTitle.ToLower());
+                if (catReason != null)
+                {
+                    application.RejectionReasonId = catReason.Id;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(rejectReasonTitle))
+            {
+                rejectReasonTitle = "Hồ sơ chưa phù hợp với tiêu chuẩn yêu cầu của vị trí ở thời điểm hiện tại.";
+            }
+
+            var cleanFeedback = !string.IsNullOrWhiteSpace(feedbackNote) ? feedbackNote.Trim() : null;
+            application.RejectionNote = cleanFeedback ?? rejectReasonTitle;
+
+            var commentBuilder = $"Từ chối hồ sơ: {rejectReasonTitle}";
+            if (!string.IsNullOrWhiteSpace(cleanFeedback))
+            {
+                commentBuilder += $" (Ghi chú: {cleanFeedback})";
+            }
 
             await _dbContext.ApplicationStageHistories.AddAsync(new ApplicationStageHistory
             {
@@ -1309,7 +1345,7 @@ public class WorkspaceController : Controller
                 FromStageId = prev,
                 ToStageId = rejectStage?.Id ?? prev,
                 ChangedByUserId = effectiveUserId,
-                Comment = $"Từ chối hồ sơ: {rejectReason}",
+                Comment = commentBuilder,
                 CreatedAt = DateTimeOffset.UtcNow
             });
 
@@ -1326,7 +1362,7 @@ public class WorkspaceController : Controller
                             application.Candidate.Email,
                             candFullName,
                             application.JobPosting.Title,
-                            rejectReason);
+                            rejectReasonTitle);
                     }
                     catch (Exception ex)
                     {

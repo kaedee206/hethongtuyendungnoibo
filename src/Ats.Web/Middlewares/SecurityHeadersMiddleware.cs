@@ -45,11 +45,11 @@ public class SecurityHeadersMiddleware(RequestDelegate next)
         {
             context.Response.Headers.Append("Content-Security-Policy",
                 "default-src 'self'; " +
-                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " +
-                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
-                "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; " +
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdn.tailwindcss.com https://static.cloudflareinsights.com; " +
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://cdn.tailwindcss.com; " +
+                "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; " +
                 "img-src 'self' data: https:; " +
-                "connect-src 'self'; " +
+                "connect-src 'self' https://cloudflareinsights.com https://*.cloudflareinsights.com; " +
                 "frame-ancestors 'self';");
         }
 

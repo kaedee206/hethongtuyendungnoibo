@@ -296,9 +296,26 @@
 
             <span class="text-danger small mt-2 d-none d-block req-salary-error"></span>
 
+            <!-- Khung giải trình khi đề xuất mức lương vượt dải chuẩn của chức danh -->
+            <div class="mt-3 p-3 bg-warning-subtle border border-warning-subtle rounded-3 @(string.IsNullOrWhiteSpace(Model.SalaryBandExplanation) ? "d-none" : "") req-salary-explanation-wrapper" id="salaryExplanationContainer" style="border-radius: 8px !important;">
+                <label asp-for="SalaryBandExplanation" class="form-label fw-bold text-warning-emphasis small mb-1">
+                    <i class="bi bi-shield-exclamation me-1"></i>Giải trình lý do đề xuất mức lương vượt dải chuẩn chức danh <span class="text-danger">*</span>
+                </label>
+                <textarea asp-for="SalaryBandExplanation" 
+                          class="form-control req-salary-explanation-input" 
+                          id="reqSalaryExplanation"
+                          rows="2" 
+                          placeholder="Nêu rõ lý do cần tuyển mức lương cao hơn khung chuẩn (VD: Vị trí yêu cầu kỹ năng hiếm, mức độ cạnh tranh thị trường cao, dự án trọng điểm cần onboard gấp...)" 
+                          style="border-radius: 6px;"></textarea>
+                <span asp-validation-for="SalaryBandExplanation" class="text-danger small mt-1 d-block"></span>
+                <div class="form-text text-warning-emphasis small mt-1">
+                    <i class="bi bi-info-circle me-1"></i>Đề xuất vượt khung ngân sách sẽ tự động kích hoạt Cấp duyệt Tổng Giám Đốc / Ban Giám Đốc (BOD) theo quy chế tài chính.
+                </div>
+            </div>
+
             <div class="form-text text-muted small mt-2">
                 <i class="bi bi-info-circle text-primary me-1"></i>
-                Dải lương đề xuất là căn cứ để Ban Giám đốc & Phòng Nhân sự phê duyệt ngân sách tuyển dụng cho quý/năm.
+                Dải lương đề xuất được đối chiếu tự động với Dải lương chuẩn chức danh để xác định luồng phê duyệt và kiểm soát ngân sách.
             </div>
         </div>
 
@@ -561,6 +578,12 @@
                     <div class="col-12">
                         <div class="review-item-label">Ghi chú mục tiêu tuyển dụng</div>
                         <div class="review-item-value text-secondary small fst-italic" id="reviewReasonDetail">Chưa có ghi chú</div>
+                    </div>
+                    <div class="col-12 d-none" id="reviewSalaryExplanationWrapper">
+                        <div class="review-item-label text-warning-emphasis fw-bold">
+                            <i class="bi bi-shield-exclamation me-1"></i>Giải trình đề xuất vượt dải lương chuẩn
+                        </div>
+                        <div class="review-item-value text-warning-emphasis small p-2 bg-warning-subtle rounded border border-warning-subtle" id="reviewSalaryExplanation">--</div>
                     </div>
                 </div>
             </div>

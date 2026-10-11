@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -11,37 +11,6 @@ namespace Ats.Web.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "code",
-                table: "candidates");
-
-            migrationBuilder.DropColumn(
-                name: "description",
-                table: "candidates");
-
-            migrationBuilder.DropColumn(
-                name: "is_system",
-                table: "candidates");
-
-            migrationBuilder.DropColumn(
-                name: "lock_reason",
-                table: "candidates");
-
-            migrationBuilder.DropColumn(
-                name: "locked_at",
-                table: "candidates");
-
-            migrationBuilder.DropColumn(
-                name: "locked_by",
-                table: "candidates");
-
-            migrationBuilder.DropColumn(
-                name: "locked_until",
-                table: "candidates");
-
-            migrationBuilder.DropColumn(
-                name: "name",
-                table: "candidates");
 
             migrationBuilder.AddColumn<string>(
                 name: "job_title",

@@ -4,6 +4,7 @@ using Ats.Web.Data;
 using Ats.Web.Models.Entities;
 using Ats.Web.Models.Enums;
 using Ats.Web.Models.ViewModels.Requisitions;
+using Ats.Web.Models.DTOs.ApprovalRule;
 using Ats.Web.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -12,9 +13,11 @@ namespace Ats.Web.Services;
 
 public class RequisitionService(
     ApplicationDbContext dbContext,
+    IApprovalRuleService approvalRuleService,
     ILogger<RequisitionService> logger) : IRequisitionService
 {
     private readonly ApplicationDbContext _dbContext = dbContext;
+    private readonly IApprovalRuleService _approvalRuleService = approvalRuleService;
     private readonly ILogger<RequisitionService> _logger = logger;
 
     public async Task<RequisitionCreateViewModel> PrepareCreateViewModelAsync(Guid currentUserId, CancellationToken cancellationToken = default)
@@ -303,35 +306,14 @@ public class RequisitionService(
 
             if (!model.IsDraft)
             {
-                // Kiểm tra và sinh luồng phê duyệt 2 cấp nếu chưa có bước pending nào (hoặc nộp lại sau CHANGES_REQUESTED)
+                // Kiểm tra và sinh luồng phê duyệt theo dải lương & ApprovalRules nếu chưa có bước pending nào
                 var existingPendingApprovals = await _dbContext.RequisitionApprovals
                     .Where(a => a.RequisitionId == existing.Id && a.Status == ApprovalStatus.PENDING && !a.IsDeleted)
                     .ToListAsync(cancellationToken);
 
                 if (existingPendingApprovals.Count == 0)
                 {
-                    var (hrApproverId, bodApproverId) = await GetDefaultApproversAsync(currentUserId, cancellationToken);
-                    var step1 = new RequisitionApproval
-                    {
-                        Id = Guid.NewGuid(),
-                        RequisitionId = existing.Id,
-                        ApproverId = hrApproverId,
-                        StepOrder = 1,
-                        Status = ApprovalStatus.PENDING,
-                        CreatedAt = DateTimeOffset.UtcNow,
-                        UpdatedAt = DateTimeOffset.UtcNow
-                    };
-                    var step2 = new RequisitionApproval
-                    {
-                        Id = Guid.NewGuid(),
-                        RequisitionId = existing.Id,
-                        ApproverId = bodApproverId,
-                        StepOrder = 2,
-                        Status = ApprovalStatus.PENDING,
-                        CreatedAt = DateTimeOffset.UtcNow,
-                        UpdatedAt = DateTimeOffset.UtcNow
-                    };
-                    await _dbContext.RequisitionApprovals.AddRangeAsync(new[] { step1, step2 }, cancellationToken);
+                    await CreateApprovalStepsForRequisitionAsync(existing, currentUserId, cancellationToken);
                 }
             }
 
@@ -381,28 +363,8 @@ public class RequisitionService(
 
             if (!model.IsDraft)
             {
-                var (hrApproverId, bodApproverId) = await GetDefaultApproversAsync(currentUserId, cancellationToken);
-                var step1 = new RequisitionApproval
-                {
-                    Id = Guid.NewGuid(),
-                    RequisitionId = requisition.Id,
-                    ApproverId = hrApproverId,
-                    StepOrder = 1,
-                    Status = ApprovalStatus.PENDING,
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    UpdatedAt = DateTimeOffset.UtcNow
-                };
-                var step2 = new RequisitionApproval
-                {
-                    Id = Guid.NewGuid(),
-                    RequisitionId = requisition.Id,
-                    ApproverId = bodApproverId,
-                    StepOrder = 2,
-                    Status = ApprovalStatus.PENDING,
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    UpdatedAt = DateTimeOffset.UtcNow
-                };
-                await _dbContext.RequisitionApprovals.AddRangeAsync(new[] { step1, step2 }, cancellationToken);
+                // Tự động sinh cấp phê duyệt động theo cấu hình ApprovalRules và đối chiếu dải lương chuẩn
+                await CreateApprovalStepsForRequisitionAsync(requisition, currentUserId, cancellationToken);
                 await _dbContext.SaveChangesAsync(cancellationToken);
             }
 
@@ -1233,6 +1195,126 @@ public class RequisitionService(
         var bodId = bodUser?.Id ?? defaultAdmin?.Id ?? fallbackUserId;
 
         return (hrId, bodId);
+    }
+
+    private async Task CreateApprovalStepsForRequisitionAsync(
+        JobRequisition requisition,
+        Guid fallbackUserId,
+        CancellationToken cancellationToken)
+    {
+        var proposedSalary = requisition.MaxSalary ?? requisition.MinSalary ?? 0m;
+        
+        // 1. Kiểm tra xem mức lương có vượt trần dải chuẩn của chức danh hay không
+        bool isExceededPositionBand = false;
+        if (requisition.JobPositionId.HasValue)
+        {
+            var position = await _dbContext.JobPositions.FirstOrDefaultAsync(p => p.Id == requisition.JobPositionId.Value, cancellationToken);
+            if (position != null && position.MaxSalary.HasValue && proposedSalary > position.MaxSalary.Value)
+            {
+                isExceededPositionBand = true;
+                _logger.LogWarning("Requisition {Code} có mức lương {Proposed} vượt trần dải chuẩn {MaxSalary} của chức danh {PositionTitle}. Yêu cầu cấp duyệt Ban Giám Đốc (BOD).",
+                    requisition.Code, proposedSalary, position.MaxSalary.Value, position.Title);
+            }
+        }
+
+        // 2. Tra cứu quy trình duyệt từ ApprovalRules dựa trên phòng ban và mức lương đề xuất
+        var applicableStepsResponse = await _approvalRuleService.GetApplicableStepsAsync(requisition.DepartmentId, proposedSalary, cancellationToken);
+
+        var approvalSteps = new List<RequisitionApproval>();
+
+        if (applicableStepsResponse.IsSuccess && applicableStepsResponse.Data != null && applicableStepsResponse.Data.Count > 0)
+        {
+            int order = 1;
+            foreach (var ruleStep in applicableStepsResponse.Data.OrderBy(s => s.StepOrder))
+            {
+                Guid approverId = Guid.Empty;
+
+                if (ruleStep.ApproverUserId.HasValue && ruleStep.ApproverUserId.Value != Guid.Empty)
+                {
+                    approverId = ruleStep.ApproverUserId.Value;
+                }
+                else if (ruleStep.ApproverRoleId.HasValue && ruleStep.ApproverRoleId.Value != Guid.Empty)
+                {
+                    var userInRole = await _dbContext.UserRoles
+                        .Where(ur => ur.RoleId == ruleStep.ApproverRoleId.Value)
+                        .Select(ur => ur.UserId)
+                        .FirstOrDefaultAsync(cancellationToken);
+
+                    if (userInRole != Guid.Empty)
+                    {
+                        approverId = userInRole;
+                    }
+                }
+
+                if (approverId == Guid.Empty)
+                {
+                    var (defaultHr, defaultBod) = await GetDefaultApproversAsync(fallbackUserId, cancellationToken);
+                    approverId = (order == 1) ? defaultHr : defaultBod;
+                }
+
+                approvalSteps.Add(new RequisitionApproval
+                {
+                    Id = Guid.NewGuid(),
+                    RequisitionId = requisition.Id,
+                    ApproverId = approverId,
+                    StepOrder = order++,
+                    Status = ApprovalStatus.PENDING,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                });
+            }
+
+            // Nếu vượt trần chức danh mà trong các bước chưa có cấp BOD thì bổ sung cấp BOD duyệt cuối cùng
+            if (isExceededPositionBand && approvalSteps.Count < 2)
+            {
+                var (_, bodId) = await GetDefaultApproversAsync(fallbackUserId, cancellationToken);
+                if (!approvalSteps.Any(s => s.ApproverId == bodId))
+                {
+                    approvalSteps.Add(new RequisitionApproval
+                    {
+                        Id = Guid.NewGuid(),
+                        RequisitionId = requisition.Id,
+                        ApproverId = bodId,
+                        StepOrder = approvalSteps.Count + 1,
+                        Status = ApprovalStatus.PENDING,
+                        CreatedAt = DateTimeOffset.UtcNow,
+                        UpdatedAt = DateTimeOffset.UtcNow
+                    });
+                }
+            }
+        }
+        else
+        {
+            // Fallback: Quy trình mặc định HR + BOD
+            var (hrApproverId, bodApproverId) = await GetDefaultApproversAsync(fallbackUserId, cancellationToken);
+            approvalSteps.Add(new RequisitionApproval
+            {
+                Id = Guid.NewGuid(),
+                RequisitionId = requisition.Id,
+                ApproverId = hrApproverId,
+                StepOrder = 1,
+                Status = ApprovalStatus.PENDING,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            });
+
+            // Nếu lương >= 20 triệu hoặc vượt trần dải chuẩn thì bắt buộc có BOD duyệt
+            if (proposedSalary >= 20000000m || isExceededPositionBand)
+            {
+                approvalSteps.Add(new RequisitionApproval
+                {
+                    Id = Guid.NewGuid(),
+                    RequisitionId = requisition.Id,
+                    ApproverId = bodApproverId,
+                    StepOrder = 2,
+                    Status = ApprovalStatus.PENDING,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                });
+            }
+        }
+
+        await _dbContext.RequisitionApprovals.AddRangeAsync(approvalSteps, cancellationToken);
     }
 
     private static string StripHtml(string? html)

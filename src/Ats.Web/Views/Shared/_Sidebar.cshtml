@@ -2,13 +2,14 @@
 @using Ats.Web.Constants
 
 @{
-    var isCandidate = User.IsInRole(UserRoles.Candidate);
     var isAdmin = User.IsInRole(UserRoles.Admin);
     var isHrManager = User.IsInRole(UserRoles.HRManager);
     var isRecruiter = User.IsInRole(UserRoles.Recruiter);
     var isHiringManager = User.IsInRole(UserRoles.HiringManager);
     var isInterviewer = User.IsInRole(UserRoles.Interviewer);
     var isApprover = User.IsInRole(UserRoles.Approver);
+    var hasStaffRole = isAdmin || isHrManager || isRecruiter || isHiringManager || isInterviewer || isApprover;
+    var isCandidate = !hasStaffRole && User.IsInRole(UserRoles.Candidate);
     var userInitial = (User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "U");
     var userName = User.Identity?.Name ?? "Người dùng";
     var userEmail = User.FindFirstValue(ClaimTypes.Email) ?? "";

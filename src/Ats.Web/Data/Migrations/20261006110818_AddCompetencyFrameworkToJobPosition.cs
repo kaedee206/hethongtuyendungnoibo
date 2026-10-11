@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -11,24 +11,6 @@ namespace Ats.Web.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "lock_reason",
-                table: "candidates");
-
-            migrationBuilder.DropColumn(
-                name: "locked_at",
-                table: "candidates");
-
-            migrationBuilder.DropColumn(
-                name: "locked_by",
-                table: "candidates");
-
-            migrationBuilder.AddColumn<string>(
-                name: "job_title",
-                table: "users",
-                type: "text",
-                nullable: true);
-
             migrationBuilder.AddColumn<string>(
                 name: "salary_band_explanation",
                 table: "job_requisitions",
@@ -40,20 +22,6 @@ namespace Ats.Web.Data.Migrations
                 table: "job_positions",
                 type: "uuid",
                 nullable: true);
-
-            migrationBuilder.AddColumn<int>(
-                name: "level",
-                table: "departments",
-                type: "integer",
-                nullable: false,
-                defaultValue: 0);
-
-            migrationBuilder.AddColumn<string>(
-                name: "path",
-                table: "departments",
-                type: "text",
-                nullable: false,
-                defaultValue: "");
 
             migrationBuilder.CreateTable(
                 name: "company_profiles",

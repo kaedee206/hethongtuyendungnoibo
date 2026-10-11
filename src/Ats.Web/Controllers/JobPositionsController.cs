@@ -443,6 +443,7 @@ public class JobPositionsController(
             query = query.Where(p => p.DepartmentId == departmentId.Value);
         }
 
+        var canViewSalary = CanUserViewSalary(User) || User.IsInRole(UserRoles.HiringManager) || User.IsInRole(UserRoles.Recruiter);
         var result = await query
             .OrderBy(p => p.Title)
             .Select(p => new
@@ -450,8 +451,10 @@ public class JobPositionsController(
                 p.Id,
                 p.Code,
                 p.Title,
-                p.JobLevel
-                // MinSalary / MaxSalary intentionally omitted — security boundary SCRUM-214
+                p.JobLevel,
+                departmentId = p.DepartmentId,
+                minSalary = canViewSalary ? p.MinSalary : null,
+                maxSalary = canViewSalary ? p.MaxSalary : null
             })
             .Take(50)
             .ToListAsync(cancellationToken);
