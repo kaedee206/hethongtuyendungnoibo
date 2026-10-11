@@ -81,6 +81,10 @@ namespace Ats.Web.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("status");
 
+                    b.Property<string>("TrackingCode")
+                        .HasColumnType("text")
+                        .HasColumnName("tracking_code");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -103,6 +107,9 @@ namespace Ats.Web.Migrations
 
                     b.HasIndex("ResumeId")
                         .HasDatabaseName("ix_applications_resume_id");
+
+                    b.HasIndex("TrackingCode")
+                        .HasDatabaseName("ix_applications_tracking_code");
 
                     b.ToTable("applications", (string)null);
                 });
@@ -1424,6 +1431,14 @@ namespace Ats.Web.Migrations
                         .HasColumnType("text")
                         .HasColumnName("job_level");
 
+                    b.Property<decimal?>("MaxSalary")
+                        .HasColumnType("numeric")
+                        .HasColumnName("max_salary");
+
+                    b.Property<decimal?>("MinSalary")
+                        .HasColumnType("numeric")
+                        .HasColumnName("min_salary");
+
                     b.Property<string>("StandardCompetencies")
                         .HasColumnType("jsonb")
                         .HasColumnName("standard_competencies");
@@ -1467,6 +1482,10 @@ namespace Ats.Web.Migrations
                     b.Property<string>("Benefits")
                         .HasColumnType("text")
                         .HasColumnName("benefits");
+
+                    b.Property<string>("Code")
+                        .HasColumnType("text")
+                        .HasColumnName("code");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
