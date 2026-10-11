@@ -6,6 +6,7 @@ using Ats.Web.Models;
 using Ats.Web.Models.Enums;
 using Ats.Web.Models.ViewModels.Workspace;
 using Ats.Web.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -425,6 +426,7 @@ public class HomeController : Controller
     }
 
     [HttpGet("/api/candidates/pipeline")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Interviewer},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng")]
     public async Task<IActionResult> GetCandidatePipeline(
         [FromQuery] string? search,
         [FromQuery] string? stageOrder,

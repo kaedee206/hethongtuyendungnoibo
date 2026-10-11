@@ -10,6 +10,13 @@ public class SecurityHeadersMiddleware(RequestDelegate next)
 
     public async Task InvokeAsync(HttpContext context)
     {
+        context.Response.OnStarting(() =>
+        {
+            context.Response.Headers.Remove("Server");
+            context.Response.Headers.Remove("X-Powered-By");
+            return Task.CompletedTask;
+        });
+
         // 1. Chống MIME-sniffing: Ngăn trình duyệt tự ý đoán định dạng file tải lên
         if (!context.Response.Headers.ContainsKey("X-Content-Type-Options"))
         {

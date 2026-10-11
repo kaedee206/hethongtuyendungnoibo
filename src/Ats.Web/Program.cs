@@ -20,6 +20,11 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
     ContentRootPath = contentRoot
 });
 
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.AddServerHeader = false;
+});
+
 // Add services to the container.
 builder.Services.AddControllersWithViews(options =>
 {

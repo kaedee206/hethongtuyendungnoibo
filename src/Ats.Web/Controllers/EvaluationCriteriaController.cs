@@ -1,3 +1,4 @@
+using Ats.Web.Constants;
 using Ats.Web.Models.ViewModels.EvaluationCriteria;
 using Ats.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -5,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Ats.Web.Controllers;
 
-[Authorize]
+[Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.HiringManager},{UserRoles.Recruiter},{UserRoles.Interviewer},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng,Người phỏng vấn")]
 [Route("evaluation-criteria")]
 public class EvaluationCriteriaController(
     IEvaluationCriteriaService criteriaService,

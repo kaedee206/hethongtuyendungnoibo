@@ -23,11 +23,24 @@ public class UserController : ControllerBase
     [HttpGet("tim-kiem")]
     public async Task<IActionResult> SearchUsers([FromQuery] string? keyword, [FromQuery] string? role, [FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
-        // Yêu cầu đăng nhập (SCRUM-94)
-        var userIdString = HttpContext.Session.GetString("UserId");
-        if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out _))
+        // Yêu cầu đăng nhập và phân quyền Quản trị / Nhân sự
+        var userIdString = HttpContext.Session.GetString("UserId") 
+            ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var currentUserId))
         {
             return Unauthorized(new { isSuccess = false, message = "Vui lòng đăng nhập để thực hiện chức năng này." });
+        }
+
+        var isStaffAdmin = User.IsInRole("Admin") || User.IsInRole("HRManager") || User.IsInRole("HR_MANAGER") ||
+                           User.IsInRole("Quản trị viên") || User.IsInRole("Trưởng phòng nhân sự");
+
+        if (!isStaffAdmin)
+        {
+            var currentUser = await _dbContext.Users.FindAsync(currentUserId);
+            if (currentUser == null || (currentUser.Role != "Admin" && currentUser.Role != "HRManager" && currentUser.Role != "Quản trị viên" && currentUser.Role != "Trưởng phòng nhân sự"))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { isSuccess = false, message = "Bạn không có quyền xem thông tin danh sách tài khoản." });
+            }
         }
 
         var query = _dbContext.Users.AsQueryable();
