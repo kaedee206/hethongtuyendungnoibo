@@ -1,0 +1,339 @@
+@model Ats.Web.Models.ViewModels.Tracking.ApplicationTrackingIndexViewModel
+@{
+    ViewData["Title"] = "Tra Cứu Trạng Thái Hồ Sơ Ứng Tuyển — NoveraTech Careers";
+    ViewData["BodyClass"] = "tracking-page";
+}
+
+@* ══════════════════════════════════════════════════════════
+   NOVERATECH CAREERS — CỔNG TRA CỨU HỒ SƠ ỨNG VIÊN
+   Tuân thủ 100% RULE.md & Coding_Convention.md
+   - Canvas: #F8FAFC (Slate-50)
+   - Accent: #059669 (Emerald-600)
+   - Border radius: Button/Input 8px, Card 12px, Badge 6px
+   - Bảo mật: Ẩn 100% ghi chú nội bộ và tên người phỏng vấn
+   ══════════════════════════════════════════════════════════ *@
+
+<div class="tracking-container py-4 py-md-5">
+    <div class="container" style="max-width: 860px;">
+
+        <!-- Header Section (Clean Single-Tier) -->
+        <div class="text-center mb-4 mb-md-5">
+            <div class="d-inline-flex align-items-center gap-2 px-3 py-1 mb-3" 
+                 style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 6px; color: #059669; font-size: 0.8rem; font-weight: 600;">
+                <i class="bi bi-shield-check"></i> Cổng Tra Cứu Tự Phục Vụ Ứng Viên
+            </div>
+            <h1 class="fw-bold mb-2" style="color: #0F172A; font-size: 1.75rem; letter-spacing: -0.02em;">
+                Theo Dõi Tiến Độ Hồ Sơ Tuyển Dụng
+            </h1>
+            <p class="text-muted mx-auto mb-0" style="max-width: 580px; font-size: 0.95rem; line-height: 1.5;">
+                Nhập mã tra cứu nhận được khi nộp hồ sơ cùng địa chỉ email của bạn để kiểm tra trạng thái xét duyệt nhanh chóng và chính xác.
+            </p>
+        </div>
+
+        <!-- Form Card Tra Cứu -->
+        <div class="card border mb-4 shadow-sm" style="border-color: #E2E8F0; border-radius: 12px; background: #FFFFFF;">
+            <div class="card-body p-4 p-md-4">
+                <form asp-controller="Tracking" asp-action="Index" method="post" id="trackingForm" novalidate>
+                    @Html.AntiForgeryToken()
+
+                    <div class="row g-3">
+                        <!-- Input Mã Tra Cứu -->
+                        <div class="col-md-6">
+                            <label asp-for="Input.TrackingCode" class="form-label fw-semibold text-dark small mb-1">
+                                <i class="bi bi-upc-scan text-muted me-1"></i> Mã tra cứu hồ sơ <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text border-end-0 bg-light text-muted" style="border-radius: 8px 0 0 8px; border-color: #E2E8F0;">
+                                    <i class="bi bi-ticket-perforated"></i>
+                                </span>
+                                <input asp-for="Input.TrackingCode" 
+                                       class="form-control text-uppercase font-monospace border-start-0" 
+                                       style="border-radius: 0 8px 8px 0; border-color: #E2E8F0; font-size: 0.9rem;" 
+                                       placeholder="VD: NOV-APP-202610-0001" 
+                                       autocomplete="off"
+                                       required />
+                            </div>
+                            <span asp-validation-for="Input.TrackingCode" class="text-danger small mt-1 d-block"></span>
+                        </div>
+
+                        <!-- Input Email -->
+                        <div class="col-md-6">
+                            <label asp-for="Input.Email" class="form-label fw-semibold text-dark small mb-1">
+                                <i class="bi bi-envelope text-muted me-1"></i> Email nộp hồ sơ <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text border-end-0 bg-light text-muted" style="border-radius: 8px 0 0 8px; border-color: #E2E8F0;">
+                                    <i class="bi bi-at"></i>
+                                </span>
+                                <input asp-for="Input.Email" 
+                                       type="email"
+                                       class="form-control border-start-0" 
+                                       style="border-radius: 0 8px 8px 0; border-color: #E2E8F0; font-size: 0.9rem;" 
+                                       placeholder="VD: ungvien@example.com" 
+                                       autocomplete="email"
+                                       required />
+                            </div>
+                            <span asp-validation-for="Input.Email" class="text-danger small mt-1 d-block"></span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mt-4 pt-2 border-top" style="border-color: #F1F5F9 !important;">
+                        <div class="text-muted small d-flex align-items-center gap-1.5">
+                            <i class="bi bi-lock-fill text-success"></i>
+                            <span>Bảo mật 2 yếu tố, mã hóa dữ liệu theo Nghị định 13/2023/NĐ-CP</span>
+                        </div>
+                        <button type="submit" class="btn text-white fw-semibold px-4 py-2" id="btnSubmitTracking"
+                                style="background: #059669; border-radius: 8px; font-size: 0.9rem; border: none; box-shadow: 0 1px 2px rgba(5, 150, 105, 0.2);">
+                            <i class="bi bi-search me-1.5"></i> Tra cứu trạng thái
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        @if (Model.HasSearched && Model.Result != null)
+        {
+            @if (!Model.Result.IsFound)
+            {
+                <!-- Thông báo Không Tìm Thấy -->
+                <div class="card border-0 mb-4 shadow-sm" style="border-radius: 12px; background: #FFFBEB; border: 1px solid #FDE68A !important;">
+                    <div class="card-body p-4 d-flex align-items-start gap-3">
+                        <div class="d-flex align-items-center justify-content-center text-warning flex-shrink-0" 
+                             style="width: 42px; height: 42px; background: #FEF3C7; border-radius: 8px; font-size: 1.25rem;">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h2 class="h6 fw-bold mb-1" style="color: #92400E;">Không tìm thấy hồ sơ phù hợp</h2>
+                            <p class="small mb-3" style="color: #B45309; line-height: 1.5;">
+                                @Model.Result.ErrorMessage
+                            </p>
+                            <div class="small p-3" style="background: #FFFFFF; border-radius: 8px; border: 1px solid #FDE68A; color: #78350F;">
+                                <div class="fw-semibold mb-1"><i class="bi bi-lightbulb me-1"></i> Gợi ý kiểm tra:</div>
+                                <ul class="mb-0 ps-3">
+                                    <li>Kiểm tra lại mã tra cứu trong email xác nhận nộp hồ sơ từ NoveraTech (thường có dạng <code>NOV-APP-...</code>).</li>
+                                    <li>Đảm bảo bạn nhập đúng địa chỉ email đã điền trong form nộp CV.</li>
+                                    <li>Nếu bạn vừa nộp hồ sơ trong vài phút trước, vui lòng thử lại sau ít phút để hệ thống hoàn tất đồng bộ.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- KẾT QUẢ TRA CỨU THÀNH CÔNG -->
+                <div class="card border mb-4 shadow-sm" style="border-color: #E2E8F0; border-radius: 12px; background: #FFFFFF;">
+                    <!-- Card Header: Vị trí & Trạng thái tổng quát -->
+                    <div class="card-header p-4 border-bottom bg-transparent" style="border-color: #F1F5F9;">
+                        <div class="d-flex flex-column flex-md-row md-align-items-center justify-content-between gap-3">
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="badge fw-semibold text-uppercase" 
+                                          style="font-size: 0.72rem; border-radius: 6px; background: #F1F5F9; color: #475569;">
+                                        @Model.Result.DepartmentName
+                                    </span>
+                                    <span class="text-muted small">&middot;</span>
+                                    <span class="text-muted small"><i class="bi bi-geo-alt me-0.5"></i> @Model.Result.WorkLocation</span>
+                                    <span class="text-muted small">&middot;</span>
+                                    <span class="text-muted small"><i class="bi bi-clock me-0.5"></i> @Model.Result.EmploymentType</span>
+                                </div>
+                                <h2 class="h5 fw-bold mb-1" style="color: #0F172A;">
+                                    @Model.Result.JobTitle
+                                </h2>
+                                <div class="small text-muted">
+                                    Ứng viên: <strong class="text-dark">@Model.Result.CandidateDisplayName</strong> 
+                                    <span class="mx-1">&middot;</span> 
+                                    Email: <span class="font-monospace text-muted">@Model.Result.MaskedEmail</span>
+                                </div>
+                            </div>
+
+                            <!-- Trạng thái tổng quát (Chỉ 1 trong 4: Đã nhận, Đang xem xét, Mời phỏng vấn, Kết thúc) -->
+                            <div class="text-md-end flex-shrink-0">
+                                <div class="small text-muted mb-1">Trạng thái hồ sơ:</div>
+                                @{
+                                    var badgeBg = Model.Result.Status switch
+                                    {
+                                        Ats.Web.Models.Enums.PublicApplicationStatus.Received => "#EFF6FF",
+                                        Ats.Web.Models.Enums.PublicApplicationStatus.UnderReview => "#FFFBEB",
+                                        Ats.Web.Models.Enums.PublicApplicationStatus.InterviewInvited => "#EEF2FF",
+                                        Ats.Web.Models.Enums.PublicApplicationStatus.Concluded => "#F8FAFC",
+                                        _ => "#F8FAFC"
+                                    };
+                                    var badgeColor = Model.Result.Status switch
+                                    {
+                                        Ats.Web.Models.Enums.PublicApplicationStatus.Received => "#1D4ED8",
+                                        Ats.Web.Models.Enums.PublicApplicationStatus.UnderReview => "#B45309",
+                                        Ats.Web.Models.Enums.PublicApplicationStatus.InterviewInvited => "#4338CA",
+                                        Ats.Web.Models.Enums.PublicApplicationStatus.Concluded => "#334155",
+                                        _ => "#334155"
+                                    };
+                                    var badgeBorder = Model.Result.Status switch
+                                    {
+                                        Ats.Web.Models.Enums.PublicApplicationStatus.Received => "#BFDBFE",
+                                        Ats.Web.Models.Enums.PublicApplicationStatus.UnderReview => "#FDE68A",
+                                        Ats.Web.Models.Enums.PublicApplicationStatus.InterviewInvited => "#C7D2FE",
+                                        Ats.Web.Models.Enums.PublicApplicationStatus.Concluded => "#E2E8F0",
+                                        _ => "#E2E8F0"
+                                    };
+                                }
+                                <div class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5 fw-bold" 
+                                     style="background: @badgeBg; color: @badgeColor; border: 1px solid @badgeBorder; border-radius: 6px; font-size: 0.95rem;">
+                                    <i class="bi @Model.Result.StatusIcon"></i>
+                                    <span>@Model.Result.StatusDisplayName</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Body: Stepper 4 Bước & Thông tin tiến độ -->
+                    <div class="card-body p-4">
+
+                        <!-- Meta Info Row -->
+                        <div class="p-3 mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3" 
+                             style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;">
+                            <div>
+                                <span class="small text-muted d-block">Mã tra cứu:</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-bold font-monospace text-dark" style="font-size: 1rem;">@Model.Result.TrackingCode</span>
+                                    <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-muted btn-copy-code" 
+                                            data-code="@Model.Result.TrackingCode" title="Sao chép mã" style="border-radius: 6px; font-size: 0.75rem;">
+                                        <i class="bi bi-clipboard"></i> Sao chép
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="small text-muted d-block">Thời điểm nộp:</span>
+                                <span class="fw-semibold text-dark small"><i class="bi bi-calendar3 me-1 text-muted"></i>@Model.Result.AppliedDateDisplay</span>
+                            </div>
+                            <div>
+                                <span class="small text-muted d-block">Cập nhật gần nhất:</span>
+                                <span class="fw-semibold text-dark small"><i class="bi bi-arrow-repeat me-1 text-muted"></i>@Model.Result.LastUpdatedDateDisplay</span>
+                            </div>
+                        </div>
+
+                        <!-- 4-Stage Visual Stepper -->
+                        <div class="stepper-section my-4 py-2">
+                            <h3 class="small fw-bold text-uppercase text-muted mb-3" style="letter-spacing: 0.05em; font-size: 0.75rem;">
+                                <i class="bi bi-diagram-3 me-1"></i> Tiến trình xét duyệt hồ sơ (4 giai đoạn)
+                            </h3>
+
+                            <div class="tracking-stepper d-flex flex-column flex-md-row justify-content-between gap-3 position-relative">
+                                @foreach (var step in Model.Result.StepperSteps)
+                                {
+                                    var isCompleted = step.State == "completed";
+                                    var isActive = step.State == "active";
+                                    var isUpcoming = step.State == "upcoming";
+
+                                    var stepIcon = isCompleted ? "bi-check-lg" : (isActive ? "bi-record-fill" : "bi-circle");
+                                    var circleBg = isCompleted ? "#059669" : (isActive ? "#059669" : "#F1F5F9");
+                                    var circleColor = isCompleted || isActive ? "#FFFFFF" : "#94A3B8";
+                                    var circleBorder = isCompleted || isActive ? "#059669" : "#CBD5E1";
+                                    var titleColor = isCompleted || isActive ? "#0F172A" : "#94A3B8";
+
+                                    <div class="stepper-step flex-fill d-flex flex-md-column align-items-center text-md-center position-relative">
+                                        <!-- Step Circle -->
+                                        <div class="step-circle d-flex align-items-center justify-content-center flex-shrink-0 mb-md-2 me-3 me-md-0 shadow-sm"
+                                             style="width: 36px; height: 36px; border-radius: 50%; background: @circleBg; color: @circleColor; border: 2px solid @circleBorder; z-index: 2; transition: all 0.2s;">
+                                            <i class="bi @stepIcon" style="font-size: 1rem;"></i>
+                                        </div>
+
+                                        <!-- Step Details -->
+                                        <div class="step-content">
+                                            <div class="fw-bold small" style="color: @titleColor; font-size: 0.88rem;">
+                                                @step.Title
+                                            </div>
+                                            <div class="text-muted" style="font-size: 0.75rem; line-height: 1.3;">
+                                                @step.Subtitle
+                                            </div>
+                                            @if (!string.IsNullOrWhiteSpace(step.DateDisplay))
+                                            {
+                                                <div class="badge mt-1 py-0.5 px-1.5 fw-normal font-monospace" 
+                                                     style="font-size: 0.7rem; background: #F1F5F9; color: #475569; border-radius: 4px;">
+                                                    @step.DateDisplay
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Status Description Box -->
+                        <div class="p-3.5 mt-4" style="background: #F8FAFC; border-left: 4px solid #059669; border-radius: 0 8px 8px 0;">
+                            <div class="d-flex align-items-start gap-2.5">
+                                <i class="bi bi-info-circle-fill text-success flex-shrink-0 mt-0.5" style="font-size: 1.1rem;"></i>
+                                <div class="small" style="color: #334155; line-height: 1.6;">
+                                    <strong>Thông tin từ Ban Tuyển dụng NoveraTech:</strong><br />
+                                    @Model.Result.StatusDescription
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Card Footer: Hành động thêm -->
+                    <div class="card-footer p-3 bg-light d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2" 
+                         style="border-color: #F1F5F9; border-radius: 0 0 12px 12px;">
+                        <span class="text-muted small">
+                            <i class="bi bi-question-circle me-1"></i> Có câu hỏi về tiến độ? Liên hệ: <a href="mailto:careers@noveratech.vn" class="text-success text-decoration-none fw-semibold">careers@noveratech.vn</a>
+                        </span>
+                        <a asp-controller="Jobs" asp-action="Index" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px;">
+                            <i class="bi bi-briefcase me-1"></i> Xem các vị trí khác
+                        </a>
+                    </div>
+                </div>
+            }
+        }
+
+        <!-- Hướng dẫn & Cam kết bảo mật -->
+        <div class="row g-3 text-muted small mt-2">
+            <div class="col-md-4">
+                <div class="p-3 border h-100" style="border-radius: 8px; background: #FFFFFF; border-color: #E2E8F0 !important;">
+                    <div class="fw-semibold text-dark mb-1"><i class="bi bi-lightning-charge text-success me-1"></i> Cập nhật thời gian thực</div>
+                    <div>Trạng thái hồ sơ được đồng bộ ngay khi bộ phận nhân sự hoàn tất thao tác xét duyệt.</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 border h-100" style="border-radius: 8px; background: #FFFFFF; border-color: #E2E8F0 !important;">
+                    <div class="fw-semibold text-dark mb-1"><i class="bi bi-shield-shaded text-success me-1"></i> Bảo vệ quyền riêng tư</div>
+                    <div>Không hiển thị dữ liệu đánh giá nội bộ, đảm bảo tính công bằng và minh bạch tối đa.</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 border h-100" style="border-radius: 8px; background: #FFFFFF; border-color: #E2E8F0 !important;">
+                    <div class="fw-semibold text-dark mb-1"><i class="bi bi-headset text-success me-1"></i> Không cần gọi điện thoại</div>
+                    <div>Chủ động theo dõi hồ sơ 24/7 trực tiếp trên website mà không làm gián đoạn công việc của bạn.</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Xử lý sao chép mã tra cứu
+            const copyBtns = document.querySelectorAll('.btn-copy-code');
+            copyBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const code = this.getAttribute('data-code');
+                    if (code && navigator.clipboard) {
+                        navigator.clipboard.writeText(code).then(() => {
+                            const originalHtml = this.innerHTML;
+                            this.innerHTML = '<i class="bi bi-check2"></i> Đã sao chép';
+                            this.classList.replace('btn-light', 'btn-success');
+                            this.classList.replace('text-muted', 'text-white');
+                            setTimeout(() => {
+                                this.innerHTML = originalHtml;
+                                this.classList.replace('btn-success', 'btn-light');
+                                this.classList.replace('text-white', 'text-muted');
+                            }, 2000);
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}
