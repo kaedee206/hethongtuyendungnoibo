@@ -997,8 +997,8 @@
                                     </div>
                                 </div>
 
-                                <!-- Chuyển đổi Kanban / Bảng & Chế độ Vừa màn hình -->
-                                <div class="d-flex align-items-center gap-1.5">
+                                <!-- Chuyển đổi Kanban / Bảng & Chế độ Xem Thu gọn vs Chi tiết -->
+                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
                                     <div class="btn-group btn-group-sm" role="group">
                                         <button type="button" id="btnPipelineKanbanView" class="btn btn-outline-success pipeline-view-btn active" onclick="switchPipelineView('kanban')" title="Bảng Kanban Kéo Thả">
                                             <i class="bi bi-kanban-fill me-1"></i> Kanban
@@ -1007,27 +1007,58 @@
                                             <i class="bi bi-table me-1"></i> Bảng
                                         </button>
                                     </div>
-                                    <button type="button" id="btnToggleKanbanFit" class="btn btn-outline-secondary pipeline-view-btn" onclick="toggleKanbanFitMode()" title="Chuyển chế độ: Vừa trọn 1 màn hình (không cuộn ngang) / Cuộn rộng">
-                                        <i id="fitModeIcon" class="bi bi-arrows-angle-contract me-1"></i><span id="fitModeLabel">Vừa màn hình</span>
-                                    </button>
+                                    <div class="btn-group btn-group-sm" role="group" id="kanbanDetailModeGroup">
+                                        <button type="button" id="btnKanbanModeCompact" class="btn btn-secondary text-white pipeline-view-btn active" onclick="setKanbanCardDetailMode('compact')" title="Xem thu gọn (Ẩn SĐT/Email, thẻ tinh gọn)">
+                                            <i class="bi bi-card-heading me-1"></i>Thu gọn
+                                        </button>
+                                        <button type="button" id="btnKanbanModeDetailed" class="btn btn-outline-secondary pipeline-view-btn" onclick="setKanbanCardDetailMode('detailed')" title="Xem chi tiết (Hiển thị đầy đủ SĐT & Email)">
+                                            <i class="bi bi-card-text me-1"></i>Chi tiết
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- Mobile Column Dots Indicator (Chỉ hiển thị trên thiết bị di động để vuốt nhanh) -->
+                        <div class="d-flex d-md-none justify-content-center align-items-center gap-1.5 mt-2 mb-1" id="kanbanMobileDots">
+                            <button type="button" class="btn btn-sm p-0 kanban-mobile-dot active" onclick="scrollToKanbanColumn(1)" title="Hồ sơ mới"></button>
+                            <button type="button" class="btn btn-sm p-0 kanban-mobile-dot" onclick="scrollToKanbanColumn(2)" title="Sàng lọc"></button>
+                            <button type="button" class="btn btn-sm p-0 kanban-mobile-dot" onclick="scrollToKanbanColumn(3)" title="Phỏng vấn"></button>
+                            <button type="button" class="btn btn-sm p-0 kanban-mobile-dot" onclick="scrollToKanbanColumn(5)" title="Offer"></button>
+                            <button type="button" class="btn btn-sm p-0 kanban-mobile-dot" onclick="scrollToKanbanColumn(6)" title="Nhận việc"></button>
+                            <button type="button" class="btn btn-sm p-0 kanban-mobile-dot" onclick="scrollToKanbanColumn(7)" title="Loại"></button>
+                        </div>
+
                         <!-- ============================================================== -->
-                        <!-- SCRUM-319: KANBAN BOARD CONTAINER -->
+                        <!-- SCRUM-319: KANBAN BOARD CONTAINER (Tự thích ứng & Thu gọn cột) -->
                         <!-- ============================================================== -->
-                        <div id="candidateKanbanViewContainer" class="kanban-board-wrapper mt-2">
+                        <div id="candidateKanbanViewContainer" class="kanban-board-wrapper kanban-mode-compact mt-2">
                             <div class="kanban-board-grid">
                                 <!-- 1. CỘT HỒ SƠ MỚI (StageOrder 1) -->
-                                <div class="kanban-column" data-kanban-stage="1">
-                                    <div class="kanban-column-header d-flex justify-content-between align-items-center" style="gap: 4px;">
+                                <div class="kanban-column" id="kanbanCol-1" data-kanban-stage="1" onclick="handleKanbanColumnClick(1, event)">
+                                    <div class="kanban-column-header">
                                         <div class="kanban-column-strip" style="background: #2563EB;"></div>
-                                        <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
-                                            <i class="bi bi-inbox-fill text-primary" style="font-size: 0.85rem;"></i>
-                                            <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Hồ sơ mới</span>
+                                        <!-- Header khi mở rộng -->
+                                        <div class="kanban-col-expanded-content d-flex justify-content-between align-items-center w-100" style="gap: 4px;">
+                                            <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
+                                                <i class="bi bi-inbox-fill text-primary" style="font-size: 0.85rem;"></i>
+                                                <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Hồ sơ mới</span>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                                <span id="kanbanCountNew" class="kanban-col-count" style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE;">0</span>
+                                                <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(1, event)" title="Thu gọn cột Hồ sơ mới">
+                                                    <i class="bi bi-chevron-bar-left"></i>
+                                                </button>
+                                            </div>
                                         </div>
-                                        <span id="kanbanCountNew" class="kanban-col-count flex-shrink-0" style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE;">0</span>
+                                        <!-- Header khi thu gọn -->
+                                        <div class="kanban-col-collapsed-content">
+                                            <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(1, event)" title="Mở rộng cột Hồ sơ mới">
+                                                <i class="bi bi-chevron-bar-right text-primary"></i>
+                                            </button>
+                                            <span id="kanbanCountNewCollapsed" class="kanban-col-count" style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE;">0</span>
+                                            <span class="kanban-collapsed-title">Hồ sơ mới</span>
+                                        </div>
                                     </div>
                                     <div class="kanban-cards-container" id="kanbanDropZone-1" data-stage-order="1"
                                          ondragover="onKanbanContainerDragOver(event)" ondragleave="onKanbanContainerDragLeave(event)" ondrop="onKanbanContainerDrop(event, 1)">
@@ -1043,14 +1074,30 @@
                                 </div>
 
                                 <!-- 2. CỘT SÀNG LỌC (StageOrder 2) -->
-                                <div class="kanban-column" data-kanban-stage="2">
-                                    <div class="kanban-column-header d-flex justify-content-between align-items-center" style="gap: 4px;">
+                                <div class="kanban-column" id="kanbanCol-2" data-kanban-stage="2" onclick="handleKanbanColumnClick(2, event)">
+                                    <div class="kanban-column-header">
                                         <div class="kanban-column-strip" style="background: #4F46E5;"></div>
-                                        <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
-                                            <i class="bi bi-funnel-fill" style="color: #4F46E5; font-size: 0.85rem;"></i>
-                                            <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Sàng lọc</span>
+                                        <!-- Header khi mở rộng -->
+                                        <div class="kanban-col-expanded-content d-flex justify-content-between align-items-center w-100" style="gap: 4px;">
+                                            <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
+                                                <i class="bi bi-funnel-fill" style="color: #4F46E5; font-size: 0.85rem;"></i>
+                                                <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Sàng lọc</span>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                                <span id="kanbanCountScreen" class="kanban-col-count" style="background: #EEF2FF; color: #4338CA; border: 1px solid #C7D2FE;">0</span>
+                                                <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(2, event)" title="Thu gọn cột Sàng lọc">
+                                                    <i class="bi bi-chevron-bar-left"></i>
+                                                </button>
+                                            </div>
                                         </div>
-                                        <span id="kanbanCountScreen" class="kanban-col-count flex-shrink-0" style="background: #EEF2FF; color: #4338CA; border: 1px solid #C7D2FE;">0</span>
+                                        <!-- Header khi thu gọn -->
+                                        <div class="kanban-col-collapsed-content">
+                                            <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(2, event)" title="Mở rộng cột Sàng lọc">
+                                                <i class="bi bi-chevron-bar-right" style="color: #4F46E5;"></i>
+                                            </button>
+                                            <span id="kanbanCountScreenCollapsed" class="kanban-col-count" style="background: #EEF2FF; color: #4338CA; border: 1px solid #C7D2FE;">0</span>
+                                            <span class="kanban-collapsed-title">Sàng lọc</span>
+                                        </div>
                                     </div>
                                     <div class="kanban-cards-container" id="kanbanDropZone-2" data-stage-order="2"
                                          ondragover="onKanbanContainerDragOver(event)" ondragleave="onKanbanContainerDragLeave(event)" ondrop="onKanbanContainerDrop(event, 2)">
@@ -1066,14 +1113,30 @@
                                 </div>
 
                                 <!-- 3. CỘT PHỎNG VẤN (StageOrder 3 & 4) -->
-                                <div class="kanban-column" data-kanban-stage="3">
-                                    <div class="kanban-column-header d-flex justify-content-between align-items-center" style="gap: 4px;">
+                                <div class="kanban-column" id="kanbanCol-3" data-kanban-stage="3" onclick="handleKanbanColumnClick(3, event)">
+                                    <div class="kanban-column-header">
                                         <div class="kanban-column-strip" style="background: #D97706;"></div>
-                                        <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
-                                            <i class="bi bi-calendar-event-fill text-warning" style="color: #D97706; font-size: 0.85rem;"></i>
-                                            <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Phỏng vấn</span>
+                                        <!-- Header khi mở rộng -->
+                                        <div class="kanban-col-expanded-content d-flex justify-content-between align-items-center w-100" style="gap: 4px;">
+                                            <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
+                                                <i class="bi bi-calendar-event-fill text-warning" style="color: #D97706; font-size: 0.85rem;"></i>
+                                                <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Phỏng vấn</span>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                                <span id="kanbanCountInterview" class="kanban-col-count" style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A;">0</span>
+                                                <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(3, event)" title="Thu gọn cột Phỏng vấn">
+                                                    <i class="bi bi-chevron-bar-left"></i>
+                                                </button>
+                                            </div>
                                         </div>
-                                        <span id="kanbanCountInterview" class="kanban-col-count flex-shrink-0" style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A;">0</span>
+                                        <!-- Header khi thu gọn -->
+                                        <div class="kanban-col-collapsed-content">
+                                            <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(3, event)" title="Mở rộng cột Phỏng vấn">
+                                                <i class="bi bi-chevron-bar-right text-warning"></i>
+                                            </button>
+                                            <span id="kanbanCountInterviewCollapsed" class="kanban-col-count" style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A;">0</span>
+                                            <span class="kanban-collapsed-title">Phỏng vấn</span>
+                                        </div>
                                     </div>
                                     <div class="kanban-cards-container" id="kanbanDropZone-3" data-stage-order="3"
                                          ondragover="onKanbanContainerDragOver(event)" ondragleave="onKanbanContainerDragLeave(event)" ondrop="onKanbanContainerDrop(event, 3)">
@@ -1089,14 +1152,30 @@
                                 </div>
 
                                 <!-- 4. CỘT ĐỀ XUẤT OFFER (StageOrder 5) -->
-                                <div class="kanban-column" data-kanban-stage="5">
-                                    <div class="kanban-column-header d-flex justify-content-between align-items-center" style="gap: 4px;">
+                                <div class="kanban-column" id="kanbanCol-5" data-kanban-stage="5" onclick="handleKanbanColumnClick(5, event)">
+                                    <div class="kanban-column-header">
                                         <div class="kanban-column-strip" style="background: #7C3AED;"></div>
-                                        <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
-                                            <i class="bi bi-envelope-paper-heart-fill" style="color: #7C3AED; font-size: 0.85rem;"></i>
-                                            <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Offer</span>
+                                        <!-- Header khi mở rộng -->
+                                        <div class="kanban-col-expanded-content d-flex justify-content-between align-items-center w-100" style="gap: 4px;">
+                                            <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
+                                                <i class="bi bi-envelope-paper-heart-fill" style="color: #7C3AED; font-size: 0.85rem;"></i>
+                                                <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Offer</span>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                                <span id="kanbanCountOffer" class="kanban-col-count" style="background: #F5F3FF; color: #6D28D9; border: 1px solid #DDD6FE;">0</span>
+                                                <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(5, event)" title="Thu gọn cột Offer">
+                                                    <i class="bi bi-chevron-bar-left"></i>
+                                                </button>
+                                            </div>
                                         </div>
-                                        <span id="kanbanCountOffer" class="kanban-col-count flex-shrink-0" style="background: #F5F3FF; color: #6D28D9; border: 1px solid #DDD6FE;">0</span>
+                                        <!-- Header khi thu gọn -->
+                                        <div class="kanban-col-collapsed-content">
+                                            <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(5, event)" title="Mở rộng cột Offer">
+                                                <i class="bi bi-chevron-bar-right" style="color: #7C3AED;"></i>
+                                            </button>
+                                            <span id="kanbanCountOfferCollapsed" class="kanban-col-count" style="background: #F5F3FF; color: #6D28D9; border: 1px solid #DDD6FE;">0</span>
+                                            <span class="kanban-collapsed-title">Offer</span>
+                                        </div>
                                     </div>
                                     <div class="kanban-cards-container" id="kanbanDropZone-5" data-stage-order="5"
                                          ondragover="onKanbanContainerDragOver(event)" ondragleave="onKanbanContainerDragLeave(event)" ondrop="onKanbanContainerDrop(event, 5)">
@@ -1112,14 +1191,30 @@
                                 </div>
 
                                 <!-- 5. CỘT NHẬN VIỆC (StageOrder 6) -->
-                                <div class="kanban-column" data-kanban-stage="6">
-                                    <div class="kanban-column-header d-flex justify-content-between align-items-center" style="gap: 4px;">
+                                <div class="kanban-column" id="kanbanCol-6" data-kanban-stage="6" onclick="handleKanbanColumnClick(6, event)">
+                                    <div class="kanban-column-header">
                                         <div class="kanban-column-strip" style="background: #059669;"></div>
-                                        <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
-                                            <i class="bi bi-person-check-fill text-success" style="color: #059669; font-size: 0.85rem;"></i>
-                                            <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Nhận việc</span>
+                                        <!-- Header khi mở rộng -->
+                                        <div class="kanban-col-expanded-content d-flex justify-content-between align-items-center w-100" style="gap: 4px;">
+                                            <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
+                                                <i class="bi bi-person-check-fill text-success" style="color: #059669; font-size: 0.85rem;"></i>
+                                                <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Nhận việc</span>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                                <span id="kanbanCountHired" class="kanban-col-count" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0;">0</span>
+                                                <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(6, event)" title="Thu gọn cột Nhận việc">
+                                                    <i class="bi bi-chevron-bar-left"></i>
+                                                </button>
+                                            </div>
                                         </div>
-                                        <span id="kanbanCountHired" class="kanban-col-count flex-shrink-0" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0;">0</span>
+                                        <!-- Header khi thu gọn -->
+                                        <div class="kanban-col-collapsed-content">
+                                            <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(6, event)" title="Mở rộng cột Nhận việc">
+                                                <i class="bi bi-chevron-bar-right text-success"></i>
+                                            </button>
+                                            <span id="kanbanCountHiredCollapsed" class="kanban-col-count" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0;">0</span>
+                                            <span class="kanban-collapsed-title">Nhận việc</span>
+                                        </div>
                                     </div>
                                     <div class="kanban-cards-container" id="kanbanDropZone-6" data-stage-order="6"
                                          ondragover="onKanbanContainerDragOver(event)" ondragleave="onKanbanContainerDragLeave(event)" ondrop="onKanbanContainerDrop(event, 6)">
@@ -1135,14 +1230,30 @@
                                 </div>
 
                                 <!-- 6. CỘT LOẠI (StageOrder 7 / REJECTED) -->
-                                <div class="kanban-column" data-kanban-stage="7">
-                                    <div class="kanban-column-header d-flex justify-content-between align-items-center" style="gap: 4px;">
+                                <div class="kanban-column" id="kanbanCol-7" data-kanban-stage="7" onclick="handleKanbanColumnClick(7, event)">
+                                    <div class="kanban-column-header">
                                         <div class="kanban-column-strip" style="background: #E11D48;"></div>
-                                        <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
-                                            <i class="bi bi-person-x-fill text-danger" style="color: #E11D48; font-size: 0.85rem;"></i>
-                                            <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Loại</span>
+                                        <!-- Header khi mở rộng -->
+                                        <div class="kanban-col-expanded-content d-flex justify-content-between align-items-center w-100" style="gap: 4px;">
+                                            <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
+                                                <i class="bi bi-person-x-fill text-danger" style="color: #E11D48; font-size: 0.85rem;"></i>
+                                                <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Loại</span>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                                <span id="kanbanCountRejected" class="kanban-col-count" style="background: #FFF1F2; color: #BE123C; border: 1px solid #FECDD3;">0</span>
+                                                <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(7, event)" title="Thu gọn cột Loại">
+                                                    <i class="bi bi-chevron-bar-left"></i>
+                                                </button>
+                                            </div>
                                         </div>
-                                        <span id="kanbanCountRejected" class="kanban-col-count flex-shrink-0" style="background: #FFF1F2; color: #BE123C; border: 1px solid #FECDD3;">0</span>
+                                        <!-- Header khi thu gọn -->
+                                        <div class="kanban-col-collapsed-content">
+                                            <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(7, event)" title="Mở rộng cột Loại">
+                                                <i class="bi bi-chevron-bar-right text-danger"></i>
+                                            </button>
+                                            <span id="kanbanCountRejectedCollapsed" class="kanban-col-count" style="background: #FFF1F2; color: #BE123C; border: 1px solid #FECDD3;">0</span>
+                                            <span class="kanban-collapsed-title">Loại</span>
+                                        </div>
                                     </div>
                                     <div class="kanban-cards-container" id="kanbanDropZone-7" data-stage-order="7"
                                          ondragover="onKanbanContainerDragOver(event)" ondragleave="onKanbanContainerDragLeave(event)" ondrop="onKanbanContainerDrop(event, 7)">
@@ -2832,31 +2943,139 @@
             }
         }
 
-        function toggleKanbanFitMode() {
+        // --- Chế độ xem thẻ Kanban: Thu gọn (Compact) vs Chi tiết (Detailed) ---
+        function setKanbanCardDetailMode(mode) {
+            const container = document.getElementById('candidateKanbanViewContainer');
+            const btnCompact = document.getElementById('btnKanbanModeCompact');
+            const btnDetailed = document.getElementById('btnKanbanModeDetailed');
+            if (!container) return;
+
+            if (mode === 'detailed') {
+                container.classList.remove('kanban-mode-compact');
+                container.classList.add('kanban-mode-detailed');
+                if (btnDetailed) {
+                    btnDetailed.classList.add('active', 'btn-secondary', 'text-white');
+                    btnDetailed.classList.remove('btn-outline-secondary');
+                }
+                if (btnCompact) {
+                    btnCompact.classList.remove('active', 'btn-secondary', 'text-white');
+                    btnCompact.classList.add('btn-outline-secondary');
+                }
+            } else { // 'compact' mặc định
+                container.classList.remove('kanban-mode-detailed');
+                container.classList.add('kanban-mode-compact');
+                if (btnCompact) {
+                    btnCompact.classList.add('active', 'btn-secondary', 'text-white');
+                    btnCompact.classList.remove('btn-outline-secondary');
+                }
+                if (btnDetailed) {
+                    btnDetailed.classList.remove('active', 'btn-secondary', 'text-white');
+                    btnDetailed.classList.add('btn-outline-secondary');
+                }
+            }
+            try { localStorage.setItem('ats_kanban_card_mode', mode); } catch (_) {}
+        }
+
+        // --- Tính năng Thu gọn / Mở rộng Cột (Column Collapse/Expand) ---
+        function toggleKanbanColumnCollapse(stageOrder, event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            const col = document.getElementById('kanbanCol-' + stageOrder);
+            if (!col) return;
+
+            const isCollapsed = col.classList.toggle('kanban-column-collapsed');
+
+            try {
+                let list = JSON.parse(localStorage.getItem('ats_kanban_collapsed_stages') || '[]');
+                if (!Array.isArray(list)) list = [];
+                if (isCollapsed) {
+                    if (!list.includes(stageOrder)) list.push(stageOrder);
+                } else {
+                    list = list.filter(x => x !== stageOrder);
+                }
+                localStorage.setItem('ats_kanban_collapsed_stages', JSON.stringify(list));
+            } catch (_) {}
+        }
+
+        function handleKanbanColumnClick(stageOrder, event) {
+            const col = document.getElementById('kanbanCol-' + stageOrder);
+            if (col && col.classList.contains('kanban-column-collapsed')) {
+                toggleKanbanColumnCollapse(stageOrder, event);
+            }
+        }
+
+        function restoreKanbanPreferences() {
+            // Khôi phục chế độ xem thẻ (Mặc định compact)
+            const savedCardMode = localStorage.getItem('ats_kanban_card_mode') || 'compact';
+            setKanbanCardDetailMode(savedCardMode);
+
+            // Khôi phục các cột đã thu gọn
+            try {
+                const list = JSON.parse(localStorage.getItem('ats_kanban_collapsed_stages') || '[]');
+                if (Array.isArray(list)) {
+                    list.forEach(stageOrder => {
+                        const col = document.getElementById('kanbanCol-' + stageOrder);
+                        if (col) col.classList.add('kanban-column-collapsed');
+                    });
+                }
+            } catch (_) {}
+        }
+
+        // --- Hỗ trợ di động: Vuốt qua lại giữa các cột & Dots Indicator ---
+        function scrollToKanbanColumn(stageOrder) {
+            const col = document.getElementById('kanbanCol-' + stageOrder);
+            if (col) {
+                col.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                updateMobileKanbanDots(stageOrder);
+            }
+        }
+
+        function updateMobileKanbanDots(stageOrder) {
+            const stageOrderList = [1, 2, 3, 5, 6, 7];
+            const idx = stageOrderList.indexOf(stageOrder);
+            const dots = document.querySelectorAll('.kanban-mobile-dot');
+            if (dots && dots.length > 0 && idx !== -1) {
+                dots.forEach((dot, i) => {
+                    if (i === idx) dot.classList.add('active');
+                    else dot.classList.remove('active');
+                });
+            }
+        }
+
+        function initMobileKanbanSwipeObserver() {
             const wrapper = document.getElementById('candidateKanbanViewContainer');
-            const label = document.getElementById('fitModeLabel');
-            const icon = document.getElementById('fitModeIcon');
-            const btn = document.getElementById('btnToggleKanbanFit');
             if (!wrapper) return;
 
-            const isWide = wrapper.classList.toggle('kanban-wide-scroll');
-            if (isWide) {
-                if (label) label.textContent = 'Cuộn rộng';
-                if (icon) { icon.className = 'bi bi-arrows-angle-expand me-1'; }
-                if (btn) {
-                    btn.classList.add('btn-secondary', 'text-white');
-                    btn.classList.remove('btn-outline-secondary');
+            let ticking = false;
+            wrapper.addEventListener('scroll', () => {
+                if (!ticking) {
+                    window.requestAnimationFrame(() => {
+                        if (window.innerWidth <= 768) {
+                            const stageOrderList = [1, 2, 3, 5, 6, 7];
+                            const wrapperCenter = wrapper.scrollLeft + wrapper.clientWidth / 2;
+                            let closestStage = 1;
+                            let minDistance = Infinity;
+
+                            stageOrderList.forEach(order => {
+                                const col = document.getElementById('kanbanCol-' + order);
+                                if (col) {
+                                    const colCenter = col.offsetLeft + col.clientWidth / 2;
+                                    const dist = Math.abs(colCenter - wrapperCenter);
+                                    if (dist < minDistance) {
+                                        minDistance = dist;
+                                        closestStage = order;
+                                    }
+                                }
+                            });
+                            updateMobileKanbanDots(closestStage);
+                        }
+                        ticking = false;
+                    });
+                    ticking = true;
                 }
-                try { localStorage.setItem('ats_kanban_fit_mode', 'wide'); } catch (_) {}
-            } else {
-                if (label) label.textContent = 'Vừa màn hình';
-                if (icon) { icon.className = 'bi bi-arrows-angle-contract me-1'; }
-                if (btn) {
-                    btn.classList.remove('btn-secondary', 'text-white');
-                    btn.classList.add('btn-outline-secondary');
-                }
-                try { localStorage.setItem('ats_kanban_fit_mode', 'fit'); } catch (_) {}
-            }
+            }, { passive: true });
         }
 
         function onPipelineJobFilterChanged(jobId) {
@@ -2916,20 +3135,21 @@
                 }
             });
 
-            // Update column header badges
-            const badgeNew = document.getElementById('kanbanCountNew');
-            const badgeScreen = document.getElementById('kanbanCountScreen');
-            const badgeInterview = document.getElementById('kanbanCountInterview');
-            const badgeOffer = document.getElementById('kanbanCountOffer');
-            const badgeHired = document.getElementById('kanbanCountHired');
-            const badgeRejected = document.getElementById('kanbanCountRejected');
-
-            if (badgeNew) badgeNew.textContent = counts[1];
-            if (badgeScreen) badgeScreen.textContent = counts[2];
-            if (badgeInterview) badgeInterview.textContent = counts[3];
-            if (badgeOffer) badgeOffer.textContent = counts[5];
-            if (badgeHired) badgeHired.textContent = counts[6];
-            if (badgeRejected) badgeRejected.textContent = counts[7];
+            // Update column header badges (cả trạng thái mở rộng và thu gọn)
+            const stageBadgeMap = {
+                1: ['kanbanCountNew', 'kanbanCountNewCollapsed'],
+                2: ['kanbanCountScreen', 'kanbanCountScreenCollapsed'],
+                3: ['kanbanCountInterview', 'kanbanCountInterviewCollapsed'],
+                5: ['kanbanCountOffer', 'kanbanCountOfferCollapsed'],
+                6: ['kanbanCountHired', 'kanbanCountHiredCollapsed'],
+                7: ['kanbanCountRejected', 'kanbanCountRejectedCollapsed']
+            };
+            Object.keys(stageBadgeMap).forEach(order => {
+                stageBadgeMap[order].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = counts[order];
+                });
+            });
 
             // Update empty placeholders
             [1, 2, 3, 5, 6, 7].forEach(order => {
@@ -3365,11 +3585,8 @@
             // Khởi tạo chế độ xem Kanban và lọc ban đầu
             switchPipelineView(window.pipelineViewMode || 'kanban');
             applyKanbanFilters();
-
-            // Khởi tạo chế độ Fit mode (mặc định Fit 100% không cuộn ngang; nếu người dùng từng chọn wide thì khôi phục)
-            if (localStorage.getItem('ats_kanban_fit_mode') === 'wide') {
-                toggleKanbanFitMode();
-            }
+            restoreKanbanPreferences();
+            initMobileKanbanSwipeObserver();
         });
 
         // 8.2. Chuyển tiếp giai đoạn tuyển chọn nhanh (Advance Stage)
