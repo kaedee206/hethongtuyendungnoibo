@@ -75,9 +75,9 @@ public class CandidateTimelineServiceTests
         };
         await context.JobPostings.AddAsync(job);
 
-        var stage1 = new PipelineStage { Id = Guid.NewGuid(), Name = "Ứng tuyển", Order = 1 };
-        var stage2 = new PipelineStage { Id = Guid.NewGuid(), Name = "Sàng lọc CV", Order = 2 };
-        var stage3 = new PipelineStage { Id = Guid.NewGuid(), Name = "Phỏng vấn kỹ thuật", Order = 3 };
+        var stage1 = new PipelineStage { Id = Guid.NewGuid(), Name = "Ứng tuyển", StageOrder = 1 };
+        var stage2 = new PipelineStage { Id = Guid.NewGuid(), Name = "Sàng lọc CV", StageOrder = 2 };
+        var stage3 = new PipelineStage { Id = Guid.NewGuid(), Name = "Phỏng vấn kỹ thuật", StageOrder = 3 };
         await context.PipelineStages.AddRangeAsync(stage1, stage2, stage3);
 
         var resume = new Resume
