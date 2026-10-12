@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 using Ats.Web.Services.Interfaces;
+using Ats.Web.Models.ViewModels.Referral;
 
 namespace Ats.Web.Controllers;
 
@@ -21,6 +22,7 @@ public class WorkspaceController : Controller
     private readonly IFileStorageService _fileStorageService;
     private readonly ILogger<WorkspaceController> _logger;
     private readonly IApplicationTrackingService _trackingService;
+    private readonly ICandidateReferralService _referralService;
 
     public WorkspaceController(
         ApplicationDbContext dbContext,
@@ -28,7 +30,8 @@ public class WorkspaceController : Controller
         IEmailService emailService,
         IFileStorageService fileStorageService,
         ILogger<WorkspaceController> logger,
-        IApplicationTrackingService trackingService)
+        IApplicationTrackingService trackingService,
+        ICandidateReferralService referralService)
     {
         _dbContext = dbContext;
         _env = env;
@@ -36,6 +39,7 @@ public class WorkspaceController : Controller
         _fileStorageService = fileStorageService;
         _logger = logger;
         _trackingService = trackingService;
+        _referralService = referralService;
     }
 
     #region Role Redirects (Tránh 404 cho các vai trò nội bộ)
@@ -1486,6 +1490,91 @@ public class WorkspaceController : Controller
         {
             return Json(new { success = false, message = ex.Message });
         }
+    }
+
+    #endregion
+
+    #region Internal Candidate Referral (Scrum #37)
+
+    /// <summary>
+    /// GET: /gioi-thieu-ung-vien hoặc /Workspace/ReferCandidate
+    /// Mở form giới thiệu ứng viên nội bộ
+    /// </summary>
+    [HttpGet("/gioi-thieu-ung-vien")]
+    [HttpGet("ReferCandidate")]
+    public async Task<IActionResult> ReferCandidate([FromQuery] Guid? jobId)
+    {
+        var openJobs = await _referralService.GetOpenJobPostingsAsync();
+        ViewBag.OpenJobs = openJobs;
+
+        var model = new ReferCandidateInputModel();
+        if (jobId.HasValue && jobId.Value != Guid.Empty)
+        {
+            model.JobPostingId = jobId.Value;
+        }
+        else if (openJobs.Any())
+        {
+            model.JobPostingId = openJobs.First().Id;
+        }
+
+        return View(model);
+    }
+
+    /// <summary>
+    /// POST: /gioi-thieu-ung-vien hoặc /Workspace/ReferCandidate
+    /// Tiếp nhận và xử lý hồ sơ người quen do nhân viên nội bộ gửi
+    /// </summary>
+    [HttpPost("/gioi-thieu-ung-vien")]
+    [HttpPost("ReferCandidate")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ReferCandidate([FromForm] ReferCandidateInputModel model)
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+        if (currentUserId == Guid.Empty)
+        {
+            TempData["ErrorMessage"] = "Không thể xác thực thông tin nhân viên đăng nhập.";
+            return RedirectToAction(nameof(ReferCandidate));
+        }
+
+        if (!ModelState.IsValid)
+        {
+            ViewBag.OpenJobs = await _referralService.GetOpenJobPostingsAsync();
+            return View(model);
+        }
+
+        var (success, message, appId, trackingCode) = await _referralService.ReferCandidateAsync(model, currentUserId);
+        if (!success)
+        {
+            ModelState.AddModelError(string.Empty, message);
+            ViewBag.OpenJobs = await _referralService.GetOpenJobPostingsAsync();
+            return View(model);
+        }
+
+        TempData["SuccessMessage"] = message;
+        TempData["TrackingCode"] = trackingCode;
+        return RedirectToAction(nameof(MyReferrals));
+    }
+
+    /// <summary>
+    /// GET: /ho-so-gioi-thieu hoặc /Workspace/MyReferrals
+    /// Xem danh sách hồ sơ do chính nhân viên nội bộ giới thiệu và theo dõi trạng thái tổng quát
+    /// </summary>
+    [HttpGet("/ho-so-gioi-thieu")]
+    [HttpGet("MyReferrals")]
+    public async Task<IActionResult> MyReferrals()
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+        if (currentUserId == Guid.Empty)
+        {
+            return Redirect("/Account/StaffLogin");
+        }
+
+        var model = await _referralService.GetMyReferralsAsync(currentUserId);
+        return View(model);
     }
 
     #endregion
