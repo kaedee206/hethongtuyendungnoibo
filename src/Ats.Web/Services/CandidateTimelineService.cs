@@ -293,7 +293,7 @@ public class CandidateTimelineService : ICandidateTimelineService
 
                 foreach (var ev in evaluations)
                 {
-                    var occTime = ev.SubmittedAt ?? ev.UpdatedAt ?? ev.CreatedAt;
+                    var occTime = ev.SubmittedAt ?? ev.UpdatedAt;
                     var jobName = ev.Interview?.Application?.JobPosting?.Title ?? "Vị trí tuyển dụng";
                     var interviewerName = ev.Interviewer != null ? ev.Interviewer.FullName : "Người phỏng vấn";
                     var scoreStr = ev.OverallScore.HasValue ? $"{ev.OverallScore.Value:0.0}/5.0" : "Chưa chấm";
@@ -337,8 +337,8 @@ public class CandidateTimelineService : ICandidateTimelineService
         var interactions = await _context.CandidateInteractions
             .AsNoTracking()
             .Include(ci => ci.CreatedByUser)
-            .Include(ci => ci.Application)
-                .ThenInclude(a => a.JobPosting)
+            .Include(ci => ci.Application!)
+                .ThenInclude(a => a!.JobPosting)
             .Where(ci => ci.CandidateId == candidateId)
             .ToListAsync();
 
