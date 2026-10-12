@@ -156,8 +156,8 @@ public class CandidateTimelineServiceTests
         interview.Panelists.Add(new InterviewPanelist
         {
             InterviewId = interview.Id,
-            UserId = interviewer.Id,
-            User = interviewer
+            InterviewerId = interviewer.Id,
+            Interviewer = interviewer
         });
         await context.Interviews.AddAsync(interview);
 
