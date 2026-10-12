@@ -15,15 +15,18 @@ public class HomeController : Controller
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly IJobService _jobService;
+    private readonly ICandidateReferralService _referralService;
     private readonly ILogger<HomeController> _logger;
 
     public HomeController(
         ApplicationDbContext dbContext,
         IJobService jobService,
+        ICandidateReferralService referralService,
         ILogger<HomeController> logger)
     {
         _dbContext = dbContext;
         _jobService = jobService;
+        _referralService = referralService;
         _logger = logger;
     }
 
@@ -51,6 +54,10 @@ public class HomeController : Controller
         if (normalizedFeature == "tuyen-dung" || normalizedFeature == "pipeline")
         {
             normalizedFeature = "ung-vien";
+        }
+        if (normalizedFeature == "referrals" || normalizedFeature == "referral" || normalizedFeature == "ho-so-gioi-thieu")
+        {
+            normalizedFeature = "gioi-thieu";
         }
         ViewBag.ActiveFeature = normalizedFeature;
 
@@ -373,6 +380,9 @@ public class HomeController : Controller
             var allApps = await _dbContext.Applications
                 .Include(a => a.Candidate)
                     .ThenInclude(c => c.Resumes)
+                .Include(a => a.Candidate)
+                    .ThenInclude(c => c.ReferrerUser)
+                .Include(a => a.ReferrerUser)
                 .Include(a => a.JobPosting)
                 .Include(a => a.CurrentStage)
                 .Where(a => !a.IsDeleted)
@@ -384,6 +394,9 @@ public class HomeController : Controller
             {
                 var candName = $"{a.Candidate.FirstName} {a.Candidate.LastName}".Trim();
                 var primaryResume = a.Candidate.Resumes.FirstOrDefault(r => r.IsPrimary) ?? a.Candidate.Resumes.FirstOrDefault();
+                var isRef = a.ReferrerUserId != null || a.Candidate.Source == CandidateSource.REFERRAL;
+                var refUser = a.ReferrerUser ?? a.Candidate.ReferrerUser;
+
                 return new CandidatePipelineItemDto
                 {
                     ApplicationId = a.Id,
@@ -399,9 +412,19 @@ public class HomeController : Controller
                     AppliedDateDisplay = a.AppliedAt.HasValue ? a.AppliedAt.Value.ToString("dd/MM/yyyy") : a.CreatedAt.ToString("dd/MM/yyyy"),
                     Status = a.Status.ToString(),
                     ResumeFileName = primaryResume?.FileName ?? "CV_UngVien.pdf",
-                    ResumeFilePath = primaryResume?.FilePath ?? "#"
+                    ResumeFilePath = primaryResume?.FilePath ?? "#",
+                    IsReferral = isRef,
+                    ReferrerName = refUser?.FullName,
+                    ReferrerEmail = refUser?.Email,
+                    ReferralNote = a.ReferralNote
                 };
             }).ToList();
+
+            // Nạp danh sách hồ sơ do chính nhân viên nội bộ giới thiệu (Scrum #37)
+            if (userId != Guid.Empty)
+            {
+                model.MyReferrals = await _referralService.GetMyReferralsAsync(userId);
+            }
         }
         return model;
     }
@@ -421,6 +444,9 @@ public class HomeController : Controller
             .AsNoTracking()
             .Include(a => a.Candidate)
                 .ThenInclude(c => c.Resumes)
+            .Include(a => a.Candidate)
+                .ThenInclude(c => c.ReferrerUser)
+            .Include(a => a.ReferrerUser)
             .Include(a => a.JobPosting)
             .Include(a => a.CurrentStage)
             .Where(a => !a.IsDeleted);
@@ -441,6 +467,10 @@ public class HomeController : Controller
             {
                 query = query.Where(a => a.Status == ApplicationStatus.REJECTED);
             }
+            else if (stageOrder == "REFERRAL")
+            {
+                query = query.Where(a => a.ReferrerUserId != null || a.Candidate.Source == CandidateSource.REFERRAL);
+            }
             else if (int.TryParse(stageOrder, out var order))
             {
                 query = query.Where(a => a.CurrentStage.StageOrder == order);
@@ -460,6 +490,9 @@ public class HomeController : Controller
         {
             var candName = $"{a.Candidate.FirstName} {a.Candidate.LastName}".Trim();
             var primaryResume = a.Candidate.Resumes.FirstOrDefault(r => r.IsPrimary) ?? a.Candidate.Resumes.FirstOrDefault();
+            var isRef = a.ReferrerUserId != null || a.Candidate.Source == CandidateSource.REFERRAL;
+            var refUser = a.ReferrerUser ?? a.Candidate.ReferrerUser;
+
             return new CandidatePipelineItemDto
             {
                 ApplicationId = a.Id,
@@ -475,7 +508,11 @@ public class HomeController : Controller
                 AppliedDateDisplay = a.AppliedAt.HasValue ? a.AppliedAt.Value.ToString("dd/MM/yyyy") : a.CreatedAt.ToString("dd/MM/yyyy"),
                 Status = a.Status.ToString(),
                 ResumeFileName = primaryResume?.FileName ?? "CV_UngVien.pdf",
-                ResumeFilePath = primaryResume?.FilePath ?? "#"
+                ResumeFilePath = primaryResume?.FilePath ?? "#",
+                IsReferral = isRef,
+                ReferrerName = refUser?.FullName,
+                ReferrerEmail = refUser?.Email,
+                ReferralNote = a.ReferralNote
             };
         }).ToList();
 
