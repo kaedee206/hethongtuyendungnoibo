@@ -1,0 +1,290 @@
+@model Ats.Web.Models.ViewModels.Referral.MyReferralsViewModel
+@using Ats.Web.Models.Enums
+@{
+    ViewData["Title"] = "Hồ sơ tôi đã giới thiệu";
+}
+
+<div class="container-fluid px-3 px-xl-4 py-3" style="max-width: 1400px;">
+    <!-- ── HEADER & QUICK ACTIONS ── -->
+    <div class="mb-4 pb-2 border-bottom" style="border-color: #E2E8F0 !important;">
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <a href="/dashboard" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i>Bàn làm việc</a>
+            <span class="text-muted small">/</span>
+            <span class="text-dark small fw-semibold">Theo dõi giới thiệu</span>
+        </div>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h4 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <span class="d-inline-flex align-items-center justify-content-center text-white"
+                          style="width: 34px; height: 34px; background: linear-gradient(135deg, #059669 0%, #047857 100%); border-radius: 8px;">
+                        <i class="bi bi-person-check-fill" style="font-size: 1.1rem;"></i>
+                    </span>
+                    Danh Sách Hồ Sơ Tôi Đã Giới Thiệu
+                </h4>
+                <p class="text-muted small mb-0 mt-1">
+                    Theo dõi tiến độ xét tuyển ở mức tổng quát cho các ứng viên bạn đã giới thiệu mà không cần phải gọi điện hỏi Ban Tuyển dụng.
+                </p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="/tra-cuu" target="_blank" class="btn btn-sm btn-outline-secondary fw-semibold d-inline-flex align-items-center gap-1.5"
+                   style="border-radius: 8px; font-size: 0.82rem; padding: 0.45rem 0.95rem;">
+                    <i class="bi bi-search"></i> Cổng tra cứu chung
+                </a>
+                <a href="/gioi-thieu-ung-vien" class="btn btn-sm btn-primary fw-semibold d-inline-flex align-items-center gap-1.5"
+                   style="border-radius: 8px; font-size: 0.82rem; padding: 0.45rem 1rem; background: #4F46E5; border-color: #4F46E5;">
+                    <i class="bi bi-plus-lg"></i> Giới thiệu ứng viên mới
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── THÔNG BÁO FLASH MESSAGE ── -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 mb-3" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-check-circle-fill text-success"></i>
+            <div>
+                @TempData["SuccessMessage"]
+                @if (TempData["TrackingCode"] != null)
+                {
+                    <span class="ms-2">Mã tra cứu: <strong style="font-family:'JetBrains Mono',monospace;">@TempData["TrackingCode"]</strong></span>
+                }
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- ── 4 THẺ KPI TỔNG QUAN TIẾN ĐỘ ── -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm p-3 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="small fw-bold text-muted text-uppercase" style="font-size:0.72rem; letter-spacing:0.05em;">Tổng hồ sơ gửi</span>
+                    <div class="d-flex align-items-center justify-content-center text-primary" style="width:32px; height:32px; background:#EFF6FF; border-radius:8px;">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                </div>
+                <div class="h3 fw-bold text-dark mb-0" style="font-family:'JetBrains Mono',monospace;">@Model.TotalReferrals</div>
+                <div class="small text-muted mt-1">Đã tiếp nhận vào ATS</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm p-3 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="small fw-bold text-muted text-uppercase" style="font-size:0.72rem; letter-spacing:0.05em;">Đang xem xét</span>
+                    <div class="d-flex align-items-center justify-content-center text-warning" style="width:32px; height:32px; background:#FEF3C7; border-radius:8px;">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                </div>
+                <div class="h3 fw-bold text-dark mb-0" style="font-family:'JetBrains Mono',monospace;">@Model.UnderReviewCount</div>
+                <div class="small text-muted mt-1">Hội đồng đang đánh giá</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm p-3 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="small fw-bold text-muted text-uppercase" style="font-size:0.72rem; letter-spacing:0.05em;">Mời phỏng vấn</span>
+                    <div class="d-flex align-items-center justify-content-center text-info" style="width:32px; height:32px; background:#E0F2FE; border-radius:8px;">
+                        <i class="bi bi-calendar-check-fill"></i>
+                    </div>
+                </div>
+                <div class="h3 fw-bold text-dark mb-0" style="font-family:'JetBrains Mono',monospace;">@Model.InterviewInvitedCount</div>
+                <div class="small text-muted mt-1">Đã qua vòng sơ loại</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm p-3 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="small fw-bold text-muted text-uppercase" style="font-size:0.72rem; letter-spacing:0.05em;">Kết thúc</span>
+                    <div class="d-flex align-items-center justify-content-center text-success" style="width:32px; height:32px; background:#ECFDF5; border-radius:8px;">
+                        <i class="bi bi-flag-fill"></i>
+                    </div>
+                </div>
+                <div class="h3 fw-bold text-dark mb-0" style="font-family:'JetBrains Mono',monospace;">@Model.ConcludedCount</div>
+                <div class="small text-muted mt-1">Hoàn tất đợt tuyển</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── DANH SÁCH CHI TIẾT CÁC HỒ SƠ ── -->
+    <div class="card border-0 shadow-sm p-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 pb-2 gap-2" style="border-bottom: 1px solid #F1F5F9;">
+            <div>
+                <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">
+                    <i class="bi bi-list-stars me-1.5 text-primary"></i>Danh Sách Ứng Viên Giới Thiệu
+                </h5>
+                <small class="text-muted">Cập nhật theo thời gian thực từ quy trình đánh giá của Ban Tuyển dụng</small>
+            </div>
+            <div class="text-muted small">
+                Hiển thị <strong>@Model.Referrals.Count</strong> hồ sơ
+            </div>
+        </div>
+
+        @if (!Model.Referrals.Any())
+        {
+            <div class="text-center py-5">
+                <div class="d-inline-flex align-items-center justify-content-center text-muted mb-3"
+                     style="width: 56px; height: 56px; background: #F1F5F9; border-radius: 50%;">
+                    <i class="bi bi-person-x" style="font-size: 1.8rem;"></i>
+                </div>
+                <h6 class="fw-bold text-dark mb-1">Bạn chưa giới thiệu hồ sơ nào</h6>
+                <p class="text-muted small mb-3">Hãy chia sẻ thông tin vị trí đang tuyển cho bạn bè hoặc nộp hồ sơ giúp người quen ngay hôm nay.</p>
+                <a href="/gioi-thieu-ung-vien" class="btn btn-sm btn-primary fw-semibold" style="border-radius: 8px; padding: 0.45rem 1.25rem; background:#4F46E5; border-color:#4F46E5;">
+                    <i class="bi bi-plus-lg me-1"></i> Giới thiệu ứng viên đầu tiên
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex flex-column gap-3">
+                @foreach (var item in Model.Referrals)
+                {
+                    <div class="p-3 border rounded-3 bg-white" style="border-color: #E2E8F0 !important; border-radius: 10px;">
+                        <div class="row align-items-center g-3">
+                            <!-- Cột 1: Thông tin ứng viên & Vị trí -->
+                            <div class="col-12 col-lg-4">
+                                <div class="d-flex align-items-start gap-2.5">
+                                    <div class="d-flex align-items-center justify-content-center fw-bold text-white rounded-circle flex-shrink-0"
+                                         style="width: 40px; height: 40px; background: #0F172A; font-size: 0.95rem;">
+                                        @(item.CandidateName.Length > 0 ? item.CandidateName[..1].ToUpper() : "U")
+                                    </div>
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <span class="fw-bold text-dark" style="font-size: 0.95rem;">@item.CandidateName</span>
+                                            <span class="badge" style="background:#EEF2FF; color:#4F46E5; border:1px solid #C7D2FE; border-radius:6px; font-size:0.7rem; font-weight:600;">
+                                                <i class="bi bi-person-heart me-1"></i>Giới thiệu nội bộ
+                                            </span>
+                                        </div>
+                                        <div class="text-muted small mt-0.5">
+                                            <i class="bi bi-briefcase me-1"></i><strong class="text-dark">@item.JobTitle</strong> · @item.DepartmentName
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2 text-muted small mt-0.5" style="font-size: 0.75rem;">
+                                            <span>Email: <code class="text-secondary">@item.MaskedEmail</code></span>
+                                            @if (!string.IsNullOrEmpty(item.CandidatePhone))
+                                            {
+                                                <span>•</span>
+                                                <span>SĐT: @item.CandidatePhone</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Cột 2: Mã tra cứu & Ngày gửi -->
+                            <div class="col-12 col-md-4 col-lg-3">
+                                <div class="d-flex flex-column gap-1">
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <span class="text-muted small">Mã tra cứu:</span>
+                                        <code class="fw-bold px-1.5 py-0.5 rounded"
+                                              style="background:#F1F5F9; color:#0F172A; font-family:'JetBrains Mono',monospace; font-size:0.8rem;">
+                                            @(item.TrackingCode ?? "Chưa cấp")
+                                        </code>
+                                        @if (!string.IsNullOrEmpty(item.TrackingCode))
+                                        {
+                                            <button type="button" class="btn btn-sm btn-link p-0 text-muted" title="Sao chép mã"
+                                                    onclick="navigator.clipboard.writeText('@item.TrackingCode'); this.innerHTML='<i class=\'bi bi-check text-success\'></i>'; setTimeout(() => this.innerHTML='<i class=\'bi bi-clipboard\'></i>', 2000);">
+                                                <i class="bi bi-clipboard"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                    <div class="text-muted small" style="font-size: 0.75rem;">
+                                        <i class="bi bi-clock me-1"></i>Ngày giới thiệu: @item.AppliedDateDisplay
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(item.ResumeFilePath))
+                                    {
+                                        <div>
+                                            <a href="@item.ResumeFilePath" target="_blank" class="text-decoration-none small text-primary fw-semibold" style="font-size: 0.75rem;">
+                                                <i class="bi bi-file-earmark-pdf me-1"></i>Xem file CV đính kèm
+                                            </a>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Cột 3: Trạng thái tổng quát & Tiến trình -->
+                            <div class="col-12 col-md-5 col-lg-3">
+                                <div>
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="small text-muted">Trạng thái tổng quát:</span>
+                                        <span class="badge @item.StatusBadgeClass" style="border-radius: 6px; font-size: 0.75rem; font-weight: 600;">
+                                            @item.GeneralStatusDisplay
+                                        </span>
+                                    </div>
+                                    <div class="progress" style="height: 6px; border-radius: 999px; background: #F1F5F9;">
+                                        <div class="progress-bar @(item.GeneralStatus == PublicApplicationStatus.Concluded ? "bg-dark" : "bg-primary")"
+                                             role="progressbar" style="width: @(item.ProgressPercentage)%;"
+                                             aria-valuenow="@item.ProgressPercentage" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <div class="d-flex justify-content-between text-muted mt-1" style="font-size: 0.7rem;">
+                                        <span>Tiến độ xét tuyển</span>
+                                        <span class="fw-semibold text-dark">@item.ProgressPercentage%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Cột 4: Thao tác & Ghi chú -->
+                            <div class="col-12 col-md-3 col-lg-2 text-md-end">
+                                <div class="d-flex flex-column align-items-md-end gap-1.5">
+                                    <button type="button" class="btn btn-sm btn-outline-primary fw-semibold w-100 w-md-auto"
+                                            style="border-radius: 6px; font-size: 0.75rem; padding: 0.3rem 0.75rem;"
+                                            data-bs-toggle="collapse" data-bs-target="#collapse-details-@item.ApplicationId">
+                                        <i class="bi bi-chevron-down me-1"></i> Xem tiến trình
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ── PHẦN COLLAPSE: TIẾN ĐỘ STEPPER VÀ GHI CHÚ GIỚI THIỆU ── -->
+                        <div class="collapse mt-3 pt-3 border-top" id="collapse-details-@item.ApplicationId" style="border-color: #F1F5F9 !important;">
+                            <div class="row g-3">
+                                <!-- Stepper 4 bước an toàn -->
+                                <div class="col-12 col-md-7">
+                                    <div class="small fw-bold text-dark mb-2"><i class="bi bi-diagram-3 me-1 text-primary"></i>Các giai đoạn xét duyệt hồ sơ:</div>
+                                    <div class="d-flex flex-column gap-2">
+                                        @foreach (var step in item.StepperSteps)
+                                        {
+                                            var isCurrent = step.State == "active";
+                                            var isDone = step.State == "completed";
+                                            <div class="d-flex align-items-start gap-2 p-2 rounded" style="background: @(isCurrent ? "#EEF2FF" : (isDone ? "#F8FAFC" : "#FFFFFF")); border: 1px solid @(isCurrent ? "#C7D2FE" : "#F1F5F9");">
+                                                <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                                                     style="width: 22px; height: 22px; font-size: 0.7rem; font-weight: 700;
+                                                            background: @(isDone ? "#059669" : (isCurrent ? "#4F46E5" : "#E2E8F0"));
+                                                            color: @(isDone || isCurrent ? "#FFFFFF" : "#64748B");">
+                                                    @(isDone ? "✓" : step.StepIndex.ToString())
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex align-items-center justify-content-between">
+                                                        <span class="small fw-semibold text-dark">@step.Title</span>
+                                                        @if (!string.IsNullOrEmpty(step.DateDisplay))
+                                                        {
+                                                            <span class="text-muted" style="font-size: 0.7rem; font-family:'JetBrains Mono',monospace;">@step.DateDisplay</span>
+                                                        }
+                                                    </div>
+                                                    <div class="text-muted" style="font-size: 0.72rem;">@step.Subtitle</div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+
+                                <!-- Ghi chú giới thiệu đã gửi -->
+                                <div class="col-12 col-md-5">
+                                    <div class="small fw-bold text-dark mb-2"><i class="bi bi-chat-left-quote me-1 text-primary"></i>Ghi chú giới thiệu bạn đã gửi:</div>
+                                    <div class="p-2.5 rounded bg-light border small text-dark" style="font-size: 0.8rem; line-height: 1.5; white-space: pre-wrap; max-height: 200px; overflow-y: auto;">
+                                        @(string.IsNullOrWhiteSpace(item.ReferralNote) ? "Chưa có ghi chú giới thiệu bổ sung." : item.ReferralNote)
+                                    </div>
+                                    <div class="text-muted mt-2" style="font-size: 0.7rem;">
+                                        <i class="bi bi-shield-lock me-1"></i>Hệ thống cam kết bảo mật: Nhận xét nội bộ và danh tính người phỏng vấn được giấu kín tuyệt đối.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
