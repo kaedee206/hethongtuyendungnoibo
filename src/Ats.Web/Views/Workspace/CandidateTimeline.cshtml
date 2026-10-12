@@ -285,7 +285,7 @@
                        class="filter-chip @(Model.FilterType == "INTERVIEW_SCHEDULED" ? "active" : "")">
                         <i class="bi bi-calendar2-event text-primary"></i>Phỏng vấn (@Model.InterviewsCount)
                     </a>
-                    <a href="@Url.Action("CandidateTimeline", new { candidateId = Model.CandidateId, applicationId = Model.SelectedApplicationId, filter = "INTERVIEW_EVALUATION", q = Model.FilterType == "INTERVIEW_EVALUATION" ? "active" : "")" 
+                    <a href="@Url.Action("CandidateTimeline", new { candidateId = Model.CandidateId, applicationId = Model.SelectedApplicationId, filter = "INTERVIEW_EVALUATION", q = Model.SearchQuery })" 
                        class="filter-chip @(Model.FilterType == "INTERVIEW_EVALUATION" ? "active" : "")">
                         <i class="bi bi-star-fill text-warning"></i>Đánh giá (@Model.EvaluationsCount)
                     </a>
