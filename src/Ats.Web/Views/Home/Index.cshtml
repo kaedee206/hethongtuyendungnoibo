@@ -587,6 +587,17 @@
                                 <i class="bi bi-person-heart"></i> Giới thiệu nội bộ
                                 <span class="tab-counter-badge ms-1">@(Model.MyReferrals?.TotalReferrals ?? 0)</span>
                             </button>
+                            @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
+                            {
+                                <a href="/dashboard/trung-lap" class="dashboard-feature-tab text-decoration-none"
+                                   title="Phát hiện và xử lý hồ sơ trùng lặp">
+                                    <i class="bi bi-intersect @(Model.DuplicateCandidatesCount > 0 ? "text-warning" : "")"></i> Trùng lặp
+                                    @if (Model.DuplicateCandidatesCount > 0)
+                                    {
+                                        <span class="tab-counter-badge ms-1 badge-warning-highlight">@Model.DuplicateCandidatesCount</span>
+                                    }
+                                </a>
+                            }
                         </nav>
 
                         <!-- Quick Role Action Buttons -->
@@ -960,6 +971,31 @@
                             </div>
                         </div>
 
+                        @if (Model.DuplicateCandidatesCount > 0)
+                        {
+                            <div class="alert d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between p-3 mb-3 border-0 shadow-sm gap-2"
+                                 style="background: #FFFBEB; border: 1px solid #FDE68A !important; border-radius: 8px; color: #92400E;">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <i class="bi bi-exclamation-triangle-fill text-warning fs-5 flex-shrink-0"></i>
+                                    <div>
+                                        <div class="fw-bold" style="font-size: 0.88rem;">Phát hiện @Model.DuplicateCandidatesCount hồ sơ có nguy cơ trùng lặp thông tin!</div>
+                                        <div class="small" style="color: #78350F;">Hệ thống phát hiện các ứng viên có cùng email hoặc số điện thoại. Hãy so sánh và gộp hồ sơ để tránh gọi phỏng vấn hai lần.</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                    <button type="button" class="btn btn-sm btn-outline-warning text-dark fw-semibold"
+                                            style="border-radius: 6px; font-size: 0.78rem;"
+                                            onclick="filterPipelineCandidates('DUPLICATE')">
+                                        <i class="bi bi-funnel me-1"></i>Lọc danh sách trùng
+                                    </button>
+                                    <a href="/dashboard/trung-lap" class="btn btn-sm btn-warning text-dark fw-semibold"
+                                       style="border-radius: 6px; font-size: 0.78rem;">
+                                        <i class="bi bi-intersect me-1"></i>Quản lý gộp hồ sơ &rarr;
+                                    </a>
+                                </div>
+                            </div>
+                        }
+
                         <!-- Filter Stage Pills (Segmented Chips - 8px radius) -->
                         <div class="d-flex flex-wrap gap-2 mb-3" id="candidateStageFilterGroup">
                             <button type="button" class="candidate-stage-pill active" onclick="filterPipelineCandidates('ALL', this)">
@@ -968,6 +1004,12 @@
                             <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('REFERRAL', this)">
                                 <i class="bi bi-person-heart text-danger me-1"></i>Giới thiệu nội bộ <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.IsReferral)</span>
                             </button>
+                            @if (Model.DuplicateCandidatesCount > 0)
+                            {
+                                <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('DUPLICATE', this)">
+                                    <i class="bi bi-intersect text-warning me-1"></i>Cảnh báo trùng <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.HasDuplicateWarning)</span>
+                                </button>
+                            }
                             @foreach (var stage in Model.PipelineFunnel.Where(s => !s.IsTerminal))
                             {
                                 <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('@stage.StageOrder', this)">
@@ -999,6 +1041,7 @@
                                                 data-stage-order="@cand.CurrentStageOrder"
                                                 data-status="@cand.Status"
                                                 data-is-referral="@(cand.IsReferral ? "true" : "false")"
+                                                data-has-duplicate="@(cand.HasDuplicateWarning ? "true" : "false")"
                                                 data-name="@cand.CandidateName.ToLower()"
                                                 data-email="@cand.CandidateEmail.ToLower()"
                                                 data-job="@cand.JobTitle.ToLower()"
@@ -1018,6 +1061,15 @@
                                                                     <span class="badge" style="background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; border-radius:6px; font-size:0.68rem; font-weight:600;" title="@(!string.IsNullOrWhiteSpace(cand.ReferralNote) ? $"Ghi chú: {cand.ReferralNote}" : "Hồ sơ được nhân sự nội bộ giới thiệu")">
                                                                         <i class="bi bi-person-heart me-1 text-warning"></i>Giới thiệu nội bộ@(string.IsNullOrWhiteSpace(cand.ReferrerName) ? "" : $" ({cand.ReferrerName})")
                                                                     </span>
+                                                                }
+                                                                @if (cand.HasDuplicateWarning)
+                                                                {
+                                                                    <a href="/Workspace/CompareCandidates?primaryId=@cand.CandidateId@(cand.MatchedCandidateId.HasValue ? $"&secondaryId={cand.MatchedCandidateId}" : "")"
+                                                                       class="badge text-decoration-none"
+                                                                       style="background: #FEF3C7; color: #B45309; border: 1px solid #FCD34D; border-radius: 6px; font-size: 0.68rem; font-weight: 600;"
+                                                                       title="@cand.DuplicateReason - Nhấn để so sánh và gộp hồ sơ">
+                                                                        <i class="bi bi-exclamation-circle-fill me-1 text-warning"></i>Cảnh báo trùng
+                                                                    </a>
                                                                 }
                                                             </div>
                                                             <div class="d-flex align-items-center gap-2" style="font-size: 0.75rem; color: #64748B;">
@@ -1114,6 +1166,14 @@
                                                                     <li>
                                                                         <a class="dropdown-item" href="@cand.ResumeFilePath" target="_blank">
                                                                             <i class="bi bi-file-earmark-pdf text-danger"></i> Xem file CV
+                                                                        </a>
+                                                                    </li>
+                                                                }
+                                                                @if (cand.HasDuplicateWarning)
+                                                                {
+                                                                    <li>
+                                                                        <a class="dropdown-item text-warning fw-semibold" href="/Workspace/CompareCandidates?primaryId=@cand.CandidateId@(cand.MatchedCandidateId.HasValue ? $"&secondaryId={cand.MatchedCandidateId}" : "")">
+                                                                            <i class="bi bi-intersect text-warning"></i> So sánh &amp; Gộp hồ sơ trùng
                                                                         </a>
                                                                     </li>
                                                                 }
@@ -2741,6 +2801,8 @@
                     stageMatch = (rowStatus === 'REJECTED');
                 } else if (stageOrder === 'REFERRAL') {
                     stageMatch = (r.getAttribute('data-is-referral') === 'true');
+                } else if (stageOrder === 'DUPLICATE') {
+                    stageMatch = (r.getAttribute('data-has-duplicate') === 'true');
                 } else {
                     stageMatch = (rowStage === stageOrder && rowStatus !== 'REJECTED');
                 }
@@ -2902,7 +2964,9 @@
                         b.classList.add('active');
                     } else if (stageOrder === 'REFERRAL' && oc.includes("'REFERRAL'")) {
                         b.classList.add('active');
-                    } else if (stageOrder !== 'ALL' && stageOrder !== 'REFERRAL' && oc.includes("'" + stageOrder + "'")) {
+                    } else if (stageOrder === 'DUPLICATE' && oc.includes("'DUPLICATE'")) {
+                        b.classList.add('active');
+                    } else if (stageOrder !== 'ALL' && stageOrder !== 'REFERRAL' && stageOrder !== 'DUPLICATE' && oc.includes("'" + stageOrder + "'")) {
                         b.classList.add('active');
                     }
                 });
