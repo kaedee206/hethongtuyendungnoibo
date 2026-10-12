@@ -559,6 +559,89 @@ namespace Ats.Web.Migrations
                     b.ToTable("candidates", (string)null);
                 });
 
+            modelBuilder.Entity("Ats.Web.Models.Entities.CandidateInteraction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ApplicationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("application_id");
+
+                    b.Property<Guid>("CandidateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("candidate_id");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_id");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<DateTimeOffset>("InteractionDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("interaction_date");
+
+                    b.Property<int>("InteractionType")
+                        .HasColumnType("integer")
+                        .HasColumnName("interaction_type");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("Outcome")
+                        .HasColumnType("text")
+                        .HasColumnName("outcome");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_candidate_interactions");
+
+                    b.HasIndex("ApplicationId")
+                        .HasDatabaseName("ix_candidate_interactions_application_id");
+
+                    b.HasIndex("CandidateId")
+                        .HasDatabaseName("ix_candidate_interactions_candidate_id");
+
+                    b.HasIndex("CreatedByUserId")
+                        .HasDatabaseName("ix_candidate_interactions_created_by_user_id");
+
+                    b.HasIndex("InteractionDate")
+                        .HasDatabaseName("ix_candidate_interactions_interaction_date");
+
+                    b.ToTable("candidate_interactions", (string)null);
+                });
+
             modelBuilder.Entity("Ats.Web.Models.Entities.CandidateMergeHistory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2730,6 +2813,35 @@ namespace Ats.Web.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Ats.Web.Models.Entities.CandidateInteraction", b =>
+                {
+                    b.HasOne("Ats.Web.Models.Entities.Application", "Application")
+                        .WithMany("Interactions")
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_candidate_interactions_applications_application_id");
+
+                    b.HasOne("Ats.Web.Models.Entities.Candidate", "Candidate")
+                        .WithMany("Interactions")
+                        .HasForeignKey("CandidateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_candidate_interactions_candidates_candidate_id");
+
+                    b.HasOne("Ats.Web.Models.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_candidate_interactions_users_created_by_user_id");
+
+                    b.Navigation("Application");
+
+                    b.Navigation("Candidate");
+
+                    b.Navigation("CreatedByUser");
+                });
+
             modelBuilder.Entity("Ats.Web.Models.Entities.CandidateMergeHistory", b =>
                 {
                     b.HasOne("Ats.Web.Models.Entities.User", "MergedByUser")
@@ -3125,6 +3237,8 @@ namespace Ats.Web.Migrations
 
             modelBuilder.Entity("Ats.Web.Models.Entities.Application", b =>
                 {
+                    b.Navigation("Interactions");
+
                     b.Navigation("Interviews");
 
                     b.Navigation("JobOffers");
@@ -3140,6 +3254,8 @@ namespace Ats.Web.Migrations
             modelBuilder.Entity("Ats.Web.Models.Entities.Candidate", b =>
                 {
                     b.Navigation("Applications");
+
+                    b.Navigation("Interactions");
 
                     b.Navigation("MergedSubCandidates");
 
