@@ -1,5 +1,6 @@
 using Ats.Web.Models.Enums;
 using Ats.Web.Models.ViewModels.Jobs;
+using Ats.Web.Models.ViewModels.Referral;
 
 namespace Ats.Web.Models.ViewModels.Workspace;
 
@@ -30,6 +31,7 @@ public class WorkspaceDashboardViewModel
     public List<PendingOfferDto> PendingOffers { get; set; } = new();
     public List<InterviewEvaluationCandidateDto> EvaluationCandidates { get; set; } = new();
     public List<CandidatePipelineItemDto> CandidatePipelineItems { get; set; } = new();
+    public MyReferralsViewModel? MyReferrals { get; set; }
 }
 
 public class CandidatePipelineItemDto
@@ -48,6 +50,11 @@ public class CandidatePipelineItemDto
     public string Status { get; set; } = string.Empty;
     public string ResumeFileName { get; set; } = string.Empty;
     public string ResumeFilePath { get; set; } = string.Empty;
+
+    public bool IsReferral { get; set; }
+    public string? ReferrerName { get; set; }
+    public string? ReferrerEmail { get; set; }
+    public string? ReferralNote { get; set; }
 }
 
 public class CandidateProfileDto
