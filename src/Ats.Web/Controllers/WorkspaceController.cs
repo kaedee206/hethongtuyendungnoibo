@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Ats.Web.Services.Interfaces;
 using Ats.Web.Models.ViewModels.Referral;
+using Ats.Web.Models.ViewModels.CandidateMerge;
 
 namespace Ats.Web.Controllers;
 
@@ -23,6 +24,7 @@ public class WorkspaceController : Controller
     private readonly ILogger<WorkspaceController> _logger;
     private readonly IApplicationTrackingService _trackingService;
     private readonly ICandidateReferralService _referralService;
+    private readonly ICandidateMergeService _mergeService;
 
     public WorkspaceController(
         ApplicationDbContext dbContext,
@@ -31,7 +33,8 @@ public class WorkspaceController : Controller
         IFileStorageService fileStorageService,
         ILogger<WorkspaceController> logger,
         IApplicationTrackingService trackingService,
-        ICandidateReferralService referralService)
+        ICandidateReferralService referralService,
+        ICandidateMergeService mergeService)
     {
         _dbContext = dbContext;
         _env = env;
@@ -40,6 +43,7 @@ public class WorkspaceController : Controller
         _logger = logger;
         _trackingService = trackingService;
         _referralService = referralService;
+        _mergeService = mergeService;
     }
 
     #region Role Redirects (Tránh 404 cho các vai trò nội bộ)
@@ -1575,6 +1579,114 @@ public class WorkspaceController : Controller
 
         var model = await _referralService.GetMyReferralsAsync(currentUserId);
         return View(model);
+    }
+
+    #endregion
+
+    #region Candidate Merge & Duplicate Detection (Scrum #40)
+
+    /// <summary>
+    /// GET: /dashboard/trung-lap hoặc /Workspace/HoSoTrungLap
+    /// Màn hình quản lý và cảnh báo hồ sơ ứng viên trùng lặp (Scrum #40)
+    /// </summary>
+    [HttpGet("/dashboard/trung-lap")]
+    [HttpGet("HoSoTrungLap")]
+    public async Task<IActionResult> CandidateDuplicates([FromQuery] string tab = "duplicates")
+    {
+        var model = await _mergeService.GetDuplicateOverviewAsync();
+        model.ActiveTab = tab == "history" ? "history" : "duplicates";
+        return View(model);
+    }
+
+    /// <summary>
+    /// GET: /Workspace/SoSanhHoSo?primaryId={guid}&secondaryId={guid}
+    /// Màn hình so sánh cạnh nhau 2 hồ sơ ứng viên trước khi gộp
+    /// </summary>
+    [HttpGet("SoSanhHoSo")]
+    public async Task<IActionResult> CompareCandidates([FromQuery] Guid primaryId, [FromQuery] Guid secondaryId)
+    {
+        if (primaryId == Guid.Empty || secondaryId == Guid.Empty || primaryId == secondaryId)
+        {
+            TempData["ErrorMessage"] = "Vui lòng chọn 2 hồ sơ hợp lệ để thực hiện so sánh.";
+            return RedirectToAction(nameof(CandidateDuplicates));
+        }
+
+        var model = await _mergeService.GetComparisonAsync(primaryId, secondaryId);
+        if (model == null)
+        {
+            TempData["ErrorMessage"] = "Không tìm thấy hồ sơ ứng viên cần so sánh.";
+            return RedirectToAction(nameof(CandidateDuplicates));
+        }
+
+        return View(model);
+    }
+
+    /// <summary>
+    /// POST: /Workspace/GopHoSo
+    /// Thực hiện gộp hồ sơ: chuyển toàn bộ lịch sử ứng tuyển và CV sang hồ sơ chính
+    /// </summary>
+    [HttpPost("GopHoSo")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MergeCandidates([FromForm] MergeCandidatesRequestModel model)
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+        if (currentUserId == Guid.Empty)
+        {
+            return Json(new { success = false, message = "Phiên làm việc hết hạn. Vui lòng đăng nhập lại." });
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return Json(new { success = false, message = "Dữ liệu yêu cầu không hợp lệ." });
+        }
+
+        var (success, message, historyId) = await _mergeService.MergeCandidatesAsync(model, currentUserId);
+
+        if (!success)
+        {
+            return Json(new { success = false, message });
+        }
+
+        return Json(new
+        {
+            success = true,
+            message,
+            historyId,
+            redirectUrl = Url.Action(nameof(CandidateDuplicates), new { tab = "history" })
+        });
+    }
+
+    /// <summary>
+    /// POST: /Workspace/HoanTacGop
+    /// Hoàn tác gộp hồ sơ nếu còn trong thời hạn 24 giờ
+    /// </summary>
+    [HttpPost("HoanTacGop")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UndoMerge([FromForm] Guid historyId)
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+        if (currentUserId == Guid.Empty)
+        {
+            return Json(new { success = false, message = "Phiên làm việc hết hạn. Vui lòng đăng nhập lại." });
+        }
+
+        if (historyId == Guid.Empty)
+        {
+            return Json(new { success = false, message = "Mã phiên gộp không hợp lệ." });
+        }
+
+        var (success, message) = await _mergeService.UndoMergeAsync(historyId, currentUserId);
+
+        return Json(new
+        {
+            success,
+            message,
+            redirectUrl = Url.Action(nameof(CandidateDuplicates), new { tab = "history" })
+        });
     }
 
     #endregion
