@@ -32,6 +32,7 @@ public class WorkspaceDashboardViewModel
     public List<InterviewEvaluationCandidateDto> EvaluationCandidates { get; set; } = new();
     public List<CandidatePipelineItemDto> CandidatePipelineItems { get; set; } = new();
     public MyReferralsViewModel? MyReferrals { get; set; }
+    public int DuplicateCandidatesCount { get; set; }
 }
 
 public class CandidatePipelineItemDto
@@ -55,6 +56,12 @@ public class CandidatePipelineItemDto
     public string? ReferrerName { get; set; }
     public string? ReferrerEmail { get; set; }
     public string? ReferralNote { get; set; }
+
+    // Cảnh báo trùng lặp (Scrum #40)
+    public bool HasDuplicateWarning { get; set; }
+    public string? DuplicateReason { get; set; }
+    public Guid? MatchedCandidateId { get; set; }
+    public int DuplicateCount { get; set; }
 }
 
 public class CandidateProfileDto
