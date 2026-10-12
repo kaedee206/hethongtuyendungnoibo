@@ -16,17 +16,20 @@ public class HomeController : Controller
     private readonly ApplicationDbContext _dbContext;
     private readonly IJobService _jobService;
     private readonly ICandidateReferralService _referralService;
+    private readonly ICandidateMergeService _mergeService;
     private readonly ILogger<HomeController> _logger;
 
     public HomeController(
         ApplicationDbContext dbContext,
         IJobService jobService,
         ICandidateReferralService referralService,
+        ICandidateMergeService mergeService,
         ILogger<HomeController> logger)
     {
         _dbContext = dbContext;
         _jobService = jobService;
         _referralService = referralService;
+        _mergeService = mergeService;
         _logger = logger;
     }
 
@@ -58,6 +61,10 @@ public class HomeController : Controller
         if (normalizedFeature == "referrals" || normalizedFeature == "referral" || normalizedFeature == "ho-so-gioi-thieu")
         {
             normalizedFeature = "gioi-thieu";
+        }
+        if (normalizedFeature == "trung-lap" || normalizedFeature == "duplicates" || normalizedFeature == "ho-so-trung-lap")
+        {
+            return RedirectToAction("CandidateDuplicates", "Workspace");
         }
         ViewBag.ActiveFeature = normalizedFeature;
 
@@ -390,12 +397,30 @@ public class HomeController : Controller
                 .Take(50)
                 .ToListAsync();
 
+            // Quét phát hiện ứng viên trùng lặp (Scrum #40)
+            var duplicateGroups = await _mergeService.DetectDuplicatesAsync();
+            model.DuplicateCandidatesCount = duplicateGroups.Count;
+
+            var dupLookup = new Dictionary<Guid, (string Reason, Guid OtherId, int Count)>();
+            foreach (var g in duplicateGroups)
+            {
+                foreach (var c in g.Candidates)
+                {
+                    if (!dupLookup.ContainsKey(c.CandidateId))
+                    {
+                        var otherCand = g.Candidates.FirstOrDefault(x => x.CandidateId != c.CandidateId);
+                        dupLookup[c.CandidateId] = (g.DuplicateReason, otherCand?.CandidateId ?? Guid.Empty, g.Candidates.Count);
+                    }
+                }
+            }
+
             model.CandidatePipelineItems = allApps.Select(a =>
             {
                 var candName = $"{a.Candidate.FirstName} {a.Candidate.LastName}".Trim();
                 var primaryResume = a.Candidate.Resumes.FirstOrDefault(r => r.IsPrimary) ?? a.Candidate.Resumes.FirstOrDefault();
                 var isRef = a.ReferrerUserId != null || a.Candidate.Source == CandidateSource.REFERRAL;
                 var refUser = a.ReferrerUser ?? a.Candidate.ReferrerUser;
+                var hasDup = dupLookup.TryGetValue(a.CandidateId, out var dupInfo);
 
                 return new CandidatePipelineItemDto
                 {
@@ -416,7 +441,11 @@ public class HomeController : Controller
                     IsReferral = isRef,
                     ReferrerName = refUser?.FullName,
                     ReferrerEmail = refUser?.Email,
-                    ReferralNote = a.ReferralNote
+                    ReferralNote = a.ReferralNote,
+                    HasDuplicateWarning = hasDup,
+                    DuplicateReason = hasDup ? dupInfo.Reason : null,
+                    MatchedCandidateId = hasDup ? dupInfo.OtherId : null,
+                    DuplicateCount = hasDup ? dupInfo.Count : 0
                 };
             }).ToList();
 
