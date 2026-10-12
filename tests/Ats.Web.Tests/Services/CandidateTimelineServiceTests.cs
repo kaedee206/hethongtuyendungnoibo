@@ -67,9 +67,22 @@ public class CandidateTimelineServiceTests
         };
         await context.Departments.AddAsync(dept);
 
+        var req = new JobRequisition
+        {
+            Id = Guid.NewGuid(),
+            Code = $"REQ_{Guid.NewGuid():N}"[..8],
+            DepartmentId = dept.Id,
+            HiringManagerId = recruiter.Id,
+            HiringManager = recruiter,
+            Department = dept
+        };
+        await context.JobRequisitions.AddAsync(req);
+
         var job = new JobPosting
         {
             Id = Guid.NewGuid(),
+            RequisitionId = req.Id,
+            Requisition = req,
             Title = "Senior .NET Core Developer",
             Slug = $"senior-net-core-{Guid.NewGuid():N}"[..12]
         };
