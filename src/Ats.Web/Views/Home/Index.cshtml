@@ -985,6 +985,63 @@
                                     </select>
                                 </div>
 
+                                <!-- Bộ lọc Cột / Giai đoạn Kanban (Gộp thành 1 menu gọn gàng & hiển thị cột đang chọn) -->
+                                <div class="dropdown" id="kanbanStageFilterDropdownWrapper">
+                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-1.5 fw-semibold shadow-none"
+                                            type="button" id="btnKanbanStageFilter" data-bs-toggle="dropdown" aria-expanded="false"
+                                            style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.82rem; height: 31px; background: #FFFFFF; transition: all .2s ease;"
+                                            title="Lọc hiển thị theo cột Kanban">
+                                        <i class="bi bi-funnel text-muted" id="kanbanStageFilterIcon"></i>
+                                        <span id="kanbanStageFilterLabel">Tất cả cột</span>
+                                        <span id="kanbanStageFilterBadge" class="badge bg-light text-dark border ms-1" style="font-size: 0.72rem; font-family:'JetBrains Mono',monospace;">@Model.CandidatePipelineItems.Count</span>
+                                    </button>
+                                    <ul class="dropdown-menu shadow-sm border py-1" id="kanbanStageFilterMenu" aria-labelledby="btnKanbanStageFilter" style="border-radius: 10px; font-size: 0.82rem; min-width: 230px; z-index: 1050;">
+                                        <li>
+                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 active kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('ALL', 'Tất cả cột', event)">
+                                                <span><i class="bi bi-grid-fill me-2 text-muted"></i>Tất cả các cột</span>
+                                                <span class="badge rounded-pill bg-light text-dark border font-mono" id="stageMenuCount-ALL">@Model.CandidatePipelineItems.Count</span>
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider my-1"></li>
+                                        <li>
+                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('1', 'Hồ sơ mới', event)">
+                                                <span><i class="bi bi-circle-fill me-2" style="color: #2563EB; font-size: 0.65rem;"></i>01. Hồ sơ mới</span>
+                                                <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle font-mono" id="stageMenuCount-1">0</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('2', 'Sàng lọc', event)">
+                                                <span><i class="bi bi-circle-fill me-2" style="color: #0284C7; font-size: 0.65rem;"></i>02. Sàng lọc</span>
+                                                <span class="badge rounded-pill bg-info-subtle text-info border border-info-subtle font-mono" id="stageMenuCount-2">0</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('3', 'Phỏng vấn', event)">
+                                                <span><i class="bi bi-circle-fill me-2" style="color: #7C3AED; font-size: 0.65rem;"></i>03. Phỏng vấn</span>
+                                                <span class="badge rounded-pill bg-purple-subtle text-purple border border-purple-subtle font-mono" id="stageMenuCount-3">0</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('5', 'Offer', event)">
+                                                <span><i class="bi bi-circle-fill me-2" style="color: #D97706; font-size: 0.65rem;"></i>05. Đề xuất Offer</span>
+                                                <span class="badge rounded-pill bg-warning-subtle text-warning border border-warning-subtle font-mono" id="stageMenuCount-5">0</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('6', 'Nhận việc', event)">
+                                                <span><i class="bi bi-circle-fill me-2" style="color: #059669; font-size: 0.65rem;"></i>06. Nhận việc</span>
+                                                <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle font-mono" id="stageMenuCount-6">0</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('7', 'Loại hồ sơ', event)">
+                                                <span><i class="bi bi-circle-fill me-2" style="color: #E11D48; font-size: 0.65rem;"></i>07. Loại / Từ chối</span>
+                                                <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle font-mono" id="stageMenuCount-7">0</span>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+
                                 <!-- Tìm kiếm nhanh -->
                                 <div class="input-group input-group-sm position-relative" style="max-width: 210px;">
                                     <span class="input-group-text bg-light border-end-0" style="border-color: #E2E8F0;"><i class="bi bi-search text-muted"></i></span>
@@ -1292,8 +1349,8 @@
                         <!-- TABLE VIEW CONTAINER (Ẩn mặc định, hiển thị khi chọn chế độ Bảng) -->
                         <!-- ============================================================== -->
                         <div id="candidateTableViewContainer" class="d-none mt-2">
-                            <!-- Filter Stage Pills (Segmented Chips - 8px radius) -->
-                            <div class="d-flex flex-wrap gap-2 mb-3" id="candidateStageFilterGroup">
+                            <!-- Filter Stage Pills (Đã được gộp vào Dropdown trên thanh công cụ chính) -->
+                            <div class="d-none" id="candidateStageFilterGroup">
                                 <button type="button" class="candidate-stage-pill active" onclick="filterPipelineCandidates('ALL', this)">
                                     Tất cả <span class="pill-count">@Model.CandidatePipelineItems.Count</span>
                                 </button>
@@ -3091,6 +3148,132 @@
             updateKanbanColumnWidths();
         }
 
+        // --- BỘ LỌC CỘT KANBAN (Gộp thành 1 Dropdown duy nhất & Hiển thị tên cột đang chọn) ---
+        function selectKanbanStageFilter(stageKey, stageLabel, event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            window.currentPipelineStage = stageKey || 'ALL';
+
+            const btn = document.getElementById('btnKanbanStageFilter');
+            const label = document.getElementById('kanbanStageFilterLabel');
+            const badge = document.getElementById('kanbanStageFilterBadge');
+            const icon = document.getElementById('kanbanStageFilterIcon');
+            const menuItems = document.querySelectorAll('.kanban-stage-menu-item');
+
+            // Cập nhật trạng thái active trong menu
+            menuItems.forEach(item => {
+                const oc = item.getAttribute('onclick') || '';
+                if (oc.includes(`'${stageKey}'`)) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+
+            // Màu sắc đại diện cho từng cột
+            const stageStyleMap = {
+                'ALL': { color: '#475569', bg: '#FFFFFF', border: '#CBD5E1', icon: 'bi-funnel text-muted', name: 'Tất cả cột' },
+                '1': { color: '#1D4ED8', bg: '#EFF6FF', border: '#93C5FD', icon: 'bi-funnel-fill text-primary', name: 'Hồ sơ mới' },
+                '2': { color: '#0369A1', bg: '#F0F9FF', border: '#7DD3FC', icon: 'bi-funnel-fill text-info', name: 'Sàng lọc' },
+                '3': { color: '#6D28D9', bg: '#F5F3FF', border: '#C4B5FD', icon: 'bi-funnel-fill text-purple', name: 'Phỏng vấn' },
+                '5': { color: '#B45309', bg: '#FFFBEB', border: '#FCD34D', icon: 'bi-funnel-fill text-warning', name: 'Offer' },
+                '6': { color: '#047857', bg: '#ECFDF5', border: '#6EE7B7', icon: 'bi-funnel-fill text-success', name: 'Nhận việc' },
+                '7': { color: '#BE123C', bg: '#FFF1F2', border: '#FDA4AF', icon: 'bi-funnel-fill text-danger', name: 'Loại' }
+            };
+            const style = stageStyleMap[stageKey] || stageStyleMap['ALL'];
+            const displayName = stageLabel || style.name;
+
+            // Đếm số lượng của cột đang chọn
+            let currentCount = 0;
+            if (stageKey === 'ALL') {
+                currentCount = window.kanbanStageCounts ? Object.values(window.kanbanStageCounts).reduce((a, b) => a + b, 0) : 0;
+            } else {
+                currentCount = (window.kanbanStageCounts && window.kanbanStageCounts[parseInt(stageKey, 10)]) || 0;
+            }
+
+            // Cập nhật giao diện nút Dropdown: HIỂN THỊ TÊN CỘT ĐỂ NGƯỜI DÙNG BIẾT ĐÃ CHỌN LỌC
+            if (stageKey === 'ALL') {
+                if (label) label.textContent = 'Tất cả cột';
+                if (btn) {
+                    btn.style.background = '#FFFFFF';
+                    btn.style.borderColor = '#CBD5E1';
+                    btn.style.color = '#475569';
+                }
+                if (icon) icon.className = 'bi bi-funnel text-muted';
+                if (badge) {
+                    badge.className = 'badge bg-light text-dark border ms-1';
+                    badge.style.background = '';
+                    badge.style.color = '';
+                    badge.style.borderColor = '';
+                    badge.textContent = currentCount;
+                }
+            } else {
+                if (label) label.innerHTML = `Cột: <b>${displayName}</b>`;
+                if (btn) {
+                    btn.style.background = style.bg;
+                    btn.style.borderColor = style.border;
+                    btn.style.color = style.color;
+                }
+                if (icon) icon.className = style.icon;
+                if (badge) {
+                    badge.className = 'badge border ms-1';
+                    badge.style.background = '#FFFFFF';
+                    badge.style.color = style.color;
+                    badge.style.borderColor = style.border;
+                    badge.textContent = currentCount;
+                }
+            }
+
+            // 1. Điều khiển Bảng Kanban
+            const allStages = [1, 2, 3, 5, 6, 7];
+            if (stageKey === 'ALL') {
+                // Khôi phục tất cả cột mở đều nhau
+                window.maximizedKanbanStage = null;
+                allStages.forEach(order => {
+                    const col = document.getElementById('kanbanCol-' + order);
+                    if (col) {
+                        col.classList.remove('kanban-column-collapsed');
+                        col.classList.remove('kanban-column-maximized');
+                        col.style.display = '';
+                    }
+                });
+                try { localStorage.removeItem('ats_kanban_collapsed_stages'); } catch (_) {}
+                updateKanbanColumnWidths();
+            } else {
+                const selectedOrder = parseInt(stageKey, 10);
+                if (allStages.includes(selectedOrder)) {
+                    // Tập trung vào cột được chọn: Phóng to tối đa (Maximize) và thu gọn các cột khác
+                    window.maximizedKanbanStage = selectedOrder;
+                    allStages.forEach(order => {
+                        const col = document.getElementById('kanbanCol-' + order);
+                        if (col) {
+                            if (order === selectedOrder) {
+                                col.classList.remove('kanban-column-collapsed');
+                            } else {
+                                col.classList.add('kanban-column-collapsed');
+                            }
+                        }
+                    });
+                    updateKanbanColumnWidths();
+                    scrollToKanbanColumn(selectedOrder);
+                }
+            }
+
+            // 2. Điều khiển Bảng Table View (nếu đang ở Table)
+            applyPipelineFilters(true, true);
+
+            // Đóng menu Dropdown nếu đang mở
+            try {
+                const dropdownBtn = document.getElementById('btnKanbanStageFilter');
+                if (dropdownBtn && window.bootstrap && window.bootstrap.Dropdown) {
+                    const inst = window.bootstrap.Dropdown.getInstance(dropdownBtn);
+                    if (inst) inst.hide();
+                }
+            } catch (_) {}
+        }
+
         // --- Tính năng Thu gọn / Mở rộng Cột (Column Collapse/Expand) ---
         function toggleKanbanColumnCollapse(stageOrder, event) {
             if (event) {
@@ -3277,6 +3460,26 @@
             // Lưu đếm số lượng và cập nhật phình to các cột mở rộng
             window.kanbanStageCounts = counts;
             updateKanbanColumnWidths();
+
+            // Đồng bộ số lượng hồ sơ vào Dropdown Menu bộ lọc cột
+            const totalAll = Object.values(counts).reduce((a, b) => a + b, 0);
+            const elAll = document.getElementById('stageMenuCount-ALL');
+            if (elAll) elAll.textContent = totalAll;
+            [1, 2, 3, 5, 6, 7].forEach(order => {
+                const el = document.getElementById('stageMenuCount-' + order);
+                if (el) el.textContent = counts[order] || 0;
+            });
+
+            // Cập nhật badge trên nút Dropdown chính
+            const curStage = window.currentPipelineStage || 'ALL';
+            const curBadge = document.getElementById('kanbanStageFilterBadge');
+            if (curBadge) {
+                if (curStage === 'ALL') {
+                    curBadge.textContent = totalAll;
+                } else {
+                    curBadge.textContent = counts[parseInt(curStage, 10)] || 0;
+                }
+            }
 
             // Update empty placeholders
             [1, 2, 3, 5, 6, 7].forEach(order => {

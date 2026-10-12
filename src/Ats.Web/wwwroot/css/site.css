@@ -2055,4 +2055,31 @@ body.sidebar-resizing .ats-main-area {
   background: #059669;
 }
 
+/* =========================================================
+   BỘ LỌC CỘT KANBAN (Gộp thành Dropdown menu duy nhất)
+   ========================================================= */
+#btnKanbanStageFilter {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+#btnKanbanStageFilter:hover {
+  background: #F8FAFC !important;
+  border-color: #94A3B8 !important;
+}
+.kanban-stage-menu-item {
+  color: #334155;
+  transition: all .12s ease;
+  border-radius: 6px;
+  margin: 1px 4px;
+}
+.kanban-stage-menu-item:hover {
+  background: #F1F5F9;
+  color: #0F172A;
+}
+.kanban-stage-menu-item.active {
+  background: #ECFDF5 !important;
+  color: #065F46 !important;
+  font-weight: 600;
+}
+
+
 
