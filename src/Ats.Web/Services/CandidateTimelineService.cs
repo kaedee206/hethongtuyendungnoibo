@@ -61,7 +61,7 @@ public class CandidateTimelineService : ICandidateTimelineService
         var applications = await _context.Applications
             .AsNoTracking()
             .Include(a => a.JobPosting)
-                .ThenInclude(jp => jp.JobPosition)
+                .ThenInclude(jp => jp.Requisition)
             .Include(a => a.CurrentStage)
             .Include(a => a.ReferrerUser)
             .Include(a => a.Resume)
@@ -227,7 +227,7 @@ public class CandidateTimelineService : ICandidateTimelineService
             var interviews = await _context.Interviews
                 .AsNoTracking()
                 .Include(i => i.Panelists)
-                    .ThenInclude(p => p.User)
+                    .ThenInclude(p => p.Interviewer)
                 .Include(i => i.Application)
                     .ThenInclude(a => a.JobPosting)
                 .Where(i => appIds.Contains(i.ApplicationId))
@@ -238,7 +238,7 @@ public class CandidateTimelineService : ICandidateTimelineService
                 var occTime = i.StartTime ?? i.CreatedAt;
                 var jobName = i.Application?.JobPosting?.Title ?? "Vị trí tuyển dụng";
                 var panelNames = i.Panelists
-                    .Select(p => p.User?.FullName)
+                    .Select(p => p.Interviewer?.FullName)
                     .Where(n => !string.IsNullOrWhiteSpace(n))
                     .ToList();
                 var panelistStr = panelNames.Any() ? string.Join(", ", panelNames) : "Hội đồng phỏng vấn";
