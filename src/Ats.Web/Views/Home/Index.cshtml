@@ -838,9 +838,15 @@
                                                         </td>
                                                         <td class="py-2.5 px-3 text-muted" style="font-size: 0.75rem; font-family:'JetBrains Mono',monospace;">@cand.AppliedDateDisplay</td>
                                                         <td class="py-2.5 px-3 text-end">
-                                                            <button type="button" class="btn btn-sm btn-light border py-1 px-2.5" style="font-size: 0.75rem; border-radius: 8px;" onclick="openCandidateDetailModal('@cand.ApplicationId')">
-                                                                <i class="bi bi-eye text-muted me-1"></i> Chi tiết
-                                                            </button>
+                                                            <div class="d-flex justify-content-end gap-1">
+                                                                <a href="/Workspace/CandidateTimeline?candidateId=@cand.CandidateId&applicationId=@cand.ApplicationId" 
+                                                                   class="btn btn-sm btn-outline-success py-1 px-2" style="font-size: 0.75rem; border-radius: 8px;" title="Xem nhật ký toàn bộ tương tác">
+                                                                    <i class="bi bi-clock-history"></i>
+                                                                </a>
+                                                                <button type="button" class="btn btn-sm btn-light border py-1 px-2.5" style="font-size: 0.75rem; border-radius: 8px;" onclick="openCandidateDetailModal('@cand.ApplicationId')">
+                                                                    <i class="bi bi-eye text-muted me-1"></i> Chi tiết
+                                                                </button>
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 }
@@ -1159,6 +1165,11 @@
                                                                 <li>
                                                                     <a class="dropdown-item" href="javascript:void(0)" onclick="openCandidateDetailModal('@cand.ApplicationId')">
                                                                         <i class="bi bi-eye text-primary"></i> Xem chi tiết hồ sơ
+                                                                    </a>
+                                                                </li>
+                                                                <li>
+                                                                    <a class="dropdown-item text-success fw-semibold" href="/Workspace/CandidateTimeline?candidateId=@cand.CandidateId&applicationId=@cand.ApplicationId">
+                                                                        <i class="bi bi-clock-history text-success"></i> Xem nhật ký tương tác
                                                                     </a>
                                                                 </li>
                                                                 @if (!string.IsNullOrEmpty(cand.ResumeFilePath))
@@ -3357,10 +3368,13 @@
                                     <div class="small mb-1"><b>Trạng thái:</b> <span class="badge bg-light text-dark border">${d.status}</span></div>
                                     <div class="small mb-3"><b>Ngày nộp:</b> ${d.appliedDate}</div>
                                     ${d.resumeFilePath && d.resumeFilePath !== '#' ? `
-                                        <a href="${d.resumeFilePath}" target="_blank" class="btn btn-sm btn-outline-danger w-100 fw-semibold" style="border-radius:6px;">
+                                        <a href="${d.resumeFilePath}" target="_blank" class="btn btn-sm btn-outline-danger w-100 fw-semibold mb-2" style="border-radius:6px;">
                                             <i class="bi bi-file-earmark-pdf me-1"></i>Xem CV ${d.resumeFileName || ''}
                                         </a>
-                                    ` : '<div class="text-muted small"><i class="bi bi-file-earmark-check me-1"></i>CV: ' + (d.resumeFileName || 'Đã nạp') + '</div>'}
+                                    ` : '<div class="text-muted small mb-2"><i class="bi bi-file-earmark-check me-1"></i>CV: ' + (d.resumeFileName || 'Đã nạp') + '</div>'}
+                                    <a href="/Workspace/CandidateTimeline?candidateId=${d.candidateId || ''}&applicationId=${d.applicationId || applicationId}" class="btn btn-sm btn-outline-success w-100 fw-semibold" style="border-radius:6px;">
+                                        <i class="bi bi-clock-history me-1"></i>Xem nhật ký tương tác
+                                    </a>
                                 </div>
                             </div>
                             <div class="col-12 col-md-7">
