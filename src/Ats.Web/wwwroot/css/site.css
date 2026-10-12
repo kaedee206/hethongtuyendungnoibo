@@ -1608,17 +1608,17 @@ body.sidebar-resizing .ats-main-area {
 
 /* =========================================================
    SCRUM-319: Kanban Pipeline Board Styles
-   Enterprise Kanban view with Drag-and-Drop capability
+   Fit-to-Screen (100% width, no horizontal scroll) + Optional Wide Scroll
    ========================================================= */
 .kanban-board-wrapper {
   width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 12px;
+  overflow-x: hidden; /* Mặc định vừa trọn 1 màn hình, không cuộn ngang */
+  padding-bottom: 6px;
+  transition: all .2s ease;
 }
 
 .kanban-board-wrapper::-webkit-scrollbar {
-  height: 8px;
+  height: 6px;
 }
 .kanban-board-wrapper::-webkit-scrollbar-track {
   background: #F1F5F9;
@@ -1632,21 +1632,34 @@ body.sidebar-resizing .ats-main-area {
   background: #94A3B8;
 }
 
+/* Chế độ cuộn rộng nếu người dùng muốn mở rộng thẻ */
+.kanban-board-wrapper.kanban-wide-scroll {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+.kanban-board-wrapper.kanban-wide-scroll .kanban-board-grid {
+  grid-template-columns: repeat(6, minmax(240px, 1fr)) !important;
+  min-width: 1480px !important;
+}
+
+/* 6 Cột chia đều 100% chiều rộng màn hình */
 .kanban-board-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(250px, 1fr));
-  gap: 14px;
-  min-width: 1540px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
 }
 
 .kanban-column {
   background: #F8FAFC;
   border: 1px solid #E2E8F0;
-  border-radius: 10px;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
-  min-height: 540px;
-  max-height: 720px;
+  min-height: 480px;
+  max-height: calc(100vh - 240px);
+  min-width: 0;
   transition: border-color .15s, box-shadow .15s;
 }
 
@@ -1655,11 +1668,11 @@ body.sidebar-resizing .ats-main-area {
 }
 
 .kanban-column-header {
-  padding: 12px 14px;
+  padding: 8px 8px 6px 8px;
   border-bottom: 1px solid #E2E8F0;
   background: #FFFFFF;
-  border-top-left-radius: 10px;
-  border-top-right-radius: 10px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
   position: relative;
   overflow: hidden;
 }
@@ -1673,25 +1686,26 @@ body.sidebar-resizing .ats-main-area {
 }
 
 .kanban-col-count {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 12px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  line-height: 1.2;
 }
 
 .kanban-cards-container {
   flex: 1;
   overflow-y: auto;
-  padding: 10px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   transition: background-color .2s, border-color .2s;
-  min-height: 180px;
+  min-height: 140px;
 }
 
 .kanban-cards-container::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 .kanban-cards-container::-webkit-scrollbar-track {
   background: transparent;
@@ -1713,18 +1727,19 @@ body.sidebar-resizing .ats-main-area {
 .kanban-candidate-card {
   background: #FFFFFF;
   border: 1px solid #E2E8F0;
-  border-radius: 8px;
-  padding: 12px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  border-radius: 7px;
+  padding: 8px 8px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   cursor: grab;
   user-select: none;
   transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
   position: relative;
+  min-width: 0;
 }
 
 .kanban-candidate-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
   border-color: #CBD5E1;
 }
 
@@ -1739,12 +1754,12 @@ body.sidebar-resizing .ats-main-area {
 }
 
 .kanban-card-avatar {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: #0F172A;
   color: #FFFFFF;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -1753,31 +1768,32 @@ body.sidebar-resizing .ats-main-area {
 }
 
 .kanban-card-title {
-  font-size: 0.88rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: #0F172A;
-  line-height: 1.25;
+  line-height: 1.2;
 }
 
 .kanban-card-job {
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   font-weight: 600;
   color: #059669;
-  margin-top: 2px;
+  margin-top: 1px;
+  line-height: 1.2;
 }
 
 .kanban-card-meta {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   color: #64748B;
-  margin-top: 6px;
+  margin-top: 4px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .kanban-card-footer {
-  margin-top: 10px;
-  padding-top: 8px;
+  margin-top: 6px;
+  padding-top: 5px;
   border-top: 1px solid #F1F5F9;
   display: flex;
   align-items: center;
@@ -1786,19 +1802,19 @@ body.sidebar-resizing .ats-main-area {
 
 .kanban-empty-placeholder {
   border: 1px dashed #CBD5E1;
-  border-radius: 8px;
-  padding: 30px 14px;
+  border-radius: 6px;
+  padding: 20px 8px;
   text-align: center;
   color: #94A3B8;
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   margin: auto 0;
   pointer-events: none;
 }
 
 .pipeline-view-btn {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  padding: 5px 12px;
+  padding: 4px 10px;
   border-radius: 6px;
   transition: all .15s;
 }
@@ -1808,6 +1824,16 @@ body.sidebar-resizing .ats-main-area {
   color: #FFFFFF !important;
   border-color: #059669;
   box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
+}
+
+@media (max-width: 991px) {
+  .kanban-board-wrapper {
+    overflow-x: auto !important;
+  }
+  .kanban-board-grid {
+    grid-template-columns: repeat(6, minmax(180px, 1fr)) !important;
+    min-width: 1100px !important;
+  }
 }
 
 

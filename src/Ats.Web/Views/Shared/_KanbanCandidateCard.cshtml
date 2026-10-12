@@ -12,23 +12,23 @@
      data-job="@Model.JobTitle.ToLower()"
      ondragstart="onKanbanCardDragStart(event)"
      ondragend="onKanbanCardDragEnd(event)">
-    <div class="d-flex justify-content-between align-items-start mb-2">
-        <div class="d-flex align-items-center gap-2">
-            <div class="kanban-card-avatar">
+    <div class="d-flex justify-content-between align-items-start mb-1.5" style="gap: 4px;">
+        <div class="d-flex align-items-center gap-1.5" style="min-width: 0; flex: 1;">
+            <div class="kanban-card-avatar flex-shrink-0">
                 @(string.IsNullOrEmpty(Model.CandidateName) ? "?" : Model.CandidateName.Substring(0, 1).ToUpper())
             </div>
-            <div>
-                <a href="javascript:void(0)" onclick="openCandidateDetailModal('@Model.ApplicationId')" class="kanban-card-title text-decoration-none text-dark hover-underline">
+            <div style="min-width: 0; flex: 1;">
+                <a href="javascript:void(0)" onclick="openCandidateDetailModal('@Model.ApplicationId')" class="kanban-card-title text-decoration-none text-dark hover-underline text-truncate d-block" title="@Model.CandidateName">
                     @Model.CandidateName
                 </a>
-                <div class="kanban-card-job text-truncate" style="max-width: 150px;" title="@Model.JobTitle">
+                <div class="kanban-card-job text-truncate" title="@Model.JobTitle">
                     <i class="bi bi-briefcase me-1"></i>@Model.JobTitle
                 </div>
             </div>
         </div>
-        <div class="dropdown">
-            <button type="button" class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration:none;">
-                <i class="bi bi-three-dots-vertical"></i>
+        <div class="dropdown flex-shrink-0">
+            <button type="button" class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration:none; line-height: 1;">
+                <i class="bi bi-three-dots-vertical" style="font-size: 0.85rem;"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.8rem; border-radius: 8px;">
                 <li><a class="dropdown-item" href="javascript:void(0)" onclick="openCandidateDetailModal('@Model.ApplicationId')"><i class="bi bi-eye text-primary me-2"></i>Chi tiết hồ sơ</a></li>

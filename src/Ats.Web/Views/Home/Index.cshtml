@@ -954,18 +954,18 @@
                 <!-- 2. TÍNH NĂNG QUẢN LÝ ỨNG VIÊN (UNG-VIEN: FULL WIDTH) -->
                 <!-- ============================================================== -->
                 <div class="staff-feature-panel @(activeFeature == "ung-vien" ? "" : "d-none")" data-feature-panel="ung-vien">
-                    <div id="feature-section-staff-ung-vien" class="card border-0 shadow-sm p-4 bg-white mb-4 scroll-margin-nav" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                    <div id="feature-section-staff-ung-vien" class="card border-0 shadow-sm p-2 p-md-3 p-xl-4 bg-white mb-4 scroll-margin-nav" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                         <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-3 pb-2 gap-2" style="border-bottom: 1px solid #F1F5F9;">
                             <div>
                                 <h5 class="fw-bold text-dark mb-0" style="font-size: 1.15rem;">
                                     <i class="bi bi-kanban me-2" style="color: #059669;"></i>Điều Phối Hồ Sơ &amp; Pipeline Tuyển Dụng
                                 </h5>
-                                <small class="text-muted">Kéo thả điều phối ứng viên dạng Kanban, theo dõi điểm nghẽn quy trình và quản lý tiến độ phỏng vấn</small>
+                                <small class="text-muted">Kéo thả điều phối ứng viên dạng Kanban 6 giai đoạn, bao quát toàn bộ quy trình trên 1 màn hình</small>
                             </div>
                             <div class="d-flex flex-wrap align-items-center gap-2 w-100 w-lg-auto">
                                 <!-- Bộ lọc vị trí tuyển dụng (SCRUM-319: Mặc định vị trí Recruiter đang phụ trách) -->
                                 <div class="d-flex align-items-center gap-1.5">
-                                    <select id="kanbanJobFilter" class="form-select form-select-sm fw-semibold shadow-none" style="min-width: 220px; max-width: 290px; border-color: #CBD5E1; border-radius: 8px; font-size: 0.82rem;" onchange="onPipelineJobFilterChanged(this.value)">
+                                    <select id="kanbanJobFilter" class="form-select form-select-sm fw-semibold shadow-none" style="min-width: 200px; max-width: 280px; border-color: #CBD5E1; border-radius: 8px; font-size: 0.82rem;" onchange="onPipelineJobFilterChanged(this.value)">
                                         <option value="ALL">📋 Tất cả vị trí (@Model.CandidatePipelineItems.Count)</option>
                                         @foreach (var job in Model.JobPostingFilterOptions)
                                         {
@@ -986,9 +986,9 @@
                                 </div>
 
                                 <!-- Tìm kiếm nhanh -->
-                                <div class="input-group input-group-sm position-relative" style="max-width: 240px;">
+                                <div class="input-group input-group-sm position-relative" style="max-width: 210px;">
                                     <span class="input-group-text bg-light border-end-0" style="border-color: #E2E8F0;"><i class="bi bi-search text-muted"></i></span>
-                                    <input type="text" id="candidateSearchInput" class="form-control border-start-0 pe-4" placeholder="Tìm ứng viên... (≥ 3 ký tự)" style="border-color: #E2E8F0; font-size: 0.82rem;" autocomplete="off" />
+                                    <input type="text" id="candidateSearchInput" class="form-control border-start-0 pe-4" placeholder="Tìm kiếm... (≥ 3 ký tự)" style="border-color: #E2E8F0; font-size: 0.82rem;" autocomplete="off" />
                                     <button type="button" id="candidateSearchClearBtn" class="btn btn-sm btn-link position-absolute top-50 end-0 translate-middle-y me-1 text-muted d-none" style="text-decoration:none; z-index: 5;" title="Xóa từ khóa">
                                         <i class="bi bi-x-circle-fill"></i>
                                     </button>
@@ -997,13 +997,18 @@
                                     </div>
                                 </div>
 
-                                <!-- Chuyển đổi Kanban / Bảng -->
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <button type="button" id="btnPipelineKanbanView" class="btn btn-outline-success pipeline-view-btn active" onclick="switchPipelineView('kanban')" title="Bảng Kanban Kéo Thả">
-                                        <i class="bi bi-kanban-fill me-1"></i> Kanban
-                                    </button>
-                                    <button type="button" id="btnPipelineTableView" class="btn btn-outline-secondary pipeline-view-btn" onclick="switchPipelineView('table')" title="Danh Sách Dạng Bảng">
-                                        <i class="bi bi-table me-1"></i> Bảng
+                                <!-- Chuyển đổi Kanban / Bảng & Chế độ Vừa màn hình -->
+                                <div class="d-flex align-items-center gap-1.5">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" id="btnPipelineKanbanView" class="btn btn-outline-success pipeline-view-btn active" onclick="switchPipelineView('kanban')" title="Bảng Kanban Kéo Thả">
+                                            <i class="bi bi-kanban-fill me-1"></i> Kanban
+                                        </button>
+                                        <button type="button" id="btnPipelineTableView" class="btn btn-outline-secondary pipeline-view-btn" onclick="switchPipelineView('table')" title="Danh Sách Dạng Bảng">
+                                            <i class="bi bi-table me-1"></i> Bảng
+                                        </button>
+                                    </div>
+                                    <button type="button" id="btnToggleKanbanFit" class="btn btn-outline-secondary pipeline-view-btn" onclick="toggleKanbanFitMode()" title="Chuyển chế độ: Vừa trọn 1 màn hình (không cuộn ngang) / Cuộn rộng">
+                                        <i id="fitModeIcon" class="bi bi-arrows-angle-contract me-1"></i><span id="fitModeLabel">Vừa màn hình</span>
                                     </button>
                                 </div>
                             </div>
@@ -1016,13 +1021,13 @@
                             <div class="kanban-board-grid">
                                 <!-- 1. CỘT HỒ SƠ MỚI (StageOrder 1) -->
                                 <div class="kanban-column" data-kanban-stage="1">
-                                    <div class="kanban-column-header d-flex justify-content-between align-items-center">
+                                    <div class="kanban-column-header d-flex justify-content-between align-items-center" style="gap: 4px;">
                                         <div class="kanban-column-strip" style="background: #2563EB;"></div>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <i class="bi bi-inbox-fill text-primary" style="font-size: 0.95rem;"></i>
-                                            <span class="fw-bold text-dark" style="font-size: 0.88rem;">Hồ sơ mới</span>
+                                        <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
+                                            <i class="bi bi-inbox-fill text-primary" style="font-size: 0.85rem;"></i>
+                                            <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Hồ sơ mới</span>
                                         </div>
-                                        <span id="kanbanCountNew" class="kanban-col-count" style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE;">0</span>
+                                        <span id="kanbanCountNew" class="kanban-col-count flex-shrink-0" style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE;">0</span>
                                     </div>
                                     <div class="kanban-cards-container" id="kanbanDropZone-1" data-stage-order="1"
                                          ondragover="onKanbanContainerDragOver(event)" ondragleave="onKanbanContainerDragLeave(event)" ondrop="onKanbanContainerDrop(event, 1)">
@@ -1031,21 +1036,21 @@
                                             @await Html.PartialAsync("_KanbanCandidateCard", cand)
                                         }
                                         <div class="kanban-empty-placeholder d-none">
-                                            <i class="bi bi-inbox fs-4 d-block mb-1 opacity-50"></i>
-                                            Không có hồ sơ mới
+                                            <i class="bi bi-inbox fs-5 d-block mb-1 opacity-50"></i>
+                                            Trống
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- 2. CỘT SÀNG LỌC (StageOrder 2) -->
                                 <div class="kanban-column" data-kanban-stage="2">
-                                    <div class="kanban-column-header d-flex justify-content-between align-items-center">
+                                    <div class="kanban-column-header d-flex justify-content-between align-items-center" style="gap: 4px;">
                                         <div class="kanban-column-strip" style="background: #4F46E5;"></div>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <i class="bi bi-funnel-fill" style="color: #4F46E5; font-size: 0.95rem;"></i>
-                                            <span class="fw-bold text-dark" style="font-size: 0.88rem;">Sàng lọc</span>
+                                        <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
+                                            <i class="bi bi-funnel-fill" style="color: #4F46E5; font-size: 0.85rem;"></i>
+                                            <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Sàng lọc</span>
                                         </div>
-                                        <span id="kanbanCountScreen" class="kanban-col-count" style="background: #EEF2FF; color: #4338CA; border: 1px solid #C7D2FE;">0</span>
+                                        <span id="kanbanCountScreen" class="kanban-col-count flex-shrink-0" style="background: #EEF2FF; color: #4338CA; border: 1px solid #C7D2FE;">0</span>
                                     </div>
                                     <div class="kanban-cards-container" id="kanbanDropZone-2" data-stage-order="2"
                                          ondragover="onKanbanContainerDragOver(event)" ondragleave="onKanbanContainerDragLeave(event)" ondrop="onKanbanContainerDrop(event, 2)">
@@ -1054,21 +1059,21 @@
                                             @await Html.PartialAsync("_KanbanCandidateCard", cand)
                                         }
                                         <div class="kanban-empty-placeholder d-none">
-                                            <i class="bi bi-funnel fs-4 d-block mb-1 opacity-50"></i>
-                                            Chưa có hồ sơ sàng lọc
+                                            <i class="bi bi-funnel fs-5 d-block mb-1 opacity-50"></i>
+                                            Trống
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- 3. CỘT PHỎNG VẤN (StageOrder 3 & 4) -->
                                 <div class="kanban-column" data-kanban-stage="3">
-                                    <div class="kanban-column-header d-flex justify-content-between align-items-center">
+                                    <div class="kanban-column-header d-flex justify-content-between align-items-center" style="gap: 4px;">
                                         <div class="kanban-column-strip" style="background: #D97706;"></div>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <i class="bi bi-calendar-event-fill text-warning" style="color: #D97706; font-size: 0.95rem;"></i>
-                                            <span class="fw-bold text-dark" style="font-size: 0.88rem;">Phỏng vấn</span>
+                                        <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
+                                            <i class="bi bi-calendar-event-fill text-warning" style="color: #D97706; font-size: 0.85rem;"></i>
+                                            <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Phỏng vấn</span>
                                         </div>
-                                        <span id="kanbanCountInterview" class="kanban-col-count" style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A;">0</span>
+                                        <span id="kanbanCountInterview" class="kanban-col-count flex-shrink-0" style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A;">0</span>
                                     </div>
                                     <div class="kanban-cards-container" id="kanbanDropZone-3" data-stage-order="3"
                                          ondragover="onKanbanContainerDragOver(event)" ondragleave="onKanbanContainerDragLeave(event)" ondrop="onKanbanContainerDrop(event, 3)">
@@ -1077,21 +1082,21 @@
                                             @await Html.PartialAsync("_KanbanCandidateCard", cand)
                                         }
                                         <div class="kanban-empty-placeholder d-none">
-                                            <i class="bi bi-calendar-event fs-4 d-block mb-1 opacity-50"></i>
-                                            Chưa có lịch phỏng vấn
+                                            <i class="bi bi-calendar-event fs-5 d-block mb-1 opacity-50"></i>
+                                            Trống
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- 4. CỘT ĐỀ XUẤT OFFER (StageOrder 5) -->
                                 <div class="kanban-column" data-kanban-stage="5">
-                                    <div class="kanban-column-header d-flex justify-content-between align-items-center">
+                                    <div class="kanban-column-header d-flex justify-content-between align-items-center" style="gap: 4px;">
                                         <div class="kanban-column-strip" style="background: #7C3AED;"></div>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <i class="bi bi-envelope-paper-heart-fill" style="color: #7C3AED; font-size: 0.95rem;"></i>
-                                            <span class="fw-bold text-dark" style="font-size: 0.88rem;">Đề xuất offer</span>
+                                        <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
+                                            <i class="bi bi-envelope-paper-heart-fill" style="color: #7C3AED; font-size: 0.85rem;"></i>
+                                            <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Offer</span>
                                         </div>
-                                        <span id="kanbanCountOffer" class="kanban-col-count" style="background: #F5F3FF; color: #6D28D9; border: 1px solid #DDD6FE;">0</span>
+                                        <span id="kanbanCountOffer" class="kanban-col-count flex-shrink-0" style="background: #F5F3FF; color: #6D28D9; border: 1px solid #DDD6FE;">0</span>
                                     </div>
                                     <div class="kanban-cards-container" id="kanbanDropZone-5" data-stage-order="5"
                                          ondragover="onKanbanContainerDragOver(event)" ondragleave="onKanbanContainerDragLeave(event)" ondrop="onKanbanContainerDrop(event, 5)">
@@ -1100,21 +1105,21 @@
                                             @await Html.PartialAsync("_KanbanCandidateCard", cand)
                                         }
                                         <div class="kanban-empty-placeholder d-none">
-                                            <i class="bi bi-envelope-paper-heart fs-4 d-block mb-1 opacity-50"></i>
-                                            Chưa có hồ sơ offer
+                                            <i class="bi bi-envelope-paper-heart fs-5 d-block mb-1 opacity-50"></i>
+                                            Trống
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- 5. CỘT NHẬN VIỆC (StageOrder 6) -->
                                 <div class="kanban-column" data-kanban-stage="6">
-                                    <div class="kanban-column-header d-flex justify-content-between align-items-center">
+                                    <div class="kanban-column-header d-flex justify-content-between align-items-center" style="gap: 4px;">
                                         <div class="kanban-column-strip" style="background: #059669;"></div>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <i class="bi bi-person-check-fill text-success" style="color: #059669; font-size: 0.95rem;"></i>
-                                            <span class="fw-bold text-dark" style="font-size: 0.88rem;">Nhận việc</span>
+                                        <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
+                                            <i class="bi bi-person-check-fill text-success" style="color: #059669; font-size: 0.85rem;"></i>
+                                            <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Nhận việc</span>
                                         </div>
-                                        <span id="kanbanCountHired" class="kanban-col-count" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0;">0</span>
+                                        <span id="kanbanCountHired" class="kanban-col-count flex-shrink-0" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0;">0</span>
                                     </div>
                                     <div class="kanban-cards-container" id="kanbanDropZone-6" data-stage-order="6"
                                          ondragover="onKanbanContainerDragOver(event)" ondragleave="onKanbanContainerDragLeave(event)" ondrop="onKanbanContainerDrop(event, 6)">
@@ -1123,21 +1128,21 @@
                                             @await Html.PartialAsync("_KanbanCandidateCard", cand)
                                         }
                                         <div class="kanban-empty-placeholder d-none">
-                                            <i class="bi bi-person-check fs-4 d-block mb-1 opacity-50"></i>
-                                            Chưa có ứng viên nhận việc
+                                            <i class="bi bi-person-check fs-5 d-block mb-1 opacity-50"></i>
+                                            Trống
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- 6. CỘT LOẠI (StageOrder 7 / REJECTED) -->
                                 <div class="kanban-column" data-kanban-stage="7">
-                                    <div class="kanban-column-header d-flex justify-content-between align-items-center">
+                                    <div class="kanban-column-header d-flex justify-content-between align-items-center" style="gap: 4px;">
                                         <div class="kanban-column-strip" style="background: #E11D48;"></div>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <i class="bi bi-person-x-fill text-danger" style="color: #E11D48; font-size: 0.95rem;"></i>
-                                            <span class="fw-bold text-dark" style="font-size: 0.88rem;">Loại</span>
+                                        <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
+                                            <i class="bi bi-person-x-fill text-danger" style="color: #E11D48; font-size: 0.85rem;"></i>
+                                            <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Loại</span>
                                         </div>
-                                        <span id="kanbanCountRejected" class="kanban-col-count" style="background: #FFF1F2; color: #BE123C; border: 1px solid #FECDD3;">0</span>
+                                        <span id="kanbanCountRejected" class="kanban-col-count flex-shrink-0" style="background: #FFF1F2; color: #BE123C; border: 1px solid #FECDD3;">0</span>
                                     </div>
                                     <div class="kanban-cards-container" id="kanbanDropZone-7" data-stage-order="7"
                                          ondragover="onKanbanContainerDragOver(event)" ondragleave="onKanbanContainerDragLeave(event)" ondrop="onKanbanContainerDrop(event, 7)">
@@ -2827,6 +2832,33 @@
             }
         }
 
+        function toggleKanbanFitMode() {
+            const wrapper = document.getElementById('candidateKanbanViewContainer');
+            const label = document.getElementById('fitModeLabel');
+            const icon = document.getElementById('fitModeIcon');
+            const btn = document.getElementById('btnToggleKanbanFit');
+            if (!wrapper) return;
+
+            const isWide = wrapper.classList.toggle('kanban-wide-scroll');
+            if (isWide) {
+                if (label) label.textContent = 'Cuộn rộng';
+                if (icon) { icon.className = 'bi bi-arrows-angle-expand me-1'; }
+                if (btn) {
+                    btn.classList.add('btn-secondary', 'text-white');
+                    btn.classList.remove('btn-outline-secondary');
+                }
+                try { localStorage.setItem('ats_kanban_fit_mode', 'wide'); } catch (_) {}
+            } else {
+                if (label) label.textContent = 'Vừa màn hình';
+                if (icon) { icon.className = 'bi bi-arrows-angle-contract me-1'; }
+                if (btn) {
+                    btn.classList.remove('btn-secondary', 'text-white');
+                    btn.classList.add('btn-outline-secondary');
+                }
+                try { localStorage.setItem('ats_kanban_fit_mode', 'fit'); } catch (_) {}
+            }
+        }
+
         function onPipelineJobFilterChanged(jobId) {
             window.currentPipelineJob = jobId || 'ALL';
             applyKanbanFilters();
@@ -3333,6 +3365,11 @@
             // Khởi tạo chế độ xem Kanban và lọc ban đầu
             switchPipelineView(window.pipelineViewMode || 'kanban');
             applyKanbanFilters();
+
+            // Khởi tạo chế độ Fit mode (mặc định Fit 100% không cuộn ngang; nếu người dùng từng chọn wide thì khôi phục)
+            if (localStorage.getItem('ats_kanban_fit_mode') === 'wide') {
+                toggleKanbanFitMode();
+            }
         });
 
         // 8.2. Chuyển tiếp giai đoạn tuyển chọn nhanh (Advance Stage)
