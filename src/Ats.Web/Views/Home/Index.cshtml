@@ -1044,9 +1044,12 @@
                                                 <i class="bi bi-inbox-fill text-primary" style="font-size: 0.85rem;"></i>
                                                 <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Hồ sơ mới</span>
                                             </div>
-                                            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                            <div class="kanban-col-actions flex-shrink-0">
                                                 <span id="kanbanCountNew" class="kanban-col-count" style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE;">0</span>
-                                                <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(1, event)" title="Thu gọn cột Hồ sơ mới">
+                                                <button type="button" class="kanban-col-btn" id="btnMaxCol-1" onclick="toggleKanbanColumnMaximize(1, event)" title="Phóng to / Mở rộng tối đa cột này">
+                                                    <i class="bi bi-arrows-angle-expand"></i>
+                                                </button>
+                                                <button type="button" class="kanban-col-btn" onclick="toggleKanbanColumnCollapse(1, event)" title="Thu gọn cột Hồ sơ mới">
                                                     <i class="bi bi-chevron-bar-left"></i>
                                                 </button>
                                             </div>
@@ -1083,9 +1086,12 @@
                                                 <i class="bi bi-funnel-fill" style="color: #4F46E5; font-size: 0.85rem;"></i>
                                                 <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Sàng lọc</span>
                                             </div>
-                                            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                            <div class="kanban-col-actions flex-shrink-0">
                                                 <span id="kanbanCountScreen" class="kanban-col-count" style="background: #EEF2FF; color: #4338CA; border: 1px solid #C7D2FE;">0</span>
-                                                <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(2, event)" title="Thu gọn cột Sàng lọc">
+                                                <button type="button" class="kanban-col-btn" id="btnMaxCol-2" onclick="toggleKanbanColumnMaximize(2, event)" title="Phóng to / Mở rộng tối đa cột này">
+                                                    <i class="bi bi-arrows-angle-expand"></i>
+                                                </button>
+                                                <button type="button" class="kanban-col-btn" onclick="toggleKanbanColumnCollapse(2, event)" title="Thu gọn cột Sàng lọc">
                                                     <i class="bi bi-chevron-bar-left"></i>
                                                 </button>
                                             </div>
@@ -1122,9 +1128,12 @@
                                                 <i class="bi bi-calendar-event-fill text-warning" style="color: #D97706; font-size: 0.85rem;"></i>
                                                 <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Phỏng vấn</span>
                                             </div>
-                                            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                            <div class="kanban-col-actions flex-shrink-0">
                                                 <span id="kanbanCountInterview" class="kanban-col-count" style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A;">0</span>
-                                                <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(3, event)" title="Thu gọn cột Phỏng vấn">
+                                                <button type="button" class="kanban-col-btn" id="btnMaxCol-3" onclick="toggleKanbanColumnMaximize(3, event)" title="Phóng to / Mở rộng tối đa cột này">
+                                                    <i class="bi bi-arrows-angle-expand"></i>
+                                                </button>
+                                                <button type="button" class="kanban-col-btn" onclick="toggleKanbanColumnCollapse(3, event)" title="Thu gọn cột Phỏng vấn">
                                                     <i class="bi bi-chevron-bar-left"></i>
                                                 </button>
                                             </div>
@@ -1161,9 +1170,12 @@
                                                 <i class="bi bi-envelope-paper-heart-fill" style="color: #7C3AED; font-size: 0.85rem;"></i>
                                                 <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Offer</span>
                                             </div>
-                                            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                            <div class="kanban-col-actions flex-shrink-0">
                                                 <span id="kanbanCountOffer" class="kanban-col-count" style="background: #F5F3FF; color: #6D28D9; border: 1px solid #DDD6FE;">0</span>
-                                                <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(5, event)" title="Thu gọn cột Offer">
+                                                <button type="button" class="kanban-col-btn" id="btnMaxCol-5" onclick="toggleKanbanColumnMaximize(5, event)" title="Phóng to / Mở rộng tối đa cột này">
+                                                    <i class="bi bi-arrows-angle-expand"></i>
+                                                </button>
+                                                <button type="button" class="kanban-col-btn" onclick="toggleKanbanColumnCollapse(5, event)" title="Thu gọn cột Offer">
                                                     <i class="bi bi-chevron-bar-left"></i>
                                                 </button>
                                             </div>
@@ -1200,9 +1212,12 @@
                                                 <i class="bi bi-person-check-fill text-success" style="color: #059669; font-size: 0.85rem;"></i>
                                                 <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Nhận việc</span>
                                             </div>
-                                            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                            <div class="kanban-col-actions flex-shrink-0">
                                                 <span id="kanbanCountHired" class="kanban-col-count" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0;">0</span>
-                                                <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(6, event)" title="Thu gọn cột Nhận việc">
+                                                <button type="button" class="kanban-col-btn" id="btnMaxCol-6" onclick="toggleKanbanColumnMaximize(6, event)" title="Phóng to / Mở rộng tối đa cột này">
+                                                    <i class="bi bi-arrows-angle-expand"></i>
+                                                </button>
+                                                <button type="button" class="kanban-col-btn" onclick="toggleKanbanColumnCollapse(6, event)" title="Thu gọn cột Nhận việc">
                                                     <i class="bi bi-chevron-bar-left"></i>
                                                 </button>
                                             </div>
@@ -1239,9 +1254,12 @@
                                                 <i class="bi bi-person-x-fill text-danger" style="color: #E11D48; font-size: 0.85rem;"></i>
                                                 <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Loại</span>
                                             </div>
-                                            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                            <div class="kanban-col-actions flex-shrink-0">
                                                 <span id="kanbanCountRejected" class="kanban-col-count" style="background: #FFF1F2; color: #BE123C; border: 1px solid #FECDD3;">0</span>
-                                                <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(7, event)" title="Thu gọn cột Loại">
+                                                <button type="button" class="kanban-col-btn" id="btnMaxCol-7" onclick="toggleKanbanColumnMaximize(7, event)" title="Phóng to / Mở rộng tối đa cột này">
+                                                    <i class="bi bi-arrows-angle-expand"></i>
+                                                </button>
+                                                <button type="button" class="kanban-col-btn" onclick="toggleKanbanColumnCollapse(7, event)" title="Thu gọn cột Loại">
                                                     <i class="bi bi-chevron-bar-left"></i>
                                                 </button>
                                             </div>
@@ -2976,6 +2994,103 @@
             try { localStorage.setItem('ats_kanban_card_mode', mode); } catch (_) {}
         }
 
+        // Trạng thái đếm số lượng hồ sơ & cột phóng to tối đa
+        window.kanbanStageCounts = { 1: 0, 2: 0, 3: 0, 5: 0, 6: 0, 7: 0 };
+        window.maximizedKanbanStage = null;
+
+        // Cập nhật phân bổ độ rộng các cột: Khi có cột Thu gọn thì các cột khác PHẢI PHÌNH (MỞ RỘNG TO RA)
+        function updateKanbanColumnWidths() {
+            const allStages = [1, 2, 3, 5, 6, 7];
+            const cols = allStages.map(order => ({
+                order: order,
+                element: document.getElementById('kanbanCol-' + order),
+                count: window.kanbanStageCounts ? (window.kanbanStageCounts[order] || 0) : 0
+            })).filter(c => c.element !== null);
+
+            const collapsedCols = cols.filter(c => c.element.classList.contains('kanban-column-collapsed'));
+            const openCols = cols.filter(c => !c.element.classList.contains('kanban-column-collapsed'));
+
+            // Cập nhật icon trên các nút Maximize
+            cols.forEach(c => {
+                const btn = document.getElementById('btnMaxCol-' + c.order);
+                if (btn) {
+                    if (window.maximizedKanbanStage === c.order) {
+                        btn.innerHTML = '<i class="bi bi-arrows-angle-contract"></i>';
+                        btn.classList.add('active');
+                        btn.title = 'Thu nhỏ cột về độ rộng bình thường';
+                    } else {
+                        btn.innerHTML = '<i class="bi bi-arrows-angle-expand"></i>';
+                        btn.classList.remove('active');
+                        btn.title = 'Phóng to / Mở rộng tối đa cột này';
+                    }
+                }
+            });
+
+            // Nếu người dùng chủ động maximize 1 cột
+            if (window.maximizedKanbanStage) {
+                const targetCol = cols.find(c => c.order === window.maximizedKanbanStage);
+                if (targetCol && !targetCol.element.classList.contains('kanban-column-collapsed')) {
+                    openCols.forEach(c => {
+                        if (c.order === window.maximizedKanbanStage) {
+                            c.element.style.flex = '2.8 1 0%';
+                            c.element.classList.add('kanban-column-maximized');
+                        } else {
+                            c.element.style.flex = '1 1 0%';
+                            c.element.classList.remove('kanban-column-maximized');
+                        }
+                    });
+                    return;
+                }
+            }
+
+            // Xóa class maximized
+            cols.forEach(c => c.element.classList.remove('kanban-column-maximized'));
+
+            // Nếu KHÔNG có cột nào bị thu gọn: tất cả các cột mở đều có độ rộng đều nhau
+            if (collapsedCols.length === 0) {
+                openCols.forEach(c => {
+                    c.element.style.flex = '1 1 0%';
+                });
+                return;
+            }
+
+            // KHI CÓ CỘT THU GỌN: CÁC CỘT CÒN LẠI PHẢI PHÌNH TO (MỞ RỘNG RA) RÕ RỆT
+            // Cột có nhiều hồ sơ nhất nhận trọng số flex 2.2, cột có hồ sơ nhận flex 1.6, cột 0 hồ sơ nhận flex 1.1
+            const sortedCounts = openCols.map(c => c.count).sort((a, b) => b - a);
+            const highestCount = sortedCounts.length > 0 ? sortedCounts[0] : 0;
+
+            openCols.forEach(c => {
+                if (c.count === highestCount && highestCount > 0) {
+                    // Cột có nhiều hồ sơ nhất PHÌNH TO GẤP ĐÔI!
+                    c.element.style.flex = '2.2 1 0%';
+                } else if (c.count > 0) {
+                    // Cột có hồ sơ phình to vừa
+                    c.element.style.flex = '1.6 1 0%';
+                } else {
+                    // Cột mở nhưng chưa có hồ sơ
+                    c.element.style.flex = '1.1 1 0%';
+                }
+            });
+        }
+
+        // Bật / Tắt phóng to tối đa 1 cột
+        function toggleKanbanColumnMaximize(stageOrder, event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            if (window.maximizedKanbanStage === stageOrder) {
+                window.maximizedKanbanStage = null;
+            } else {
+                const col = document.getElementById('kanbanCol-' + stageOrder);
+                if (col && col.classList.contains('kanban-column-collapsed')) {
+                    toggleKanbanColumnCollapse(stageOrder, event);
+                }
+                window.maximizedKanbanStage = stageOrder;
+            }
+            updateKanbanColumnWidths();
+        }
+
         // --- Tính năng Thu gọn / Mở rộng Cột (Column Collapse/Expand) ---
         function toggleKanbanColumnCollapse(stageOrder, event) {
             if (event) {
@@ -2987,6 +3102,10 @@
 
             const isCollapsed = col.classList.toggle('kanban-column-collapsed');
 
+            if (isCollapsed && window.maximizedKanbanStage === stageOrder) {
+                window.maximizedKanbanStage = null;
+            }
+
             try {
                 let list = JSON.parse(localStorage.getItem('ats_kanban_collapsed_stages') || '[]');
                 if (!Array.isArray(list)) list = [];
@@ -2997,6 +3116,8 @@
                 }
                 localStorage.setItem('ats_kanban_collapsed_stages', JSON.stringify(list));
             } catch (_) {}
+
+            updateKanbanColumnWidths();
         }
 
         function handleKanbanColumnClick(stageOrder, event) {
@@ -3021,6 +3142,8 @@
                     });
                 }
             } catch (_) {}
+
+            updateKanbanColumnWidths();
         }
 
         // --- Hỗ trợ di động: Vuốt qua lại giữa các cột & Dots Indicator ---
@@ -3150,6 +3273,10 @@
                     if (el) el.textContent = counts[order];
                 });
             });
+
+            // Lưu đếm số lượng và cập nhật phình to các cột mở rộng
+            window.kanbanStageCounts = counts;
+            updateKanbanColumnWidths();
 
             // Update empty placeholders
             [1, 2, 3, 5, 6, 7].forEach(order => {

@@ -1643,6 +1643,7 @@ body.sidebar-resizing .ats-main-area {
   width: 100%;
   min-width: 0;
   align-items: stretch;
+  transition: all .35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .kanban-column {
@@ -1655,12 +1656,19 @@ body.sidebar-resizing .ats-main-area {
   max-height: calc(100vh - 240px);
   min-width: 0;
   flex: 1 1 0%;
-  transition: flex .25s ease, width .25s ease, max-width .25s ease, border-color .15s, background-color .15s;
+  transition: flex .35s cubic-bezier(0.4, 0, 0.2, 1), width .35s ease, max-width .35s ease, border-color .15s, background-color .15s, box-shadow .2s;
   position: relative;
 }
 
 .kanban-column:hover {
   border-color: #CBD5E1;
+}
+
+/* Cột khi được Phóng to tối đa (Maximized) */
+.kanban-column.kanban-column-maximized {
+  background: #FFFFFF !important;
+  border-color: #059669 !important;
+  box-shadow: 0 4px 18px rgba(5, 150, 105, 0.12) !important;
 }
 
 /* Header cột ở trạng thái mở rộng bình thường */
@@ -1692,7 +1700,13 @@ body.sidebar-resizing .ats-main-area {
   line-height: 1.2;
 }
 
-.kanban-col-collapse-btn {
+.kanban-col-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.kanban-col-btn {
   width: 20px;
   height: 20px;
   display: inline-flex;
@@ -1702,11 +1716,18 @@ body.sidebar-resizing .ats-main-area {
   transition: all .15s ease;
   color: #64748B;
   text-decoration: none;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
+  background: transparent;
+  border: none;
+  padding: 0;
 }
-.kanban-col-collapse-btn:hover {
+.kanban-col-btn:hover {
   background: #F1F5F9;
   color: #0F172A;
+}
+.kanban-col-btn.active {
+  background: #ECFDF5;
+  color: #059669;
 }
 
 /* =========================================================
