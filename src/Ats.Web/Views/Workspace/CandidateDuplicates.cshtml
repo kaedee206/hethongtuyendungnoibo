@@ -1,0 +1,415 @@
+@model Ats.Web.Models.ViewModels.CandidateMerge.CandidateDuplicateOverviewViewModel
+@{
+    ViewData["Title"] = "Phát hiện & Gộp hồ sơ ứng viên trùng lặp - NoveraTech ATS";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-4 px-3 px-md-4" style="background-color: var(--bg-canvas, #F8FAFC); min-height: 100vh;">
+    <!-- Breadcrumb & Header Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1" style="font-size: 0.8rem;">
+                    <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none text-muted">Bàn làm việc</a></li>
+                    <li class="breadcrumb-item"><a href="/dashboard/ung-vien" class="text-decoration-none text-muted">Hồ sơ ứng viên</a></li>
+                    <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">Trùng lặp hồ sơ</li>
+                </ol>
+            </nav>
+            <h1 class="h3 fw-bold text-dark mb-1" style="letter-spacing: -0.02em;">
+                <i class="bi bi-intersect text-warning me-2"></i>Cảnh báo &amp; Gộp hồ sơ ứng viên trùng
+            </h1>
+            <p class="text-muted small mb-0">
+                Tự động rà soát trùng lặp theo Email và Số điện thoại chuẩn hóa, tránh liên hệ phỏng vấn nhiều lần cho cùng một ứng viên.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/dashboard/ung-vien" class="btn btn-outline-secondary btn-sm fw-semibold" style="border-radius: 8px;">
+                <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách ứng viên
+            </a>
+            <button type="button" class="btn btn-primary btn-sm fw-semibold" style="border-radius: 8px; background-color: var(--brand-primary, #059669); border-color: var(--brand-primary, #059669);" onclick="location.reload();">
+                <i class="bi bi-arrow-clockwise me-1"></i>Quét lại dữ liệu
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center mb-4" role="alert" style="border-radius: 12px; border-color: #A7F3D0; background-color: #ECFDF5; color: #065F46;">
+            <i class="bi bi-check-circle-fill fs-5 me-2 text-success"></i>
+            <div>@TempData["SuccessMessage"]</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-4" role="alert" style="border-radius: 12px; border-color: #FECACA; background-color: #FEF2F2; color: #991B1B;">
+            <i class="bi bi-exclamation-triangle-fill fs-5 me-2 text-danger"></i>
+            <div>@TempData["ErrorMessage"]</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- 4 Khối KPI Thống Kê Theo Quy Chuẩn RULE.md -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: #FFFFFF; border: 1px solid var(--border-default, #E2E8F0);">
+                <div class="card-body p-3.5">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-medium">Tổng cặp nghi trùng</span>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background: #FEF3C7; color: #D97706;">
+                            <i class="bi bi-exclamation-diamond-fill" style="font-size: 0.9rem;"></i>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold mb-1" style="font-family: 'JetBrains Mono', monospace; color: #D97706;">
+                        @Model.TotalDuplicateGroups
+                    </div>
+                    <div class="text-muted" style="font-size: 0.75rem;">Cần kiểm tra &amp; xử lý gộp</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: #FFFFFF; border: 1px solid var(--border-default, #E2E8F0);">
+                <div class="card-body p-3.5">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-medium">Trùng Số điện thoại</span>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background: #DBEAFE; color: #2563EB;">
+                            <i class="bi bi-telephone-fill" style="font-size: 0.9rem;"></i>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold mb-1" style="font-family: 'JetBrains Mono', monospace; color: #1E293B;">
+                        @Model.PhoneDuplicateCount
+                    </div>
+                    <div class="text-muted" style="font-size: 0.75rem;">Số chuẩn hóa (+84/0)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: #FFFFFF; border: 1px solid var(--border-default, #E2E8F0);">
+                <div class="card-body p-3.5">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-medium">Trùng địa chỉ Email</span>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background: #E0E7FF; color: #4F46E5;">
+                            <i class="bi bi-envelope-fill" style="font-size: 0.9rem;"></i>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold mb-1" style="font-family: 'JetBrains Mono', monospace; color: #1E293B;">
+                        @Model.EmailDuplicateCount
+                    </div>
+                    <div class="text-muted" style="font-size: 0.75rem;">Không phân biệt chữ hoa/thường</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: #FFFFFF; border: 1px solid var(--border-default, #E2E8F0);">
+                <div class="card-body p-3.5">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-medium">Còn hạn hoàn tác (24h)</span>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background: #ECFDF5; color: #059669;">
+                            <i class="bi bi-arrow-counterclockwise" style="font-size: 0.95rem;"></i>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold mb-1" style="font-family: 'JetBrains Mono', monospace; color: #059669;">
+                        @Model.CanUndoCount
+                    </div>
+                    <div class="text-muted" style="font-size: 0.75rem;">Đã gộp: @Model.MergedCount phiên</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: #FFFFFF; border: 1px solid var(--border-default, #E2E8F0);">
+        <div class="card-header bg-white border-bottom p-0" style="border-top-left-radius: 12px; border-top-right-radius: 12px;">
+            <ul class="nav nav-tabs border-0 px-3 pt-2" id="mergeTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(Model.ActiveTab == "duplicates" ? "active text-emerald fw-bold" : "text-muted") border-0 py-2.5 px-3"
+                            id="duplicates-tab" data-bs-toggle="tab" data-bs-target="#duplicates-panel" type="button" role="tab" style="font-size: 0.88rem;">
+                        <i class="bi bi-people me-1.5"></i>Hồ sơ nghi vấn trùng lặp
+                        <span class="badge ms-1.5 @(Model.TotalDuplicateGroups > 0 ? "bg-warning text-dark" : "bg-secondary")" style="border-radius: 6px; font-size: 0.72rem;">@Model.TotalDuplicateGroups</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(Model.ActiveTab == "history" ? "active text-emerald fw-bold" : "text-muted") border-0 py-2.5 px-3"
+                            id="history-tab" data-bs-toggle="tab" data-bs-target="#history-panel" type="button" role="tab" style="font-size: 0.88rem;">
+                        <i class="bi bi-clock-history me-1.5"></i>Lịch sử gộp &amp; Hoàn tác (24h)
+                        <span class="badge ms-1.5 bg-light text-muted border" style="border-radius: 6px; font-size: 0.72rem;">@Model.MergeHistories.Count</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card-body p-3 p-md-4">
+            <div class="tab-content" id="mergeTabsContent">
+                <!-- PANEL 1: CÁC CẶP NGHI VẤN TRÙNG LẶP -->
+                <div class="tab-pane fade @(Model.ActiveTab == "duplicates" ? "show active" : "")" id="duplicates-panel" role="tabpanel">
+                    @if (!Model.DuplicateGroups.Any())
+                    {
+                        <div class="text-center py-5">
+                            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px; background: #ECFDF5; color: #059669;">
+                                <i class="bi bi-shield-check fs-2"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-1">Dữ liệu hoàn toàn sạch!</h5>
+                            <p class="text-muted small mb-0">Hiện tại không phát hiện cặp ứng viên nào trùng lặp theo Email hoặc Số điện thoại.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-column gap-3">
+                            @foreach (var group in Model.DuplicateGroups)
+                            {
+                                var cand1 = group.Candidates.ElementAtOrDefault(0);
+                                var cand2 = group.Candidates.ElementAtOrDefault(1);
+                                if (cand1 == null || cand2 == null) continue;
+
+                                <div class="border rounded-3 p-3 p-md-3.5" style="background: #FFFFFF; border-color: #E2E8F0; transition: box-shadow .2s;">
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2.5 border-bottom gap-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="badge @group.ConfidenceBadgeClass px-2 py-1" style="border-radius: 6px; font-size: 0.75rem; font-weight: 600;">
+                                                <i class="bi bi-exclamation-triangle-fill me-1"></i>Độ tin cậy: @group.ConfidenceScore%
+                                            </span>
+                                            <span class="fw-semibold text-dark" style="font-size: 0.88rem;">@group.DuplicateReason</span>
+                                        </div>
+                                        <div>
+                                            <a href="/Workspace/SoSanhHoSo?primaryId=@cand1.CandidateId&secondaryId=@cand2.CandidateId" 
+                                               class="btn btn-primary btn-sm fw-semibold"
+                                               style="border-radius: 8px; background: #059669; border-color: #059669; font-size: 0.82rem; padding: 0.35rem 0.85rem;">
+                                                <i class="bi bi-layout-split me-1"></i>So sánh cạnh nhau &amp; Gộp
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <!-- 2 Cột so sánh tóm tắt nhanh -->
+                                    <div class="row g-3">
+                                        <!-- Hồ sơ A -->
+                                        <div class="col-md-6">
+                                            <div class="p-3 rounded-2 h-100" style="background: #F8FAFC; border: 1px solid #E2E8F0;">
+                                                <div class="d-flex align-items-center gap-2.5 mb-2">
+                                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                                                         style="width: 34px; height: 34px; background: #0F172A; font-size: 0.85rem;">
+                                                        @cand1.AvatarLetter
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-bold text-dark" style="font-size: 0.9rem;">@cand1.FullName</div>
+                                                        <span class="badge bg-light text-muted border" style="font-size: 0.68rem;">Ngày tạo: @cand1.CreatedDateDisplay</span>
+                                                    </div>
+                                                </div>
+                                                <div class="small text-muted mb-1 d-flex flex-column gap-1" style="font-size: 0.8rem;">
+                                                    <div><i class="bi bi-envelope me-1.5"></i><span style="font-family:'JetBrains Mono',monospace;">@cand1.Email</span></div>
+                                                    <div><i class="bi bi-telephone me-1.5"></i><span style="font-family:'JetBrains Mono',monospace;">@(string.IsNullOrWhiteSpace(cand1.Phone) ? "Chưa có SĐT" : cand1.Phone)</span></div>
+                                                </div>
+                                                <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center small" style="font-size: 0.76rem;">
+                                                    <span class="text-muted"><i class="bi bi-folder2-open me-1"></i>@cand1.ApplicationsCount đợt ứng tuyển, @cand1.ResumesCount CV</span>
+                                                    <span class="badge bg-emerald-subtle text-success" style="border-radius: 4px;">@cand1.LatestStageName</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Hồ sơ B -->
+                                        <div class="col-md-6">
+                                            <div class="p-3 rounded-2 h-100" style="background: #F8FAFC; border: 1px solid #E2E8F0;">
+                                                <div class="d-flex align-items-center gap-2.5 mb-2">
+                                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                                                         style="width: 34px; height: 34px; background: #334155; font-size: 0.85rem;">
+                                                        @cand2.AvatarLetter
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-bold text-dark" style="font-size: 0.9rem;">@cand2.FullName</div>
+                                                        <span class="badge bg-light text-muted border" style="font-size: 0.68rem;">Ngày tạo: @cand2.CreatedDateDisplay</span>
+                                                    </div>
+                                                </div>
+                                                <div class="small text-muted mb-1 d-flex flex-column gap-1" style="font-size: 0.8rem;">
+                                                    <div><i class="bi bi-envelope me-1.5"></i><span style="font-family:'JetBrains Mono',monospace;">@cand2.Email</span></div>
+                                                    <div><i class="bi bi-telephone me-1.5"></i><span style="font-family:'JetBrains Mono',monospace;">@(string.IsNullOrWhiteSpace(cand2.Phone) ? "Chưa có SĐT" : cand2.Phone)</span></div>
+                                                </div>
+                                                <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center small" style="font-size: 0.76rem;">
+                                                    <span class="text-muted"><i class="bi bi-folder2-open me-1"></i>@cand2.ApplicationsCount đợt ứng tuyển, @cand2.ResumesCount CV</span>
+                                                    <span class="badge bg-emerald-subtle text-success" style="border-radius: 4px;">@cand2.LatestStageName</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <!-- PANEL 2: LỊCH SỬ GỘP HỒ SƠ & HOÀN TÁC TRONG 24 GIỜ -->
+                <div class="tab-pane fade @(Model.ActiveTab == "history" ? "show active" : "")" id="history-panel" role="tabpanel">
+                    @if (!Model.MergeHistories.Any())
+                    {
+                        <div class="text-center py-5">
+                            <i class="bi bi-clock-history fs-2 text-muted mb-2 d-block"></i>
+                            <h6 class="fw-semibold text-dark mb-1">Chưa có phiên gộp hồ sơ nào</h6>
+                            <p class="text-muted small mb-0">Các phiên gộp hồ sơ đã thực hiện sẽ được ghi nhận tại đây cùng quyền hoàn tác trong 24 giờ.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0" style="font-size: 0.85rem;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid #E2E8F0; color: #64748B; font-size: 0.75rem; text-transform: uppercase;">
+                                        <th class="py-2.5 px-3 bg-light border-0">Hồ sơ chính (Giữ lại)</th>
+                                        <th class="py-2.5 px-3 bg-light border-0">Hồ sơ phụ (Đã gộp vào)</th>
+                                        <th class="py-2.5 px-3 bg-light border-0">Thời điểm gộp</th>
+                                        <th class="py-2.5 px-3 bg-light border-0">Người thực hiện</th>
+                                        <th class="py-2.5 px-3 bg-light border-0">Thời hạn hoàn tác</th>
+                                        <th class="py-2.5 px-3 bg-light border-0 text-end">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model.MergeHistories)
+                                    {
+                                        <tr style="border-bottom: 1px solid #F1F5F9;">
+                                            <td class="py-3 px-3">
+                                                <div class="fw-bold text-dark">@item.PrimaryCandidateName</div>
+                                                <div class="small text-muted" style="font-family:'JetBrains Mono',monospace;">@item.PrimaryCandidateEmail</div>
+                                                <span class="badge bg-light text-muted border mt-1" style="font-size:0.68rem;">Đã chuyển: @item.MovedApplicationsCount đơn, @item.MovedResumesCount CV</span>
+                                            </td>
+                                            <td class="py-3 px-3">
+                                                <div class="fw-bold text-dark">@item.SecondaryCandidateName</div>
+                                                <div class="small text-muted" style="font-family:'JetBrains Mono',monospace;">@item.SecondaryCandidateEmail</div>
+                                                @if (!string.IsNullOrWhiteSpace(item.MergeReason))
+                                                {
+                                                    <div class="text-muted" style="font-size:0.7rem;">@item.MergeReason</div>
+                                                }
+                                            </td>
+                                            <td class="py-3 px-3 text-muted">
+                                                @item.MergedAtDisplay
+                                            </td>
+                                            <td class="py-3 px-3 text-dark fw-medium">
+                                                @item.MergedByUserName
+                                            </td>
+                                            <td class="py-3 px-3">
+                                                @if (item.IsUndone)
+                                                {
+                                                    <span class="badge bg-secondary-subtle text-secondary" style="border-radius: 6px;">
+                                                        <i class="bi bi-arrow-counterclockwise me-1"></i>Đã hoàn tác
+                                                    </span>
+                                                    <div class="text-muted" style="font-size:0.68rem;">Lúc @item.UndoneAtDisplay</div>
+                                                }
+                                                else if (item.CanUndo)
+                                                {
+                                                    <span class="badge bg-success-subtle text-success" style="border-radius: 6px;">
+                                                        <i class="bi bi-clock me-1"></i>@item.RemainingTimeDisplay
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-dark-subtle text-dark" style="border-radius: 6px;">
+                                                        <i class="bi bi-lock me-1"></i>Đã quá 24h
+                                                    </span>
+                                                }
+                                            </td>
+                                            <td class="py-3 px-3 text-end">
+                                                @if (item.CanUndo)
+                                                {
+                                                    <button type="button" 
+                                                            class="btn btn-outline-warning btn-sm fw-semibold"
+                                                            style="border-radius: 8px; font-size: 0.78rem;"
+                                                            onclick="confirmUndoMerge('@item.HistoryId', '@item.PrimaryCandidateName', '@item.SecondaryCandidateName')">
+                                                        <i class="bi bi-arrow-counterclockwise me-1"></i>Hoàn tác gộp
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" class="btn btn-light btn-sm text-muted" style="border-radius: 8px; font-size: 0.78rem;" disabled>
+                                                        Đã khóa
+                                                    </button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xác Nhận Hoàn Tác Gộp Hồ Sơ -->
+<div class="modal fade" id="undoMergeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-bottom py-3">
+                <h5 class="modal-title fw-bold text-dark" style="font-size: 1rem;">
+                    <i class="bi bi-arrow-counterclockwise text-warning me-2"></i>Xác nhận hoàn tác gộp hồ sơ
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="mb-3 text-dark">
+                    Bạn có chắc chắn muốn hoàn tác phiên gộp giữa hồ sơ <strong id="undoPrimaryName"></strong> và hồ sơ <strong id="undoSecondaryName"></strong> không?
+                </p>
+                <div class="alert alert-warning py-2.5 px-3 small mb-0" style="border-radius: 8px;">
+                    <i class="bi bi-info-circle-fill me-1"></i>
+                    Toàn bộ đơn ứng tuyển và CV đã chuyển sẽ được khôi phục nguyên trạng về hồ sơ phụ ban đầu.
+                </div>
+            </div>
+            <div class="modal-footer border-top py-2.5">
+                <button type="button" class="btn btn-light btn-sm fw-semibold" style="border-radius: 8px;" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" id="btnSubmitUndo" class="btn btn-warning btn-sm fw-bold" style="border-radius: 8px;" onclick="executeUndoMerge()">
+                    <i class="bi bi-check2 me-1"></i>Đồng ý hoàn tác
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Form CSRF ẩn phục vụ AJAX -->
+<form id="antiForgeryForm" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+<script>
+    let currentUndoHistoryId = '';
+
+    function confirmUndoMerge(historyId, primaryName, secondaryName) {
+        currentUndoHistoryId = historyId;
+        document.getElementById('undoPrimaryName').innerText = primaryName;
+        document.getElementById('undoSecondaryName').innerText = secondaryName;
+        const modal = new bootstrap.Modal(document.getElementById('undoMergeModal'));
+        modal.show();
+    }
+
+    async function executeUndoMerge() {
+        if (!currentUndoHistoryId) return;
+
+        const btn = document.getElementById('btnSubmitUndo');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang xử lý...';
+
+        const token = document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]')?.value;
+        const formData = new FormData();
+        formData.append('historyId', currentUndoHistoryId);
+        if (token) formData.append('__RequestVerificationToken', token);
+
+        try {
+            const res = await fetch('/Workspace/HoanTacGop', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                window.location.href = data.redirectUrl || window.location.href;
+            } else {
+                alert(data.message || 'Có lỗi xảy ra khi hoàn tác phiên gộp.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Đồng ý hoàn tác';
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Đồng ý hoàn tác';
+        }
+    }
+</script>
+}
