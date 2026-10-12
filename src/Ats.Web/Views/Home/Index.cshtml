@@ -581,10 +581,31 @@
                                     onclick="switchDashboardFeature('tac-vu', event)">
                                 <i class="bi bi-lightning-charge"></i> Tác vụ nhanh
                             </button>
+                            <button type="button" class="dashboard-feature-tab @(activeFeature == "gioi-thieu" ? "active" : "")"
+                                    data-feature="gioi-thieu"
+                                    onclick="switchDashboardFeature('gioi-thieu', event)">
+                                <i class="bi bi-person-heart"></i> Giới thiệu nội bộ
+                                <span class="tab-counter-badge ms-1">@(Model.MyReferrals?.TotalReferrals ?? 0)</span>
+                            </button>
+                            @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
+                            {
+                                <a href="/dashboard/trung-lap" class="dashboard-feature-tab text-decoration-none"
+                                   title="Phát hiện và xử lý hồ sơ trùng lặp">
+                                    <i class="bi bi-intersect @(Model.DuplicateCandidatesCount > 0 ? "text-warning" : "")"></i> Trùng lặp
+                                    @if (Model.DuplicateCandidatesCount > 0)
+                                    {
+                                        <span class="tab-counter-badge ms-1 badge-warning-highlight">@Model.DuplicateCandidatesCount</span>
+                                    }
+                                </a>
+                            }
                         </nav>
 
                         <!-- Quick Role Action Buttons -->
                         <div class="d-flex align-items-center gap-2 ms-auto">
+                            <a href="/gioi-thieu-ung-vien" class="btn btn-sm btn-outline-success fw-semibold d-inline-flex align-items-center gap-1.5"
+                               style="border-radius: 8px; font-size: 0.8rem; padding: 0.38rem 0.85rem;" title="Giới thiệu ứng viên quen biết">
+                                <i class="bi bi-person-plus-fill"></i> Giới thiệu ứng viên
+                            </a>
                             @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
                             {
                                 <a href="/Jobs/Create" class="btn btn-sm btn-success fw-semibold d-inline-flex align-items-center gap-1.5"
@@ -950,11 +971,45 @@
                             </div>
                         </div>
 
+                        @if (Model.DuplicateCandidatesCount > 0)
+                        {
+                            <div class="alert d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between p-3 mb-3 border-0 shadow-sm gap-2"
+                                 style="background: #FFFBEB; border: 1px solid #FDE68A !important; border-radius: 8px; color: #92400E;">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <i class="bi bi-exclamation-triangle-fill text-warning fs-5 flex-shrink-0"></i>
+                                    <div>
+                                        <div class="fw-bold" style="font-size: 0.88rem;">Phát hiện @Model.DuplicateCandidatesCount hồ sơ có nguy cơ trùng lặp thông tin!</div>
+                                        <div class="small" style="color: #78350F;">Hệ thống phát hiện các ứng viên có cùng email hoặc số điện thoại. Hãy so sánh và gộp hồ sơ để tránh gọi phỏng vấn hai lần.</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                    <button type="button" class="btn btn-sm btn-outline-warning text-dark fw-semibold"
+                                            style="border-radius: 6px; font-size: 0.78rem;"
+                                            onclick="filterPipelineCandidates('DUPLICATE')">
+                                        <i class="bi bi-funnel me-1"></i>Lọc danh sách trùng
+                                    </button>
+                                    <a href="/dashboard/trung-lap" class="btn btn-sm btn-warning text-dark fw-semibold"
+                                       style="border-radius: 6px; font-size: 0.78rem;">
+                                        <i class="bi bi-intersect me-1"></i>Quản lý gộp hồ sơ &rarr;
+                                    </a>
+                                </div>
+                            </div>
+                        }
+
                         <!-- Filter Stage Pills (Segmented Chips - 8px radius) -->
                         <div class="d-flex flex-wrap gap-2 mb-3" id="candidateStageFilterGroup">
                             <button type="button" class="candidate-stage-pill active" onclick="filterPipelineCandidates('ALL', this)">
                                 Tất cả <span class="pill-count">@Model.CandidatePipelineItems.Count</span>
                             </button>
+                            <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('REFERRAL', this)">
+                                <i class="bi bi-person-heart text-danger me-1"></i>Giới thiệu nội bộ <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.IsReferral)</span>
+                            </button>
+                            @if (Model.DuplicateCandidatesCount > 0)
+                            {
+                                <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('DUPLICATE', this)">
+                                    <i class="bi bi-intersect text-warning me-1"></i>Cảnh báo trùng <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.HasDuplicateWarning)</span>
+                                </button>
+                            }
                             @foreach (var stage in Model.PipelineFunnel.Where(s => !s.IsTerminal))
                             {
                                 <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('@stage.StageOrder', this)">
@@ -985,6 +1040,8 @@
                                             <tr id="cand-row-@cand.ApplicationId" class="pipeline-candidate-row"
                                                 data-stage-order="@cand.CurrentStageOrder"
                                                 data-status="@cand.Status"
+                                                data-is-referral="@(cand.IsReferral ? "true" : "false")"
+                                                data-has-duplicate="@(cand.HasDuplicateWarning ? "true" : "false")"
                                                 data-name="@cand.CandidateName.ToLower()"
                                                 data-email="@cand.CandidateEmail.ToLower()"
                                                 data-job="@cand.JobTitle.ToLower()"
@@ -997,7 +1054,24 @@
                                                             @(string.IsNullOrEmpty(cand.CandidateName) ? "?" : cand.CandidateName.Substring(0, 1).ToUpper())
                                                         </div>
                                                         <div>
-                                                            <div class="fw-bold text-dark" style="font-size: 0.9rem;">@cand.CandidateName</div>
+                                                            <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                                                <span class="fw-bold text-dark" style="font-size: 0.9rem;">@cand.CandidateName</span>
+                                                                @if (cand.IsReferral)
+                                                                {
+                                                                    <span class="badge" style="background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; border-radius:6px; font-size:0.68rem; font-weight:600;" title="@(!string.IsNullOrWhiteSpace(cand.ReferralNote) ? $"Ghi chú: {cand.ReferralNote}" : "Hồ sơ được nhân sự nội bộ giới thiệu")">
+                                                                        <i class="bi bi-person-heart me-1 text-warning"></i>Giới thiệu nội bộ@(string.IsNullOrWhiteSpace(cand.ReferrerName) ? "" : $" ({cand.ReferrerName})")
+                                                                    </span>
+                                                                }
+                                                                @if (cand.HasDuplicateWarning)
+                                                                {
+                                                                    <a href="/Workspace/CompareCandidates?primaryId=@cand.CandidateId@(cand.MatchedCandidateId.HasValue ? $"&secondaryId={cand.MatchedCandidateId}" : "")"
+                                                                       class="badge text-decoration-none"
+                                                                       style="background: #FEF3C7; color: #B45309; border: 1px solid #FCD34D; border-radius: 6px; font-size: 0.68rem; font-weight: 600;"
+                                                                       title="@cand.DuplicateReason - Nhấn để so sánh và gộp hồ sơ">
+                                                                        <i class="bi bi-exclamation-circle-fill me-1 text-warning"></i>Cảnh báo trùng
+                                                                    </a>
+                                                                }
+                                                            </div>
                                                             <div class="d-flex align-items-center gap-2" style="font-size: 0.75rem; color: #64748B;">
                                                                 <span style="font-family:'JetBrains Mono',monospace;">@cand.CandidateEmail</span>
                                                                 @if (!string.IsNullOrEmpty(cand.CandidatePhone))
@@ -1092,6 +1166,14 @@
                                                                     <li>
                                                                         <a class="dropdown-item" href="@cand.ResumeFilePath" target="_blank">
                                                                             <i class="bi bi-file-earmark-pdf text-danger"></i> Xem file CV
+                                                                        </a>
+                                                                    </li>
+                                                                }
+                                                                @if (cand.HasDuplicateWarning)
+                                                                {
+                                                                    <li>
+                                                                        <a class="dropdown-item text-warning fw-semibold" href="/Workspace/CompareCandidates?primaryId=@cand.CandidateId@(cand.MatchedCandidateId.HasValue ? $"&secondaryId={cand.MatchedCandidateId}" : "")">
+                                                                            <i class="bi bi-intersect text-warning"></i> So sánh &amp; Gộp hồ sơ trùng
                                                                         </a>
                                                                     </li>
                                                                 }
@@ -1468,6 +1550,131 @@
                                 <span>Phiên làm việc: @DateTime.UtcNow.ToString("dd/MM/yyyy")</span>
                                 <span class="text-success"><i class="bi bi-check-circle me-1"></i>Trạng thái sẵn sàng</span>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. TÍNH NĂNG GIỚI THIỆU ỨNG VIÊN NỘI BỘ (GIOI-THIEU) -->
+                <div class="staff-feature-panel @(activeFeature == "gioi-thieu" ? "" : "d-none")" data-feature-panel="gioi-thieu">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                                <i class="bi bi-person-heart text-danger"></i> Hồ Sơ Giới Thiệu Nội Bộ Của Bạn
+                            </h5>
+                            <p class="text-muted small mb-0">
+                                Giúp công ty tìm kiếm đồng nghiệp tài năng và theo dõi tiến độ xử lý hồ sơ ở mức tổng quát.
+                            </p>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="/ho-so-gioi-thieu" class="btn btn-sm btn-outline-secondary fw-semibold" style="border-radius: 8px;">
+                                <i class="bi bi-box-arrow-up-right me-1"></i> Trang theo dõi riêng
+                            </a>
+                            <a href="/gioi-thieu-ung-vien" class="btn btn-sm btn-success fw-semibold" style="border-radius: 8px; background: #059669; border-color: #059669;">
+                                <i class="bi bi-plus-circle me-1"></i> Giới thiệu ứng viên mới
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 4 Thẻ KPI Tóm tắt Giới thiệu -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-3">
+                            <div class="card border-0 shadow-sm p-3 bg-white h-100" style="border: 1px solid #E2E8F0 !important; border-radius: 10px;">
+                                <div class="text-muted small fw-semibold mb-1">Tổng hồ sơ giới thiệu</div>
+                                <div class="h3 fw-bold text-dark mb-0 font-monospace">@(Model.MyReferrals?.TotalReferrals ?? 0)</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card border-0 shadow-sm p-3 bg-white h-100" style="border: 1px solid #E2E8F0 !important; border-radius: 10px;">
+                                <div class="text-muted small fw-semibold mb-1">Đang xem xét</div>
+                                <div class="h3 fw-bold text-primary mb-0 font-monospace">@(Model.MyReferrals?.UnderReviewCount ?? 0)</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card border-0 shadow-sm p-3 bg-white h-100" style="border: 1px solid #E2E8F0 !important; border-radius: 10px;">
+                                <div class="text-muted small fw-semibold mb-1">Mời phỏng vấn</div>
+                                <div class="h3 fw-bold text-warning mb-0 font-monospace">@(Model.MyReferrals?.InterviewInvitedCount ?? 0)</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card border-0 shadow-sm p-3 bg-white h-100" style="border: 1px solid #E2E8F0 !important; border-radius: 10px;">
+                                <div class="text-muted small fw-semibold mb-1">Đã kết thúc</div>
+                                <div class="h3 fw-bold text-secondary mb-0 font-monospace">@(Model.MyReferrals?.ConcludedCount ?? 0)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Danh sách hồ sơ đã giới thiệu -->
+                    <div class="card border-0 shadow-sm bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px; overflow: hidden;">
+                        <div class="dashboard-table-responsive">
+                            <table class="table align-middle mb-0" style="min-width: 800px; font-size: 0.85rem;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid #E2E8F0; color: #64748B; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; background: #F8FAFC;">
+                                        <th class="py-2.5 px-3 border-0 fw-semibold">Ứng viên</th>
+                                        <th class="py-2.5 px-3 border-0 fw-semibold">Vị trí ứng tuyển</th>
+                                        <th class="py-2.5 px-3 border-0 fw-semibold">Mã tra cứu</th>
+                                        <th class="py-2.5 px-3 border-0 fw-semibold">Trạng thái tổng quát</th>
+                                        <th class="py-2.5 px-3 border-0 fw-semibold">Ngày giới thiệu</th>
+                                        <th class="py-2.5 px-3 border-0 fw-semibold text-end">Ghi chú</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Model.MyReferrals?.Referrals?.Any() == true)
+                                    {
+                                        @foreach (var refItem in Model.MyReferrals.Referrals)
+                                        {
+                                            <tr style="border-bottom: 1px solid #F1F5F9;">
+                                                <td class="py-3 px-3">
+                                                    <div class="fw-bold text-dark">@refItem.CandidateName</div>
+                                                    <div class="text-muted small font-monospace">@refItem.MaskedEmail</div>
+                                                </td>
+                                                <td class="py-3 px-3">
+                                                    <span class="fw-semibold text-dark">@refItem.JobTitle</span>
+                                                    <div class="text-muted small">@refItem.DepartmentName</div>
+                                                </td>
+                                                <td class="py-3 px-3">
+                                                    <span class="font-monospace fw-bold text-primary px-2 py-1 bg-light rounded border" style="font-size: 0.8rem;">
+                                                        @refItem.TrackingCode
+                                                    </span>
+                                                </td>
+                                                <td class="py-3 px-3">
+                                                    <span class="badge @refItem.StatusBadgeClass" style="border-radius: 6px; font-size: 0.75rem; font-weight: 600; padding: 0.35rem 0.65rem;">
+                                                        @refItem.GeneralStatusDisplay
+                                                    </span>
+                                                </td>
+                                                <td class="py-3 px-3 text-muted font-monospace" style="font-size: 0.78rem;">
+                                                    @refItem.AppliedDateDisplay
+                                                </td>
+                                                <td class="py-3 px-3 text-end">
+                                                    @if (!string.IsNullOrWhiteSpace(refItem.ReferralNote))
+                                                    {
+                                                        <span class="text-muted small" title="@refItem.ReferralNote" style="cursor: help;">
+                                                            <i class="bi bi-chat-left-text text-secondary me-1"></i>@(refItem.ReferralNote.Length > 25 ? refItem.ReferralNote.Substring(0, 25) + "..." : refItem.ReferralNote)
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted small">—</span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="6" class="text-center py-5 text-muted">
+                                                <i class="bi bi-person-heart d-block mb-2 text-muted" style="font-size: 2rem;"></i>
+                                                Bạn chưa giới thiệu ứng viên nào. Hãy giúp công ty tìm kiếm đồng nghiệp tài năng!
+                                                <div class="mt-3">
+                                                    <a href="/gioi-thieu-ung-vien" class="btn btn-sm btn-success fw-semibold" style="border-radius: 8px;">
+                                                        <i class="bi bi-plus-circle me-1"></i> Giới thiệu ứng viên ngay
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -2592,6 +2799,10 @@
                     stageMatch = true;
                 } else if (stageOrder === 'REJECTED') {
                     stageMatch = (rowStatus === 'REJECTED');
+                } else if (stageOrder === 'REFERRAL') {
+                    stageMatch = (r.getAttribute('data-is-referral') === 'true');
+                } else if (stageOrder === 'DUPLICATE') {
+                    stageMatch = (r.getAttribute('data-has-duplicate') === 'true');
                 } else {
                     stageMatch = (rowStage === stageOrder && rowStatus !== 'REJECTED');
                 }
@@ -2751,7 +2962,11 @@
                     const oc = b.getAttribute('onclick') || '';
                     if (stageOrder === 'ALL' && oc.includes("'ALL'")) {
                         b.classList.add('active');
-                    } else if (stageOrder !== 'ALL' && oc.includes("'" + stageOrder + "'")) {
+                    } else if (stageOrder === 'REFERRAL' && oc.includes("'REFERRAL'")) {
+                        b.classList.add('active');
+                    } else if (stageOrder === 'DUPLICATE' && oc.includes("'DUPLICATE'")) {
+                        b.classList.add('active');
+                    } else if (stageOrder !== 'ALL' && stageOrder !== 'REFERRAL' && stageOrder !== 'DUPLICATE' && oc.includes("'" + stageOrder + "'")) {
                         b.classList.add('active');
                     }
                 });
@@ -3192,6 +3407,7 @@
             if (cleanFeature === 'cv') cleanFeature = 'ho-so';
             if (cleanFeature === 'lich-trinh') cleanFeature = 'tien-do';
             if (cleanFeature === 'jobs') cleanFeature = 'viec-lam';
+            if (cleanFeature === 'referral' || cleanFeature === 'referrals' || cleanFeature === 'ho-so-gioi-thieu') cleanFeature = 'gioi-thieu';
 
             var targetUrl = cleanFeature === 'tong-quan' ? '/dashboard' : '/dashboard/' + cleanFeature;
 

@@ -68,6 +68,9 @@ builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<IApprovalRuleService, ApprovalRuleService>();
 builder.Services.AddScoped<ISecurityAuditService, SecurityAuditService>();
 builder.Services.AddScoped<IRecruitmentCatalogService, RecruitmentCatalogService>();
+builder.Services.AddScoped<IApplicationTrackingService, ApplicationTrackingService>();
+builder.Services.AddScoped<ICandidateReferralService, CandidateReferralService>();
+builder.Services.AddScoped<ICandidateMergeService, CandidateMergeService>();
 
 // Cấu hình Rate Limiting bảo vệ các endpoint nhạy cảm (OWASP A04 / A07)
 builder.Services.AddRateLimiter(options =>
@@ -284,6 +287,11 @@ using (var scope = app.Services.CreateScope())
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS department_id uuid;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS job_position_id uuid;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS tracking_code text;");
+        await dbContext.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS ix_applications_tracking_code ON applications (tracking_code);");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS referrer_user_id uuid;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS referral_note text;");
+        await dbContext.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS ix_applications_referrer_user_id ON applications (referrer_user_id);");
         
     } catch(Exception e) {
         Console.WriteLine(e.Message);
@@ -453,6 +461,34 @@ using (var scope = app.Services.CreateScope())
                 headquarters_address TEXT,
                 contact_email TEXT,
                 phone_contact TEXT,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+
+            -- Scrum #40: Cột gộp hồ sơ trên bảng candidates
+            ALTER TABLE candidates ADD COLUMN IF NOT EXISTS is_merged BOOLEAN NOT NULL DEFAULT FALSE;
+            ALTER TABLE candidates ADD COLUMN IF NOT EXISTS merged_into_candidate_id UUID;
+            ALTER TABLE candidates ADD COLUMN IF NOT EXISTS merged_at TIMESTAMPTZ;
+
+            -- Scrum #40: Bảng lưu vết phiên gộp và hoàn tác 24h
+            CREATE TABLE IF NOT EXISTS candidate_merge_histories (
+                id UUID PRIMARY KEY,
+                primary_candidate_id UUID NOT NULL REFERENCES candidates(id),
+                secondary_candidate_id UUID NOT NULL REFERENCES candidates(id),
+                merged_by_user_id UUID NOT NULL REFERENCES users(id),
+                merged_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                merge_reason TEXT,
+                moved_application_ids_json TEXT NOT NULL DEFAULT '[]',
+                moved_resume_ids_json TEXT NOT NULL DEFAULT '[]',
+                snapshot_secondary_data_json TEXT,
+                is_undone BOOLEAN NOT NULL DEFAULT FALSE,
+                undone_at TIMESTAMPTZ,
+                undone_by_user_id UUID REFERENCES users(id),
+                notes TEXT,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 created_by_id UUID,

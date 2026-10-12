@@ -23,6 +23,7 @@ public class JobsController : Controller
     private readonly IRecruitmentCatalogService _catalogService;
     private readonly ILogger<JobsController> _logger;
     private readonly ISecurityAuditService? _auditService;
+    private readonly IApplicationTrackingService _trackingService;
 
     public JobsController(
         IJobService jobService,
@@ -31,6 +32,7 @@ public class JobsController : Controller
         IFileStorageService fileStorageService,
         IRecruitmentCatalogService catalogService,
         ILogger<JobsController> logger,
+        IApplicationTrackingService trackingService,
         ISecurityAuditService? auditService = null)
     {
         _jobService = jobService;
@@ -39,6 +41,7 @@ public class JobsController : Controller
         _fileStorageService = fileStorageService;
         _catalogService = catalogService;
         _logger = logger;
+        _trackingService = trackingService;
         _auditService = auditService;
     }
 
@@ -233,8 +236,10 @@ public class JobsController : Controller
                 var existingApp = await _dbContext.Applications
                     .FirstOrDefaultAsync(a => a.CandidateId == candidate.Id && a.JobPostingId == jobPosting.Id && !a.IsDeleted);
 
+                string trackingCode;
                 if (existingApp == null)
                 {
+                    trackingCode = await _trackingService.GenerateUniqueTrackingCodeAsync();
                     var application = new Application
                     {
                         Id = Guid.NewGuid(),
@@ -243,6 +248,7 @@ public class JobsController : Controller
                         ResumeId = resume.Id,
                         CurrentStageId = stageNew.Id,
                         Status = ApplicationStatus.IN_PROCESS,
+                        TrackingCode = trackingCode,
                         AppliedAt = DateTimeOffset.UtcNow,
                         CreatedAt = DateTimeOffset.UtcNow,
                         UpdatedAt = DateTimeOffset.UtcNow
@@ -263,13 +269,20 @@ public class JobsController : Controller
 
                     await _dbContext.SaveChangesAsync();
                 }
+                else
+                {
+                    if (string.IsNullOrWhiteSpace(existingApp.TrackingCode))
+                    {
+                        existingApp.TrackingCode = await _trackingService.GenerateUniqueTrackingCodeAsync();
+                        await _dbContext.SaveChangesAsync();
+                    }
+                    trackingCode = existingApp.TrackingCode;
+                }
+
+                TempData["TrackingCode"] = trackingCode;
+                TempData["TrackingEmail"] = candidateEmail;
+                TempData["SuccessMessage"] = $"🎉 Chúc mừng bạn {candidateName}! Hồ sơ ứng tuyển vị trí '{jobTitle}' đã được lưu thành công vào hệ thống tuyển dụng NoveraTech. Mã tra cứu hồ sơ của bạn là: {trackingCode}. Bạn có thể tra cứu tiến độ xét duyệt bất kỳ lúc nào tại Cổng Tra cứu hồ sơ.";
             }
-
-            // Ghi log ứng tuyển
-            _logger.LogInformation("Ứng viên {Name} ({Email}, {Phone}) đã được lưu hồ sơ ứng tuyển vị trí {JobTitle} (ID: {JobId}) vào CSDL.",
-                candidateName, candidateEmail, candidatePhone, jobTitle, jobId);
-
-            TempData["SuccessMessage"] = $"🎉 Chúc mừng bạn {candidateName}! Hồ sơ ứng tuyển vị trí '{jobTitle}' đã được lưu thành công vào hệ thống tuyển dụng NoveraTech. Chúng tôi sẽ phản hồi lại cho bạn trong vòng 48 giờ làm việc.";
         }
         catch (Exception ex)
         {

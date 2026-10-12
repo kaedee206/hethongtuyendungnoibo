@@ -65,6 +65,14 @@ namespace Ats.Web.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("rating");
 
+                    b.Property<string>("ReferralNote")
+                        .HasColumnType("text")
+                        .HasColumnName("referral_note");
+
+                    b.Property<Guid?>("ReferrerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("referrer_user_id");
+
                     b.Property<string>("RejectionNote")
                         .HasColumnType("text")
                         .HasColumnName("rejection_note");
@@ -80,6 +88,10 @@ namespace Ats.Web.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer")
                         .HasColumnName("status");
+
+                    b.Property<string>("TrackingCode")
+                        .HasColumnType("text")
+                        .HasColumnName("tracking_code");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -101,8 +113,14 @@ namespace Ats.Web.Migrations
                     b.HasIndex("JobPostingId")
                         .HasDatabaseName("ix_applications_job_posting_id");
 
+                    b.HasIndex("ReferrerUserId")
+                        .HasDatabaseName("ix_applications_referrer_user_id");
+
                     b.HasIndex("ResumeId")
                         .HasDatabaseName("ix_applications_resume_id");
+
+                    b.HasIndex("TrackingCode")
+                        .HasDatabaseName("ix_applications_tracking_code");
 
                     b.ToTable("applications", (string)null);
                 });
@@ -472,6 +490,10 @@ namespace Ats.Web.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_deleted");
 
+                    b.Property<bool>("IsMerged")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_merged");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("text")
@@ -480,6 +502,14 @@ namespace Ats.Web.Migrations
                     b.Property<string>("LinkedinUrl")
                         .HasColumnType("text")
                         .HasColumnName("linkedin_url");
+
+                    b.Property<DateTimeOffset?>("MergedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("merged_at");
+
+                    b.Property<Guid?>("MergedIntoCandidateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("merged_into_candidate_id");
 
                     b.Property<string>("Phone")
                         .HasColumnType("text")
@@ -511,6 +541,15 @@ namespace Ats.Web.Migrations
                     b.HasIndex("Email")
                         .HasDatabaseName("ix_candidates_email");
 
+                    b.HasIndex("IsMerged")
+                        .HasDatabaseName("ix_candidates_is_merged");
+
+                    b.HasIndex("MergedIntoCandidateId")
+                        .HasDatabaseName("ix_candidates_merged_into_candidate_id");
+
+                    b.HasIndex("Phone")
+                        .HasDatabaseName("ix_candidates_phone");
+
                     b.HasIndex("ReferrerUserId")
                         .HasDatabaseName("ix_candidates_referrer_user_id");
 
@@ -518,6 +557,108 @@ namespace Ats.Web.Migrations
                         .HasDatabaseName("ix_candidates_user_id");
 
                     b.ToTable("candidates", (string)null);
+                });
+
+            modelBuilder.Entity("Ats.Web.Models.Entities.CandidateMergeHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_id");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<bool>("IsUndone")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_undone");
+
+                    b.Property<string>("MergeReason")
+                        .HasColumnType("text")
+                        .HasColumnName("merge_reason");
+
+                    b.Property<DateTimeOffset>("MergedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("merged_at");
+
+                    b.Property<Guid>("MergedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("merged_by_user_id");
+
+                    b.Property<string>("MovedApplicationIdsJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("moved_application_ids_json");
+
+                    b.Property<string>("MovedResumeIdsJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("moved_resume_ids_json");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("PrimaryCandidateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("primary_candidate_id");
+
+                    b.Property<Guid>("SecondaryCandidateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("secondary_candidate_id");
+
+                    b.Property<string>("SnapshotSecondaryDataJson")
+                        .HasColumnType("text")
+                        .HasColumnName("snapshot_secondary_data_json");
+
+                    b.Property<DateTimeOffset?>("UndoneAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("undone_at");
+
+                    b.Property<Guid?>("UndoneByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("undone_by_user_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_candidate_merge_histories");
+
+                    b.HasIndex("MergedAt")
+                        .HasDatabaseName("ix_candidate_merge_histories_merged_at");
+
+                    b.HasIndex("MergedByUserId")
+                        .HasDatabaseName("ix_candidate_merge_histories_merged_by_user_id");
+
+                    b.HasIndex("PrimaryCandidateId")
+                        .HasDatabaseName("ix_candidate_merge_histories_primary_candidate_id");
+
+                    b.HasIndex("SecondaryCandidateId")
+                        .HasDatabaseName("ix_candidate_merge_histories_secondary_candidate_id");
+
+                    b.HasIndex("UndoneByUserId")
+                        .HasDatabaseName("ix_candidate_merge_histories_undone_by_user_id");
+
+                    b.ToTable("candidate_merge_histories", (string)null);
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.CompanyProfile", b =>
@@ -1424,6 +1565,14 @@ namespace Ats.Web.Migrations
                         .HasColumnType("text")
                         .HasColumnName("job_level");
 
+                    b.Property<decimal?>("MaxSalary")
+                        .HasColumnType("numeric")
+                        .HasColumnName("max_salary");
+
+                    b.Property<decimal?>("MinSalary")
+                        .HasColumnType("numeric")
+                        .HasColumnName("min_salary");
+
                     b.Property<string>("StandardCompetencies")
                         .HasColumnType("jsonb")
                         .HasColumnName("standard_competencies");
@@ -1467,6 +1616,10 @@ namespace Ats.Web.Migrations
                     b.Property<string>("Benefits")
                         .HasColumnType("text")
                         .HasColumnName("benefits");
+
+                    b.Property<string>("Code")
+                        .HasColumnType("text")
+                        .HasColumnName("code");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -2430,6 +2583,12 @@ namespace Ats.Web.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_applications_job_postings_job_posting_id");
 
+                    b.HasOne("Ats.Web.Models.Entities.User", "ReferrerUser")
+                        .WithMany()
+                        .HasForeignKey("ReferrerUserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_applications_users_referrer_user_id");
+
                     b.HasOne("Ats.Web.Models.Entities.Resume", "Resume")
                         .WithMany()
                         .HasForeignKey("ResumeId")
@@ -2442,6 +2601,8 @@ namespace Ats.Web.Migrations
                     b.Navigation("CurrentStage");
 
                     b.Navigation("JobPosting");
+
+                    b.Navigation("ReferrerUser");
 
                     b.Navigation("Resume");
                 });
@@ -2544,6 +2705,12 @@ namespace Ats.Web.Migrations
 
             modelBuilder.Entity("Ats.Web.Models.Entities.Candidate", b =>
                 {
+                    b.HasOne("Ats.Web.Models.Entities.Candidate", "MergedIntoCandidate")
+                        .WithMany("MergedSubCandidates")
+                        .HasForeignKey("MergedIntoCandidateId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_candidates_candidates_merged_into_candidate_id");
+
                     b.HasOne("Ats.Web.Models.Entities.User", "ReferrerUser")
                         .WithMany()
                         .HasForeignKey("ReferrerUserId")
@@ -2556,9 +2723,49 @@ namespace Ats.Web.Migrations
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_candidates_users_user_id");
 
+                    b.Navigation("MergedIntoCandidate");
+
                     b.Navigation("ReferrerUser");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Ats.Web.Models.Entities.CandidateMergeHistory", b =>
+                {
+                    b.HasOne("Ats.Web.Models.Entities.User", "MergedByUser")
+                        .WithMany()
+                        .HasForeignKey("MergedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_candidate_merge_histories_users_merged_by_user_id");
+
+                    b.HasOne("Ats.Web.Models.Entities.Candidate", "PrimaryCandidate")
+                        .WithMany()
+                        .HasForeignKey("PrimaryCandidateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_candidate_merge_histories_candidates_primary_candidate_id");
+
+                    b.HasOne("Ats.Web.Models.Entities.Candidate", "SecondaryCandidate")
+                        .WithMany()
+                        .HasForeignKey("SecondaryCandidateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_candidate_merge_histories_candidates_secondary_candidate_id");
+
+                    b.HasOne("Ats.Web.Models.Entities.User", "UndoneByUser")
+                        .WithMany()
+                        .HasForeignKey("UndoneByUserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_candidate_merge_histories_users_undone_by_user_id");
+
+                    b.Navigation("MergedByUser");
+
+                    b.Navigation("PrimaryCandidate");
+
+                    b.Navigation("SecondaryCandidate");
+
+                    b.Navigation("UndoneByUser");
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.CompetencyCriterion", b =>
@@ -2933,6 +3140,8 @@ namespace Ats.Web.Migrations
             modelBuilder.Entity("Ats.Web.Models.Entities.Candidate", b =>
                 {
                     b.Navigation("Applications");
+
+                    b.Navigation("MergedSubCandidates");
 
                     b.Navigation("Resumes");
                 });

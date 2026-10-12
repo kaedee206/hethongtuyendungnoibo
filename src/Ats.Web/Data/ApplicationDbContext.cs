@@ -43,6 +43,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<CompetencyCriterion> CompetencyCriteria { get; set; }
     public DbSet<InterviewQuestionBank> InterviewQuestionBanks { get; set; }
     public DbSet<RecruitmentCatalog> RecruitmentCatalogs { get; set; }
+    public DbSet<CandidateMergeHistory> CandidateMergeHistories { get; set; }
     public DbSet<CompanyProfile> CompanyProfiles { get; set; }
     
     public DbSet<ApprovalRule> ApprovalRules { get; set; }
@@ -228,7 +229,52 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(e => e.NewValues).HasColumnType("jsonb");
         });
         // Other Indexes
+        modelBuilder.Entity<Application>().HasIndex(a => a.TrackingCode);
+        modelBuilder.Entity<Application>().HasIndex(a => a.ReferrerUserId);
+        modelBuilder.Entity<Application>()
+            .HasOne(a => a.ReferrerUser)
+            .WithMany()
+            .HasForeignKey(a => a.ReferrerUserId)
+            .OnDelete(DeleteBehavior.SetNull);
         modelBuilder.Entity<Candidate>().HasIndex(c => c.Email);
+        modelBuilder.Entity<Candidate>().HasIndex(c => c.Phone);
+        modelBuilder.Entity<Candidate>().HasIndex(c => c.IsMerged);
+
+        // Candidate self-referencing merge relationship (Scrum #40)
+        modelBuilder.Entity<Candidate>()
+            .HasOne(c => c.MergedIntoCandidate)
+            .WithMany(c => c.MergedSubCandidates)
+            .HasForeignKey(c => c.MergedIntoCandidateId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // CandidateMergeHistory relationships & indexes (Scrum #40)
+        modelBuilder.Entity<CandidateMergeHistory>(entity =>
+        {
+            entity.HasOne(m => m.PrimaryCandidate)
+                .WithMany()
+                .HasForeignKey(m => m.PrimaryCandidateId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(m => m.SecondaryCandidate)
+                .WithMany()
+                .HasForeignKey(m => m.SecondaryCandidateId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(m => m.MergedByUser)
+                .WithMany()
+                .HasForeignKey(m => m.MergedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(m => m.UndoneByUser)
+                .WithMany()
+                .HasForeignKey(m => m.UndoneByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(m => m.PrimaryCandidateId);
+            entity.HasIndex(m => m.SecondaryCandidateId);
+            entity.HasIndex(m => m.MergedAt);
+        });
+
         modelBuilder.Entity<JobRequisition>().HasIndex(r => r.Code).IsUnique();
         modelBuilder.Entity<JobPosting>().HasIndex(p => p.Slug).IsUnique();
         modelBuilder.Entity<Department>().HasIndex(d => d.Code).IsUnique();

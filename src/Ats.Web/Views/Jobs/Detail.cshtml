@@ -321,6 +321,12 @@
                     <a href="#apply-section" class="btn-apply-main w-100 w-sm-auto">
                         <i class="bi bi-send-fill"></i> Ứng tuyển vị trí này
                     </a>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a href="/gioi-thieu-ung-vien?jobId=@job.Id" class="btn btn-outline-success fw-semibold w-100 w-sm-auto d-inline-flex align-items-center justify-content-center gap-1.5" style="border-radius: var(--radius-button); padding: 0.7rem 1.25rem;">
+                            <i class="bi bi-person-plus-fill"></i> Giới thiệu ứng viên
+                        </a>
+                    }
                     <div class="d-flex gap-2 w-100 justify-content-lg-end">
                         <button type="button" class="btn-save-job flex-grow-1 flex-lg-grow-0" onclick="navigator.clipboard.writeText(window.location.href); alert('Đã sao chép liên kết vị trí tuyển dụng vào bộ nhớ tạm!');">
                             <i class="bi bi-share"></i> Chia sẻ
@@ -615,6 +621,12 @@
                     <a href="#apply-section" class="btn-apply-main w-100">
                         <i class="bi bi-send-fill"></i> Nộp đơn ngay
                     </a>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a href="/gioi-thieu-ung-vien?jobId=@job.Id" class="btn btn-outline-success w-100 mt-2 fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5" style="border-radius: var(--radius-button); padding: 0.65rem 1rem; font-size: 0.9rem;">
+                            <i class="bi bi-person-plus-fill"></i> Giới thiệu ứng viên
+                        </a>
+                    }
                 </div>
             </div>
 

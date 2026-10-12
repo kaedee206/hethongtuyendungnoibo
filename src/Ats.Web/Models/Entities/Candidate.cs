@@ -1,4 +1,4 @@
-﻿using Ats.Web.Models.Enums;
+using Ats.Web.Models.Enums;
 
 namespace Ats.Web.Models.Entities;
 
@@ -22,8 +22,15 @@ public class Candidate : BaseEntity
     public bool IsBlacklisted { get; set; } = false;
     public string? BlacklistReason { get; set; }
 
+    // Thông tin gộp hồ sơ trùng (Scrum #40)
+    public bool IsMerged { get; set; } = false;
+    public Guid? MergedIntoCandidateId { get; set; }
+    public DateTimeOffset? MergedAt { get; set; }
+
     public User? User { get; set; }
     public User? ReferrerUser { get; set; }
+    public Candidate? MergedIntoCandidate { get; set; }
+    public ICollection<Candidate> MergedSubCandidates { get; set; } = new List<Candidate>();
     public ICollection<Resume> Resumes { get; set; } = new List<Resume>();
     public ICollection<Application> Applications { get; set; } = new List<Application>();
 }
