@@ -229,6 +229,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         });
         // Other Indexes
         modelBuilder.Entity<Application>().HasIndex(a => a.TrackingCode);
+        modelBuilder.Entity<Application>().HasIndex(a => a.ReferrerUserId);
+        modelBuilder.Entity<Application>()
+            .HasOne(a => a.ReferrerUser)
+            .WithMany()
+            .HasForeignKey(a => a.ReferrerUserId)
+            .OnDelete(DeleteBehavior.SetNull);
         modelBuilder.Entity<Candidate>().HasIndex(c => c.Email);
         modelBuilder.Entity<JobRequisition>().HasIndex(r => r.Code).IsUnique();
         modelBuilder.Entity<JobPosting>().HasIndex(p => p.Slug).IsUnique();
