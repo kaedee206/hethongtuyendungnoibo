@@ -907,10 +907,11 @@ public class WorkspaceController : Controller
     /// </summary>
     [HttpPost("AdvanceStage")]
     [ValidateAntiForgeryToken]
-    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager}")]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng")]
     public async Task<IActionResult> AdvanceStage(
         [FromForm] Guid applicationId,
         [FromForm] Guid? toStageId,
+        [FromForm] int? toStageOrder,
         [FromForm] string? comment)
     {
         try
@@ -933,6 +934,10 @@ public class WorkspaceController : Controller
             {
                 targetStage = await _dbContext.PipelineStages.FirstOrDefaultAsync(s => s.Id == toStageId.Value);
             }
+            else if (toStageOrder.HasValue && toStageOrder.Value > 0)
+            {
+                targetStage = await _dbContext.PipelineStages.FirstOrDefaultAsync(s => s.StageOrder == toStageOrder.Value);
+            }
             else
             {
                 // Mặc định chuyển sang stage có StageOrder kế tiếp
@@ -954,6 +959,19 @@ public class WorkspaceController : Controller
             var prevStageId = application.CurrentStageId;
             application.CurrentStageId = targetStage.Id;
             application.UpdatedAt = DateTimeOffset.UtcNow;
+
+            if (targetStage.StageOrder == 6)
+            {
+                application.Status = ApplicationStatus.HIRED;
+            }
+            else if (targetStage.StageOrder == 7 || targetStage.Name.Contains("Từ chối", StringComparison.OrdinalIgnoreCase))
+            {
+                application.Status = ApplicationStatus.REJECTED;
+            }
+            else
+            {
+                application.Status = ApplicationStatus.IN_PROCESS;
+            }
 
             var history = new ApplicationStageHistory
             {
@@ -998,7 +1016,8 @@ public class WorkspaceController : Controller
                 stageId = targetStage.Id,
                 stageName = targetStage.Name,
                 stageOrder = targetStage.StageOrder,
-                stageColor = targetStage.ColorCode
+                stageColor = targetStage.ColorCode,
+                status = application.Status.ToString()
             });
         }
         catch (Exception ex)

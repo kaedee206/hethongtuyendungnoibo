@@ -30,9 +30,22 @@ public class WorkspaceDashboardViewModel
     public List<InterviewEvaluationCandidateDto> EvaluationCandidates { get; set; } = new();
     public List<CandidatePipelineItemDto> CandidatePipelineItems { get; set; } = new();
 
+    // SCRUM-319: Bộ lọc danh sách vị trí tuyển dụng cho Kanban pipeline (Mặc định vị trí Recruiter phụ trách)
+    public List<JobPostingFilterOptionDto> JobPostingFilterOptions { get; set; } = new();
+    public Guid? DefaultJobPostingId { get; set; }
+
     // Thông báo dành cho Staff / Recruiter
     public int UnreadNotificationsCount { get; set; }
     public List<NotificationDto> RecentNotifications { get; set; } = new();
+}
+
+public class JobPostingFilterOptionDto
+{
+    public Guid Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string DepartmentName { get; set; } = string.Empty;
+    public bool IsAssignedToCurrentUser { get; set; }
+    public int ActiveCandidateCount { get; set; }
 }
 
 public class NotificationDto
@@ -49,6 +62,7 @@ public class CandidatePipelineItemDto
 {
     public Guid ApplicationId { get; set; }
     public Guid CandidateId { get; set; }
+    public Guid JobPostingId { get; set; }
     public string CandidateName { get; set; } = string.Empty;
     public string CandidateEmail { get; set; } = string.Empty;
     public string CandidatePhone { get; set; } = string.Empty;
@@ -59,6 +73,7 @@ public class CandidatePipelineItemDto
     public string StageColor { get; set; } = "#059669";
     public string AppliedDateDisplay { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
+    public int? Rating { get; set; }
     public string ResumeFileName { get; set; } = string.Empty;
     public string ResumeFilePath { get; set; } = string.Empty;
 }
