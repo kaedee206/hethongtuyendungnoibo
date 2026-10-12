@@ -65,6 +65,14 @@ namespace Ats.Web.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("rating");
 
+                    b.Property<string>("ReferralNote")
+                        .HasColumnType("text")
+                        .HasColumnName("referral_note");
+
+                    b.Property<Guid?>("ReferrerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("referrer_user_id");
+
                     b.Property<string>("RejectionNote")
                         .HasColumnType("text")
                         .HasColumnName("rejection_note");
@@ -104,6 +112,9 @@ namespace Ats.Web.Migrations
 
                     b.HasIndex("JobPostingId")
                         .HasDatabaseName("ix_applications_job_posting_id");
+
+                    b.HasIndex("ReferrerUserId")
+                        .HasDatabaseName("ix_applications_referrer_user_id");
 
                     b.HasIndex("ResumeId")
                         .HasDatabaseName("ix_applications_resume_id");
@@ -2449,6 +2460,12 @@ namespace Ats.Web.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_applications_job_postings_job_posting_id");
 
+                    b.HasOne("Ats.Web.Models.Entities.User", "ReferrerUser")
+                        .WithMany()
+                        .HasForeignKey("ReferrerUserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_applications_users_referrer_user_id");
+
                     b.HasOne("Ats.Web.Models.Entities.Resume", "Resume")
                         .WithMany()
                         .HasForeignKey("ResumeId")
@@ -2461,6 +2478,8 @@ namespace Ats.Web.Migrations
                     b.Navigation("CurrentStage");
 
                     b.Navigation("JobPosting");
+
+                    b.Navigation("ReferrerUser");
 
                     b.Navigation("Resume");
                 });
