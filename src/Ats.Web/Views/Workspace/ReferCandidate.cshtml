@@ -1,0 +1,242 @@
+@model Ats.Web.Models.ViewModels.Referral.ReferCandidateInputModel
+@using Ats.Web.Models.ViewModels.Referral
+@{
+    ViewData["Title"] = "Giới thiệu ứng viên nội bộ";
+    var openJobs = ViewBag.OpenJobs as List<JobPostingSelectDto> ?? new List<JobPostingSelectDto>();
+}
+
+<div class="container-fluid px-3 px-xl-4 py-3" style="max-width: 1200px;">
+    <!-- ── BREADCRUMB & HEADER ── -->
+    <div class="mb-3 pb-2 border-bottom" style="border-color: #E2E8F0 !important;">
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <a href="/dashboard" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i>Bàn làm việc</a>
+            <span class="text-muted small">/</span>
+            <span class="text-dark small fw-semibold">Giới thiệu ứng viên</span>
+        </div>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <div>
+                <h4 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <span class="d-inline-flex align-items-center justify-content-center text-white"
+                          style="width: 34px; height: 34px; background: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%); border-radius: 8px;">
+                        <i class="bi bi-person-heart" style="font-size: 1.1rem;"></i>
+                    </span>
+                    Giới Thiệu Ứng Viên Cho Vị Trí Đang Tuyển
+                </h4>
+                <p class="text-muted small mb-0 mt-1">
+                    Hỗ trợ công ty thu hút nhân tài chất lượng từ mạng lưới quan hệ của bạn. Hồ sơ sẽ được ưu tiên xem xét và bạn có thể theo dõi tiến độ bất kỳ lúc nào.
+                </p>
+            </div>
+            <a href="/ho-so-gioi-thieu" class="btn btn-sm btn-outline-secondary fw-semibold d-inline-flex align-items-center gap-1.5"
+               style="border-radius: 8px; font-size: 0.82rem; padding: 0.45rem 0.95rem;">
+                <i class="bi bi-list-check"></i> Hồ sơ tôi đã giới thiệu
+            </a>
+        </div>
+    </div>
+
+    <!-- ── THÔNG BÁO TEMP DATA ── -->
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 mb-3" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+            <div>@TempData["ErrorMessage"]</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- ── NỘI DUNG FORM CHÍNH ── -->
+    <div class="row g-4">
+        <!-- Cột trái: Form nhập liệu (8 Cột) -->
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm p-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <form asp-controller="Workspace" asp-action="ReferCandidate" method="post" enctype="multipart/form-data" id="referCandidateForm">
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 small mb-3" style="border-radius: 8px;"></div>
+
+                    <!-- 1. Vị trí tuyển dụng -->
+                    <div class="mb-3">
+                        <label asp-for="JobPostingId" class="form-label fw-bold text-dark small">
+                            Vị trí tuyển dụng đang mở <span class="text-danger">*</span>
+                        </label>
+                        <select asp-for="JobPostingId" class="form-select" style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.88rem;">
+                            @if (!openJobs.Any())
+                            {
+                                <option value="">-- Hiện không có vị trí nào đang mở --</option>
+                            }
+                            else
+                            {
+                                @foreach (var job in openJobs)
+                                {
+                                    <option value="@job.Id">@job.Title — @job.DepartmentName (@job.Location)</option>
+                                }
+                            }
+                        </select>
+                        <span asp-validation-for="JobPostingId" class="text-danger small"></span>
+                    </div>
+
+                    <!-- 2. Thông tin cơ bản của ứng viên -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-6">
+                            <label asp-for="CandidateName" class="form-label fw-bold text-dark small">
+                                Họ và tên ứng viên <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0" style="border-color: #CBD5E1; border-radius: 8px 0 0 8px;">
+                                    <i class="bi bi-person text-muted"></i>
+                                </span>
+                                <input asp-for="CandidateName" class="form-control border-start-0" placeholder="Ví dụ: Nguyễn Văn An"
+                                       style="border-color: #CBD5E1; border-radius: 0 8px 8px 0; font-size: 0.88rem;" />
+                            </div>
+                            <span asp-validation-for="CandidateName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="CandidateEmail" class="form-label fw-bold text-dark small">
+                                Email ứng viên <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0" style="border-color: #CBD5E1; border-radius: 8px 0 0 8px;">
+                                    <i class="bi bi-envelope text-muted"></i>
+                                </span>
+                                <input asp-for="CandidateEmail" type="email" class="form-control border-start-0" placeholder="an.nguyen@example.com"
+                                       style="border-color: #CBD5E1; border-radius: 0 8px 8px 0; font-size: 0.88rem;" />
+                            </div>
+                            <span asp-validation-for="CandidateEmail" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="CandidatePhone" class="form-label fw-bold text-dark small">
+                                Số điện thoại liên hệ <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0" style="border-color: #CBD5E1; border-radius: 8px 0 0 8px;">
+                                    <i class="bi bi-telephone text-muted"></i>
+                                </span>
+                                <input asp-for="CandidatePhone" class="form-control border-start-0" placeholder="0987654321"
+                                       style="border-color: #CBD5E1; border-radius: 0 8px 8px 0; font-size: 0.88rem;" />
+                            </div>
+                            <span asp-validation-for="CandidatePhone" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="LinkedinUrl" class="form-label fw-bold text-dark small">
+                                Link LinkedIn / Portfolio <span class="text-muted fw-normal">(Không bắt buộc)</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0" style="border-color: #CBD5E1; border-radius: 8px 0 0 8px;">
+                                    <i class="bi bi-linkedin text-muted"></i>
+                                </span>
+                                <input asp-for="LinkedinUrl" class="form-control border-start-0" placeholder="https://linkedin.com/in/username"
+                                       style="border-color: #CBD5E1; border-radius: 0 8px 8px 0; font-size: 0.88rem;" />
+                            </div>
+                            <span asp-validation-for="LinkedinUrl" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <!-- 3. Đính kèm File CV -->
+                    <div class="mb-3">
+                        <label asp-for="CvFile" class="form-label fw-bold text-dark small">
+                            Tệp tin Hồ sơ / CV của ứng viên <span class="text-danger">*</span>
+                        </label>
+                        <div class="p-3 border rounded-2 bg-light text-center" style="border: 2px dashed #CBD5E1 !important; border-radius: 8px;">
+                            <i class="bi bi-cloud-arrow-up text-primary mb-2" style="font-size: 1.8rem;"></i>
+                            <div class="small fw-semibold text-dark">Chọn file CV hoặc kéo thả vào đây</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Hỗ trợ định dạng .PDF, .DOC, .DOCX (Dung lượng tối đa 10MB)</div>
+                            <input asp-for="CvFile" type="file" class="form-control form-control-sm mt-2" accept=".pdf,.doc,.docx"
+                                   style="max-width: 360px; margin: 0 auto; border-radius: 6px;" />
+                        </div>
+                        <span asp-validation-for="CvFile" class="text-danger small"></span>
+                    </div>
+
+                    <!-- 4. Ghi chú giới thiệu (Bắt buộc) -->
+                    <div class="mb-3">
+                        <label asp-for="ReferralNote" class="form-label fw-bold text-dark small">
+                            Ghi chú giới thiệu &amp; Nhận xét của bạn <span class="text-danger">*</span>
+                        </label>
+                        <textarea asp-for="ReferralNote" rows="4" class="form-control"
+                                  placeholder="Ví dụ: Tôi đã từng làm việc cùng bạn An trong 2 năm tại dự án Fintech. Bạn có chuyên môn vững về .NET và React, làm việc độc lập tốt và có trách nhiệm cao. Rất phù hợp với văn hóa cởi mở và chủ động của NoveraTech."
+                                  style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.88rem;"></textarea>
+                        <div class="form-text text-muted small">
+                            Ghi chú này sẽ được gửi trực tiếp đến Hội đồng tuyển dụng để làm căn cứ ưu tiên duyệt hồ sơ.
+                        </div>
+                        <span asp-validation-for="ReferralNote" class="text-danger small"></span>
+                    </div>
+
+                    <!-- 5. Cam kết -->
+                    <div class="form-check mb-4 p-3 bg-light border rounded-2" style="border-radius: 8px;">
+                        <input asp-for="AgreeTerms" class="form-check-input ms-0 me-2" type="checkbox" id="agreeTermsCheck" />
+                        <label class="form-check-label small text-dark" for="agreeTermsCheck">
+                            Tôi xác nhận đã thông báo và nhận được sự đồng ý của ứng viên về việc chia sẻ thông tin và CV cho Ban Tuyển dụng NoveraTech theo quy định bảo vệ dữ liệu cá nhân.
+                        </label>
+                        <div><span asp-validation-for="AgreeTerms" class="text-danger small"></span></div>
+                    </div>
+
+                    <!-- Nút nộp hồ sơ -->
+                    <div class="d-flex align-items-center justify-content-end gap-2">
+                        <a href="/ho-so-gioi-thieu" class="btn btn-light border fw-semibold" style="border-radius: 8px; font-size: 0.85rem; padding: 0.45rem 1rem;">
+                            Hủy bỏ
+                        </a>
+                        <button type="submit" class="btn btn-primary fw-semibold d-inline-flex align-items-center gap-1.5"
+                                style="border-radius: 8px; font-size: 0.85rem; padding: 0.45rem 1.25rem; background: #4F46E5; border-color: #4F46E5;">
+                            <i class="bi bi-send-fill"></i> Gửi Hồ Sơ Giới Thiệu
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Cột phải: Thông tin chính sách & Lợi ích (4 Cột) -->
+        <div class="col-12 col-lg-4 d-flex flex-column gap-3">
+            <!-- Card 1: Chính sách giới thiệu -->
+            <div class="card border-0 shadow-sm p-3 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <div class="d-flex align-items-center gap-2 mb-2 pb-2 border-bottom">
+                    <i class="bi bi-gift-fill text-warning" style="font-size: 1.1rem;"></i>
+                    <h6 class="fw-bold text-dark mb-0">Chương Trình Novera Referral</h6>
+                </div>
+                <p class="text-muted small mb-2">
+                    Mỗi hồ sơ bạn giới thiệu khi được tuyển dụng thành công và qua thời gian thử việc sẽ nhận được phần thưởng khích lệ:
+                </p>
+                <ul class="list-unstyled mb-0 d-flex flex-column gap-1.5 small text-dark">
+                    <li class="d-flex align-items-start gap-2">
+                        <i class="bi bi-check-circle-fill text-success mt-0.5"></i>
+                        <span><strong>Junior / Middle:</strong> Thưởng 5.000.000 VNĐ / ứng viên</span>
+                    </li>
+                    <li class="d-flex align-items-start gap-2">
+                        <i class="bi bi-check-circle-fill text-success mt-0.5"></i>
+                        <span><strong>Senior / Lead:</strong> Thưởng 10.000.000 VNĐ / ứng viên</span>
+                    </li>
+                    <li class="d-flex align-items-start gap-2">
+                        <i class="bi bi-check-circle-fill text-success mt-0.5"></i>
+                        <span><strong>Architect / Quản lý:</strong> Thưởng 15.000.000 VNĐ / ứng viên</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Card 2: Quy trình xử lý hồ sơ giới thiệu -->
+            <div class="card border-0 shadow-sm p-3 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <div class="d-flex align-items-center gap-2 mb-2 pb-2 border-bottom">
+                    <i class="bi bi-shield-check text-primary" style="font-size: 1.1rem;"></i>
+                    <h6 class="fw-bold text-dark mb-0">Cam Kết Từ Ban Tuyển Dụng</h6>
+                </div>
+                <div class="d-flex flex-column gap-2 small text-muted">
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-primary-subtle text-primary fw-bold" style="border-radius: 6px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;">1</span>
+                        <span>Hồ sơ được ưu tiên sàng lọc trong vòng <strong>48 giờ làm việc</strong>.</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-primary-subtle text-primary fw-bold" style="border-radius: 6px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;">2</span>
+                        <span>Được gắn nhãn <strong>Giới thiệu nội bộ</strong> và tên bạn trong suốt quy trình.</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-primary-subtle text-primary fw-bold" style="border-radius: 6px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;">3</span>
+                        <span>Bạn có thể chủ động theo dõi tiến độ tổng quát tại mục <strong>Hồ sơ tôi đã giới thiệu</strong>.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
