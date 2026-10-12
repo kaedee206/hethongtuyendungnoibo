@@ -61,7 +61,6 @@ public class CandidateTimelineService : ICandidateTimelineService
         var applications = await _context.Applications
             .AsNoTracking()
             .Include(a => a.JobPosting)
-                .ThenInclude(jp => jp.Requisition)
             .Include(a => a.CurrentStage)
             .Include(a => a.ReferrerUser)
             .Include(a => a.Resume)
