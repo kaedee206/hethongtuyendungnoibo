@@ -546,12 +546,22 @@ public class RequisitionService(
             return (false, "Không tìm thấy yêu cầu tuyển dụng nguồn để sao chép.", null, null);
         }
 
-        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == currentUserId, cancellationToken);
-        var userRole = user?.Role ?? string.Empty;
-        var isAdminOrHR = userRole.Equals(UserRoles.Admin, StringComparison.OrdinalIgnoreCase) ||
-                          userRole.Equals(UserRoles.HRManager, StringComparison.OrdinalIgnoreCase);
+        var user = await _dbContext.Users
+            .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.Id == currentUserId, cancellationToken);
 
-        // Chỉ Admin, HRManager hoặc chính Hiring Manager mới được sao chép
+        var userRole = user?.Role ?? string.Empty;
+        var isAdminOrHR = user != null && (
+            userRole.Equals(UserRoles.Admin, StringComparison.OrdinalIgnoreCase) ||
+            userRole.Equals(UserRoles.HRManager, StringComparison.OrdinalIgnoreCase) ||
+            user.UserRoles.Any(ur => ur.Role != null && (
+                ur.Role.Name.Equals(UserRoles.Admin, StringComparison.OrdinalIgnoreCase) ||
+                ur.Role.Name.Equals(UserRoles.HRManager, StringComparison.OrdinalIgnoreCase)
+            ))
+        );
+
+        // Chỉ Admin, HRManager hoặc chính Hiring Manager của yêu cầu gốc mới được sao chép
         if (!isAdminOrHR && source.HiringManagerId != currentUserId)
         {
             return (false, "Bạn không có quyền sao chép yêu cầu tuyển dụng này.", null, null);
@@ -586,6 +596,8 @@ public class RequisitionService(
             JobDescription = source.JobDescription,
             Requirements = source.Requirements,
             Status = Models.Enums.RequisitionStatus.DRAFT,
+            CreatedById = currentUserId,
+            UpdatedById = currentUserId,
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         };

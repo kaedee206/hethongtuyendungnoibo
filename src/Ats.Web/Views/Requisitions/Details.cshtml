@@ -60,6 +60,18 @@
                     <span>Chỉnh sửa hồ sơ</span>
                 </a>
             }
+            <button type="button"
+                    class="btn btn-outline-primary px-3 py-2 fw-medium d-flex align-items-center gap-1 shadow-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#duplicateRequisitionModal"
+                    data-requisition-id="@Model.Id"
+                    data-requisition-code="@Model.Code"
+                    data-requisition-title="@Model.JobPositionTitle"
+                    style="border-radius: 8px;"
+                    title="Sao chép yêu cầu tuyển dụng này">
+                <i class="bi bi-copy"></i>
+                <span>Sao chép yêu cầu</span>
+            </button>
         </div>
     </div>
 
@@ -606,3 +618,6 @@
         });
     });
 </script>
+
+<!-- Modal Sao chép yêu cầu tuyển dụng (Scrum #25) -->
+@await Html.PartialAsync("_DuplicateRequisitionModalPartial")

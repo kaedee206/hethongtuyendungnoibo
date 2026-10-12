@@ -340,6 +340,18 @@
                                                     <i class="bi bi-pencil"></i>
                                                 </a>
                                             }
+
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-primary px-2 py-1 d-inline-flex align-items-center"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#duplicateRequisitionModal"
+                                                    data-requisition-id="@item.Id"
+                                                    data-requisition-code="@item.Code"
+                                                    data-requisition-title="@item.JobTitle"
+                                                    style="border-radius: 6px;"
+                                                    title="Sao chép yêu cầu này">
+                                                <i class="bi bi-copy"></i>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -354,3 +366,6 @@
 
 <!-- Modal Ra quyết định phê duyệt -->
 @await Html.PartialAsync("_ApprovalDecisionModalPartial", new Ats.Web.Models.ViewModels.Requisitions.RequisitionApprovalDecisionInputModel())
+
+<!-- Modal Sao chép yêu cầu tuyển dụng (Scrum #25) -->
+@await Html.PartialAsync("_DuplicateRequisitionModalPartial")

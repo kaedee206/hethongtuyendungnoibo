@@ -1,0 +1,63 @@
+@* Modal xác nhận sao chép yêu cầu tuyển dụng (Scrum #25) *@
+<div class="modal fade" id="duplicateRequisitionModal" tabindex="-1" aria-labelledby="duplicateRequisitionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header border-bottom py-3 px-4" style="background: #EFF6FF; color: #1D4ED8;">
+                <h6 class="modal-title fw-bold d-flex align-items-center gap-2" id="duplicateRequisitionModalLabel">
+                    <i class="bi bi-copy"></i>
+                    <span>Xác nhận sao chép yêu cầu tuyển dụng</span>
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="duplicateRequisitionForm" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4">
+                    <p class="mb-2 text-dark">
+                        Bạn muốn tạo bản sao từ yêu cầu: <strong id="duplicateRequisitionTitle" class="text-primary"></strong>?
+                    </p>
+                    <ul class="text-muted small mb-0 ps-3">
+                        <li>Bản sao sẽ luôn bắt đầu ở trạng thái <strong>Nháp (Draft)</strong> với mã mới được cấp tự động.</li>
+                        <li>Toàn bộ mô tả công việc (JD), yêu cầu ứng viên, chức danh, phòng ban và dải lương được sao chép nguyên vẹn.</li>
+                        <li><strong>Không kế thừa</strong> lịch sử phê duyệt, người duyệt hoặc các quyết định phê duyệt của yêu cầu gốc.</li>
+                        <li>Yêu cầu gốc được bảo toàn nguyên trạng, không bị thay đổi.</li>
+                    </ul>
+                </div>
+                <div class="modal-footer border-top py-2 px-4 bg-light">
+                    <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal" style="border-radius: 8px;">
+                        Hủy bỏ
+                    </button>
+                    <button type="submit" class="btn btn-primary px-3 d-inline-flex align-items-center gap-1 fw-semibold" style="border-radius: 8px;">
+                        <i class="bi bi-copy"></i>
+                        <span>Xác nhận sao chép</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const duplicateModal = document.getElementById('duplicateRequisitionModal');
+        if (duplicateModal) {
+            duplicateModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                if (!button) return;
+
+                const reqId = button.getAttribute('data-requisition-id') || button.getAttribute('data-draft-id');
+                const reqTitle = button.getAttribute('data-requisition-title') || button.getAttribute('data-draft-title') || '';
+                const reqCode = button.getAttribute('data-requisition-code') || button.getAttribute('data-draft-code') || '';
+
+                const titleSpan = duplicateModal.querySelector('#duplicateRequisitionTitle');
+                if (titleSpan) {
+                    titleSpan.textContent = reqCode ? `${reqCode} - ${reqTitle}` : reqTitle;
+                }
+
+                const form = duplicateModal.querySelector('#duplicateRequisitionForm');
+                if (form && reqId) {
+                    form.action = `/yeu-cau-tuyen-dung/sao-chep/${reqId}`;
+                }
+            });
+        }
+    });
+</script>
