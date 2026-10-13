@@ -25,6 +25,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Resume> Resumes { get; set; }
     public DbSet<CandidateTag> CandidateTags { get; set; }
     public DbSet<CandidateNote> CandidateNotes { get; set; }
+    public DbSet<TalentPoolCandidate> TalentPoolCandidates { get; set; }
     public DbSet<PipelineStage> PipelineStages { get; set; }
     public DbSet<Application> Applications { get; set; }
     public DbSet<ApplicationStageHistory> ApplicationStageHistories { get; set; }
@@ -270,5 +271,30 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(cf => cf.AssignedPositions)
             .HasForeignKey(jp => jp.CompetencyFrameworkId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // TalentPoolCandidate mapping (SCRUM-45)
+        modelBuilder.Entity<TalentPoolCandidate>(entity =>
+        {
+            entity.ToTable("talent_pool_candidates");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Candidate)
+                  .WithMany(c => c.TalentPoolEntries)
+                  .HasForeignKey(e => e.CandidateId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.SourceApplication)
+                  .WithMany()
+                  .HasForeignKey(e => e.SourceApplicationId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.AddedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.AddedByUserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => e.TargetJobTitle);
+            entity.HasIndex(e => e.Status);
+        });
     }
 }

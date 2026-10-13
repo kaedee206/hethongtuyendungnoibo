@@ -69,6 +69,7 @@ builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<IApprovalRuleService, ApprovalRuleService>();
 builder.Services.AddScoped<ISecurityAuditService, SecurityAuditService>();
 builder.Services.AddScoped<IRecruitmentCatalogService, RecruitmentCatalogService>();
+builder.Services.AddScoped<ITalentPoolService, TalentPoolService>();
 builder.Services.AddSingleton<IJobExpirationService, JobExpirationService>();
 builder.Services.AddHostedService<JobExpirationBackgroundService>();
 
@@ -492,6 +493,31 @@ using (var scope = app.Services.CreateScope())
                 is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
                 deleted_at TIMESTAMPTZ
             );
+
+            CREATE TABLE IF NOT EXISTS talent_pool_candidates (
+                id UUID PRIMARY KEY,
+                candidate_id UUID NOT NULL,
+                source_application_id UUID,
+                last_stage_reached TEXT,
+                reason TEXT NOT NULL,
+                target_job_title TEXT NOT NULL,
+                skills TEXT,
+                experience_years INTEGER,
+                rating INTEGER,
+                notes TEXT,
+                status TEXT NOT NULL DEFAULT 'AVAILABLE',
+                added_by_user_id UUID NOT NULL,
+                added_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+            CREATE INDEX IF NOT EXISTS ix_talent_pool_candidates_candidate_id ON talent_pool_candidates(candidate_id);
+            CREATE INDEX IF NOT EXISTS ix_talent_pool_candidates_target_job_title ON talent_pool_candidates(target_job_title);
+            CREATE INDEX IF NOT EXISTS ix_talent_pool_candidates_status ON talent_pool_candidates(status);
         ");
     }
     catch (Exception ex)

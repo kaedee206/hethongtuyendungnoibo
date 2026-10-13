@@ -1976,8 +1976,46 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-dark">Góp ý lịch thiệp gửi kèm email cho ứng viên (tùy chọn)</label>
-                        <textarea class="form-control" id="rejectFeedbackNote" rows="3" placeholder="Chia sẻ thêm thông tin giúp ứng viên hoàn thiện hơn trong tương lai..." style="border-radius:8px; font-size:0.85rem;"></textarea>
+                        <textarea class="form-control" id="rejectFeedbackNote" rows="2" placeholder="Chia sẻ thêm thông tin giúp ứng viên hoàn thiện hơn trong tương lai..." style="border-radius:8px; font-size:0.85rem;"></textarea>
                     </div>
+
+                    <!-- Scrum 45: Đánh dấu đưa vào Kho tiềm năng kèm lý do -->
+                    <div class="p-3 mb-3" style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px;">
+                        <div class="form-check form-switch mb-1">
+                            <input class="form-check-input" type="checkbox" id="rejectAddToTalentPool" onchange="toggleRejectTalentPoolFields()">
+                            <label class="form-check-label fw-bold text-success small" for="rejectAddToTalentPool">
+                                <i class="bi bi-star-fill text-warning me-1"></i>Đưa vào Kho Ứng viên Tiềm năng (Scrum 45)
+                            </label>
+                        </div>
+                        <div class="text-muted small mb-2" style="font-size: 0.78rem;">
+                            Dành cho ứng viên tốt trượt vòng cuối, giữ lại để hệ thống tự động gợi ý khi mở vị trí mới.
+                        </div>
+                        <div id="rejectTalentPoolExtraFields" class="d-none">
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold text-dark mb-1">Lý do đưa vào kho tiềm năng <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm" id="rejectTalentPoolReason" placeholder="Vd: Ứng viên rất tốt chuyên môn, trượt vòng cuối do chỉ tiêu 1 người" style="border-radius:6px; font-size:0.82rem;">
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-7">
+                                    <label class="form-label small fw-semibold text-dark mb-1">Chức danh phù hợp tiếp cận</label>
+                                    <input type="text" class="form-control form-control-sm" id="rejectTalentPoolTargetTitle" placeholder="Vd: Backend Developer, Tech Lead" style="border-radius:6px; font-size:0.82rem;">
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label small fw-semibold text-dark mb-1">Đánh giá tiềm năng</label>
+                                    <select class="form-select form-select-sm" id="rejectTalentPoolRating" style="border-radius:6px; font-size:0.82rem;">
+                                        <option value="5">⭐⭐⭐⭐⭐ 5/5</option>
+                                        <option value="4" selected>⭐⭐⭐⭐ 4/5</option>
+                                        <option value="3">⭐⭐⭐ 3/5</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="form-label small fw-semibold text-dark mb-1">Kỹ năng nổi bật</label>
+                                <input type="text" class="form-control form-control-sm" id="rejectTalentPoolSkills" placeholder="Vd: C#, .NET, Docker, Microservices, React" style="border-radius:6px; font-size:0.82rem;">
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="d-flex justify-content-end gap-2 mt-4 pt-2" style="border-top:1px solid #E2E8F0;">
                         <button type="button" class="btn btn-light px-4" style="border-radius:8px; font-size:0.85rem;" data-bs-dismiss="modal">Hủy</button>
                         <button type="submit" class="btn btn-danger px-4 fw-semibold text-white" style="border-radius:8px; font-size:0.85rem;" id="btnSubmitReject">
@@ -3034,11 +3072,35 @@
             }).join('');
         }
 
+        function toggleRejectTalentPoolFields() {
+            var chk = document.getElementById('rejectAddToTalentPool');
+            var container = document.getElementById('rejectTalentPoolExtraFields');
+            if (!chk || !container) return;
+            if (chk.checked) {
+                container.classList.remove('d-none');
+            } else {
+                container.classList.add('d-none');
+            }
+        }
+
         function openRejectModal(applicationId, candidateName, jobTitle) {
             document.getElementById('rejectApplicationId').value = applicationId;
             document.getElementById('rejectCandidateName').textContent = candidateName || 'Ứng viên';
             document.getElementById('rejectJobTitle').textContent = jobTitle || 'Vị trí';
             document.getElementById('rejectFeedbackNote').value = '';
+
+            // Reset talent pool inputs
+            var poolChk = document.getElementById('rejectAddToTalentPool');
+            if (poolChk) {
+                poolChk.checked = false;
+                toggleRejectTalentPoolFields();
+            }
+            var targetTitleInput = document.getElementById('rejectTalentPoolTargetTitle');
+            if (targetTitleInput) targetTitleInput.value = jobTitle || '';
+            var poolReasonInput = document.getElementById('rejectTalentPoolReason');
+            if (poolReasonInput) poolReasonInput.value = '';
+            var poolSkillsInput = document.getElementById('rejectTalentPoolSkills');
+            if (poolSkillsInput) poolSkillsInput.value = '';
 
             loadRejectionReasons();
 
@@ -3059,6 +3121,20 @@
             var reasonText = sel.value;
             var feedback = document.getElementById('rejectFeedbackNote').value;
 
+            var poolChk = document.getElementById('rejectAddToTalentPool');
+            var addToTalentPool = poolChk && poolChk.checked;
+
+            if (addToTalentPool) {
+                var poolReason = document.getElementById('rejectTalentPoolReason').value.trim();
+                if (!poolReason) {
+                    showToast('Vui lòng nhập lý do đưa vào Kho tiềm năng (bắt buộc theo Scrum 45).', false);
+                    btn.disabled = false;
+                    spinner.classList.add('d-none');
+                    document.getElementById('rejectTalentPoolReason').focus();
+                    return;
+                }
+            }
+
             var formData = new FormData();
             formData.append('applicationId', document.getElementById('rejectApplicationId').value);
             if (reasonId) {
@@ -3067,6 +3143,17 @@
             formData.append('reason', reasonText);
             formData.append('feedbackNote', feedback);
             formData.append('sendEmail', 'true');
+
+            // Scrum 45 fields
+            if (addToTalentPool) {
+                formData.append('addToTalentPool', 'true');
+                formData.append('talentPoolReason', document.getElementById('rejectTalentPoolReason').value.trim());
+                formData.append('targetJobTitle', document.getElementById('rejectTalentPoolTargetTitle').value.trim());
+                formData.append('talentPoolRating', document.getElementById('rejectTalentPoolRating').value);
+                formData.append('talentPoolSkills', document.getElementById('rejectTalentPoolSkills').value.trim());
+            } else {
+                formData.append('addToTalentPool', 'false');
+            }
 
             try {
                 var res = await fetch('/Workspace/RejectApplication', {

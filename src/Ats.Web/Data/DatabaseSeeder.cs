@@ -926,6 +926,96 @@ public static class DatabaseSeeder
             }
         }
 
+        // 9. Seed Kho Ứng viên Tiềm năng (Scrum 45 - Talent Pool)
+        if (!await context.TalentPoolCandidates.AnyAsync())
+        {
+            var hrLeadUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "hr@noveratech.vn" || u.Email == "phuong.nguyen@noveratech.digital")
+                ?? await context.Users.FirstAsync();
+
+            var talentPoolSeeds = new List<(string Email, string TargetTitle, string LastStage, string Reason, string Skills, int Exp, int Rating, string Status, string Notes)>
+            {
+                (
+                    "hai.phan@gmail.com",
+                    "Senior Software Engineer (.NET & React)",
+                    "Đề nghị tuyển dụng (Offer)",
+                    "Ứng viên chuyên môn xuất sắc, giải quyết bài toán microservices và concurrency vượt trội; trượt vòng cuối do chỉ tiêu tuyển 1 người ở đợt này.",
+                    ".NET Core, C#, PostgreSQL, Docker, Kubernetes, Microservices, Redis, React",
+                    5,
+                    5,
+                    "AVAILABLE",
+                    "Ưu tiên liên hệ đầu tiên khi mở đợt tuyển Senior .NET hoặc Tech Lead mới."
+                ),
+                (
+                    "dang.hoang@gmail.com",
+                    "Senior DevOps & Cloud Platform Engineer",
+                    "Phỏng vấn chuyên môn",
+                    "Năng lực CI/CD và Kubernetes rất tốt, kiến thức AWS vững vàng; lọt vào top 2 ứng viên xuất sắc nhất của đợt tuyển dụng.",
+                    "DevOps, Docker, Kubernetes, CI/CD, Terraform, AWS, Linux, Python",
+                    4,
+                    4,
+                    "AVAILABLE",
+                    "Sẵn sàng nhận việc sau 2 tuần. Kỳ vọng môi trường làm việc hybrid."
+                ),
+                (
+                    "thang.vu@gmail.com",
+                    "Senior Frontend / Fullstack Engineer",
+                    "Phỏng vấn chuyên môn",
+                    "Kỹ năng React & TypeScript bài bản, tư duy UI/UX hiện đại; giữ lại kho tiềm năng để liên hệ ngay khi mở dự án mới.",
+                    "React, TypeScript, Next.js, TailwindCSS, REST API, Redux",
+                    3,
+                    4,
+                    "AVAILABLE",
+                    "Thái độ học hỏi rất tốt, tiếng Anh đọc hiểu tài liệu kỹ thuật thành thạo."
+                ),
+                (
+                    "linh.nguyen@gmail.com",
+                    "Senior UI/UX Product Designer",
+                    "Đề nghị tuyển dụng (Offer)",
+                    "Portfolio xuất sắc, tư duy sản phẩm thực tế và thấu cảm người dùng; tạm gác lại do ngân sách Q2 ưu tiên khối kỹ thuật.",
+                    "Figma, UI/UX, Design System, User Research, Wireframing, Prototyping",
+                    4,
+                    5,
+                    "CONTACTED",
+                    "Đã liên hệ sơ bộ qua LinkedIn, ứng viên vẫn quan tâm đến NoveraTech."
+                ),
+                (
+                    "huy.dogia@gmail.com",
+                    "Product Owner (Fintech & AI Platforms)",
+                    "Phỏng vấn chuyên môn",
+                    "Hiểu sâu về domain Fintech và thanh toán trực tuyến, có kinh nghiệm quản lý backlog tốt; đề xuất ưu tiên khi mở thêm squad mới.",
+                    "Product Management, Scrum, Agile, Backlog Grooming, Jira, Fintech",
+                    3,
+                    4,
+                    "AVAILABLE",
+                    "Có chứng chỉ PSPO I, phong thái làm việc chuyên nghiệp."
+                )
+            };
+
+            foreach (var item in talentPoolSeeds)
+            {
+                if (candidateEntities.TryGetValue(item.Email, out var candObj))
+                {
+                    await context.TalentPoolCandidates.AddAsync(new TalentPoolCandidate
+                    {
+                        Id = Guid.NewGuid(),
+                        CandidateId = candObj.Id,
+                        TargetJobTitle = item.TargetTitle,
+                        LastStageReached = item.LastStage,
+                        Reason = item.Reason,
+                        Skills = item.Skills,
+                        ExperienceYears = item.Exp,
+                        Rating = item.Rating,
+                        Status = item.Status,
+                        Notes = item.Notes,
+                        AddedByUserId = hrLeadUser.Id,
+                        AddedAt = DateTimeOffset.UtcNow.AddDays(-14),
+                        CreatedAt = DateTimeOffset.UtcNow.AddDays(-14),
+                        UpdatedAt = DateTimeOffset.UtcNow.AddDays(-14)
+                    });
+                }
+            }
+        }
+
         await context.SaveChangesAsync();
     }
 }

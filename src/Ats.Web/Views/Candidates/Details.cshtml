@@ -22,6 +22,9 @@
             <a href="/dashboard/ung-vien" class="btn btn-sm btn-outline-primary rounded-2">
                 <i class="bi bi-kanban me-1"></i>Pipeline tuyển dụng
             </a>
+            <button type="button" class="btn btn-sm btn-outline-warning rounded-2 text-dark" data-bs-toggle="modal" data-bs-target="#addToTalentPoolModal">
+                <i class="bi bi-star-fill text-warning me-1"></i>Đưa vào Kho tiềm năng
+            </button>
             @if (Model.ActiveResume != null)
             {
                 <a href="@Url.Action("DownloadCv", "Candidates", new { resumeId = Model.ActiveResume.ResumeId })" 
@@ -641,6 +644,93 @@
 
     </div>
 
+</div>
+
+<!-- Modal Đưa vào Kho tiềm năng (Scrum 45) -->
+<div class="modal fade" id="addToTalentPoolModal" tabindex="-1" aria-labelledby="addToTalentPoolModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-0 pb-0">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 rounded-2" style="background:#FEF3C7; color:#D97706;">
+                        <i class="bi bi-star-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="addToTalentPoolModalLabel" style="font-size: 1.05rem;">
+                            Đưa vào Kho Ứng viên Tiềm năng
+                        </h5>
+                        <small class="text-muted" style="font-size: 0.78rem;">Scrum 45: Lưu giữ ứng viên giỏi từng trượt vòng cuối để tái tuyển dụng</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/kho-tiem-nang/them-ung-vien" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="CandidateId" value="@Model.CandidateId" />
+                <input type="hidden" name="ReturnUrl" value="/ung-vien/@Model.CandidateId" />
+
+                <div class="modal-body py-3">
+                    <div class="p-2.5 mb-3 rounded-2" style="background:#F8FAFC; border:1px solid #E2E8F0;">
+                        <div class="fw-semibold text-dark small"><i class="bi bi-person me-1 text-muted"></i>@Model.FullName</div>
+                        <div class="text-muted small" style="font-size: 0.78rem;"><i class="bi bi-envelope me-1"></i>@Model.Email</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Lý do đưa vào kho tiềm năng <span class="text-danger">*</span></label>
+                        <textarea name="Reason" class="form-control form-control-sm rounded-2" rows="2" placeholder="Vd: Ứng viên xuất sắc chuyên môn, trượt vòng cuối do chỉ tiêu 1 người hoặc chưa phù hợp mức lương hiện tại" required></textarea>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold text-dark">Chức danh phù hợp tiếp cận <span class="text-danger">*</span></label>
+                            <input type="text" name="TargetJobTitle" class="form-control form-control-sm rounded-2" value="@(string.IsNullOrWhiteSpace(Model.CurrentTitle) ? "Chuyên viên" : Model.CurrentTitle)" required />
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold text-dark">Đánh giá tiềm năng</label>
+                            <select name="Rating" class="form-select form-select-sm rounded-2">
+                                <option value="5">⭐⭐⭐⭐⭐ 5/5</option>
+                                <option value="4" selected>⭐⭐⭐⭐ 4/5</option>
+                                <option value="3">⭐⭐⭐ 3/5</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Vòng tuyển dụng đã đạt đến</label>
+                        <select name="LastStageReached" class="form-select form-select-sm rounded-2">
+                            <option value="Đề nghị tuyển dụng (Offer)" selected>Vòng 5: Đề nghị tuyển dụng (Offer)</option>
+                            <option value="Phỏng vấn chuyên môn">Vòng 4: Phỏng vấn chuyên môn</option>
+                            <option value="Phỏng vấn sơ loại">Vòng 3: Phỏng vấn sơ loại</option>
+                            <option value="Sàng lọc CV">Vòng 2: Sàng lọc CV</option>
+                        </select>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold text-dark">Kỹ năng nổi bật (ngăn cách bằng dấu phẩy)</label>
+                            <input type="text" name="Skills" class="form-control form-control-sm rounded-2" placeholder="Vd: C#, .NET, Docker, PostgreSQL, React" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-dark">Số năm KN</label>
+                            <input type="number" name="ExperienceYears" class="form-control form-control-sm rounded-2" min="0" max="40" placeholder="Vd: 3" />
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold text-dark">Ghi chú bổ sung</label>
+                        <textarea name="Notes" class="form-control form-control-sm rounded-2" rows="2" placeholder="Lưu ý về kỳ vọng lương, thời điểm sẵn sàng nhận việc..."></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-sm btn-light rounded-2 px-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-sm btn-warning rounded-2 px-4 fw-semibold text-dark">
+                        <i class="bi bi-check-circle me-1"></i>Lưu vào Kho tiềm năng
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 @section Scripts {

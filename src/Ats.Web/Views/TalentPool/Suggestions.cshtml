@@ -1,0 +1,404 @@
+@using Ats.Web.Models.ViewModels.TalentPool
+@model TalentPoolSuggestionListViewModel
+@{
+    ViewData["Title"] = $"Gợi ý ứng viên từ Kho tiềm năng — {Model.JobTitle}";
+    Layout = "_Layout";
+}
+
+<style>
+    :root {
+        --color-canvas: #F8FAFC;
+        --color-card: #FFFFFF;
+        --color-border: #E2E8F0;
+        --color-text-main: #0F172A;
+        --color-text-muted: #64748B;
+        --color-accent: #059669;
+        --radius-button: 8px;
+        --radius-card: 12px;
+        --radius-badge: 6px;
+    }
+
+    .suggestion-card {
+        background: #FFFFFF;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-card);
+        transition: all .2s ease;
+    }
+    .suggestion-card:hover {
+        border-color: #94A3B8;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    .match-score-badge {
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 700;
+        font-size: 1.1rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 8px;
+    }
+    .match-high {
+        background: #ECFDF5;
+        color: #047857;
+        border: 1px solid #A7F3D0;
+    }
+    .match-medium {
+        background: #EFF6FF;
+        color: #1D4ED8;
+        border: 1px solid #BFDBFE;
+    }
+    .match-low {
+        background: #FFFBEB;
+        color: #B45309;
+        border: 1px solid #FDE68A;
+    }
+
+    .matched-skill-tag {
+        background: #ECFDF5;
+        color: #065F46;
+        border: 1px solid #A7F3D0;
+        border-radius: 6px;
+        padding: 0.15rem 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+</style>
+
+<div class="container-fluid px-3 px-lg-4 py-3">
+
+    <!-- ── Breadcrumb & Top Actions ── -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
+                <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none text-muted"><i class="bi bi-house-door me-1"></i>Bàn làm việc</a></li>
+                <li class="breadcrumb-item"><a href="/kho-tiem-nang" class="text-decoration-none text-muted">Kho ứng viên tiềm năng</a></li>
+                <li class="breadcrumb-item active fw-semibold text-dark" aria-current="page">Gợi ý cho tin @Model.JobCode</li>
+            </ol>
+        </nav>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <!-- Job Switcher Dropdown -->
+            @if (Model.AvailableOpenJobs.Any())
+            {
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary rounded-2 dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-arrow-repeat me-1"></i>Đổi vị trí khác (@Model.AvailableOpenJobs.Count)
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border mt-1" style="border-radius: 8px; min-width: 280px; max-height: 360px; overflow-y: auto;">
+                        <li class="dropdown-header small text-muted">Chọn tin tuyển dụng để xem gợi ý:</li>
+                        @foreach (var j in Model.AvailableOpenJobs)
+                        {
+                            <li>
+                                <a class="dropdown-item py-2 small @(j.Id == Model.JobId ? "active" : "")" href="/kho-tiem-nang/goi-y/@j.Id">
+                                    <div class="fw-semibold text-truncate">@j.Title</div>
+                                    <div class="text-xs text-muted">@j.Department • @j.Code</div>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <a href="/Jobs/@Model.JobId" target="_blank" class="btn btn-sm btn-outline-primary rounded-2">
+                <i class="bi bi-box-arrow-up-right me-1"></i>Xem JD tin tuyển dụng
+            </a>
+            <a href="/kho-tiem-nang" class="btn btn-sm btn-light border rounded-2">
+                <i class="bi bi-arrow-left me-1"></i>Quay lại Kho
+            </a>
+        </div>
+    </div>
+
+    <!-- ── Flash Messages ── -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-2 py-2.5 px-3 mb-3 border-0 shadow-sm" style="background:#ECFDF5; color:#065F46; border-left: 4px solid #059669 !important;" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                <span class="small fw-semibold">@TempData["SuccessMessage"]</span>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-2 py-2.5 px-3 mb-3 border-0 shadow-sm" style="background:#FEF2F2; color:#991B1B; border-left: 4px solid #DC2626 !important;" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                <span class="small fw-semibold">@TempData["ErrorMessage"]</span>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- ── Job Context Banner ── -->
+    <div class="card border-0 shadow-sm mb-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px; overflow: hidden;">
+        <div class="card-body p-4">
+            <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1.5">
+                        <span class="badge rounded-2 bg-dark text-info font-monospace px-2 py-1 text-xs">@Model.JobCode</span>
+                        <span class="badge rounded-2 bg-light text-muted border text-xs">@Model.DepartmentName</span>
+                        <span class="badge rounded-2 px-2 py-1 text-xs" style="background:#FEF3C7; color:#D97706; border:1px solid #FDE68A;">
+                            <i class="bi bi-stars me-1"></i>Hệ thống gợi ý thông minh (Scrum 45)
+                        </span>
+                    </div>
+                    <h3 class="fw-bold text-dark mb-1" style="letter-spacing: -0.3px;">
+                        @Model.JobTitle
+                    </h3>
+                    <div class="text-muted small">
+                        Hệ thống đối chiếu hồ sơ trong Kho ứng viên tiềm năng dựa trên: Chức danh quan tâm, từ khóa chuyên môn yêu cầu, các vòng phỏng vấn đã vượt qua và điểm đánh giá của hội đồng.
+                    </div>
+                </div>
+
+                <!-- Match Counter Summary -->
+                <div class="d-flex align-items-center gap-3 bg-light p-3 rounded-3 border flex-shrink-0" style="border-color:#E2E8F0 !important;">
+                    <div class="text-center px-2">
+                        <div class="h3 fw-bold text-success mb-0 font-monospace">@Model.Suggestions.Count</div>
+                        <div class="text-muted text-xs">Ứng viên đề xuất</div>
+                    </div>
+                    <div class="vr"></div>
+                    <div class="text-center px-2">
+                        <div class="h3 fw-bold text-primary mb-0 font-monospace">
+                            @Model.Suggestions.Count(s => s.MatchScore >= 75)
+                        </div>
+                        <div class="text-muted text-xs">Độ khớp cao (≥75%)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job Skills requirement chips -->
+            @if (Model.SkillsRequired.Any())
+            {
+                <div class="mt-3 pt-3" style="border-top:1px dashed #E2E8F0;">
+                    <div class="d-flex flex-wrap align-items-center gap-1.5" style="font-size:0.8rem;">
+                        <span class="text-muted fw-semibold me-1"><i class="bi bi-check2-all text-success me-1"></i>Tiêu chí kỹ năng vị trí này yêu cầu:</span>
+                        @foreach (var sk in Model.SkillsRequired)
+                        {
+                            <span class="badge rounded-2 bg-light text-dark border px-2 py-1">@sk</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ── Suggestions List ── -->
+    @if (!Model.Suggestions.Any())
+    {
+        <div class="card border-0 shadow-sm bg-white text-center py-5" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+            <div class="py-4">
+                <div class="d-inline-flex p-3 rounded-circle mb-3" style="background:#F1F5F9; color:#64748B;">
+                    <i class="bi bi-search fs-1"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-1">Hiện chưa có ứng viên nào trong Kho tiềm năng phù hợp với vị trí này</h5>
+                <p class="text-muted small mb-3" style="max-width: 480px; margin: 0 auto;">
+                    Không tìm thấy ứng viên có chức danh hoặc kỹ năng tương đồng với <strong>@Model.JobTitle</strong> trong kho. Bạn có thể duyệt toàn bộ kho tiềm năng để tìm thủ công.
+                </p>
+                <a href="/kho-tiem-nang" class="btn btn-sm btn-outline-primary rounded-2">
+                    <i class="bi bi-collection me-1"></i>Xem tất cả ứng viên trong kho
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h5 class="fw-bold text-dark mb-0" style="font-size: 1rem;">
+                <i class="bi bi-sort-numeric-down text-primary me-1.5"></i>Danh Sách Ứng Viên Gợi Ý (Xếp hạng theo Độ Phù Hợp)
+            </h5>
+            <span class="text-muted text-xs">Tự động tính toán &amp; cập nhật thời gian thực</span>
+        </div>
+
+        <div class="row g-3">
+            @foreach (var s in Model.Suggestions)
+            {
+                var matchClass = s.MatchScore >= 80 ? "match-high" : (s.MatchScore >= 60 ? "match-medium" : "match-low");
+                var matchLabel = s.MatchScore >= 80 ? "Rất phù hợp" : (s.MatchScore >= 60 ? "Phù hợp" : "Khả quan");
+
+                <div class="col-12 col-lg-6">
+                    <div class="suggestion-card p-3.5 h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <!-- Header: Candidate Info & Match Score -->
+                            <div class="d-flex align-items-start justify-content-between gap-3 mb-2.5">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                                         style="width: 46px; height: 46px; border-radius: 10px; background: linear-gradient(135deg, #0F172A 0%, #334155 100%); font-size: 1.15rem;">
+                                        @(s.CandidateFullName.Length > 0 ? s.CandidateFullName.Substring(0, 1).ToUpper() : "C")
+                                    </div>
+                                    <div>
+                                        <a href="/ung-vien/@s.CandidateId" class="fw-bold text-dark text-decoration-none hover-primary mb-0 d-block" style="font-size: 1rem;">
+                                            @s.CandidateFullName
+                                        </a>
+                                        <div class="text-muted small" style="font-size: 0.78rem;">
+                                            Chức danh quan tâm: <strong class="text-dark">@s.TargetJobTitle</strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Match Score Badge -->
+                                <div class="text-end">
+                                    <div class="match-score-badge @matchClass">
+                                        @s.MatchScore%
+                                    </div>
+                                    <div class="text-xs text-muted mt-0.5 fw-medium">@matchLabel</div>
+                                </div>
+                            </div>
+
+                            <!-- Match Progress Bar -->
+                            <div class="progress mb-3" style="height: 6px; border-radius: 3px; background-color: #E2E8F0;">
+                                <div class="progress-bar @(s.MatchScore >= 80 ? "bg-success" : (s.MatchScore >= 60 ? "bg-primary" : "bg-warning"))" 
+                                     role="progressbar" 
+                                     style="width: @s.MatchScore%;" 
+                                     aria-valuenow="@s.MatchScore" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+
+                            <!-- Match Reasons Breakdown -->
+                            <div class="p-2.5 mb-2.5 rounded-2" style="background:#F8FAFC; border: 1px solid #E2E8F0;">
+                                <div class="small fw-semibold text-dark mb-1.5" style="font-size: 0.78rem;">
+                                    <i class="bi bi-magic text-warning me-1"></i>LÝ DO HỆ THỐNG ĐỀ XUẤT:
+                                </div>
+                                <ul class="list-unstyled mb-0 small text-secondary" style="font-size: 0.78rem; line-height: 1.5;">
+                                    @foreach (var reason in s.MatchReasons)
+                                    {
+                                        <li class="d-flex align-items-start gap-1.5 mb-1">
+                                            <i class="bi bi-check-circle-fill text-success flex-shrink-0 mt-0.5" style="font-size: 0.75rem;"></i>
+                                            <span>@reason</span>
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+
+                            <!-- Original Talent Pool Reason (Scrum 45) -->
+                            <div class="p-2 mb-2.5 rounded-2" style="background:#FFFBEB; border: 1px solid #FEF3C7; font-size: 0.78rem;">
+                                <strong class="text-secondary" style="font-size: 0.72rem;">GHI NHẬN TỪ VÒNG TUYỂN DỤNG TRƯỚC:</strong>
+                                <div class="text-dark mt-0.5">
+                                    <i class="bi bi-chat-left-quote me-1 text-warning"></i>@s.Reason
+                                </div>
+                            </div>
+
+                            <!-- Matching Skills Tags -->
+                            @if (s.MatchingSkills.Any())
+                            {
+                                <div class="mb-2">
+                                    <div class="text-xs text-muted mb-1 fw-semibold">Kỹ năng trùng khớp với JD:</div>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @foreach (var msk in s.MatchingSkills)
+                                        {
+                                            <span class="matched-skill-tag"><i class="bi bi-check me-0.5"></i>@msk</span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Candidate Contact details -->
+                            <div class="small text-muted font-monospace mt-2" style="font-size: 0.76rem;">
+                                <i class="bi bi-envelope me-1"></i>@s.CandidateEmail
+                                @if (!string.IsNullOrWhiteSpace(s.CandidatePhone))
+                                {
+                                    <span class="ms-2"><i class="bi bi-telephone me-1"></i>@s.CandidatePhone</span>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Card Footer: Invite Button & Dossier Link -->
+                        <div class="pt-2.5 mt-3 d-flex align-items-center justify-content-between gap-2" style="border-top: 1px solid #F1F5F9;">
+                            <a href="/ung-vien/@s.CandidateId" class="btn btn-sm btn-outline-secondary rounded-2 py-1 px-2.5 text-xs">
+                                <i class="bi bi-person-lines-fill me-1"></i>Xem hồ sơ chi tiết
+                            </a>
+
+                            @if (s.HasAppliedToThisJob)
+                            {
+                                <span class="badge rounded-2 bg-light text-success border px-2.5 py-1.5 text-xs fw-semibold">
+                                    <i class="bi bi-check2-circle me-1"></i>Đã ứng tuyển vị trí này (@s.CurrentApplicationStatus)
+                                </span>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-sm btn-success rounded-2 py-1 px-3 text-xs text-white fw-semibold shadow-sm"
+                                        onclick="openQuickInviteModal('@s.TalentPoolId', '@s.CandidateFullName', '@Model.JobId', '@Model.JobTitle')">
+                                    <i class="bi bi-send-fill me-1"></i>1-Click Mời ứng tuyển ngay
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: XÁC NHẬN MỜI ỨNG TUYỂN VỊ TRÍ NÀY NGAY LẬP TỨC        -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="quickInviteModal" tabindex="-1" aria-labelledby="quickInviteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-0 pb-0">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 rounded-2" style="background:#ECFDF5; color:#059669;">
+                        <i class="bi bi-stars fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="quickInviteModalLabel" style="font-size: 1.05rem;">
+                            Mời Ứng Viên Vào Vị Trí Tuyển Dụng
+                        </h5>
+                        <small class="text-muted" style="font-size: 0.78rem;">Tự động tạo hồ sơ ứng tuyển mới từ kho tiềm năng</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/kho-tiem-nang/moi-ung-tuyen" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="TalentPoolId" id="quickInviteTalentPoolId" />
+                <input type="hidden" name="JobPostingId" id="quickInviteJobPostingId" />
+
+                <div class="modal-body py-3">
+                    <div class="p-3 mb-3 rounded-2" style="background:#F8FAFC; border:1px solid #E2E8F0;">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted small">Ứng viên:</span>
+                            <span class="fw-bold text-dark small" id="quickInviteCandidateName">-</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted small">Vị trí mời tham gia:</span>
+                            <span class="fw-bold text-primary small" id="quickInviteJobTitle">-</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Ghi chú tiếp cận / trao đổi</label>
+                        <textarea name="Note" class="form-control form-control-sm rounded-2" rows="3" placeholder="Ghi chú về việc liên hệ, ứng viên đã được hệ thống gợi ý từ kho tiềm năng..."></textarea>
+                    </div>
+
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="SendEmail" value="true" id="quickInviteSendEmail" checked>
+                        <label class="form-check-label small text-dark fw-medium" for="quickInviteSendEmail">
+                            Gửi email thư mời ứng tuyển vị trí mới cho ứng viên
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-sm btn-light rounded-2 px-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-sm btn-success rounded-2 px-4 text-white fw-semibold">
+                        <i class="bi bi-send-fill me-1"></i>Xác nhận & Mời
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function openQuickInviteModal(talentPoolId, candidateName, jobId, jobTitle) {
+        document.getElementById('quickInviteTalentPoolId').value = talentPoolId;
+        document.getElementById('quickInviteJobPostingId').value = jobId;
+        document.getElementById('quickInviteCandidateName').textContent = candidateName;
+        document.getElementById('quickInviteJobTitle').textContent = jobTitle;
+        new bootstrap.Modal(document.getElementById('quickInviteModal')).show();
+    }
+</script>
+}

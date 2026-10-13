@@ -28,4 +28,5 @@ public class Candidate : BaseEntity
     public ICollection<Application> Applications { get; set; } = new List<Application>();
     public ICollection<CandidateTag> Tags { get; set; } = new List<CandidateTag>();
     public ICollection<CandidateNote> Notes { get; set; } = new List<CandidateNote>();
+    public ICollection<TalentPoolCandidate> TalentPoolEntries { get; set; } = new List<TalentPoolCandidate>();
 }
