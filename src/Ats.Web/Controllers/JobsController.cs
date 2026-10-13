@@ -241,6 +241,8 @@ public class JobsController : Controller
                         ResumeId = resume.Id,
                         CurrentStageId = stageNew.Id,
                         Status = ApplicationStatus.IN_PROCESS,
+                        StageEnteredAt = DateTimeOffset.UtcNow,
+                        IsSlaOverdue = false,
                         AppliedAt = DateTimeOffset.UtcNow,
                         CreatedAt = DateTimeOffset.UtcNow,
                         UpdatedAt = DateTimeOffset.UtcNow,

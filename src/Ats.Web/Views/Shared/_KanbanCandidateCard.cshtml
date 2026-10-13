@@ -1,19 +1,21 @@
 @model Ats.Web.Models.ViewModels.Workspace.CandidatePipelineItemDto
 
-<div id="kanban-card-@Model.ApplicationId" class="kanban-candidate-card"
+<div id="kanban-card-@Model.ApplicationId" class="kanban-candidate-card @(Model.IsOverdueSla ? "border-danger-subtle shadow-sm" : "")"
      draggable="true"
      data-application-id="@Model.ApplicationId"
      data-candidate-name="@Model.CandidateName"
      data-job-id="@Model.JobPostingId"
      data-stage-order="@Model.CurrentStageOrder"
      data-status="@Model.Status"
+     data-is-overdue="@(Model.IsOverdueSla ? "true" : "false")"
      data-name="@Model.CandidateName.ToLower()"
      data-email="@Model.CandidateEmail.ToLower()"
      data-job="@Model.JobTitle.ToLower()"
-     title="Ứng viên: @Model.CandidateName&#10;Email: @Model.CandidateEmail&#10;SĐT: @(string.IsNullOrEmpty(Model.CandidatePhone) ? "Chưa có" : Model.CandidatePhone)"
+     title="Ứng viên: @Model.CandidateName&#10;Email: @Model.CandidateEmail&#10;SĐT: @(string.IsNullOrEmpty(Model.CandidatePhone) ? "Chưa có" : Model.CandidatePhone)@(Model.IsOverdueSla ? $"\n⚠️ Quá hạn SLA {Model.OverdueDays} ngày (Đã ở giai đoạn này {Model.DaysInCurrentStage}/{Model.SlaDays} ngày)" : "")"
      ondragstart="onKanbanCardDragStart(event)"
      ondragend="onKanbanCardDragEnd(event)"
-     onclick="openCandidateDetailModal('@Model.ApplicationId')">
+     onclick="openCandidateDetailModal('@Model.ApplicationId')"
+     style="@(Model.IsOverdueSla ? "border-left: 3.5px solid #DC2626 !important;" : "")">
 
     <!-- Popover hiển thị nhanh thông tin liên lạc khi hover thẻ ở chế độ Thu gọn -->
     <div class="kanban-card-hover-popover">
@@ -22,12 +24,16 @@
         {
             <div class="mt-0.5"><i class="bi bi-telephone text-success me-1"></i>@Model.CandidatePhone</div>
         }
+        @if (Model.IsOverdueSla)
+        {
+            <div class="mt-1 text-danger fw-bold"><i class="bi bi-flag-fill me-1"></i>Quá hạn SLA +@Model.OverdueDays ngày</div>
+        }
     </div>
 
     <!-- Header thẻ: Avatar, Tên ứng viên, Tag vị trí & Menu thao tác -->
     <div class="d-flex justify-content-between align-items-start mb-1" style="gap: 4px;">
         <div class="d-flex align-items-center gap-1.5" style="min-width: 0; flex: 1;">
-            <div class="kanban-card-avatar flex-shrink-0">
+            <div class="kanban-card-avatar flex-shrink-0" style="@(Model.IsOverdueSla ? "background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA;" : "")">
                 @(string.IsNullOrEmpty(Model.CandidateName) ? "?" : Model.CandidateName.Substring(0, 1).ToUpper())
             </div>
             <div style="min-width: 0; flex: 1;">
@@ -92,6 +98,12 @@
             <i class="bi bi-clock me-1"></i>@Model.AppliedDateDisplay
         </span>
         <div class="d-flex align-items-center gap-1">
+            @if (Model.IsOverdueSla)
+            {
+                <span class="badge py-1 px-1.5" style="background:#FEF2F2; color:#DC2626; border:1px solid #FECACA; font-size:0.66rem; font-weight:700;" title="Quá hạn SLA: Đã ở giai đoạn này @Model.DaysInCurrentStage ngày (ngưỡng: @Model.SlaDays ngày)">
+                    <i class="bi bi-flag-fill text-danger me-0.5"></i>SLA +@Model.OverdueDays d
+                </span>
+            }
             @if (!string.IsNullOrEmpty(Model.ResumeFilePath))
             {
                 <a href="@Model.ResumeFilePath" target="_blank" class="candidate-cv-pill" title="Xem CV đính kèm" style="font-size: 0.7rem; padding: 2px 7px;">

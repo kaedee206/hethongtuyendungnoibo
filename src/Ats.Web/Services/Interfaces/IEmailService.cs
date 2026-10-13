@@ -71,4 +71,16 @@ public interface IEmailService
         string jobTitle,
         string? reason,
         CancellationToken cancellationToken = default);
+
+    Task<bool> SendSlaOverdueAlertAsync(
+        string recruiterEmail,
+        string recruiterName,
+        string candidateName,
+        string candidateEmail,
+        string jobTitle,
+        string stageName,
+        int daysInStage,
+        int slaDays,
+        int overdueDays,
+        CancellationToken cancellationToken = default);
 }

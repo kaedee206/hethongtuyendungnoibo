@@ -422,6 +422,22 @@ public class HomeController : Controller
             {
                 var candName = $"{a.Candidate.FirstName} {a.Candidate.LastName}".Trim();
                 var primaryResume = a.Candidate.Resumes.FirstOrDefault(r => r.IsPrimary) ?? a.Candidate.Resumes.FirstOrDefault();
+
+                var enteredAt = a.StageEnteredAt ?? a.AppliedAt ?? a.CreatedAt;
+                var daysInStage = (int)(nowUtc - enteredAt).TotalDays;
+                var isOverdue = false;
+                var overdueDays = 0;
+                var slaDays = a.CurrentStage?.SlaDays ?? 3;
+
+                if (a.CurrentStage != null && a.CurrentStage.IsSlaEnabled && slaDays > 0)
+                {
+                    if (daysInStage >= slaDays)
+                    {
+                        isOverdue = true;
+                        overdueDays = Math.Max(1, daysInStage - slaDays);
+                    }
+                }
+
                 return new CandidatePipelineItemDto
                 {
                     ApplicationId = a.Id,
@@ -432,16 +448,22 @@ public class HomeController : Controller
                     CandidatePhone = a.Candidate.Phone ?? "Chưa có",
                     JobTitle = a.JobPosting.Title,
                     CurrentStageId = a.CurrentStageId,
-                    CurrentStageName = a.CurrentStage.Name,
-                    CurrentStageOrder = a.CurrentStage.StageOrder,
-                    StageColor = a.CurrentStage.ColorCode ?? "#059669",
+                    CurrentStageName = a.CurrentStage?.Name ?? "Chưa phân loại",
+                    CurrentStageOrder = a.CurrentStage?.StageOrder ?? 1,
+                    StageColor = a.CurrentStage?.ColorCode ?? "#059669",
                     AppliedDateDisplay = a.AppliedAt.HasValue ? a.AppliedAt.Value.ToString("dd/MM/yyyy") : a.CreatedAt.ToString("dd/MM/yyyy"),
                     Status = a.Status.ToString(),
                     Rating = a.Rating,
                     ResumeFileName = primaryResume?.FileName ?? "CV_UngVien.pdf",
-                    ResumeFilePath = primaryResume?.FilePath ?? "#"
+                    ResumeFilePath = primaryResume?.FilePath ?? "#",
+                    IsOverdueSla = isOverdue,
+                    SlaDays = slaDays,
+                    DaysInCurrentStage = daysInStage,
+                    OverdueDays = overdueDays
                 };
             }).ToList();
+
+            model.OverdueSlaCandidateCount = model.CandidatePipelineItems.Count(x => x.IsOverdueSla);
 
             // Load thông báo gần nhất cho nhân sự
             if (userId != Guid.Empty)
