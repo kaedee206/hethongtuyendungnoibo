@@ -1189,8 +1189,22 @@
                                                                 {
                                                                     <li><hr class="dropdown-divider my-1"></li>
                                                                     <li>
+                                                                        <a class="dropdown-item text-primary" href="javascript:void(0)" onclick="CandidateStageManager.openHistoryModal('@cand.ApplicationId', '@cand.CandidateName')">
+                                                                            <i class="bi bi-clock-history text-primary"></i> Dòng thời gian giai đoạn
+                                                                        </a>
+                                                                    </li>
+                                                                    <li>
                                                                         <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="openRejectModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
                                                                             <i class="bi bi-x-circle text-danger"></i> Từ chối hồ sơ
+                                                                        </a>
+                                                                    </li>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <li><hr class="dropdown-divider my-1"></li>
+                                                                    <li>
+                                                                        <a class="dropdown-item text-primary" href="javascript:void(0)" onclick="CandidateStageManager.openHistoryModal('@cand.ApplicationId', '@cand.CandidateName')">
+                                                                            <i class="bi bi-clock-history text-primary"></i> Dòng thời gian giai đoạn
                                                                         </a>
                                                                     </li>
                                                                 }
@@ -3242,6 +3256,11 @@
         }
 
         function openRejectModal(applicationId, candidateName, jobTitle) {
+            if (window.CandidateStageManager && typeof window.CandidateStageManager.openRejectModal === 'function') {
+                CandidateStageManager.openRejectModal(applicationId, candidateName, jobTitle);
+                return;
+            }
+
             document.getElementById('rejectApplicationId').value = applicationId;
             document.getElementById('rejectCandidateName').textContent = candidateName || 'Ứng viên';
             document.getElementById('rejectJobTitle').textContent = jobTitle || 'Vị trí';

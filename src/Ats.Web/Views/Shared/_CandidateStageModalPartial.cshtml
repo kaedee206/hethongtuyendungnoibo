@@ -1,0 +1,215 @@
+@using Ats.Web.Constants
+@using Ats.Web.Models.Enums
+@{
+    var isHrManager = User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Admin);
+}
+
+<!-- ========================================================================================= -->
+<!-- 1. MODAL LOẠI ỨNG VIÊN (REJECT MODAL - SCRUM-42)                                           -->
+<!-- ========================================================================================= -->
+<div class="modal fade" id="candidateRejectModal" tabindex="-1" aria-labelledby="candidateRejectModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-danger text-white border-0 py-3 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-white bg-opacity-25 p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                        <i class="bi bi-person-x-fill fs-5 text-white"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="candidateRejectModalLabel">Xác nhận Loại hồ sơ ứng viên</h5>
+                        <small class="text-white text-opacity-75" style="font-size: 0.8rem;">Ghi nhận lý do chuẩn hóa để phân tích tỷ lệ rơi rụng (drop-off rate)</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form id="formRejectCandidate" onsubmit="CandidateStageManager.submitReject(event); return false;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="stageRejectAppId" name="ApplicationId" value="" />
+                <input type="hidden" name="ToStage" value="@((int)CandidateStage.REJECTED)" />
+
+                <div class="modal-body p-4">
+                    <!-- Thông tin ứng viên -->
+                    <div class="p-3 mb-3 rounded-3" style="background-color: #FEF2F2; border: 1px solid #FEE2E2;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="text-muted small">Ứng viên:</div>
+                                <div class="fw-bold text-danger fs-6" id="stageRejectCandidateName">---</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="text-muted small">Vị trí:</div>
+                                <div class="fw-semibold text-dark small" id="stageRejectJobTitle">---</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown lý do loại (Bắt buộc) -->
+                    <div class="mb-3">
+                        <label for="stageRejectReasonSelect" class="form-label fw-semibold text-dark small">
+                            Lý do loại hồ sơ <span class="text-danger">*</span>
+                        </label>
+                        <div class="position-relative">
+                            <select id="stageRejectReasonSelect" name="RejectionReasonId" class="form-select" required style="border-radius: 8px;">
+                                <option value="">-- Đang tải danh mục lý do... --</option>
+                            </select>
+                            <div id="stageRejectReasonLoading" class="position-absolute end-0 top-50 translate-middle-y me-3 d-none">
+                                <span class="spinner-border spinner-border-sm text-secondary" role="status"></span>
+                            </div>
+                        </div>
+                        <div class="form-text small text-muted">
+                            <i class="bi bi-info-circle me-1"></i>Bắt buộc chọn một lý do chuẩn hóa từ danh mục theo quy tắc SCRUM-42.
+                        </div>
+                    </div>
+
+                    <!-- Ghi chú chi tiết (Tùy chọn, tối đa 500 ký tự) -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label for="stageRejectNote" class="form-label fw-semibold text-dark small mb-0">
+                                Ghi chú / Phản hồi chi tiết
+                            </label>
+                            <span class="text-muted small" id="stageRejectCharCounter">0/500 ký tự</span>
+                        </div>
+                        <textarea id="stageRejectNote" name="Note" class="form-control" rows="3" maxlength="500"
+                                  placeholder="Nhập nhận xét cụ thể về lý do chưa phù hợp, điểm cần lưu ý cho các đợt tuyển sau..."
+                                  style="border-radius: 8px; resize: none;"
+                                  oninput="CandidateStageManager.updateRejectCharCount(this)"></textarea>
+                    </div>
+
+                    <!-- Alert thông báo lỗi client/server -->
+                    <div id="stageRejectErrorAlert" class="alert alert-danger py-2 px-3 small d-none mb-0" role="alert" style="border-radius: 8px;">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        <span id="stageRejectErrorMessage"></span>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light border-0 py-3 px-4 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal" style="border-radius: 6px;">
+                        Hủy bỏ
+                    </button>
+                    <button type="submit" id="btnConfirmRejectCandidate" class="btn btn-danger px-4 fw-semibold d-flex align-items-center gap-2" style="border-radius: 6px;">
+                        <span id="spinnerRejectCandidate" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        <i class="bi bi-x-circle-fill"></i>
+                        <span>Xác nhận loại hồ sơ</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================================= -->
+<!-- 2. MODAL CẢNH BÁO NHẢY CÓC LÊN OFFER (SKIP INTERVIEW WARNING MODAL - SCRUM-42)           -->
+<!-- ========================================================================================= -->
+<div class="modal fade" id="skipInterviewOfferModal" tabindex="-1" aria-labelledby="skipInterviewOfferModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-warning text-dark border-0 py-3 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-dark bg-opacity-10 p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                        <i class="bi bi-shield-exclamation fs-5 text-dark"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="skipInterviewOfferModalLabel">Rào chắn Đề xuất Offer (Offer Barrier)</h5>
+                        <small class="text-dark text-opacity-75" style="font-size: 0.8rem;">Cảnh báo: Ứng viên chưa trải qua giai đoạn Phỏng vấn (INTERVIEW)</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form id="formSkipInterviewOffer" onsubmit="CandidateStageManager.submitSkipInterviewOffer(event); return false;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="skipInterviewAppId" name="ApplicationId" value="" />
+                <input type="hidden" name="ToStage" value="@((int)CandidateStage.OFFER)" />
+
+                <div class="modal-body p-4">
+                    <!-- Thông tin ứng viên & giai đoạn hiện tại -->
+                    <div class="p-3 mb-3 rounded-3" style="background-color: #FFFBEB; border: 1px solid #FEF3C7;">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="text-muted small">Ứng viên:</div>
+                                <div class="fw-bold text-dark" id="skipInterviewCandidateName">---</div>
+                            </div>
+                            <div class="col-6 text-end">
+                                <div class="text-muted small">Giai đoạn hiện tại:</div>
+                                <span class="badge bg-secondary px-2 py-1" id="skipInterviewFromStageBadge">---</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quy tắc nghiệp vụ cảnh báo -->
+                    <div class="alert alert-warning d-flex align-items-start gap-2 mb-3 py-2 px-3 small border-0" style="background: #FFF7ED; color: #9A3412; border-radius: 8px;">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 mt-1 text-warning flex-shrink-0"></i>
+                        <div>
+                            <strong>Quy tắc ATS:</strong> Ứng viên chỉ được chuyển thẳng đến giai đoạn OFFER nếu đã hoàn thành giai đoạn Phỏng vấn (INTERVIEW). Nghiêm cấm nhảy cóc từ vòng hồ sơ lên OFFER trừ trường hợp được duyệt đặc cách bởi <strong>Trưởng phòng Nhân sự (HRManager)</strong>.
+                        </div>
+                    </div>
+
+                    @if (isHrManager)
+                    {
+                        <!-- DÀNH CHO HR MANAGER: CỜ XÁC NHẬN ĐẶC CÁCH -->
+                        <div class="p-3 mb-3 rounded-3" style="background-color: #EFF6FF; border: 1px solid #DBEAFE;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="chkSkipInterviewConfirmedByHrManager" 
+                                       name="SkipInterviewConfirmedByHrManager" value="true"
+                                       onchange="CandidateStageManager.toggleSkipInterviewSubmitBtn(this.checked)">
+                                <label class="form-check-label fw-bold text-primary small" for="chkSkipInterviewConfirmedByHrManager">
+                                    Tôi là Trưởng phòng Nhân sự và xác nhận duyệt đặc cách bỏ qua vòng phỏng vấn đối với ứng viên này.
+                                </label>
+                            </div>
+                            <div class="form-text small text-muted mt-1 ps-4">
+                                Cờ xác nhận <code>SkipInterviewConfirmedByHrManager = true</code> sẽ được lưu vào lịch sử kiểm toán của hệ thống.
+                            </div>
+                        </div>
+
+                        <!-- Ghi chú giải trình lý do duyệt đặc cách -->
+                        <div class="mb-3">
+                            <label for="skipInterviewNote" class="form-label fw-semibold text-dark small mb-1">
+                                Ghi chú giải trình lý do đặc cách <span class="text-danger">*</span>
+                            </label>
+                            <textarea id="skipInterviewNote" name="Note" class="form-control" rows="2" maxlength="500" required
+                                      placeholder="Ví dụ: Bổ nhiệm cán bộ cấp cao (C-Level) theo Nghị quyết BOD / Chuyển nội bộ tương đương đã qua đánh giá..."
+                                      style="border-radius: 8px;"></textarea>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- DÀNH CHO RECRUITER / USER THƯỜNG: KHÔNG ĐƯỢC PHÉP DUYỆT ĐẶC CÁCH -->
+                        <div class="alert alert-danger d-flex align-items-center gap-2 mb-3 py-2 px-3 small" style="border-radius: 8px;">
+                            <i class="bi bi-x-octagon-fill fs-5 text-danger flex-shrink-0"></i>
+                            <div>
+                                <strong>Không có quyền thao tác:</strong> Tài khoản của bạn không có vai trò <strong>Trưởng phòng Nhân sự (HRManager)</strong>. Bạn bắt buộc phải chuyển ứng viên qua vòng <strong>Phỏng vấn (INTERVIEW)</strong> trước khi tạo Offer, hoặc liên hệ Trưởng phòng Nhân sự để phê duyệt đặc cách.
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Alert thông báo lỗi -->
+                    <div id="skipInterviewErrorAlert" class="alert alert-danger py-2 px-3 small d-none mb-0" role="alert" style="border-radius: 8px;">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        <span id="skipInterviewErrorMessage"></span>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light border-0 py-3 px-4 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal" style="border-radius: 6px;">
+                        Đóng
+                    </button>
+                    @if (isHrManager)
+                    {
+                        <button type="submit" id="btnConfirmSkipInterviewOffer" class="btn btn-warning px-4 fw-semibold d-flex align-items-center gap-2 text-dark" 
+                                style="border-radius: 6px;" disabled>
+                            <span id="spinnerSkipInterviewOffer" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <i class="bi bi-check2-circle"></i>
+                            <span>Xác nhận đặc cách sang Offer</span>
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-secondary px-4 fw-semibold" style="border-radius: 6px;" disabled title="Yêu cầu vai trò Trưởng phòng Nhân sự">
+                            <i class="bi bi-lock-fill me-1"></i>Bị khóa (Cần quyền HRManager)
+                        </button>
+                    }
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

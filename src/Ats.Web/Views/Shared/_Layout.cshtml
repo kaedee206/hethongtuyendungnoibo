@@ -432,6 +432,13 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/instant-search.js" asp-append-version="true"></script>
     <script src="~/js/sidebar.js" asp-append-version="true"></script>
+    <script src="~/js/candidate-stage.js" asp-append-version="true"></script>
+
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        @await Html.PartialAsync("_CandidateStageModalPartial")
+        @await Html.PartialAsync("_CandidateStageHistoryPartial")
+    }
 
     <div id="globalAntiforgeryContainer" class="d-none">
         @Html.AntiForgeryToken()

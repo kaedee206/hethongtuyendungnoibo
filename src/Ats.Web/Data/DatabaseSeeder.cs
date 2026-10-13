@@ -843,6 +843,23 @@ public static class DatabaseSeeder
             await context.SaveChangesAsync();
         }
 
+        // 17. Seed RejectionReasons (SCRUM-42)
+        if (!await context.RejectionReasons.AnyAsync())
+        {
+            var rejectionReasons = new List<RejectionReason>
+            {
+                new() { Id = Guid.NewGuid(), Code = "REJ_SKILL", Name = "Chuyên môn chưa đạt yêu cầu", Description = "Kỹ năng kỹ thuật hoặc năng lực chuyên môn chưa đáp ứng yêu cầu của vị trí tuyển dụng", DisplayOrder = 1, IsActive = true },
+                new() { Id = Guid.NewGuid(), Code = "REJ_EXP", Name = "Chưa đủ số năm kinh nghiệm", Description = "Số năm kinh nghiệm làm việc thực tế chưa đạt mức kỳ vọng của vị trí", DisplayOrder = 2, IsActive = true },
+                new() { Id = Guid.NewGuid(), Code = "REJ_SALARY", Name = "Không thỏa thuận được mức lương", Description = "Kỳ vọng thu nhập của ứng viên vượt khung ngân sách hoặc chế độ đãi ngộ của công ty", DisplayOrder = 3, IsActive = true },
+                new() { Id = Guid.NewGuid(), Code = "REJ_CULTURE", Name = "Chưa phù hợp văn hóa doanh nghiệp", Description = "Phong cách làm việc hoặc giá trị cốt lõi chưa tương thích với văn hóa đội ngũ", DisplayOrder = 4, IsActive = true },
+                new() { Id = Guid.NewGuid(), Code = "REJ_WITHDRAW", Name = "Ứng viên chủ động rút lui", Description = "Ứng viên nhận được offer khác hoặc rút hồ sơ vì lý do cá nhân", DisplayOrder = 5, IsActive = true },
+                new() { Id = Guid.NewGuid(), Code = "REJ_LOCATION", Name = "Địa điểm làm việc không thuận tiện", Description = "Khoảng cách địa lý không phù hợp hoặc không đáp ứng thời gian làm việc tại văn phòng", DisplayOrder = 6, IsActive = true },
+                new() { Id = Guid.NewGuid(), Code = "REJ_OTHER", Name = "Lý do khác", Description = "Các lý do loại hồ sơ phát sinh khác", DisplayOrder = 7, IsActive = true }
+            };
+            await context.RejectionReasons.AddRangeAsync(rejectionReasons);
+            await context.SaveChangesAsync();
+        }
+
         await context.SaveChangesAsync();
     }
 }

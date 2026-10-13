@@ -49,6 +49,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ApprovalRule> ApprovalRules { get; set; }
     public DbSet<ApprovalRuleStep> ApprovalRuleSteps { get; set; }
 
+    // SCRUM-42: Quản lý giai đoạn ứng viên & Danh mục lý do loại
+    public DbSet<RejectionReason> RejectionReasons { get; set; }
+    public DbSet<CandidateStageHistory> CandidateStageHistories { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -290,5 +294,35 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(cf => cf.AssignedPositions)
             .HasForeignKey(jp => jp.CompetencyFrameworkId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // SCRUM-42: Candidate stage management & rejection reasons
+        modelBuilder.Entity<CandidateStageHistory>(entity =>
+        {
+            entity.HasOne(h => h.Application)
+                .WithMany(a => a.CandidateStageHistories)
+                .HasForeignKey(h => h.ApplicationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(h => h.RejectionReason)
+                .WithMany(r => r.StageHistories)
+                .HasForeignKey(h => h.RejectionReasonId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(h => h.ChangedByUser)
+                .WithMany()
+                .HasForeignKey(h => h.ChangedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(h => h.ApplicationId);
+            entity.HasIndex(h => h.ToStage);
+            entity.HasIndex(h => h.CreatedAt);
+        });
+
+        modelBuilder.Entity<RejectionReason>(entity =>
+        {
+            entity.HasIndex(r => r.Code).IsUnique();
+            entity.HasIndex(r => r.IsActive);
+            entity.HasIndex(r => r.DisplayOrder);
+        });
     }
 }

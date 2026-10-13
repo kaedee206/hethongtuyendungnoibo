@@ -1,0 +1,108 @@
+<!-- ========================================================================================= -->
+<!-- 3. COMPONENT LỊCH SỬ DÒNG THỜI GIAN (STAGE HISTORY TIMELINE - SCRUM-42)                   -->
+<!-- ========================================================================================= -->
+<div class="modal fade" id="candidateStageHistoryModal" tabindex="-1" aria-labelledby="candidateStageHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header border-bottom py-3 px-4" style="background: #F8FAFC;">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <i class="bi bi-clock-history fs-5 text-primary"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="candidateStageHistoryModalLabel">
+                            Dòng thời gian chuyển giai đoạn (Stage Timeline)
+                        </h5>
+                        <div class="text-muted small" style="font-size: 0.8rem;">
+                            Ứng viên: <strong class="text-dark" id="historyCandidateNameHeader">---</strong> &middot; 
+                            Mã hồ sơ: <span class="font-monospace text-secondary" id="historyAppIdHeader">---</span>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <!-- Spinner Loading -->
+                <div id="stageHistoryLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang tải lịch sử...</span>
+                    </div>
+                    <div class="text-muted small mt-2">Đang nạp dòng thời gian tuyển dụng...</div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="stageHistoryEmpty" class="text-center py-5 d-none">
+                    <div class="rounded-circle bg-light d-inline-flex p-3 mb-2 text-muted">
+                        <i class="bi bi-journal-x fs-1"></i>
+                    </div>
+                    <h6 class="text-secondary fw-semibold">Chưa có lịch sử chuyển giai đoạn</h6>
+                    <p class="text-muted small mb-0">Hồ sơ ứng viên này chưa ghi nhận lần chuyển giai đoạn nào.</p>
+                </div>
+
+                <!-- Timeline Container -->
+                <div id="stageHistoryTimelineContainer" class="d-none">
+                    <div class="candidate-stage-timeline ps-3 pe-2 position-relative">
+                        <!-- Các mốc lịch sử sẽ được nạp động qua JavaScript vào đây -->
+                        <div id="stageHistoryItems"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light border-0 py-3 px-4">
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" style="border-radius: 6px;">
+                    Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* CSS Timeline chuyên nghiệp cho Lịch sử giai đoạn ứng viên */
+.candidate-stage-timeline {
+    border-left: 2px solid #E2E8F0;
+    margin-left: 1rem;
+    padding-left: 1.5rem;
+}
+
+.timeline-step-item {
+    position: relative;
+    padding-bottom: 1.75rem;
+}
+
+.timeline-step-item:last-child {
+    padding-bottom: 0;
+}
+
+.timeline-step-dot {
+    position: absolute;
+    left: -2.05rem;
+    top: 0.2rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 50%;
+    border: 3px solid #FFFFFF;
+    box-shadow: 0 0 0 2px #CBD5E1;
+}
+
+.timeline-dot-applied    { background-color: #0D6EFD; box-shadow: 0 0 0 2px #BFDBFE; }
+.timeline-dot-screening  { background-color: #6C757D; box-shadow: 0 0 0 2px #E2E8F0; }
+.timeline-dot-interview  { background-color: #0DCAF0; box-shadow: 0 0 0 2px #A5F3FC; }
+.timeline-dot-offer      { background-color: #FD7E14; box-shadow: 0 0 0 2px #FED7AA; }
+.timeline-dot-hired      { background-color: #198754; box-shadow: 0 0 0 2px #BBF7D0; }
+.timeline-dot-rejected   { background-color: #DC3545; box-shadow: 0 0 0 2px #FECACA; }
+
+.timeline-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.timeline-card:hover {
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    transform: translateY(-1px);
+}
+</style>
