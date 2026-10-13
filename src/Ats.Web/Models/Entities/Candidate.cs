@@ -1,4 +1,4 @@
-﻿using Ats.Web.Models.Enums;
+using Ats.Web.Models.Enums;
 
 namespace Ats.Web.Models.Entities;
 
@@ -26,4 +26,6 @@ public class Candidate : BaseEntity
     public User? ReferrerUser { get; set; }
     public ICollection<Resume> Resumes { get; set; } = new List<Resume>();
     public ICollection<Application> Applications { get; set; } = new List<Application>();
+    public ICollection<CandidateTag> Tags { get; set; } = new List<CandidateTag>();
+    public ICollection<CandidateNote> Notes { get; set; } = new List<CandidateNote>();
 }

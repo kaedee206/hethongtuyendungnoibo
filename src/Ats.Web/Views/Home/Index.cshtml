@@ -937,6 +937,9 @@
                                 <small class="text-muted">Chuyển tiếp giai đoạn tuyển chọn, lên lịch phỏng vấn, thẩm định và phát hành offer trực tiếp</small>
                             </div>
                             <div class="d-flex align-items-center gap-2 w-100 w-md-auto">
+                                <a href="/ung-vien" class="btn btn-sm btn-outline-success fw-semibold text-nowrap rounded-2" style="font-size: 0.8rem;">
+                                    <i class="bi bi-person-lines-fill me-1"></i>Hồ sơ hợp nhất
+                                </a>
                                 <div class="input-group input-group-sm position-relative" style="max-width: 320px;">
                                     <span class="input-group-text bg-light border-end-0" style="border-color: #E2E8F0;"><i class="bi bi-search text-muted"></i></span>
                                     <input type="text" id="candidateSearchInput" class="form-control border-start-0 pe-4" placeholder="Tìm tên, email, vị trí... (từ 3 ký tự)" style="border-color: #E2E8F0; font-size: 0.82rem;" autocomplete="off" />
@@ -1082,6 +1085,11 @@
                                                                 <i class="bi bi-three-dots-vertical"></i>
                                                             </button>
                                                             <ul class="dropdown-menu dropdown-menu-end candidate-dropdown-menu shadow-sm">
+                                                                <li>
+                                                                    <a class="dropdown-item fw-semibold text-success" href="/ung-vien/@cand.CandidateId">
+                                                                        <i class="bi bi-person-lines-fill text-success"></i> Xem hồ sơ hợp nhất
+                                                                    </a>
+                                                                </li>
                                                                 <li>
                                                                     <a class="dropdown-item" href="javascript:void(0)" onclick="openCandidateDetailModal('@cand.ApplicationId')">
                                                                         <i class="bi bi-eye text-primary"></i> Xem chi tiết hồ sơ

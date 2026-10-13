@@ -1,0 +1,49 @@
+@model Ats.Web.Models.ViewModels.Candidates.CandidateDetailsViewModel
+@{
+    ViewData["Title"] = "Từ chối truy cập hồ sơ ứng viên";
+    Layout = "_Layout";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card border-0 shadow-sm text-center p-4 p-md-5 bg-white" style="border: 1px solid #FEE2E2 !important; border-radius: 16px;">
+                <div class="mb-4">
+                    <div class="d-inline-flex align-items-center justify-content-center text-danger rounded-circle p-3" style="background: #FEF2F2; width: 80px; height: 80px;">
+                        <i class="bi bi-shield-lock-fill display-4"></i>
+                    </div>
+                </div>
+
+                <h4 class="fw-bold text-dark mb-2">Truy Cập Bị Từ Chối (403 Forbidden)</h4>
+                
+                <p class="text-secondary mb-4" style="font-size: 0.95rem; line-height: 1.6;">
+                    @(Model.AccessDeniedReason ?? "Bạn không có quyền truy cập hồ sơ ứng viên hợp nhất này. Theo chính sách bảo mật ATS, chỉ Chuyên viên tuyển dụng phụ trách hoặc Quản lý chuyên môn (Hiring Manager) của vị trí ứng viên đã nộp đơn mới có quyền xem.")
+                </p>
+
+                <div class="p-3 rounded-2 bg-light text-start mb-4 border" style="font-size: 0.8rem; border-color: #E2E8F0 !important;">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Ứng viên:</span>
+                        <span class="fw-semibold text-dark">@Model.FullName (@Model.Email)</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Vai trò hiện tại của bạn:</span>
+                        <span class="badge rounded-2 bg-secondary text-white">@Model.CurrentUserRole</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Chính sách bảo vệ:</span>
+                        <span class="text-success fw-medium"><i class="bi bi-shield-check me-1"></i>Nghị định 13/2023/NĐ-CP &amp; OWASP Top 10</span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="/dashboard/ung-vien" class="btn btn-primary rounded-2 px-4 py-2 text-white fw-semibold">
+                        <i class="bi bi-arrow-left me-1"></i>Quay lại Pipeline
+                    </a>
+                    <a href="/dashboard" class="btn btn-outline-secondary rounded-2 px-4 py-2 fw-semibold">
+                        <i class="bi bi-house-door me-1"></i>Bàn làm việc
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
