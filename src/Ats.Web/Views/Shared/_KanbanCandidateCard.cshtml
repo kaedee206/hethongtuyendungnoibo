@@ -10,18 +10,20 @@
      data-name="@Model.CandidateName.ToLower()"
      data-email="@Model.CandidateEmail.ToLower()"
      data-job="@Model.JobTitle.ToLower()"
-     title="Ứng viên: @Model.CandidateName&#10;Email: @Model.CandidateEmail&#10;SĐT: @(string.IsNullOrEmpty(Model.CandidatePhone) ? "Chưa có" : Model.CandidatePhone)"
+     title="Ứng viên: @Model.CandidateName&#10;Email: @Model.CandidateEmail&#10;SĐT: @(string.IsNullOrEmpty(Model.CandidatePhone) ? "Chưa có" : Model.CandidatePhone)&#10;Ngày nộp: @Model.AppliedDateDisplay (Sắp xếp mới nhất)&#10;Gợi ý: Kéo thả thẻ sang cột khác để chuyển giai đoạn"
      ondragstart="onKanbanCardDragStart(event)"
      ondragend="onKanbanCardDragEnd(event)"
      onclick="openCandidateDetailModal('@Model.ApplicationId')">
 
-    <!-- Popover hiển thị nhanh thông tin liên lạc khi hover thẻ ở chế độ Thu gọn -->
+    <!-- Popover hiển thị nhanh thông tin liên lạc và gợi ý khi hover thẻ ở chế độ Thu gọn -->
     <div class="kanban-card-hover-popover">
         <div><i class="bi bi-envelope text-info me-1"></i>@Model.CandidateEmail</div>
         @if (!string.IsNullOrEmpty(Model.CandidatePhone) && Model.CandidatePhone != "Chưa có")
         {
             <div class="mt-0.5"><i class="bi bi-telephone text-success me-1"></i>@Model.CandidatePhone</div>
         }
+        <div class="mt-0.5 text-muted" style="font-size: 0.7rem;"><i class="bi bi-clock-history text-secondary me-1"></i>Nộp: @Model.AppliedDateDisplay</div>
+        <div class="mt-0.5 text-primary" style="font-size: 0.68rem;"><i class="bi bi-hand-index-thumb me-1"></i>Gợi ý: Kéo thả để điều phối</div>
     </div>
 
     <!-- Header thẻ: Avatar, Tên ứng viên, Tag vị trí & Menu thao tác -->

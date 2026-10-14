@@ -3395,8 +3395,6 @@
             const searchInput = document.getElementById('candidateSearchInput');
             const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
 
-            const cards = Array.from(document.querySelectorAll('.kanban-candidate-card'));
-
             const counts = {
                 1: 0, // Hồ sơ mới
                 2: 0, // Sàng lọc
@@ -3406,42 +3404,73 @@
                 7: 0  // Loại
             };
 
-            cards.forEach(card => {
-                const cardJobId = card.getAttribute('data-job-id') || '';
-                const cardStageOrder = parseInt(card.getAttribute('data-stage-order') || '1', 10);
-                const cardStatus = card.getAttribute('data-status') || '';
-                const name = card.getAttribute('data-name') || '';
-                const email = card.getAttribute('data-email') || '';
-                const job = card.getAttribute('data-job') || '';
+            const stageCardsMap = {
+                1: [],
+                2: [],
+                3: [],
+                5: [],
+                6: [],
+                7: []
+            };
 
-                // Job match
-                const jobMatch = (selectedJob === 'ALL' || cardJobId.toLowerCase() === selectedJob.toLowerCase());
+            const MAX_VISIBLE_CARDS_PER_COLUMN = 5;
 
-                // Search match (từ 3 ký tự trở lên)
-                const combined = `${name} ${email} ${job}`;
-                const textMatch = !query || query.length < 3 || combined.includes(query);
+            // Thu thập thẻ khớp bộ lọc theo từng cột giai đoạn
+            [1, 2, 3, 5, 6, 7].forEach(order => {
+                const zone = document.getElementById('kanbanDropZone-' + order);
+                if (!zone) return;
 
-                if (jobMatch && textMatch) {
-                    card.style.display = '';
-                    if (cardStatus === 'REJECTED' || cardStageOrder === 7) {
-                        counts[7]++;
-                    } else if (cardStageOrder === 1) {
-                        counts[1]++;
-                    } else if (cardStageOrder === 2) {
-                        counts[2]++;
-                    } else if (cardStageOrder === 3 || cardStageOrder === 4) {
-                        counts[3]++;
-                    } else if (cardStageOrder === 5) {
-                        counts[5]++;
-                    } else if (cardStageOrder === 6) {
-                        counts[6]++;
+                const zoneCards = Array.from(zone.querySelectorAll('.kanban-candidate-card'));
+                zoneCards.forEach(card => {
+                    const cardJobId = card.getAttribute('data-job-id') || '';
+                    const name = card.getAttribute('data-name') || '';
+                    const email = card.getAttribute('data-email') || '';
+                    const job = card.getAttribute('data-job') || '';
+
+                    // Job match
+                    const jobMatch = (selectedJob === 'ALL' || cardJobId.toLowerCase() === selectedJob.toLowerCase());
+
+                    // Search match (từ 3 ký tự trở lên)
+                    const combined = `${name} ${email} ${job}`;
+                    const textMatch = !query || query.length < 3 || combined.includes(query);
+
+                    if (jobMatch && textMatch) {
+                        counts[order]++;
+                        stageCardsMap[order].push(card);
+                    } else {
+                        card.style.display = 'none';
                     }
-                } else {
-                    card.style.display = 'none';
+                });
+
+                // Chỉ hiển thị tối đa 5 hồ sơ mới nhất trên mỗi cột
+                // Khi chuyển hồ sơ sang cột khác, hồ sơ tiếp theo (nếu còn >= 5) sẽ tự động được hiển thị
+                const matchedList = stageCardsMap[order];
+                matchedList.forEach((card, idx) => {
+                    if (idx < MAX_VISIBLE_CARDS_PER_COLUMN) {
+                        card.style.display = '';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+
+                // Cập nhật chỉ báo hồ sơ còn lại phía dưới cột nếu có trên 5 hồ sơ
+                let overflowEl = zone.querySelector('.kanban-overflow-indicator');
+                if (matchedList.length > MAX_VISIBLE_CARDS_PER_COLUMN) {
+                    const remaining = matchedList.length - MAX_VISIBLE_CARDS_PER_COLUMN;
+                    if (!overflowEl) {
+                        overflowEl = document.createElement('div');
+                        overflowEl.className = 'kanban-overflow-indicator text-center py-1 mt-1 text-muted';
+                        overflowEl.style.cssText = 'font-size: 0.72rem; border-top: 1px dashed #CBD5E1; border-radius: 6px; background: rgba(241, 245, 249, 0.8); cursor: default; user-select: none;';
+                        zone.appendChild(overflowEl);
+                    }
+                    overflowEl.innerHTML = `<i class="bi bi-stack me-1 text-primary"></i>Còn <span class="fw-bold text-primary">${remaining}</span> hồ sơ khác (tối đa 5)`;
+                    overflowEl.classList.remove('d-none');
+                } else if (overflowEl) {
+                    overflowEl.classList.add('d-none');
                 }
             });
 
-            // Update column header badges (cả trạng thái mở rộng và thu gọn)
+            // Update column header badges (cả trạng thái mở rộng và thu gọn - giữ nguyên tổng số lượng thực tế)
             const stageBadgeMap = {
                 1: ['kanbanCountNew', 'kanbanCountNewCollapsed'],
                 2: ['kanbanCountScreen', 'kanbanCountScreenCollapsed'],
@@ -3555,9 +3584,15 @@
 
             const candidateName = card.getAttribute('data-candidate-name') || 'Ứng viên';
             const originalParent = card.parentElement;
+            const origStage = currentStageOrder;
+            const origStatus = currentStatus;
 
-            // Optimistic move
-            zone.appendChild(card);
+            // Optimistic move: chèn thẻ lên đầu danh sách của cột đích để hiển thị ngay
+            if (zone.firstElementChild) {
+                zone.insertBefore(card, zone.firstElementChild);
+            } else {
+                zone.appendChild(card);
+            }
             card.setAttribute('data-stage-order', targetStageOrder);
             if (targetStageOrder === 7) {
                 card.setAttribute('data-status', 'REJECTED');
@@ -3589,14 +3624,28 @@
                     }
                 } else {
                     // Revert
-                    originalParent.appendChild(card);
-                    card.setAttribute('data-stage-order', originalStageOrder);
+                    if (originalParent) {
+                        if (originalParent.firstElementChild) {
+                            originalParent.insertBefore(card, originalParent.firstElementChild);
+                        } else {
+                            originalParent.appendChild(card);
+                        }
+                    }
+                    card.setAttribute('data-stage-order', origStage);
+                    card.setAttribute('data-status', origStatus);
                     applyKanbanFilters();
                     showToast(data.message || 'Lỗi khi chuyển giai đoạn', false);
                 }
             } catch (err) {
-                originalParent.appendChild(card);
-                card.setAttribute('data-stage-order', originalStageOrder);
+                if (originalParent) {
+                    if (originalParent.firstElementChild) {
+                        originalParent.insertBefore(card, originalParent.firstElementChild);
+                    } else {
+                        originalParent.appendChild(card);
+                    }
+                }
+                card.setAttribute('data-stage-order', origStage);
+                card.setAttribute('data-status', origStatus);
                 applyKanbanFilters();
                 showToast('Lỗi kết nối máy chủ: ' + err.message, false);
             }
@@ -3622,7 +3671,11 @@
                 if (data.success) {
                     showToast(data.message, true);
                     if (card && targetZone) {
-                        targetZone.appendChild(card);
+                        if (targetZone.firstElementChild) {
+                            targetZone.insertBefore(card, targetZone.firstElementChild);
+                        } else {
+                            targetZone.appendChild(card);
+                        }
                         card.setAttribute('data-stage-order', targetStageOrder);
                         if (targetStageOrder === 7) card.setAttribute('data-status', 'REJECTED');
                         else if (targetStageOrder === 6) card.setAttribute('data-status', 'HIRED');

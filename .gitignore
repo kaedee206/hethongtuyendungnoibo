@@ -719,3 +719,28 @@ scratch/
 .agents/
 .agent/
 
+# 3. Tài liệu cá nhân, báo cáo thực tập & minh chứng sinh viên (chỉ lưu cục bộ)
+NguyenDucHieu.md
+*DucHieu*.md
+*duchieu*.md
+[Bb]ao[Cc]ao*.md
+[Nn]hat[Kk]y*.md
+[Mm]inh[Cc]hung*.md
+*.docx
+*.xlsx.tmp
+
+# 4. Thư mục IDE, AI Assistant & tệp tin tạm / nhật ký kiểm thử
+.gemini/
+.claude/
+.cursor/
+.chat/
+.vscode/
+*.log
+*.tmp
+*.bak
+*.orig
+*.patch
+TestResults/
+[Tt]est[Rr]esults/
+
+
