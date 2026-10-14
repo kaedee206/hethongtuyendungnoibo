@@ -65,4 +65,22 @@ public interface IRequisitionService
     Task<int> GetMyRequisitionsCountAsync(
         Guid currentUserId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// SCRUM-27: Kiểm tra cảnh báo số lượng ứng viên dở dang (đang phỏng vấn/xét duyệt) và các tin tuyển dụng liên quan trước khi đóng/tạm dừng/hủy.
+    /// </summary>
+    Task<RequisitionPipelineWarningViewModel> CheckPipelineBeforeStatusChangeAsync(
+        Guid requisitionId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// SCRUM-27: Thực hiện tạm dừng (PAUSED), đóng (CLOSED) hoặc hủy (CANCELLED) yêu cầu tuyển dụng.
+    /// Bắt buộc nhập lý do (lưu audit_logs) và tự động gỡ tin tuyển dụng liên quan trong cùng một Transaction.
+    /// Chỉ HR Manager mới có quyền thực thi.
+    /// </summary>
+    Task<RequisitionStatusChangeResultDto> ChangeRequisitionStatusAsync(
+        Guid requisitionId,
+        Guid currentUserId,
+        RequisitionStatusChangeInputModel input,
+        CancellationToken cancellationToken = default);
 }
