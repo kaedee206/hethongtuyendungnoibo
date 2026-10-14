@@ -35,6 +35,21 @@ public class Application : BaseEntity
     /// </summary>
     public string? WithdrawReason { get; set; }
 
+    /// <summary>
+    /// Cờ đánh dấu hồ sơ đang bị quá hạn ngưỡng SLA của giai đoạn hiện tại (SCRUM-327).
+    /// </summary>
+    public bool IsSlaOverdue { get; set; } = false;
+
+    /// <summary>
+    /// Thời điểm gửi thông báo/email nhắc việc quá hạn SLA gần nhất cho Recruiter (dùng chống nhắc trùng trong cùng ngày - SCRUM-327).
+    /// </summary>
+    public DateTimeOffset? SlaOverdueAlertedAt { get; set; }
+
+    /// <summary>
+    /// Thời điểm hồ sơ bắt đầu chuyển vào giai đoạn hiện tại (dùng tính số ngày nằm im tại giai đoạn - SCRUM-327).
+    /// </summary>
+    public DateTimeOffset? StageEnteredAt { get; set; }
+
     public JobPosting JobPosting { get; set; } = null!;
     public Candidate Candidate { get; set; } = null!;
     public Resume Resume { get; set; } = null!;

@@ -1093,6 +1093,16 @@
 
                                 <!-- Chuyển đổi Kanban / Bảng & Chế độ Xem Thu gọn vs Chi tiết -->
                                 <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                    <!-- SCRUM-327: Lọc Hồ sơ Quá hạn SLA & Cấu hình SLA -->
+                                    <button type="button" id="btnFilterSlaOverdue" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1.5" onclick="toggleKanbanSlaOverdueFilter(event)" title="Lọc hồ sơ quá hạn SLA cần nhân viên tuyển dụng xử lý ngay">
+                                        <i class="bi bi-clock-history"></i>
+                                        <span>Quá hạn SLA</span>
+                                        <span class="badge bg-danger text-white rounded-pill ms-1" id="overdueSlaFilterBadge">@Model.OverdueSlaCandidateCount</span>
+                                    </button>
+                                    <a href="/cai-dat-sla" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 text-decoration-none" title="Cấu hình ngưỡng thời gian xử lý SLA theo từng giai đoạn">
+                                        <i class="bi bi-sliders"></i>
+                                        <span class="d-none d-sm-inline">Cài SLA</span>
+                                    </a>
                                     <div class="btn-group btn-group-sm" role="group">
                                         <button type="button" id="btnPipelineKanbanView" class="btn btn-outline-success pipeline-view-btn active" onclick="switchPipelineView('kanban')" title="Bảng Kanban Kéo Thả">
                                             <i class="bi bi-kanban-fill me-1"></i> Kanban
@@ -1483,6 +1493,7 @@
                                                     data-name="@cand.CandidateName.ToLower()"
                                                     data-email="@cand.CandidateEmail.ToLower()"
                                                     data-job="@cand.JobTitle.ToLower()"
+                                                    data-is-overdue="@(cand.IsOverdueSla ? "true" : "false")"
                                                     style="border-bottom: 1px solid #F1F5F9; transition: background .15s;"
                                                     onmouseover="this.style.background='#F8FAFC';" onmouseout="this.style.background='#FFFFFF';">
                                                     <td class="py-3 px-3">
@@ -1548,6 +1559,12 @@
                                                             <span class="badge" style="background:@(cand.StageColor)15; color:@cand.StageColor; border:1px solid @(cand.StageColor)40; border-radius:6px; font-size:0.75rem; font-weight:600;">
                                                                 <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem; vertical-align: middle;"></i>@cand.CurrentStageName
                                                             </span>
+                                                            @if (cand.IsOverdueSla)
+                                                            {
+                                                                <span class="badge ms-1" style="background:#FEF2F2; color:#DC2626; border:1px solid #FECACA; border-radius:6px; font-size:0.7rem; font-weight:700;" title="Quá hạn @cand.OverdueDays ngày (Ngưỡng quy định: @cand.SlaDays ngày)">
+                                                                    <i class="bi bi-clock-history me-1"></i>+@cand.OverdueDays d
+                                                                </span>
+                                                            }
                                                         }
                                                     </td>
                                                     <td class="py-3 px-3 text-muted" style="font-size: 0.78rem; font-family:'JetBrains Mono',monospace;">
@@ -3673,6 +3690,26 @@
             applyPipelineFilters(true, true);
         }
 
+        // SCRUM-327: Lọc Hồ sơ Quá hạn SLA
+        window.filterSlaOverdueOnly = false;
+
+        function toggleKanbanSlaOverdueFilter(e) {
+            if (e) e.stopPropagation();
+            window.filterSlaOverdueOnly = !window.filterSlaOverdueOnly;
+            const btn = document.getElementById('btnFilterSlaOverdue');
+            if (btn) {
+                if (window.filterSlaOverdueOnly) {
+                    btn.classList.remove('btn-outline-danger');
+                    btn.classList.add('btn-danger', 'text-white', 'active');
+                } else {
+                    btn.classList.remove('btn-danger', 'text-white', 'active');
+                    btn.classList.add('btn-outline-danger');
+                }
+            }
+            applyKanbanFilters();
+            applyPipelineFilters(true, true);
+        }
+
         function applyKanbanFilters() {
             const selectedJob = window.currentPipelineJob || 'ALL';
             const searchInput = document.getElementById('candidateSearchInput');
@@ -3696,15 +3733,19 @@
                 const name = card.getAttribute('data-name') || '';
                 const email = card.getAttribute('data-email') || '';
                 const job = card.getAttribute('data-job') || '';
+                const isOverdue = card.getAttribute('data-is-overdue') === 'true';
 
                 // Job match
                 const jobMatch = (selectedJob === 'ALL' || cardJobId.toLowerCase() === selectedJob.toLowerCase());
+
+                // SLA Overdue match
+                const slaMatch = !window.filterSlaOverdueOnly || isOverdue;
 
                 // Search match (từ 3 ký tự trở lên)
                 const combined = `${name} ${email} ${job}`;
                 const textMatch = !query || query.length < 3 || combined.includes(query);
 
-                if (jobMatch && textMatch) {
+                if (jobMatch && textMatch && slaMatch) {
                     card.style.display = '';
                     if (cardStatus === 'REJECTED' || cardStageOrder === 7) {
                         counts[7]++;
@@ -3958,6 +3999,10 @@
                 // Job match
                 const jobMatch = (selectedJob === 'ALL' || rowJobId.toLowerCase() === selectedJob.toLowerCase());
 
+                // SLA match
+                const isOverdue = r.getAttribute('data-is-overdue') === 'true';
+                const slaMatch = !window.filterSlaOverdueOnly || isOverdue;
+
                 // Stage match
                 let stageMatch = false;
                 if (stageOrder === 'ALL') {
@@ -3980,7 +4025,7 @@
                     ? window.NoveraInstantSearch.matchSearchTokens(combinedText, query)
                     : combinedText.toLowerCase().includes(query.toLowerCase()));
 
-                if (stageMatch && textMatch && jobMatch) {
+                if (stageMatch && textMatch && jobMatch && slaMatch) {
                     matchedRows.push(r);
                 }
             });

@@ -479,4 +479,77 @@ public class EmailService : IEmailService
 
         return await SendEmailAsync(new SendEmailRequestDto(candidateEmail, subject, body), cancellationToken);
     }
+
+    /// <summary>
+    /// Gửi email nhắc việc khi hồ sơ ứng viên quá hạn SLA cho Recruiter phụ trách (SCRUM-327).
+    /// </summary>
+    public async Task<bool> SendSlaOverdueAlertAsync(
+        string recruiterEmail,
+        string recruiterName,
+        string candidateName,
+        string candidateEmail,
+        string jobTitle,
+        string stageName,
+        int daysInStage,
+        int slaDays,
+        int overdueDays,
+        CancellationToken cancellationToken = default)
+    {
+        var subject = $"⚠️ [Cảnh báo SLA] Hồ sơ ứng viên {candidateName} đã quá hạn {overdueDays} ngày ({stageName})";
+        var baseUrl = Environment.GetEnvironmentVariable("APP_BASE_URL") ?? "http://localhost:5266";
+
+        var body = $@"
+        <div style=""font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #FFFFFF; border: 1px solid #FECACA; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"">
+            <div style=""background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%); padding: 24px; text-align: center;"">
+                <div style=""display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; color: #FEE2E2; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;"">
+                    NHẮC VIỆC TUYỂN DỤNG · SLA ALERT
+                </div>
+                <h2 style=""color: #FFFFFF; margin: 0; font-size: 1.25rem; font-weight: 800;"">HỒ SƠ QUÁ HẠN SLA CẦN XỬ LÝ</h2>
+                <div style=""color: #FCA5A5; font-size: 0.85rem; margin-top: 4px;"">Không để hồ sơ ứng viên nằm im quá thời gian quy định</div>
+            </div>
+            <div style=""padding: 24px;"">
+                <p style=""font-size: 0.95rem; color: #0F172A; margin-top: 0;"">Xin chào <strong>{recruiterName}</strong>,</p>
+                <p style=""color: #475569; font-size: 0.9rem; line-height: 1.6;"">
+                    Hệ thống ATS phát hiện hồ sơ dưới đây đang nằm ở giai đoạn <strong>{stageName}</strong> đã <strong>{daysInStage} ngày</strong>, vượt ngưỡng cam kết SLA là <strong>{slaDays} ngày</strong> (Quá hạn <strong>{overdueDays} ngày</strong>).
+                </p>
+                <div style=""background: #FFF5F5; border: 1px solid #FED7D7; border-radius: 8px; padding: 16px; margin: 18px 0;"">
+                    <table style=""width: 100%; border-collapse: collapse; font-size: 0.88rem;"">
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B; width: 140px;"">Họ tên ứng viên:</td>
+                            <td style=""padding: 6px 0; color: #0F172A; font-weight: 700;"">{candidateName}</td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Email liên hệ:</td>
+                            <td style=""padding: 6px 0; color: #0F172A; font-family: monospace;"">{candidateEmail}</td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Vị trí ứng tuyển:</td>
+                            <td style=""padding: 6px 0; color: #0F172A; font-weight: 600;"">{jobTitle}</td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Giai đoạn hiện tại:</td>
+                            <td style=""padding: 6px 0;""><span style=""background: #FEE2E2; color: #991B1B; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 0.8rem;"">{stageName}</span></td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Thời gian nằm im:</td>
+                            <td style=""padding: 6px 0; color: #DC2626; font-weight: 800;"">{daysInStage} ngày (Ngưỡng SLA: {slaDays} ngày)</td>
+                        </tr>
+                    </table>
+                </div>
+                <div style=""text-align: center; margin: 24px 0 16px 0;"">
+                    <a href=""{baseUrl}/dashboard/ung-vien"" style=""display: inline-block; background: #DC2626; color: #FFFFFF; font-weight: 700; text-decoration: none; padding: 10px 24px; border-radius: 8px; font-size: 0.88rem;"">
+                        Truy cập Pipeline xử lý hồ sơ ngay →
+                    </a>
+                </div>
+                <p style=""color: #64748B; font-size: 0.82rem; line-height: 1.5; margin-bottom: 0;"">
+                    <em>* Thông báo này được gửi tự động mỗi ngày 1 lần từ Tác vụ định kỳ kiểm tra SLA nội bộ của NoveraTech ATS.</em>
+                </p>
+            </div>
+            <div style=""background: #F8FAFC; padding: 14px; text-align: center; font-size: 0.75rem; color: #94A3B8; border-top: 1px solid #E2E8F0;"">
+                Hệ thống Quản lý Tuyển dụng NoveraTech ATS
+            </div>
+        </div>";
+
+        return await SendEmailAsync(new SendEmailRequestDto(recruiterEmail, subject, body), cancellationToken);
+    }
 }

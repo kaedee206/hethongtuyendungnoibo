@@ -253,6 +253,8 @@ public class JobsController : Controller
                         CurrentStageId = stageNew.Id,
                         Status = ApplicationStatus.IN_PROCESS,
                         TrackingCode = trackingCode,
+                        StageEnteredAt = DateTimeOffset.UtcNow,
+                        IsSlaOverdue = false,
                         AppliedAt = DateTimeOffset.UtcNow,
                         CreatedAt = DateTimeOffset.UtcNow,
                         UpdatedAt = DateTimeOffset.UtcNow,

@@ -81,6 +81,8 @@ builder.Services.AddScoped<ICandidateTimelineService, CandidateTimelineService>(
 builder.Services.AddScoped<IJobPostingService, JobPostingService>();
 builder.Services.AddScoped<IDepartmentBudgetService, DepartmentBudgetService>();
 builder.Services.AddScoped<IRequisitionAssignmentService, RequisitionAssignmentService>();
+builder.Services.AddScoped<ISlaService, SlaService>();
+builder.Services.AddHostedService<SlaOverdueBackgroundService>();
 
 // Cấu hình Rate Limiting bảo vệ các endpoint nhạy cảm (OWASP A04 / A07)
 builder.Services.AddRateLimiter(options =>
@@ -307,7 +309,20 @@ using (var scope = app.Services.CreateScope())
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS withdrawn_at timestamp with time zone;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS withdraw_reason text;");
         await dbContext.Database.ExecuteSqlRawAsync("UPDATE applications SET withdraw_token = md5(random()::text || id::text) WHERE withdraw_token IS NULL;");
-
+        // SCRUM-327: Bổ sung cấu hình SLA và cảnh báo quá hạn
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE pipeline_stages ADD COLUMN IF NOT EXISTS sla_days integer NOT NULL DEFAULT 3;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE pipeline_stages ADD COLUMN IF NOT EXISTS is_sla_enabled boolean NOT NULL DEFAULT true;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS is_sla_overdue boolean NOT NULL DEFAULT false;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS sla_overdue_alerted_at timestamp with time zone;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS stage_entered_at timestamp with time zone;");
+        await dbContext.Database.ExecuteSqlRawAsync("UPDATE applications SET stage_entered_at = COALESCE(applied_at, created_at) WHERE stage_entered_at IS NULL;");
+        await dbContext.Database.ExecuteSqlRawAsync(@"
+            UPDATE pipeline_stages SET sla_days = 3, is_sla_enabled = true WHERE stage_order IN (1, 2) AND (sla_days IS NULL OR sla_days = 0);
+            UPDATE pipeline_stages SET sla_days = 5, is_sla_enabled = true WHERE stage_order = 3 AND (sla_days IS NULL OR sla_days = 0);
+            UPDATE pipeline_stages SET sla_days = 7, is_sla_enabled = true WHERE stage_order = 4 AND (sla_days IS NULL OR sla_days = 0);
+            UPDATE pipeline_stages SET sla_days = 3, is_sla_enabled = true WHERE stage_order = 5 AND (sla_days IS NULL OR sla_days = 0);
+            UPDATE pipeline_stages SET sla_days = 0, is_sla_enabled = false WHERE stage_order IN (6, 7);
+        ");
     }
     catch (Exception e)
     {

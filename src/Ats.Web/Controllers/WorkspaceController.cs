@@ -315,6 +315,8 @@ public class WorkspaceController : Controller
                 CurrentStageId = firstStage.Id,
                 Status = ApplicationStatus.IN_PROCESS,
                 TrackingCode = trackingCode,
+                StageEnteredAt = DateTimeOffset.UtcNow,
+                IsSlaOverdue = false,
                 AppliedAt = DateTimeOffset.UtcNow,
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow,
@@ -512,6 +514,9 @@ public class WorkspaceController : Controller
             {
                 offer.Application.CurrentStageId = stageSuccess.Id;
                 offer.Application.Status = ApplicationStatus.HIRED;
+                offer.Application.StageEnteredAt = DateTimeOffset.UtcNow;
+                offer.Application.IsSlaOverdue = false;
+                offer.Application.SlaOverdueAlertedAt = null;
                 offer.Application.UpdatedAt = DateTimeOffset.UtcNow;
 
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -831,6 +836,9 @@ public class WorkspaceController : Controller
                 if (stageOffer != null && interview.Application != null)
                 {
                     interview.Application.CurrentStageId = stageOffer.Id;
+                    interview.Application.StageEnteredAt = DateTimeOffset.UtcNow;
+                    interview.Application.IsSlaOverdue = false;
+                    interview.Application.SlaOverdueAlertedAt = null;
                     interview.Application.UpdatedAt = DateTimeOffset.UtcNow;
 
                     var effectiveUserId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync());
@@ -854,6 +862,8 @@ public class WorkspaceController : Controller
                 {
                     interview.Application.CurrentStageId = stageReject.Id;
                     interview.Application.Status = ApplicationStatus.REJECTED;
+                    interview.Application.StageEnteredAt = DateTimeOffset.UtcNow;
+                    interview.Application.IsSlaOverdue = false;
                     interview.Application.UpdatedAt = DateTimeOffset.UtcNow;
                 }
             }
@@ -1024,6 +1034,9 @@ public class WorkspaceController : Controller
 
             var prevStageId = application.CurrentStageId;
             application.CurrentStageId = targetStage.Id;
+            application.StageEnteredAt = DateTimeOffset.UtcNow;
+            application.IsSlaOverdue = false;
+            application.SlaOverdueAlertedAt = null;
             application.UpdatedAt = DateTimeOffset.UtcNow;
 
             if (targetStage.StageOrder == 6)
@@ -1198,6 +1211,9 @@ public class WorkspaceController : Controller
             {
                 var prev = application.CurrentStageId;
                 application.CurrentStageId = interviewStage.Id;
+                application.StageEnteredAt = DateTimeOffset.UtcNow;
+                application.IsSlaOverdue = false;
+                application.SlaOverdueAlertedAt = null;
                 application.UpdatedAt = DateTimeOffset.UtcNow;
 
                 var effectiveUserId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync());
@@ -1350,6 +1366,9 @@ public class WorkspaceController : Controller
             {
                 var prev = application.CurrentStageId;
                 application.CurrentStageId = offerStage.Id;
+                application.StageEnteredAt = DateTimeOffset.UtcNow;
+                application.IsSlaOverdue = false;
+                application.SlaOverdueAlertedAt = null;
                 application.UpdatedAt = DateTimeOffset.UtcNow;
 
                 await _dbContext.ApplicationStageHistories.AddAsync(new ApplicationStageHistory
@@ -1452,6 +1471,8 @@ public class WorkspaceController : Controller
             if (rejectStage != null)
             {
                 application.CurrentStageId = rejectStage.Id;
+                application.StageEnteredAt = DateTimeOffset.UtcNow;
+                application.IsSlaOverdue = false;
             }
 
             // Gắn mã lý do từ danh mục dùng chung (RecruitmentCatalogs REJECTION_REASON)

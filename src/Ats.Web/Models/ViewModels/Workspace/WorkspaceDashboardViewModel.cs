@@ -38,6 +38,9 @@ public class WorkspaceDashboardViewModel
     public List<JobPostingFilterOptionDto> JobPostingFilterOptions { get; set; } = new();
     public Guid? DefaultJobPostingId { get; set; }
 
+    // SCRUM-327: Thống kê số lượng hồ sơ đang bị quá hạn SLA trên pipeline
+    public int OverdueSlaCandidateCount { get; set; }
+
     // Thông báo dành cho Staff / Recruiter
     public int UnreadNotificationsCount { get; set; }
     public List<NotificationDto> RecentNotifications { get; set; } = new();
@@ -98,6 +101,12 @@ public class CandidatePipelineItemDto
     public string? DuplicateReason { get; set; }
     public Guid? MatchedCandidateId { get; set; }
     public int DuplicateCount { get; set; }
+
+    // SCRUM-327: Cờ và thông tin chi tiết quá hạn SLA
+    public bool IsOverdueSla { get; set; }
+    public int SlaDays { get; set; } = 3;
+    public int DaysInCurrentStage { get; set; }
+    public int OverdueDays { get; set; }
 }
 
 public class CandidateProfileDto
