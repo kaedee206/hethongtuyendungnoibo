@@ -85,6 +85,10 @@ namespace Ats.Web.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resume_id");
 
+                    b.Property<int>("Stage")
+                        .HasColumnType("integer")
+                        .HasColumnName("stage");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer")
                         .HasColumnName("status");
@@ -115,6 +119,9 @@ namespace Ats.Web.Migrations
 
                     b.HasIndex("ReferrerUserId")
                         .HasDatabaseName("ix_applications_referrer_user_id");
+
+                    b.HasIndex("RejectionReasonId")
+                        .HasDatabaseName("ix_applications_rejection_reason_id");
 
                     b.HasIndex("ResumeId")
                         .HasDatabaseName("ix_applications_resume_id");
@@ -659,6 +666,82 @@ namespace Ats.Web.Migrations
                         .HasDatabaseName("ix_candidate_merge_histories_undone_by_user_id");
 
                     b.ToTable("candidate_merge_histories", (string)null);
+                });
+
+            modelBuilder.Entity("Ats.Web.Models.Entities.CandidateStageHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("application_id");
+
+                    b.Property<Guid>("ChangedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("changed_by_user_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_id");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<int?>("FromStage")
+                        .HasColumnType("integer")
+                        .HasColumnName("from_stage");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("text")
+                        .HasColumnName("note");
+
+                    b.Property<Guid?>("RejectionReasonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("rejection_reason_id");
+
+                    b.Property<int>("ToStage")
+                        .HasColumnType("integer")
+                        .HasColumnName("to_stage");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_candidate_stage_histories");
+
+                    b.HasIndex("ApplicationId")
+                        .HasDatabaseName("ix_candidate_stage_histories_application_id");
+
+                    b.HasIndex("ChangedByUserId")
+                        .HasDatabaseName("ix_candidate_stage_histories_changed_by_user_id");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_candidate_stage_histories_created_at");
+
+                    b.HasIndex("RejectionReasonId")
+                        .HasDatabaseName("ix_candidate_stage_histories_rejection_reason_id");
+
+                    b.HasIndex("ToStage")
+                        .HasDatabaseName("ix_candidate_stage_histories_to_stage");
+
+                    b.ToTable("candidate_stage_histories", (string)null);
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.CompanyProfile", b =>
@@ -2126,6 +2209,75 @@ namespace Ats.Web.Migrations
                     b.ToTable("recruitment_catalogs", (string)null);
                 });
 
+            modelBuilder.Entity("Ats.Web.Models.Entities.RejectionReason", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_id");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("display_order");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_rejection_reasons");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_rejection_reasons_code");
+
+                    b.HasIndex("DisplayOrder")
+                        .HasDatabaseName("ix_rejection_reasons_display_order");
+
+                    b.HasIndex("IsActive")
+                        .HasDatabaseName("ix_rejection_reasons_is_active");
+
+                    b.ToTable("rejection_reasons", (string)null);
+                });
+
             modelBuilder.Entity("Ats.Web.Models.Entities.RequisitionApproval", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2589,6 +2741,11 @@ namespace Ats.Web.Migrations
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_applications_users_referrer_user_id");
 
+                    b.HasOne("Ats.Web.Models.Entities.RejectionReason", "RejectionReason")
+                        .WithMany()
+                        .HasForeignKey("RejectionReasonId")
+                        .HasConstraintName("fk_applications_rejection_reasons_rejection_reason_id");
+
                     b.HasOne("Ats.Web.Models.Entities.Resume", "Resume")
                         .WithMany()
                         .HasForeignKey("ResumeId")
@@ -2603,6 +2760,8 @@ namespace Ats.Web.Migrations
                     b.Navigation("JobPosting");
 
                     b.Navigation("ReferrerUser");
+
+                    b.Navigation("RejectionReason");
 
                     b.Navigation("Resume");
                 });
@@ -2766,6 +2925,35 @@ namespace Ats.Web.Migrations
                     b.Navigation("SecondaryCandidate");
 
                     b.Navigation("UndoneByUser");
+                });
+
+            modelBuilder.Entity("Ats.Web.Models.Entities.CandidateStageHistory", b =>
+                {
+                    b.HasOne("Ats.Web.Models.Entities.Application", "Application")
+                        .WithMany("CandidateStageHistories")
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_candidate_stage_histories_applications_application_id");
+
+                    b.HasOne("Ats.Web.Models.Entities.User", "ChangedByUser")
+                        .WithMany()
+                        .HasForeignKey("ChangedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_candidate_stage_histories_users_changed_by_user_id");
+
+                    b.HasOne("Ats.Web.Models.Entities.RejectionReason", "RejectionReason")
+                        .WithMany("StageHistories")
+                        .HasForeignKey("RejectionReasonId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_candidate_stage_histories_rejection_reasons_rejection_reaso");
+
+                    b.Navigation("Application");
+
+                    b.Navigation("ChangedByUser");
+
+                    b.Navigation("RejectionReason");
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.CompetencyCriterion", b =>
@@ -3125,6 +3313,8 @@ namespace Ats.Web.Migrations
 
             modelBuilder.Entity("Ats.Web.Models.Entities.Application", b =>
                 {
+                    b.Navigation("CandidateStageHistories");
+
                     b.Navigation("Interviews");
 
                     b.Navigation("JobOffers");
@@ -3185,6 +3375,11 @@ namespace Ats.Web.Migrations
             modelBuilder.Entity("Ats.Web.Models.Entities.Permission", b =>
                 {
                     b.Navigation("RolePermissions");
+                });
+
+            modelBuilder.Entity("Ats.Web.Models.Entities.RejectionReason", b =>
+                {
+                    b.Navigation("StageHistories");
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.Role", b =>

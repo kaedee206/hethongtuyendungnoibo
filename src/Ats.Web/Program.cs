@@ -71,6 +71,7 @@ builder.Services.AddScoped<IRecruitmentCatalogService, RecruitmentCatalogService
 builder.Services.AddScoped<IApplicationTrackingService, ApplicationTrackingService>();
 builder.Services.AddScoped<ICandidateReferralService, CandidateReferralService>();
 builder.Services.AddScoped<ICandidateMergeService, CandidateMergeService>();
+builder.Services.AddScoped<ICandidateStageService, CandidateStageService>();
 
 // Cấu hình Rate Limiting bảo vệ các endpoint nhạy cảm (OWASP A04 / A07)
 builder.Services.AddRateLimiter(options =>

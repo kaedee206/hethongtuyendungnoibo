@@ -24,8 +24,11 @@ public class Application : BaseEntity
     public Candidate Candidate { get; set; } = null!;
     public Resume Resume { get; set; } = null!;
     public PipelineStage CurrentStage { get; set; } = null!;
+    public CandidateStage Stage { get; set; } = CandidateStage.APPLIED;
+    public RejectionReason? RejectionReason { get; set; }
     public User? ReferrerUser { get; set; }
     public ICollection<ApplicationStageHistory> StageHistories { get; set; } = new List<ApplicationStageHistory>();
+    public ICollection<CandidateStageHistory> CandidateStageHistories { get; set; } = new List<CandidateStageHistory>();
     public ICollection<Interview> Interviews { get; set; } = new List<Interview>();
     public ICollection<JobOffer> JobOffers { get; set; } = new List<JobOffer>();
 }
