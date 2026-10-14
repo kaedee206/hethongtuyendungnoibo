@@ -259,6 +259,66 @@
         </div>
     }
 
+    <!-- ── THÔNG BÁO TRẠNG THÁI GỠ TIN / QUÁ HẠN (SCRUM-38) ── -->
+    @if (job.IsClosed)
+    {
+        <div class="alert alert-warning alert-dismissible fade show p-3.5 mb-4 shadow-sm" style="border-radius: var(--radius-button); border-left: 5px solid #F59E0B;" role="alert">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2.5">
+                    <i class="bi bi-eye-slash-fill fs-3 text-warning"></i>
+                    <div>
+                        <div class="fw-bold text-dark fs-6">Tin tuyển dụng này đã được gỡ thủ công khỏi cổng tuyển dụng</div>
+                        <div class="small text-muted mt-0.5">
+                            Lý do: <strong>@(string.IsNullOrWhiteSpace(job.UnpublishReason) ? "Đã đóng theo quyết định của nhà tuyển dụng" : job.UnpublishReason)</strong>
+                            @if (job.ClosedAt.HasValue)
+                            {
+                                <span> • Thời gian gỡ: @job.ClosedAt.Value.ToString("HH:mm dd/MM/yyyy")</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+                @if (isRecruiterOrHr)
+                {
+                    <div class="d-flex gap-2">
+                        <a href="/Jobs/quan-ly" class="btn btn-sm btn-outline-dark" style="border-radius: 6px;">
+                            <i class="bi bi-sliders me-1"></i> Quản lý tin
+                        </a>
+                        <button type="button" class="btn btn-sm btn-success fw-semibold" data-bs-toggle="modal" data-bs-target="#detailRepublishModal" style="border-radius: 6px;">
+                            <i class="bi bi-arrow-repeat me-1"></i> Đăng lại tin
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else if (job.IsExpired)
+    {
+        <div class="alert alert-danger alert-dismissible fade show p-3.5 mb-4 shadow-sm" style="border-radius: var(--radius-button); border-left: 5px solid #EF4444;" role="alert">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2.5">
+                    <i class="bi bi-clock-history fs-3 text-danger"></i>
+                    <div>
+                        <div class="fw-bold text-dark fs-6">Tin tuyển dụng đã quá hạn tiếp nhận hồ sơ</div>
+                        <div class="small text-muted mt-0.5">
+                            Thời hạn nộp hồ sơ đã kết thúc vào ngày <strong>@job.Deadline.ToString("dd/MM/yyyy")</strong>. Tin đã được tự động ẩn khỏi cổng tuyển dụng.
+                        </div>
+                    </div>
+                </div>
+                @if (isRecruiterOrHr)
+                {
+                    <div class="d-flex gap-2">
+                        <a href="/Jobs/quan-ly" class="btn btn-sm btn-outline-dark" style="border-radius: 6px;">
+                            <i class="bi bi-sliders me-1"></i> Quản lý tin
+                        </a>
+                        <button type="button" class="btn btn-sm btn-success fw-semibold" data-bs-toggle="modal" data-bs-target="#detailRepublishModal" style="border-radius: 6px;">
+                            <i class="bi bi-calendar-plus me-1"></i> Gia hạn & Đăng lại
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
     <!-- ── HEADER BANNER CARD ── -->
     <div class="job-header-card">
         <div class="row align-items-center gy-4">
@@ -274,7 +334,19 @@
                     <span class="badge px-2.5 py-1 text-xs" style="background: #EFF6FF; color: #1D4ED8; border-radius: var(--radius-badge); font-weight: 600;">
                         <i class="bi bi-building me-1"></i> @job.Department
                     </span>
-                    @if (job.IsHot)
+                    @if (job.IsClosed)
+                    {
+                        <span class="badge px-2.5 py-1 text-xs" style="background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; border-radius: var(--radius-badge); font-weight: 700;">
+                            <i class="bi bi-eye-slash-fill me-1"></i> ĐÃ GỠ THỦ CÔNG
+                        </span>
+                    }
+                    else if (job.IsExpired)
+                    {
+                        <span class="badge px-2.5 py-1 text-xs" style="background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; border-radius: var(--radius-badge); font-weight: 700;">
+                            <i class="bi bi-clock-history me-1"></i> ĐÃ QUÁ HẠN (ẨN)
+                        </span>
+                    }
+                    else if (job.IsHot)
                     {
                         <span class="badge px-2.5 py-1 text-xs" style="background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA; border-radius: var(--radius-badge); font-weight: 700;">
                             <i class="bi bi-fire me-0.5"></i> TUYỂN GẤP (HOT)
@@ -311,21 +383,47 @@
 
             <!-- Header Actions -->
             <div class="col-12 col-lg-4 text-lg-end">
-                <div class="d-flex flex-column gap-2.5 justify-content-lg-end align-items-lg-end">
+                <div class="d-flex flex-column gap-2 justify-content-lg-end align-items-lg-end">
                     @if (canEditJob)
                     {
-                        <button type="button" class="btn btn-warning text-dark fw-bold w-100 shadow-sm d-flex align-items-center justify-content-center gap-2 mb-1" data-bs-toggle="modal" data-bs-target="#editJobPostingModal" style="border-radius: var(--radius-button); padding: 0.7rem 1.25rem;">
-                            <i class="bi bi-pencil-square fs-5"></i> Chỉnh sửa bài đăng
-                        </button>
+                        <div class="d-flex gap-2 w-100">
+                            <button type="button" class="btn btn-warning text-dark fw-bold flex-grow-1 shadow-sm d-flex align-items-center justify-content-center gap-1.5" data-bs-toggle="modal" data-bs-target="#editJobPostingModal" style="border-radius: var(--radius-button); padding: 0.65rem 1rem;">
+                                <i class="bi bi-pencil-square"></i> Chỉnh sửa
+                            </button>
+                            @if (!job.IsClosed && !job.IsExpired)
+                            {
+                                <button type="button" class="btn btn-outline-danger fw-semibold shadow-sm d-flex align-items-center justify-content-center gap-1.5" data-bs-toggle="modal" data-bs-target="#detailUnpublishModal" style="border-radius: var(--radius-button); padding: 0.65rem 1rem;" title="Gỡ tin này khỏi cổng ứng viên ngay lập tức">
+                                    <i class="bi bi-eye-slash-fill"></i> Gỡ tin
+                                </button>
+                            }
+                        </div>
                     }
-                    <a href="#apply-section" class="btn-apply-main w-100 w-sm-auto">
-                        <i class="bi bi-send-fill"></i> Ứng tuyển vị trí này
-                    </a>
-                    @if (User.Identity?.IsAuthenticated == true)
+                    @if (job.IsClosed || job.IsExpired)
                     {
-                        <a href="/gioi-thieu-ung-vien?jobId=@job.Id" class="btn btn-outline-success fw-semibold w-100 w-sm-auto d-inline-flex align-items-center justify-content-center gap-1.5" style="border-radius: var(--radius-button); padding: 0.7rem 1.25rem;">
-                            <i class="bi bi-person-plus-fill"></i> Giới thiệu ứng viên
+                        @if (isRecruiterOrHr)
+                        {
+                            <button type="button" class="btn btn-success w-100 shadow-sm d-flex align-items-center justify-content-center gap-2 py-2.5" data-bs-toggle="modal" data-bs-target="#detailRepublishModal" style="border-radius: var(--radius-button); font-weight: 600;">
+                                <i class="bi bi-arrow-repeat fs-5"></i> Đăng lại tin này
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-secondary w-100 py-2.5 d-flex align-items-center justify-content-center gap-2" disabled style="border-radius: var(--radius-button); font-weight: 600;">
+                                <i class="bi bi-x-circle-fill"></i> Đã đóng nhận hồ sơ
+                            </button>
+                        }
+                    }
+                    else
+                    {
+                        <a href="#apply-section" class="btn-apply-main w-100 w-sm-auto">
+                            <i class="bi bi-send-fill"></i> Ứng tuyển vị trí này
                         </a>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <a href="/gioi-thieu-ung-vien?jobId=@job.Id" class="btn btn-outline-success fw-semibold w-100 w-sm-auto d-inline-flex align-items-center justify-content-center gap-1.5" style="border-radius: var(--radius-button); padding: 0.7rem 1.25rem;">
+                                <i class="bi bi-person-plus-fill"></i> Giới thiệu ứng viên
+                            </a>
+                        }
                     }
                     <div class="d-flex gap-2 w-100 justify-content-lg-end">
                         <button type="button" class="btn-save-job flex-grow-1 flex-lg-grow-0" onclick="navigator.clipboard.writeText(window.location.href); alert('Đã sao chép liên kết vị trí tuyển dụng vào bộ nhớ tạm!');">
@@ -335,9 +433,18 @@
                             <i class="bi bi-grid"></i> Tất cả việc làm
                         </a>
                     </div>
-                    <span class="text-muted small" style="font-size: 0.75rem;">
-                        <i class="bi bi-shield-check text-success me-1"></i> Cam kết phản hồi ứng viên trong 48h
-                    </span>
+                    @if (isRecruiterOrHr)
+                    {
+                        <a href="/Jobs/quan-ly" class="small text-muted text-decoration-none mt-1" style="font-size: 0.78rem;">
+                            <i class="bi bi-sliders text-primary me-1"></i> Mở Bảng điều khiển Quản lý tin đăng
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="text-muted small" style="font-size: 0.75rem;">
+                            <i class="bi bi-shield-check text-success me-1"></i> Cam kết phản hồi ứng viên trong 48h
+                        </span>
+                    }
                 </div>
             </div>
         </div>
@@ -494,66 +601,112 @@
                 </div>
             </div>
 
-            <!-- 7. FORM ỨNG TUYỂN TRỰC TIẾP -->
-            <div id="apply-section" class="detail-card" style="border: 2px solid var(--color-accent); scroll-margin-top: 2rem;">
-                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
-                    <div>
-                        <h2 class="fw-bold mb-1" style="font-size: 1.25rem; color: var(--color-text-main);">
-                            <i class="bi bi-send text-success me-1.5"></i> Nộp hồ sơ ứng tuyển vị trí này
-                        </h2>
-                        <span class="text-muted small">Điền thông tin và tải lên CV của bạn (PDF / DOCX). Chúng tôi sẽ liên hệ trong 48 giờ.</span>
+            <!-- 7. FORM ỨNG TUYỂN HOẶC THÔNG BÁO ĐÓNG NHẬN HỒ SƠ (SCRUM-38) -->
+            @if (job.IsClosed || job.IsExpired)
+            {
+                <div id="apply-section" class="detail-card text-center py-5 shadow-sm" style="border: 2px dashed #CBD5E1; background: #F8FAFC; border-radius: var(--radius-card); scroll-margin-top: 2rem;">
+                    <div class="mb-3">
+                        @if (job.IsClosed)
+                        {
+                            <div class="d-inline-flex p-3 bg-warning-subtle text-warning-emphasis rounded-circle mb-2">
+                                <i class="bi bi-eye-slash-fill fs-1"></i>
+                            </div>
+                            <h3 class="h4 fw-bold text-dark mb-2">Vị trí này hiện đã đóng nhận hồ sơ ứng tuyển</h3>
+                            <p class="text-muted mb-3 mx-auto px-3" style="max-width: 580px; line-height: 1.6;">
+                                Tin tuyển dụng này đã được gỡ bởi Nhà tuyển dụng 
+                                @if (!string.IsNullOrWhiteSpace(job.UnpublishReason))
+                                {
+                                    <span>(Lý do: <em>@job.UnpublishReason</em>)</span>
+                                }
+                                . Rất tiếc hiện tại hệ thống tạm thời không tiếp nhận thêm hồ sơ mới cho vị trí này.
+                            </p>
+                        }
+                        else
+                        {
+                            <div class="d-inline-flex p-3 bg-danger-subtle text-danger rounded-circle mb-2">
+                                <i class="bi bi-clock-history fs-1"></i>
+                            </div>
+                            <h3 class="h4 fw-bold text-dark mb-2">Vị trí tuyển dụng này đã quá hạn nộp hồ sơ</h3>
+                            <p class="text-muted mb-3 mx-auto px-3" style="max-width: 580px; line-height: 1.6;">
+                                Thời hạn tiếp nhận hồ sơ đã kết thúc vào ngày <strong>@job.Deadline.ToString("dd/MM/yyyy")</strong>. Đội ngũ tuyển dụng đang tiến hành sàng lọc các hồ sơ đã gửi trước đó.
+                            </p>
+                        }
                     </div>
-                    <span class="badge bg-success-subtle text-success px-2.5 py-1" style="border-radius: 6px; font-weight: 600;">
-                        Nhanh & Bảo mật
-                    </span>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <a asp-controller="Jobs" asp-action="Index" class="btn btn-primary px-4 py-2" style="border-radius: var(--radius-button); font-weight: 600;">
+                            <i class="bi bi-grid-fill me-1"></i> Khám phá các vị trí khác
+                        </a>
+                        @if (isRecruiterOrHr)
+                        {
+                            <button type="button" class="btn btn-success px-4 py-2" data-bs-toggle="modal" data-bs-target="#detailRepublishModal" style="border-radius: var(--radius-button); font-weight: 600;">
+                                <i class="bi bi-arrow-repeat me-1"></i> Đăng lại vị trí này
+                            </button>
+                        }
+                    </div>
                 </div>
-
-                <form method="post" asp-controller="Jobs" asp-action="QuickApply" enctype="multipart/form-data">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="jobId" value="@job.Id" />
-
-                    <div class="row g-3">
-                        <div class="col-12 col-md-6">
-                            <label class="form-label small fw-semibold text-dark">Họ và tên của bạn <span class="text-danger">*</span></label>
-                            <input type="text" name="candidateName" class="form-control" style="border-radius: var(--radius-button); padding: 0.65rem 0.85rem;" placeholder="Ví dụ: Nguyễn Văn An" required />
+            }
+            else
+            {
+                <div id="apply-section" class="detail-card" style="border: 2px solid var(--color-accent); scroll-margin-top: 2rem;">
+                    <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                        <div>
+                            <h2 class="fw-bold mb-1" style="font-size: 1.25rem; color: var(--color-text-main);">
+                                <i class="bi bi-send text-success me-1.5"></i> Nộp hồ sơ ứng tuyển vị trí này
+                            </h2>
+                            <span class="text-muted small">Điền thông tin và tải lên CV của bạn (PDF / DOCX). Chúng tôi sẽ liên hệ trong 48 giờ.</span>
                         </div>
-                        <div class="col-12 col-md-6">
-                            <label class="form-label small fw-semibold text-dark">Email liên hệ <span class="text-danger">*</span></label>
-                            <input type="email" name="candidateEmail" class="form-control" style="border-radius: var(--radius-button); padding: 0.65rem 0.85rem;" placeholder="an.nguyen@example.com" required />
-                        </div>
-                        <div class="col-12 col-md-6">
-                            <label class="form-label small fw-semibold text-dark">Số điện thoại di động <span class="text-danger">*</span></label>
-                            <input type="tel" name="candidatePhone" class="form-control" style="border-radius: var(--radius-button); padding: 0.65rem 0.85rem;" placeholder="0912 345 678" required />
-                        </div>
-                        <div class="col-12 col-md-6">
-                            <label class="form-label small fw-semibold text-dark">Tải lên hồ sơ CV (PDF/DOCX) <span class="text-danger">*</span></label>
-                            <input type="file" name="cvFile" class="form-control" style="border-radius: var(--radius-button); padding: 0.55rem 0.85rem;" accept=".pdf,.docx,.doc" required />
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label small fw-semibold text-dark">Lời giới thiệu ngắn hoặc link GitHub / LinkedIn (Tùy chọn)</label>
-                            <textarea name="coverLetter" rows="3" class="form-control" style="border-radius: var(--radius-button);" placeholder="Chia sẻ thêm về các dự án tiêu biểu hoặc kinh nghiệm thực chiến của bạn..."></textarea>
-                        </div>
-                        <div class="col-12">
-                            <div class="form-check p-2 bg-light rounded border" style="border-color: #E2E8F0 !important;">
-                                <input class="form-check-input ms-1 me-2" type="checkbox" name="agreeToPrivacyConsent" value="true" id="privacyConsentCheck" required />
-                                <label class="form-check-label small text-muted" for="privacyConsentCheck" style="font-size: 0.8rem; line-height: 1.5;">
-                                    Tôi xác nhận đã đọc và đồng ý cho phép NoveraTech thu thập, lưu trữ và xử lý dữ liệu cá nhân phục vụ quy trình tuyển dụng theo quy định của <strong>Nghị định 13/2023/NĐ-CP</strong> và Chính sách bảo mật dữ liệu. <span class="text-danger">*</span>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-12 pt-2">
-                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                                <span class="text-muted" style="font-size: 0.78rem;">
-                                    <i class="bi bi-shield-lock text-success me-1"></i> Thông tin của bạn được cam kết bảo mật theo chính sách quyền riêng tư NoveraTech.
-                                </span>
-                                <button type="submit" class="btn-apply-main">
-                                    <i class="bi bi-check-circle-fill"></i> Hoàn tất nộp hồ sơ
-                                </button>
-                            </div>
-                        </div>
+                        <span class="badge bg-success-subtle text-success px-2.5 py-1" style="border-radius: 6px; font-weight: 600;">
+                            Nhanh & Bảo mật
+                        </span>
                     </div>
-                </form>
-            </div>
+
+                    <form method="post" asp-controller="Jobs" asp-action="QuickApply" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="jobId" value="@job.Id" />
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Họ và tên của bạn <span class="text-danger">*</span></label>
+                                <input type="text" name="candidateName" class="form-control" style="border-radius: var(--radius-button); padding: 0.65rem 0.85rem;" placeholder="Ví dụ: Nguyễn Văn An" required />
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Email liên hệ <span class="text-danger">*</span></label>
+                                <input type="email" name="candidateEmail" class="form-control" style="border-radius: var(--radius-button); padding: 0.65rem 0.85rem;" placeholder="an.nguyen@example.com" required />
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Số điện thoại di động <span class="text-danger">*</span></label>
+                                <input type="tel" name="candidatePhone" class="form-control" style="border-radius: var(--radius-button); padding: 0.65rem 0.85rem;" placeholder="0912 345 678" required />
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Tải lên hồ sơ CV (PDF/DOCX) <span class="text-danger">*</span></label>
+                                <input type="file" name="cvFile" class="form-control" style="border-radius: var(--radius-button); padding: 0.55rem 0.85rem;" accept=".pdf,.docx,.doc" required />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold text-dark">Lời giới thiệu ngắn hoặc link GitHub / LinkedIn (Tùy chọn)</label>
+                                <textarea name="coverLetter" rows="3" class="form-control" style="border-radius: var(--radius-button);" placeholder="Chia sẻ thêm về các dự án tiêu biểu hoặc kinh nghiệm thực chiến của bạn..."></textarea>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check p-2 bg-light rounded border" style="border-color: #E2E8F0 !important;">
+                                    <input class="form-check-input ms-1 me-2" type="checkbox" name="agreeToPrivacyConsent" value="true" id="privacyConsentCheck" required />
+                                    <label class="form-check-label small text-muted" for="privacyConsentCheck" style="font-size: 0.8rem; line-height: 1.5;">
+                                        Tôi xác nhận đã đọc và đồng ý cho phép NoveraTech thu thập, lưu trữ và xử lý dữ liệu cá nhân phục vụ quy trình tuyển dụng theo quy định của <strong>Nghị định 13/2023/NĐ-CP</strong> và Chính sách bảo mật dữ liệu. <span class="text-danger">*</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12 pt-2">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <span class="text-muted" style="font-size: 0.78rem;">
+                                        <i class="bi bi-shield-lock text-success me-1"></i> Thông tin của bạn được cam kết bảo mật theo chính sách quyền riêng tư NoveraTech.
+                                    </span>
+                                    <button type="submit" class="btn-apply-main">
+                                        <i class="bi bi-check-circle-fill"></i> Hoàn tất nộp hồ sơ
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            }
         </div>
 
         <!-- Right: Sidebar (4 cols) -->
@@ -807,6 +960,93 @@
                         </div>
                     </form>
                 </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (isRecruiterOrHr)
+{
+    <!-- Modal Gỡ tin thủ công trực tiếp từ trang chi tiết (Scrum-38 Yêu cầu 1) -->
+    <div class="modal fade" id="detailUnpublishModal" tabindex="-1" aria-labelledby="detailUnpublishModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                <div class="modal-header bg-danger-subtle border-0 py-3">
+                    <h5 class="modal-title text-danger fw-bold d-flex align-items-center gap-2" id="detailUnpublishModalLabel">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Xác nhận Gỡ Tin Tuyển Dụng
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form asp-controller="Jobs" asp-action="Unpublish" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="JobId" value="@(string.IsNullOrWhiteSpace(job.Id) ? job.Slug : job.Id)" />
+
+                    <div class="modal-body p-4">
+                        <div class="alert alert-warning mb-3 py-2.5 px-3" style="border-radius: 8px; font-size: 0.875rem;">
+                            <i class="bi bi-info-circle-fill me-1"></i>
+                            Tin tuyển dụng sẽ <strong>ngay lập tức ẩn khỏi trang việc làm công khai</strong>. Ứng viên sẽ không thể gửi thêm hồ sơ ứng tuyển.
+                        </div>
+
+                        <p class="mb-3">
+                            Bạn đang thao tác gỡ tin: <strong class="text-dark">@job.Title</strong> 
+                            <span class="font-monospace text-muted">(@job.Code)</span>
+                        </p>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-dark">Lý do gỡ tin tuyển dụng <span class="text-danger">*</span></label>
+                            <select class="form-select mb-2" id="detailSelectUnpublishReason" style="border-radius: 8px;" onchange="if(this.value!=='other'){document.getElementById('detailUnpublishReasonText').value=this.value;}else{document.getElementById('detailUnpublishReasonText').value='';document.getElementById('detailUnpublishReasonText').focus();}">
+                                <option value="Đã tuyển dụng đủ chỉ tiêu nhân sự">Đã tuyển dụng đủ chỉ tiêu nhân sự</option>
+                                <option value="Tạm dừng kế hoạch tuyển dụng vị trí này">Tạm dừng kế hoạch tuyển dụng vị trí này</option>
+                                <option value="Thay đổi yêu cầu / Cơ cấu lại chức danh">Thay đổi yêu cầu / Cơ cấu lại chức danh</option>
+                                <option value="other">Lý do khác (Nhập chi tiết bên dưới)...</option>
+                            </select>
+                            <textarea class="form-control" name="Reason" id="detailUnpublishReasonText" rows="2" placeholder="Ghi chú thêm lý do gỡ tin..." style="border-radius: 8px;">Đã tuyển dụng đủ chỉ tiêu nhân sự</textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light border-0 py-3 px-4 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal" style="border-radius: 8px;">Huỷ bỏ</button>
+                        <button type="submit" class="btn btn-danger px-4 fw-semibold" style="border-radius: 8px;">
+                            <i class="bi bi-trash3-fill me-1"></i> Xác nhận gỡ tin ngay
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Đăng lại / Gia hạn tin từ trang chi tiết (Scrum-38) -->
+    <div class="modal fade" id="detailRepublishModal" tabindex="-1" aria-labelledby="detailRepublishModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                <div class="modal-header bg-success-subtle border-0 py-3">
+                    <h5 class="modal-title text-success fw-bold d-flex align-items-center gap-2" id="detailRepublishModalLabel">
+                        <i class="bi bi-arrow-repeat"></i> Đăng Lại & Gia Hạn Tin Tuyển Dụng
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form asp-controller="Jobs" asp-action="Republish" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="JobId" value="@(string.IsNullOrWhiteSpace(job.Id) ? job.Slug : job.Id)" />
+
+                    <div class="modal-body p-4">
+                        <p class="mb-3">
+                            Bạn đang mở lại tin tuyển dụng: <strong class="text-dark">@job.Title</strong>
+                            <span class="font-monospace text-muted">(@job.Code)</span>
+                        </p>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-dark">Hạn nộp hồ sơ mới (Deadline) <span class="text-danger">*</span></label>
+                            <input type="date" name="NewDeadline" class="form-control" value="@DateTime.UtcNow.AddDays(30).ToString("yyyy-MM-dd")" style="border-radius: 8px;" required />
+                            <div class="form-text small text-muted">Tin sẽ lập tức xuất hiện trở lại trên cổng ứng viên và hết hạn vào ngày đã chọn.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light border-0 py-3 px-4 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal" style="border-radius: 8px;">Huỷ</button>
+                        <button type="submit" class="btn btn-success px-4 fw-semibold" style="border-radius: 8px;">
+                            <i class="bi bi-check-lg me-1"></i> Đăng lại tin
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

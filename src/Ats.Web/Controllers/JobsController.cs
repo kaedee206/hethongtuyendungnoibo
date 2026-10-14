@@ -17,6 +17,7 @@ namespace Ats.Web.Controllers;
 public class JobsController : Controller
 {
     private readonly IJobService _jobService;
+    private readonly IJobExpirationService _expirationService;
     private readonly ApplicationDbContext _dbContext;
     private readonly IWebHostEnvironment _env;
     private readonly IFileStorageService _fileStorageService;
@@ -28,6 +29,7 @@ public class JobsController : Controller
 
     public JobsController(
         IJobService jobService,
+        IJobExpirationService expirationService,
         ApplicationDbContext dbContext,
         IWebHostEnvironment env,
         IFileStorageService fileStorageService,
@@ -38,6 +40,7 @@ public class JobsController : Controller
         IEmailService? emailService = null)
     {
         _jobService = jobService;
+        _expirationService = expirationService;
         _dbContext = dbContext;
         _env = env;
         _fileStorageService = fileStorageService;
@@ -60,7 +63,118 @@ public class JobsController : Controller
         [FromQuery] int pageSize = 9)
     {
         var model = await _jobService.GetJobListAsync(search, department, location, employmentType, page, pageSize);
+        var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "";
+        model.IsRecruiterOrStaff = User.Identity?.IsAuthenticated == true && (
+            userRole.Equals(UserRoles.Admin, StringComparison.OrdinalIgnoreCase) ||
+            userRole.Equals(UserRoles.HRManager, StringComparison.OrdinalIgnoreCase) ||
+            userRole.Equals(UserRoles.Recruiter, StringComparison.OrdinalIgnoreCase));
         return View(model);
+    }
+
+    // GET: /Jobs/quan-ly hoặc /Jobs/Manage (Scrum-38: Màn hình quản lý tin đăng cho Recruiter/HR/Admin)
+    [HttpGet("quan-ly")]
+    [HttpGet("Manage")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter}")]
+    public async Task<IActionResult> Manage(
+        [FromQuery] string? search,
+        [FromQuery] JobPostingStatus? status,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 15)
+    {
+        var model = await _jobService.GetJobManagementListAsync(search, status, page, pageSize);
+        var lastScan = _expirationService.GetLastScanResult();
+        model.LastAutoScanTime = lastScan.ScanTime;
+        model.LastAutoScanExpiredCount = lastScan.ExpiredCount;
+
+        return View("Manage", model);
+    }
+
+    // POST: /Jobs/unpublish (Scrum-38 Yêu cầu 1: Gỡ tin thủ công bất cứ lúc nào, tin biến mất khỏi trang công khai ngay)
+    [HttpPost("unpublish")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter}")]
+    public async Task<IActionResult> Unpublish([FromForm] UnpublishJobRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.JobId))
+        {
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.ContentType?.Contains("application/json") == true)
+                return Json(new { success = false, message = "Mã tin tuyển dụng không hợp lệ." });
+
+            TempData["ErrorMessage"] = "Mã tin tuyển dụng không hợp lệ.";
+            return RedirectToAction(nameof(Manage));
+        }
+
+        var userId = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var uid) ? uid : Guid.Empty;
+        var (success, message) = await _jobService.UnpublishJobPostingAsync(request.JobId, userId, request.Reason);
+
+        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.ContentType?.Contains("application/json") == true)
+        {
+            return Json(new { success, message });
+        }
+
+        if (success)
+            TempData["SuccessMessage"] = message;
+        else
+            TempData["ErrorMessage"] = message;
+
+        return RedirectToAction(nameof(Manage));
+    }
+
+    // POST: /Jobs/republish (Kích hoạt lại / Gia hạn tin đăng)
+    [HttpPost("republish")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter}")]
+    public async Task<IActionResult> Republish([FromForm] RepublishJobRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.JobId))
+        {
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.ContentType?.Contains("application/json") == true)
+                return Json(new { success = false, message = "Mã tin tuyển dụng không hợp lệ." });
+
+            TempData["ErrorMessage"] = "Mã tin tuyển dụng không hợp lệ.";
+            return RedirectToAction(nameof(Manage));
+        }
+
+        var userId = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var uid) ? uid : Guid.Empty;
+        DateTimeOffset? deadline = request.NewDeadline.HasValue ? new DateTimeOffset(request.NewDeadline.Value, TimeSpan.Zero) : null;
+        var (success, message) = await _jobService.RepublishJobPostingAsync(request.JobId, userId, deadline);
+
+        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.ContentType?.Contains("application/json") == true)
+        {
+            return Json(new { success, message });
+        }
+
+        if (success)
+            TempData["SuccessMessage"] = message;
+        else
+            TempData["ErrorMessage"] = message;
+
+        return RedirectToAction(nameof(Manage));
+    }
+
+    // POST: /Jobs/trigger-scan (Scrum-38 Yêu cầu 2: Kích hoạt quét tự động tin quá hạn ngay lập tức để kiểm thử & đối soát)
+    [HttpPost("trigger-scan")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter}")]
+    public async Task<IActionResult> TriggerExpirationScan()
+    {
+        var result = await _expirationService.ProcessExpiredJobPostingsAsync();
+
+        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.ContentType?.Contains("application/json") == true)
+        {
+            return Json(new
+            {
+                success = result.Success,
+                scannedCount = result.ScannedCount,
+                expiredCount = result.ExpiredCount,
+                message = result.Message,
+                expiredCodes = result.ExpiredJobCodes,
+                scanTime = result.ScanTime.ToString("HH:mm:ss dd/MM/yyyy")
+            });
+        }
+
+        TempData["SuccessMessage"] = result.Message;
+        return RedirectToAction(nameof(Manage));
     }
 
     // GET: /Jobs/Detail/{id} or /Jobs/{id}
@@ -82,6 +196,12 @@ public class JobsController : Controller
 
         ViewBag.Locations = await _catalogService.GetSelectListByTypeAsync("LOCATION", model.Job?.WorkLocation);
         ViewBag.EmploymentTypes = await _catalogService.GetSelectListByTypeAsync("WORK_TYPE", model.Job?.EmploymentType);
+
+        var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "";
+        ViewBag.CanManageJob = User.Identity?.IsAuthenticated == true && (
+            userRole.Equals(UserRoles.Admin, StringComparison.OrdinalIgnoreCase) ||
+            userRole.Equals(UserRoles.HRManager, StringComparison.OrdinalIgnoreCase) ||
+            userRole.Equals(UserRoles.Recruiter, StringComparison.OrdinalIgnoreCase));
 
         return View(model);
     }
@@ -144,6 +264,18 @@ public class JobsController : Controller
             {
                 jobPosting = await _dbContext.JobPostings.FirstOrDefaultAsync(j => j.Slug == jobId)
                     ?? await _dbContext.JobPostings.FirstOrDefaultAsync();
+            }
+
+            // Scrum-38: Kiểm tra trạng thái tin tuyển dụng - không cho phép ứng tuyển nếu đã gỡ hoặc hết hạn
+            if (jobPosting != null && (jobPosting.Status == JobPostingStatus.CLOSED || jobPosting.Status == JobPostingStatus.EXPIRED || (jobPosting.ExpiredAt.HasValue && jobPosting.ExpiredAt.Value <= DateTimeOffset.UtcNow)))
+            {
+                TempData["ErrorMessage"] = $"Vị trí '{jobTitle}' hiện đã đóng nhận hồ sơ hoặc đã quá hạn tuyển dụng. Rất tiếc không thể nộp thêm hồ sơ.";
+                return RedirectToAction(nameof(Detail), new { id = jobId });
+            }
+            if (jobDetail?.Job != null && (jobDetail.Job.IsClosed || jobDetail.Job.IsExpired))
+            {
+                TempData["ErrorMessage"] = $"Vị trí '{jobTitle}' hiện đã đóng nhận hồ sơ hoặc đã quá hạn tuyển dụng. Rất tiếc không thể nộp thêm hồ sơ.";
+                return RedirectToAction(nameof(Detail), new { id = jobId });
             }
 
             // 2. Tìm hoặc tạo Candidate

@@ -1,20 +1,23 @@
 using Ats.Web.Data;
+using Ats.Web.Models.Enums;
 using Ats.Web.Models.ViewModels.Jobs;
 using Ats.Web.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ats.Web.Services;
 
-public class JobService : IJobService
+/// <summary>
+/// Service xử lý các nghiệp vụ tin tuyển dụng và quản trị vòng đời tin (Scrum-38).
+/// Sử dụng C# 12 Primary Constructor và ghi vết kiểm toán bảo mật ISecurityAuditService.
+/// </summary>
+public class JobService(
+    ApplicationDbContext dbContext,
+    ILogger<JobService> logger,
+    ISecurityAuditService? auditService = null) : IJobService
 {
-    private readonly ApplicationDbContext _dbContext;
-    private readonly ILogger<JobService> _logger;
-
-    public JobService(ApplicationDbContext dbContext, ILogger<JobService> logger)
-    {
-        _dbContext = dbContext;
-        _logger = logger;
-    }
+    private readonly ApplicationDbContext _dbContext = dbContext;
+    private readonly ILogger<JobService> _logger = logger;
+    private readonly ISecurityAuditService? _auditService = auditService;
 
     public async Task<JobListViewModel> GetJobListAsync(string? search = null, string? department = null, string? location = null, string? employmentType = null, int page = 1, int pageSize = 9)
     {
@@ -60,6 +63,22 @@ public class JobService : IJobService
         var totalRecords = filteredList.Count;
         var pagedList = filteredList.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
+        int activeCount = 0;
+        int closedCount = 0;
+        int expiredCount = 0;
+        try
+        {
+            var now = DateTimeOffset.UtcNow;
+            var postings = await _dbContext.JobPostings.Where(j => !j.IsDeleted).ToListAsync();
+            activeCount = postings.Count(j => j.Status == JobPostingStatus.PUBLISHED && (!j.ExpiredAt.HasValue || j.ExpiredAt.Value > now));
+            closedCount = postings.Count(j => j.Status == JobPostingStatus.CLOSED);
+            expiredCount = postings.Count(j => j.Status == JobPostingStatus.EXPIRED || (j.Status == JobPostingStatus.PUBLISHED && j.ExpiredAt.HasValue && j.ExpiredAt.Value <= now));
+        }
+        catch
+        {
+            activeCount = allJobs.Count;
+        }
+
         return new JobListViewModel
         {
             Jobs = pagedList,
@@ -70,7 +89,10 @@ public class JobService : IJobService
             SelectedEmploymentType = employmentType,
             CurrentPage = page,
             PageSize = pageSize,
-            TotalRecords = totalRecords
+            TotalRecords = totalRecords,
+            ActiveCount = activeCount,
+            ClosedCount = closedCount,
+            ExpiredCount = expiredCount
         };
     }
 
@@ -84,17 +106,55 @@ public class JobService : IJobService
     {
         if (string.IsNullOrWhiteSpace(idOrSlug)) return null;
 
-        var allJobs = await GetAllJobsInternalAsync();
         var normalized = idOrSlug.Trim().ToLower();
 
-        var job = allJobs.FirstOrDefault(j => 
+        // 1. Tìm trực tiếp trong cơ sở dữ liệu để lấy trạng thái mới nhất
+        try
+        {
+            Guid? guidId = Guid.TryParse(normalized, out var g) ? g : null;
+            var entity = await _dbContext.JobPostings
+                .Include(j => j.Requisition)
+                    .ThenInclude(r => r.Department)
+                .Include(j => j.Requisition)
+                    .ThenInclude(r => r.JobPosition)
+                .FirstOrDefaultAsync(j => !j.IsDeleted && (
+                    (guidId.HasValue && j.Id == guidId.Value) ||
+                    j.Slug.ToLower() == normalized ||
+                    (j.Code != null && j.Code.ToLower() == normalized)));
+
+            if (entity != null)
+            {
+                var jobVm = MapEntityToViewModel(entity);
+                var relatedEntities = await _dbContext.JobPostings
+                    .Include(j => j.Requisition)
+                        .ThenInclude(r => r.Department)
+                    .Where(j => !j.IsDeleted && j.Id != entity.Id && j.Status == JobPostingStatus.PUBLISHED && (!j.ExpiredAt.HasValue || j.ExpiredAt.Value > DateTimeOffset.UtcNow))
+                    .Take(3)
+                    .ToListAsync();
+                var relatedVms = relatedEntities.Select(MapEntityToViewModel).ToList();
+
+                return new JobDetailViewModel
+                {
+                    Job = jobVm,
+                    RelatedJobs = relatedVms
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Lỗi truy vấn chi tiết tin đăng từ DB.");
+        }
+
+        // 2. Fallback nếu không có trong DB (dùng danh mục mặc định)
+        var standardJobs = await GetAllJobsInternalAsync();
+        var job = standardJobs.FirstOrDefault(j => 
             j.Id.Equals(normalized, StringComparison.OrdinalIgnoreCase) || 
             j.Slug.Equals(normalized, StringComparison.OrdinalIgnoreCase) ||
             (!string.IsNullOrWhiteSpace(j.Code) && j.Code.Equals(normalized, StringComparison.OrdinalIgnoreCase)));
 
         if (job == null) return null;
 
-        var related = allJobs
+        var related = standardJobs
             .Where(j => j.Id != job.Id && (j.DepartmentCategory == job.DepartmentCategory || j.IsHot))
             .Take(3)
             .ToList();
@@ -112,24 +172,228 @@ public class JobService : IJobService
         return allJobs.Count;
     }
 
+    /// <summary>
+    /// Lấy danh sách quản lý tin đăng dành cho Recruiter/HR/Admin có lọc, đếm số ứng viên (Scrum-38).
+    /// </summary>
+    public async Task<JobManagementListViewModel> GetJobManagementListAsync(string? search = null, JobPostingStatus? status = null, int page = 1, int pageSize = 15)
+    {
+        if (page < 1) page = 1;
+        if (pageSize <= 0) pageSize = 15;
+
+        var now = DateTimeOffset.UtcNow;
+        var query = _dbContext.JobPostings
+            .Include(j => j.Requisition)
+                .ThenInclude(r => r.Department)
+            .Where(j => !j.IsDeleted);
+
+        // Đếm thống kê tổng quan
+        var allPostings = await query.ToListAsync();
+        var publishedCount = allPostings.Count(j => j.Status == JobPostingStatus.PUBLISHED && (!j.ExpiredAt.HasValue || j.ExpiredAt.Value > now));
+        var closedCount = allPostings.Count(j => j.Status == JobPostingStatus.CLOSED);
+        var expiredCount = allPostings.Count(j => j.Status == JobPostingStatus.EXPIRED || (j.Status == JobPostingStatus.PUBLISHED && j.ExpiredAt.HasValue && j.ExpiredAt.Value <= now));
+        var draftCount = allPostings.Count(j => j.Status == JobPostingStatus.DRAFT);
+
+        // Lọc từ khoá
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim().ToLower();
+            query = query.Where(j =>
+                j.Title.ToLower().Contains(s) ||
+                (j.Code != null && j.Code.ToLower().Contains(s)) ||
+                (j.WorkLocation != null && j.WorkLocation.ToLower().Contains(s)) ||
+                (j.Requisition != null && j.Requisition.Department != null && j.Requisition.Department.Name.ToLower().Contains(s)));
+        }
+
+        // Lọc trạng thái
+        if (status.HasValue)
+        {
+            if (status.Value == JobPostingStatus.EXPIRED)
+            {
+                query = query.Where(j => j.Status == JobPostingStatus.EXPIRED || (j.Status == JobPostingStatus.PUBLISHED && j.ExpiredAt.HasValue && j.ExpiredAt.Value <= now));
+            }
+            else if (status.Value == JobPostingStatus.PUBLISHED)
+            {
+                query = query.Where(j => j.Status == JobPostingStatus.PUBLISHED && (!j.ExpiredAt.HasValue || j.ExpiredAt.Value > now));
+            }
+            else
+            {
+                query = query.Where(j => j.Status == status.Value);
+            }
+        }
+
+        var totalFiltered = await query.CountAsync();
+        var pagedItems = await query
+            .OrderByDescending(j => j.UpdatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var postingIds = pagedItems.Select(p => p.Id).ToList();
+        var applicationCounts = await _dbContext.Applications
+            .Where(a => !a.IsDeleted && postingIds.Contains(a.JobPostingId))
+            .GroupBy(a => a.JobPostingId)
+            .Select(g => new { JobPostingId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.JobPostingId, g => g.Count);
+
+        var viewItems = pagedItems.Select(j =>
+        {
+            var appCount = applicationCounts.TryGetValue(j.Id, out var c) ? c : 0;
+            return new JobManagementItemViewModel
+            {
+                Id = j.Id,
+                Code = !string.IsNullOrWhiteSpace(j.Code) ? j.Code : "NT-" + j.Id.ToString("N")[..6].ToUpper(),
+                Title = j.Title,
+                Slug = j.Slug,
+                Department = j.Requisition?.Department?.Name ?? "Công nghệ Thông tin",
+                WorkLocation = string.IsNullOrWhiteSpace(j.WorkLocation) ? "Hà Nội" : j.WorkLocation,
+                SalaryDisplay = j.SalaryDisplay ?? "Thương lượng",
+                Status = j.Status,
+                PublishedAt = j.PublishedAt,
+                ExpiredAt = j.ExpiredAt,
+                ClosedAt = j.ClosedAt,
+                UnpublishReason = j.UnpublishReason,
+                ApplicationsCount = appCount,
+                UpdatedAt = j.UpdatedAt
+            };
+        }).ToList();
+
+        return new JobManagementListViewModel
+        {
+            Items = viewItems,
+            SearchKeyword = search,
+            SelectedStatus = status?.ToString(),
+            TotalPostings = totalFiltered,
+            PublishedCount = publishedCount,
+            ClosedCount = closedCount,
+            ExpiredCount = expiredCount,
+            DraftCount = draftCount,
+            CurrentPage = page,
+            PageSize = pageSize
+        };
+    }
+
+    /// <summary>
+    /// Gỡ tin tuyển dụng thủ công bất cứ lúc nào (Scrum-38 Yêu cầu 1).
+    /// Tin lập tức biến mất khỏi trang việc làm công khai và ghi vết kiểm toán.
+    /// </summary>
+    public async Task<(bool Success, string Message)> UnpublishJobPostingAsync(string idOrSlug, Guid userId, string? reason = null)
+    {
+        if (string.IsNullOrWhiteSpace(idOrSlug))
+            return (false, "Mã hoặc slug tin đăng không hợp lệ.");
+
+        var normalized = idOrSlug.Trim().ToLower();
+        Guid? guidId = Guid.TryParse(normalized, out var g) ? g : null;
+
+        var posting = await _dbContext.JobPostings
+            .Include(j => j.Requisition)
+            .FirstOrDefaultAsync(j => !j.IsDeleted && (
+                (guidId.HasValue && j.Id == guidId.Value) ||
+                j.Slug.ToLower() == normalized ||
+                (j.Code != null && j.Code.ToLower() == normalized)));
+
+        if (posting == null)
+            return (false, "Không tìm thấy tin tuyển dụng trong hệ thống.");
+
+        if (posting.Status == JobPostingStatus.CLOSED)
+            return (false, "Tin tuyển dụng này hiện đã được gỡ trước đó.");
+
+        var oldStatus = posting.Status;
+        posting.Status = JobPostingStatus.CLOSED;
+        posting.ClosedAt = DateTimeOffset.UtcNow;
+        posting.UnpublishReason = string.IsNullOrWhiteSpace(reason) ? "Gỡ tin theo quyết định của nhà tuyển dụng" : reason.Trim();
+        posting.UpdatedAt = DateTimeOffset.UtcNow;
+        posting.UpdatedById = userId;
+
+        await _dbContext.SaveChangesAsync();
+
+        _logger.LogInformation("Người dùng {UserId} đã gỡ tin tuyển dụng '{PostingTitle}' ({PostingId}). Lý do: {Reason}",
+            userId, posting.Title, posting.Id, posting.UnpublishReason);
+
+        _auditService?.LogSecurityEvent(new SecurityAuditEvent
+        {
+            EventType = SecurityAuditEventType.JobPostingUnpublished,
+            UserId = userId != Guid.Empty ? userId.ToString() : null,
+            ResourcePath = $"/Jobs/{posting.Id}",
+            Action = "JOB_POSTING_UNPUBLISHED",
+            IsSuccess = true,
+            Details = $"Gỡ tin '{posting.Title}'. Lý do: {posting.UnpublishReason}"
+        });
+
+        return (true, $"Đã gỡ tin tuyển dụng '{posting.Title}' thành công! Tin đã lập tức biến mất khỏi cổng tuyển dụng công khai.");
+    }
+
+    /// <summary>
+    /// Đăng lại hoặc gia hạn tin tuyển dụng đã gỡ / hết hạn.
+    /// </summary>
+    public async Task<(bool Success, string Message)> RepublishJobPostingAsync(string idOrSlug, Guid userId, DateTimeOffset? newDeadline = null)
+    {
+        if (string.IsNullOrWhiteSpace(idOrSlug))
+            return (false, "Mã hoặc slug tin đăng không hợp lệ.");
+
+        var normalized = idOrSlug.Trim().ToLower();
+        Guid? guidId = Guid.TryParse(normalized, out var g) ? g : null;
+
+        var posting = await _dbContext.JobPostings
+            .FirstOrDefaultAsync(j => !j.IsDeleted && (
+                (guidId.HasValue && j.Id == guidId.Value) ||
+                j.Slug.ToLower() == normalized ||
+                (j.Code != null && j.Code.ToLower() == normalized)));
+
+        if (posting == null)
+            return (false, "Không tìm thấy tin tuyển dụng.");
+
+        posting.Status = JobPostingStatus.PUBLISHED;
+        posting.PublishedAt = DateTimeOffset.UtcNow;
+        posting.ClosedAt = null;
+        posting.UnpublishReason = null;
+        if (newDeadline.HasValue)
+        {
+            posting.ExpiredAt = newDeadline.Value;
+        }
+        else if (posting.ExpiredAt.HasValue && posting.ExpiredAt.Value <= DateTimeOffset.UtcNow)
+        {
+            posting.ExpiredAt = DateTimeOffset.UtcNow.AddDays(30);
+        }
+        posting.UpdatedAt = DateTimeOffset.UtcNow;
+        posting.UpdatedById = userId;
+
+        await _dbContext.SaveChangesAsync();
+
+        _logger.LogInformation("Người dùng {UserId} đã kích hoạt đăng lại tin tuyển dụng '{PostingTitle}' ({PostingId}).",
+            userId, posting.Title, posting.Id);
+
+        _auditService?.LogSecurityEvent(new SecurityAuditEvent
+        {
+            EventType = SecurityAuditEventType.JobPostingRepublished,
+            UserId = userId != Guid.Empty ? userId.ToString() : null,
+            ResourcePath = $"/Jobs/{posting.Id}",
+            Action = "JOB_POSTING_REPUBLISHED",
+            IsSuccess = true,
+            Details = $"Đăng lại tin '{posting.Title}', hạn nộp: {posting.ExpiredAt:dd/MM/yyyy}"
+        });
+
+        return (true, $"Đã mở lại và đăng tin tuyển dụng '{posting.Title}' thành công. Ứng viên có thể tiếp tục xem và nộp hồ sơ.");
+    }
+
     private async Task<List<JobItemViewModel>> GetAllJobsInternalAsync()
     {
         // 1. Kiểm tra xem trong DB đã có JobPostings publish chưa
         try
         {
-            var dbJobs = await _dbContext.JobPostings
-                .Include(j => j.Requisition)
-                    .ThenInclude(r => r.Department)
-                .Include(j => j.Requisition)
-                    .ThenInclude(r => r.JobPosition)
-                .Where(j => j.Status == Models.Enums.JobPostingStatus.PUBLISHED 
-                         && (j.ExpiredAt == null || j.ExpiredAt > DateTimeOffset.UtcNow))
-                .ToListAsync();
-
-            if (dbJobs.Any())
+            var anyExistInDb = await _dbContext.JobPostings.AnyAsync(j => !j.IsDeleted);
+            if (anyExistInDb)
             {
-                var mapped = dbJobs.Select(j => MapEntityToViewModel(j)).ToList();
-                return mapped;
+                var now = DateTimeOffset.UtcNow;
+                var dbJobs = await _dbContext.JobPostings
+                    .Include(j => j.Requisition)
+                        .ThenInclude(r => r.Department)
+                    .Include(j => j.Requisition)
+                        .ThenInclude(r => r.JobPosition)
+                    .Where(j => !j.IsDeleted && j.Status == JobPostingStatus.PUBLISHED && (!j.ExpiredAt.HasValue || j.ExpiredAt.Value > now))
+                    .ToListAsync();
+
+                // Chỉ trả về các tin đang PUBLISHED và chưa hết hạn
+                return dbJobs.Select(MapEntityToViewModel).ToList();
             }
         }
         catch (Exception ex)
@@ -235,7 +499,10 @@ public class JobService : IJobService
             Benefits = entity.Benefits?.Split(new[] { '\n', '\r', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList() ?? GetDefaultNoveraTechBenefits(),
             TechStack = techList,
             PostedDate = entity.PublishedAt?.DateTime ?? DateTime.UtcNow.AddDays(-5),
-            Deadline = entity.ExpiredAt?.DateTime ?? DateTime.UtcNow.AddDays(25)
+            Deadline = entity.ExpiredAt?.DateTime ?? DateTime.UtcNow.AddDays(25),
+            Status = entity.Status,
+            UnpublishReason = entity.UnpublishReason,
+            ClosedAt = entity.ClosedAt
         };
     }
 

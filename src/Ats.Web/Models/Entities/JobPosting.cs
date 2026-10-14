@@ -21,6 +21,8 @@ public class JobPosting : BaseEntity
     public DateTimeOffset? PublishedAt { get; set; }
     public DateTimeOffset? ExpiredAt { get; set; }
     public JobPostingStatus Status { get; set; } = JobPostingStatus.DRAFT;
+    public string? UnpublishReason { get; set; }
+    public DateTimeOffset? ClosedAt { get; set; }
 
     public JobRequisition Requisition { get; set; } = null!;
 }

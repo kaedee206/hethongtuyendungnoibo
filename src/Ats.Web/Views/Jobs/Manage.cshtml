@@ -1,0 +1,713 @@
+@using Ats.Web.Models.Enums
+@model Ats.Web.Models.ViewModels.Jobs.JobManagementListViewModel
+@{
+    ViewData["Title"] = "Quản lý Tin Tuyển Dụng & Vòng Đời Tin — NoveraTech";
+    Layout = "_Layout";
+}
+
+@* ══════════════════════════════════════════════════════════
+   NOVERATECH ATS — MÀN HÌNH QUẢN LÝ TIN TUYỂN DỤNG (SCRUM-38)
+   Quy chuẩn thiết kế: RULE.md | Bootstrap 5 | 6px Border Radius
+   Tính năng:
+   1. Gỡ tin thủ công bất cứ lúc nào, tin biến mất khỏi trang công khai ngay
+   2. Tin quá hạn nhận hồ sơ tự động ẩn bằng tác vụ định kỳ hằng ngày (có nút kích hoạt quét ngay)
+   ══════════════════════════════════════════════════════════ *@
+
+<style>
+    :root {
+        --color-canvas: #F8FAFC;
+        --color-card: #FFFFFF;
+        --color-border: #E2E8F0;
+        --color-text-main: #0F172A;
+        --color-text-muted: #64748B;
+        --color-accent: #059669;
+        --color-accent-subtle: #ECFDF5;
+        --radius-button: 8px;
+        --radius-card: 12px;
+        --radius-badge: 6px;
+    }
+
+    .ats-manage-container {
+        padding: 2rem 0 3rem;
+    }
+
+    .ats-page-header {
+        margin-bottom: 2rem;
+    }
+
+    .ats-stat-card {
+        background: #FFFFFF;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-card);
+        padding: 1.25rem 1.5rem;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        transition: transform .2s ease, box-shadow .2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .ats-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    }
+    .ats-stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+    }
+    .stat-card-total::before { background-color: #3B82F6; }
+    .stat-card-active::before { background-color: #10B981; }
+    .stat-card-closed::before { background-color: #F59E0B; }
+    .stat-card-expired::before { background-color: #EF4444; }
+
+    .ats-filter-bar {
+        background: #FFFFFF;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-card);
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .ats-table-card {
+        background: #FFFFFF;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-card);
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    }
+
+    .ats-table thead th {
+        background-color: #F8FAFC;
+        color: #475569;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        border-bottom: 1px solid var(--color-border);
+        padding: 0.9rem 1rem;
+        vertical-align: middle;
+    }
+
+    .ats-table tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 0.875rem;
+    }
+
+    .ats-table tbody tr:hover td {
+        background-color: #F8FAFC;
+    }
+
+    .badge-status {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.35rem 0.65rem;
+        border-radius: var(--radius-badge);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .badge-status-published {
+        background: #ECFDF5;
+        color: #065F46;
+        border: 1px solid #A7F3D0;
+    }
+
+    .badge-status-closed {
+        background: #FFFBEB;
+        color: #92400E;
+        border: 1px solid #FDE68A;
+    }
+
+    .badge-status-expired {
+        background: #FEF2F2;
+        color: #991B1B;
+        border: 1px solid #FECACA;
+    }
+
+    .badge-status-draft {
+        background: #F1F5F9;
+        color: #475569;
+        border: 1px solid #CBD5E1;
+    }
+
+    .action-btn {
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        padding: 0.35rem 0.65rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+</style>
+
+<div class="container-fluid px-3 px-md-4 ats-manage-container">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
+            <li class="breadcrumb-item"><a href="/Workspace" class="text-decoration-none text-muted">Bàn làm việc</a></li>
+            <li class="breadcrumb-item"><a href="/Jobs" class="text-decoration-none text-muted">Cổng Tuyển dụng</a></li>
+            <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">Quản lý tin tuyển dụng</li>
+        </ol>
+    </nav>
+
+    <!-- Header & Actions -->
+    <div class="ats-page-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                <i class="bi bi-briefcase-fill text-success"></i> Quản Lý Tin Tuyển Dụng
+                <span class="badge bg-light text-secondary border fs-6 fw-normal" style="border-radius: 6px;">Scrum - Số 38</span>
+            </h1>
+            <p class="text-muted mb-0 small">
+                Kiểm soát trạng thái đăng tuyển, gỡ tin thủ công ngay tức thì và giám sát tác vụ định kỳ tự động ẩn tin quá hạn.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <!-- Nút kích hoạt tác vụ quét quá hạn ngay lập tức -->
+            <button type="button" class="btn btn-outline-danger d-inline-flex align-items-center gap-2 shadow-sm" id="btnTriggerScan" style="border-radius: var(--radius-button); font-weight: 600;" title="Kích hoạt tác vụ định kỳ quét và ẩn các tin tuyển dụng đã hết hạn nhận hồ sơ">
+                <i class="bi bi-clock-history"></i> <span id="btnTriggerScanText">Quét tin quá hạn ngay</span>
+            </button>
+
+            <!-- Xem cổng ngoài -->
+            <a href="/Jobs" target="_blank" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm" style="border-radius: var(--radius-button);">
+                <i class="bi bi-box-arrow-up-right"></i> Xem Cổng ứng viên
+            </a>
+
+            <!-- Đăng tin mới -->
+            <a href="/Workspace" class="btn btn-success d-inline-flex align-items-center gap-1 shadow-sm" style="border-radius: var(--radius-button); font-weight: 600;">
+                <i class="bi bi-plus-lg"></i> Tạo tin tuyển dụng
+            </a>
+        </div>
+    </div>
+
+    <!-- Thông báo Alert TempData -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm mb-4" role="alert" style="border-radius: 8px; border-left: 5px solid #10B981;">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                <div class="fw-semibold">@TempData["SuccessMessage"]</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert" style="border-radius: 8px; border-left: 5px solid #EF4444;">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+                <div class="fw-semibold">@TempData["ErrorMessage"]</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Banner Kết quả quét tự động -->
+    <div id="scanResultAlert" class="alert alert-info alert-dismissible fade show shadow-sm mb-4 d-none" role="alert" style="border-radius: 8px; border-left: 5px solid #0EA5E9;">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-info-circle-fill text-info fs-5"></i>
+            <div id="scanResultMessage" class="fw-semibold"></div>
+        </div>
+        <button type="button" class="btn-close" onclick="document.getElementById('scanResultAlert').classList.add('d-none');" aria-label="Close"></button>
+    </div>
+
+    <!-- 4 Thẻ chỉ số tổng quan (KPI Metrics) -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="ats-stat-card stat-card-total">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="text-muted small fw-medium mb-1">TỔNG TIN ĐĂNG</div>
+                        <div class="h3 fw-bold text-dark mb-0">@Model.TotalPostings</div>
+                    </div>
+                    <div class="p-2 bg-light rounded-2 text-primary">
+                        <i class="bi bi-folder-fill fs-5"></i>
+                    </div>
+                </div>
+                <div class="small text-muted mt-2">Toàn bộ tin trên hệ thống</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="ats-stat-card stat-card-active">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="text-muted small fw-medium mb-1">ĐANG ĐĂNG TUYỂN</div>
+                        <div class="h3 fw-bold text-success mb-0">@Model.PublishedCount</div>
+                    </div>
+                    <div class="p-2 bg-success-subtle rounded-2 text-success">
+                        <i class="bi bi-broadcast fs-5"></i>
+                    </div>
+                </div>
+                <div class="small text-success mt-2 d-flex align-items-center gap-1">
+                    <span class="d-inline-block rounded-circle bg-success" style="width: 7px; height: 7px;"></span>
+                    Hiển thị trên Cổng ứng viên
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="ats-stat-card stat-card-closed">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="text-muted small fw-medium mb-1">ĐÃ GỠ THỦ CÔNG</div>
+                        <div class="h3 fw-bold text-warning mb-0">@Model.ClosedCount</div>
+                    </div>
+                    <div class="p-2 bg-warning-subtle rounded-2 text-warning">
+                        <i class="bi bi-eye-slash-fill fs-5"></i>
+                    </div>
+                </div>
+                <div class="small text-muted mt-2">Đã ẩn ngay lập tức khỏi cổng</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="ats-stat-card stat-card-expired">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="text-muted small fw-medium mb-1">QUÁ HẠN NHẬN HỒ SƠ</div>
+                        <div class="h3 fw-bold text-danger mb-0">@Model.ExpiredCount</div>
+                    </div>
+                    <div class="p-2 bg-danger-subtle rounded-2 text-danger">
+                        <i class="bi bi-hourglass-bottom fs-5"></i>
+                    </div>
+                </div>
+                <div class="small text-danger mt-2">Tự động ẩn bởi tác vụ định kỳ</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thanh Lọc & Tìm kiếm -->
+    <div class="ats-filter-bar shadow-sm">
+        <form method="get" asp-action="Manage" class="row g-2 align-items-center">
+            <!-- Tìm kiếm từ khoá -->
+            <div class="col-12 col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 text-muted" style="border-radius: 8px 0 0 8px;">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="search" value="@Model.SearchKeyword" class="form-control border-start-0" placeholder="Tìm theo tiêu đề, mã tin, phòng ban, địa điểm..." style="border-radius: 0 8px 8px 0;" />
+                </div>
+            </div>
+
+            <!-- Lọc trạng thái -->
+            <div class="col-12 col-md-4">
+                <select name="status" class="form-select" onchange="this.form.submit()" style="border-radius: 8px;">
+                    <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedStatus))">Tất cả trạng thái tin đăng</option>
+                    <option value="PUBLISHED" selected="@(Model.SelectedStatus == "PUBLISHED")">🟢 Đang đăng tuyển (Công khai)</option>
+                    <option value="CLOSED" selected="@(Model.SelectedStatus == "CLOSED")">🟡 Đã gỡ thủ công (Ẩn khỏi cổng)</option>
+                    <option value="EXPIRED" selected="@(Model.SelectedStatus == "EXPIRED")">🔴 Đã quá hạn nhận hồ sơ (Ẩn tự động)</option>
+                    <option value="DRAFT" selected="@(Model.SelectedStatus == "DRAFT")">⚪ Bản nháp (Chưa công bố)</option>
+                </select>
+            </div>
+
+            <!-- Nút tìm kiếm & Xoá bộ lọc -->
+            <div class="col-12 col-md-3 d-flex gap-2 justify-content-md-end">
+                <button type="submit" class="btn btn-primary flex-grow-1 flex-md-grow-0" style="border-radius: 8px; font-weight: 500;">
+                    <i class="bi bi-funnel"></i> Lọc dữ liệu
+                </button>
+                @if (!string.IsNullOrWhiteSpace(Model.SearchKeyword) || !string.IsNullOrWhiteSpace(Model.SelectedStatus))
+                {
+                    <a asp-action="Manage" class="btn btn-outline-secondary" style="border-radius: 8px;" title="Xoá bộ lọc">
+                        <i class="bi bi-x-circle"></i> Xoá lọc
+                    </a>
+                }
+            </div>
+        </form>
+    </div>
+
+    <!-- Bảng danh sách tin tuyển dụng -->
+    <div class="ats-table-card shadow-sm">
+        <div class="table-responsive">
+            <table class="table ats-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="min-width: 260px;">Mã tin & Tiêu đề công việc</th>
+                        <th style="min-width: 170px;">Phòng ban & Địa điểm</th>
+                        <th style="min-width: 140px;">Mức đãi ngộ</th>
+                        <th style="min-width: 130px;">Hạn nộp hồ sơ</th>
+                        <th style="min-width: 90px;" class="text-center">Hồ sơ</th>
+                        <th style="min-width: 150px;">Trạng thái</th>
+                        <th style="min-width: 190px;" class="text-end">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                <span class="fw-medium">Không tìm thấy tin tuyển dụng nào phù hợp với điều kiện tìm kiếm.</span>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <!-- Tiêu đề & Mã tin -->
+                                <td>
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="badge font-monospace bg-dark text-info px-2 py-0.5" style="border-radius: 4px; font-size: 0.72rem;">
+                                            @item.Code
+                                        </span>
+                                    </div>
+                                    <a href="/Jobs/@(item.Slug ?? item.Id.ToString())" target="_blank" class="fw-bold text-dark text-decoration-none hover-primary text-truncate d-block" style="max-width: 320px;" title="@item.Title">
+                                        @item.Title
+                                    </a>
+                                </td>
+
+                                <!-- Phòng ban & Địa điểm -->
+                                <td>
+                                    <div class="fw-medium text-dark">@item.Department</div>
+                                    <div class="text-muted small d-flex align-items-center gap-1 mt-0.5">
+                                        <i class="bi bi-geo-alt"></i> @item.WorkLocation
+                                    </div>
+                                </td>
+
+                                <!-- Lương -->
+                                <td>
+                                    <span class="font-monospace fw-semibold text-success small">
+                                        @item.SalaryDisplay
+                                    </span>
+                                </td>
+
+                                <!-- Hạn nộp hồ sơ -->
+                                <td>
+                                    @if (item.ExpiredAt.HasValue)
+                                    {
+                                        var isPassed = item.ExpiredAt.Value <= DateTimeOffset.UtcNow;
+                                        <div class="font-monospace small @(isPassed ? "text-danger fw-bold" : "text-dark")">
+                                            @item.ExpiredAt.Value.ToString("dd/MM/yyyy")
+                                        </div>
+                                        @if (isPassed)
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger px-1.5 py-0.5 text-xs" style="border-radius: 4px; font-size: 0.68rem;">Đã hết hạn</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Không giới hạn</span>
+                                    }
+                                </td>
+
+                                <!-- Hồ sơ ứng tuyển -->
+                                <td class="text-center">
+                                    <span class="badge bg-light text-dark border px-2 py-1" style="border-radius: 6px; font-size: 0.8rem;">
+                                        <i class="bi bi-people-fill text-muted me-1"></i> @item.ApplicationsCount
+                                    </span>
+                                </td>
+
+                                <!-- Trạng thái -->
+                                <td>
+                                    @if (item.IsPublished)
+                                    {
+                                        <span class="badge-status badge-status-published">
+                                            <span class="spinner-grow spinner-grow-sm text-success" style="width: 6px; height: 6px;" role="status"></span>
+                                            Đang đăng tuyển
+                                        </span>
+                                    }
+                                    else if (item.IsClosed)
+                                    {
+                                        <span class="badge-status badge-status-closed" title="@(string.IsNullOrWhiteSpace(item.UnpublishReason) ? "Đã gỡ thủ công bởi nhân viên tuyển dụng" : $"Lý do: {item.UnpublishReason}")">
+                                            <i class="bi bi-eye-slash-fill"></i> Đã gỡ thủ công
+                                        </span>
+                                        @if (!string.IsNullOrWhiteSpace(item.UnpublishReason))
+                                        {
+                                            <div class="text-muted small mt-1 fst-italic text-truncate" style="max-width: 150px; font-size: 0.72rem;" title="@item.UnpublishReason">
+                                                Lý do: @item.UnpublishReason
+                                            </div>
+                                        }
+                                    }
+                                    else if (item.IsExpired)
+                                    {
+                                        <span class="badge-status badge-status-expired" title="Tin đã hết hạn nhận hồ sơ, tự động ẩn bởi tác vụ định kỳ">
+                                            <i class="bi bi-clock-history"></i> Đã quá hạn (Ẩn)
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-status badge-status-draft">
+                                            <i class="bi bi-pencil"></i> Bản nháp
+                                        </span>
+                                    }
+                                </td>
+
+                                <!-- Nút Hành Động -->
+                                <td class="text-end">
+                                    <div class="d-flex align-items-center justify-content-end gap-1.5">
+                                        <!-- Xem trang công khai -->
+                                        <a href="/Jobs/@(item.Slug ?? item.Id.ToString())" target="_blank" class="btn btn-outline-secondary btn-sm action-btn" title="Xem chi tiết JD trang ứng viên">
+                                            <i class="bi bi-box-arrow-up-right"></i> Xem
+                                        </a>
+
+                                        @if (item.IsPublished)
+                                        {
+                                            <!-- Scrum-38 Yêu cầu 1: Nút GỠ TIN THỦ CÔNG -->
+                                            <button type="button" class="btn btn-outline-danger btn-sm action-btn btn-unpublish" 
+                                                    data-job-id="@item.Id" 
+                                                    data-job-title="@item.Title" 
+                                                    data-job-code="@item.Code" 
+                                                    title="Gỡ tin này khỏi cổng tuyển dụng ngay lập tức">
+                                                <i class="bi bi-trash3-fill"></i> Gỡ tin
+                                            </button>
+                                        }
+                                        else if (item.IsClosed || item.IsExpired)
+                                        {
+                                            <!-- Nút ĐĂNG LẠI / GIA HẠN TIN -->
+                                            <button type="button" class="btn btn-outline-success btn-sm action-btn btn-republish" 
+                                                    data-job-id="@item.Id" 
+                                                    data-job-title="@item.Title" 
+                                                    data-job-code="@item.Code" 
+                                                    data-deadline="@(item.ExpiredAt?.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.AddDays(30).ToString("yyyy-MM-dd"))"
+                                                    title="Mở lại và công bố tin này trên cổng tuyển dụng">
+                                                <i class="bi bi-arrow-repeat"></i> Đăng lại
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Phân trang -->
+        @if (Model.TotalPages > 1)
+        {
+            <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center py-3 px-3">
+                <span class="small text-muted">
+                    Hiển thị trang <strong>@Model.CurrentPage</strong> trên tổng số <strong>@Model.TotalPages</strong> trang (@Model.TotalPostings tin)
+                </span>
+                <nav aria-label="Phân trang tin tuyển dụng">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(Model.CurrentPage <= 1 ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("Manage", new { page = Model.CurrentPage - 1, search = Model.SearchKeyword, status = Model.SelectedStatus })" style="border-radius: 6px 0 0 6px;">Trước</a>
+                        </li>
+                        @for (int p = 1; p <= Model.TotalPages; p++)
+                        {
+                            <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("Manage", new { page = p, search = Model.SearchKeyword, status = Model.SelectedStatus })">@p</a>
+                            </li>
+                        }
+                        <li class="page-item @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("Manage", new { page = Model.CurrentPage + 1, search = Model.SearchKeyword, status = Model.SelectedStatus })" style="border-radius: 0 6px 6px 0;">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL GỠ TIN THỦ CÔNG (SCRUM-38 YÊU CẦU 1)
+     ══════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="unpublishModal" tabindex="-1" aria-labelledby="unpublishModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-danger-subtle border-0 py-3">
+                <h5 class="modal-title text-danger fw-bold d-flex align-items-center gap-2" id="unpublishModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Xác nhận Gỡ Tin Tuyển Dụng
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formUnpublish" asp-controller="Jobs" asp-action="Unpublish" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="JobId" id="unpublishJobId" value="" />
+
+                <div class="modal-body p-4">
+                    <div class="alert alert-warning mb-3 py-2.5 px-3" style="border-radius: 8px; font-size: 0.875rem;">
+                        <i class="bi bi-info-circle-fill me-1"></i>
+                        Tin tuyển dụng sẽ <strong>ngay lập tức biến mất</strong> khỏi trang danh sách việc làm công khai. Ứng viên sẽ không thể gửi thêm hồ sơ ứng tuyển.
+                    </div>
+
+                    <p class="mb-3">
+                        Bạn đang thao tác gỡ tin: <strong id="unpublishJobTitleDisplay" class="text-dark"></strong> 
+                        (<span id="unpublishJobCodeDisplay" class="font-monospace text-muted"></span>)
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-dark">Lý do gỡ tin tuyển dụng <span class="text-danger">*</span></label>
+                        <select class="form-select mb-2" id="selectUnpublishReason" style="border-radius: 8px;">
+                            <option value="Đã tuyển dụng đủ chỉ tiêu nhân sự">Đã tuyển dụng đủ chỉ tiêu nhân sự</option>
+                            <option value="Tạm dừng kế hoạch tuyển dụng vị trí này">Tạm dừng kế hoạch tuyển dụng vị trí này</option>
+                            <option value="Thay đổi yêu cầu / Cơ cấu lại chức danh">Thay đổi yêu cầu / Cơ cấu lại chức danh</option>
+                            <option value="Hết hạn ngân sách tuyển dụng quý">Hết hạn ngân sách tuyển dụng quý</option>
+                            <option value="other">Lý do khác (Nhập chi tiết bên dưới)...</option>
+                        </select>
+                        <textarea class="form-control" name="Reason" id="unpublishReasonText" rows="2" placeholder="Ghi chú thêm lý do gỡ tin để lưu vết kiểm toán..." style="border-radius: 8px;"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0 py-3 px-4 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal" style="border-radius: 8px;">Huỷ bỏ</button>
+                    <button type="submit" class="btn btn-danger px-4 fw-semibold" id="btnConfirmUnpublish" style="border-radius: 8px;">
+                        <i class="bi bi-trash3-fill me-1"></i> Gỡ tin ngay
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL ĐĂNG LẠI / GIA HẠN TIN (SCRUM-38)
+     ══════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="republishModal" tabindex="-1" aria-labelledby="republishModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-success-subtle border-0 py-3">
+                <h5 class="modal-title text-success fw-bold d-flex align-items-center gap-2" id="republishModalLabel">
+                    <i class="bi bi-arrow-repeat"></i> Đăng Lại & Gia Hạn Tin Tuyển Dụng
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formRepublish" asp-controller="Jobs" asp-action="Republish" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="JobId" id="republishJobId" value="" />
+
+                <div class="modal-body p-4">
+                    <p class="mb-3">
+                        Bạn đang mở lại tin tuyển dụng: <strong id="republishJobTitleDisplay" class="text-dark"></strong>
+                        (<span id="republishJobCodeDisplay" class="font-monospace text-muted"></span>)
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-dark">Hạn nộp hồ sơ mới (Deadline) <span class="text-danger">*</span></label>
+                        <input type="date" name="NewDeadline" id="republishDeadline" class="form-control" style="border-radius: 8px;" required />
+                        <div class="form-text small text-muted">Tin sẽ tự động hiển thị lại trên cổng ứng viên và hết hạn vào ngày đã chọn.</div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0 py-3 px-4 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal" style="border-radius: 8px;">Huỷ</button>
+                    <button type="submit" class="btn btn-success px-4 fw-semibold" id="btnConfirmRepublish" style="border-radius: 8px;">
+                        <i class="bi bi-check-lg me-1"></i> Đăng lại tin
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // ── 1. MODAL GỠ TIN THỦ CÔNG ──
+        const unpublishModalEl = document.getElementById('unpublishModal');
+        const unpublishModal = new bootstrap.Modal(unpublishModalEl);
+        const unpublishJobIdInput = document.getElementById('unpublishJobId');
+        const unpublishJobTitleDisplay = document.getElementById('unpublishJobTitleDisplay');
+        const unpublishJobCodeDisplay = document.getElementById('unpublishJobCodeDisplay');
+        const selectUnpublishReason = document.getElementById('selectUnpublishReason');
+        const unpublishReasonText = document.getElementById('unpublishReasonText');
+
+        // Điền lý do mặc định
+        unpublishReasonText.value = selectUnpublishReason.value;
+        selectUnpublishReason.addEventListener('change', function () {
+            if (this.value === 'other') {
+                unpublishReasonText.value = '';
+                unpublishReasonText.focus();
+            } else {
+                unpublishReasonText.value = this.value;
+            }
+        });
+
+        document.querySelectorAll('.btn-unpublish').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const jobId = this.getAttribute('data-job-id');
+                const jobTitle = this.getAttribute('data-job-title');
+                const jobCode = this.getAttribute('data-job-code');
+
+                unpublishJobIdInput.value = jobId;
+                unpublishJobTitleDisplay.textContent = jobTitle;
+                unpublishJobCodeDisplay.textContent = jobCode;
+
+                unpublishModal.show();
+            });
+        });
+
+        // ── 2. MODAL ĐĂNG LẠI / GIA HẠN TIN ──
+        const republishModalEl = document.getElementById('republishModal');
+        const republishModal = new bootstrap.Modal(republishModalEl);
+        const republishJobIdInput = document.getElementById('republishJobId');
+        const republishJobTitleDisplay = document.getElementById('republishJobTitleDisplay');
+        const republishJobCodeDisplay = document.getElementById('republishJobCodeDisplay');
+        const republishDeadlineInput = document.getElementById('republishDeadline');
+
+        document.querySelectorAll('.btn-republish').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const jobId = this.getAttribute('data-job-id');
+                const jobTitle = this.getAttribute('data-job-title');
+                const jobCode = this.getAttribute('data-job-code');
+                const deadline = this.getAttribute('data-deadline');
+
+                republishJobIdInput.value = jobId;
+                republishJobTitleDisplay.textContent = jobTitle;
+                republishJobCodeDisplay.textContent = jobCode;
+
+                // Nếu deadline cũ đã qua, cộng thêm 30 ngày
+                const todayStr = new Date().toISOString().split('T')[0];
+                if (!deadline || deadline <= todayStr) {
+                    const future = new Date();
+                    future.setDate(future.getDate() + 30);
+                    republishDeadlineInput.value = future.toISOString().split('T')[0];
+                } else {
+                    republishDeadlineInput.value = deadline;
+                }
+
+                republishModal.show();
+            });
+        });
+
+        // ── 3. NÚT KÍCH HOẠT QUÉT HẾT HẠN NGAY (SCRUM-38 YÊU CẦU 2) ──
+        const btnTriggerScan = document.getElementById('btnTriggerScan');
+        const btnTriggerScanText = document.getElementById('btnTriggerScanText');
+        const scanResultAlert = document.getElementById('scanResultAlert');
+        const scanResultMessage = document.getElementById('scanResultMessage');
+
+        btnTriggerScan.addEventListener('click', async function () {
+            if (btnTriggerScan.disabled) return;
+
+            btnTriggerScan.disabled = true;
+            btnTriggerScanText.textContent = 'Đang quét tự động...';
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+            try {
+                const response = await fetch('/Jobs/trigger-scan', {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'RequestVerificationToken': token,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    scanResultMessage.innerHTML = `<strong>Thành công:</strong> ${data.message} (Lần quét: ${data.scanTime})`;
+                    scanResultAlert.classList.remove('d-none');
+                    scanResultAlert.scrollIntoView({ behavior: 'smooth' });
+
+                    // Reload lại trang sau 1.5s để cập nhật số liệu
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    alert('Lỗi máy chủ khi quét tin hết hạn.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Không thể kết nối đến máy chủ.');
+            } finally {
+                btnTriggerScan.disabled = false;
+                btnTriggerScanText.textContent = 'Quét tin quá hạn ngay';
+            }
+        });
+    });
+</script>
+}

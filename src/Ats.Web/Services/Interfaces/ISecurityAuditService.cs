@@ -14,7 +14,10 @@ public enum SecurityAuditEventType
     PrivacyConsentRejected,
     UserLocked,
     UserUnlocked,
-    RoleChanged
+    RoleChanged,
+    JobPostingUnpublished,
+    JobPostingAutoExpired,
+    JobPostingRepublished
 }
 
 /// <summary>

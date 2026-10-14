@@ -83,6 +83,8 @@ builder.Services.AddScoped<IDepartmentBudgetService, DepartmentBudgetService>();
 builder.Services.AddScoped<IRequisitionAssignmentService, RequisitionAssignmentService>();
 builder.Services.AddScoped<ISlaService, SlaService>();
 builder.Services.AddHostedService<SlaOverdueBackgroundService>();
+builder.Services.AddSingleton<IJobExpirationService, JobExpirationService>();
+builder.Services.AddHostedService<JobExpirationBackgroundService>();
 
 // Cấu hình Rate Limiting bảo vệ các endpoint nhạy cảm (OWASP A04 / A07)
 builder.Services.AddRateLimiter(options =>
@@ -337,6 +339,11 @@ using (var scope = app.Services.CreateScope())
             UPDATE departments SET path = '/' || id || '/' WHERE path = '' OR path IS NULL;
             ALTER TABLE job_requisitions ADD COLUMN IF NOT EXISTS salary_band_explanation TEXT;
             ALTER TABLE job_positions ADD COLUMN IF NOT EXISTS competency_framework_id UUID;
+            ALTER TABLE job_positions ADD COLUMN IF NOT EXISTS min_salary NUMERIC;
+            ALTER TABLE job_positions ADD COLUMN IF NOT EXISTS max_salary NUMERIC;
+            ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS code TEXT;
+            ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS unpublish_reason TEXT;
+            ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS closed_at TIMESTAMPTZ;
 
             CREATE TABLE IF NOT EXISTS approval_rules (
                 id UUID PRIMARY KEY,
