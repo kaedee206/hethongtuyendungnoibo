@@ -79,6 +79,7 @@ builder.Services.AddScoped<ICandidateMergeService, CandidateMergeService>();
 builder.Services.AddScoped<ICandidateStageService, CandidateStageService>();
 builder.Services.AddScoped<ICandidateTimelineService, CandidateTimelineService>();
 builder.Services.AddScoped<IJobPostingService, JobPostingService>();
+builder.Services.AddScoped<IDepartmentBudgetService, DepartmentBudgetService>();
 
 // Cấu hình Rate Limiting bảo vệ các endpoint nhạy cảm (OWASP A04 / A07)
 builder.Services.AddRateLimiter(options =>
@@ -510,6 +511,30 @@ using (var scope = app.Services.CreateScope())
                 updated_by_id UUID,
                 is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
                 deleted_at TIMESTAMPTZ
+            );
+
+            -- Scrum #24: Định biên và ngân sách tuyển dụng theo phòng ban
+            ALTER TABLE job_requisitions ADD COLUMN IF NOT EXISTS is_over_quota BOOLEAN NOT NULL DEFAULT FALSE;
+            ALTER TABLE job_requisitions ADD COLUMN IF NOT EXISTS over_quota_reason TEXT;
+            ALTER TABLE job_requisitions ADD COLUMN IF NOT EXISTS over_quota_approved_by_id UUID;
+            ALTER TABLE job_requisitions ADD COLUMN IF NOT EXISTS over_quota_approved_at TIMESTAMPTZ;
+
+            CREATE TABLE IF NOT EXISTS department_headcount_budgets (
+                id UUID PRIMARY KEY,
+                department_id UUID NOT NULL REFERENCES departments(id) ON DELETE RESTRICT,
+                year INTEGER NOT NULL,
+                target_headcount INTEGER NOT NULL DEFAULT 0,
+                salary_budget NUMERIC(18, 2) NOT NULL DEFAULT 0,
+                currency TEXT NOT NULL DEFAULT 'VND',
+                note TEXT,
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ,
+                CONSTRAINT uq_department_headcount_budgets_dept_year UNIQUE (department_id, year)
             );
 
             -- Scrum #46: Bảng ghi nhận tương tác, cuộc gọi trao đổi với ứng viên

@@ -46,13 +46,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<CandidateMergeHistory> CandidateMergeHistories { get; set; }
     public DbSet<CandidateInteraction> CandidateInteractions { get; set; }
     public DbSet<CompanyProfile> CompanyProfiles { get; set; }
-    
     public DbSet<ApprovalRule> ApprovalRules { get; set; }
     public DbSet<ApprovalRuleStep> ApprovalRuleSteps { get; set; }
 
     // SCRUM-42: Quản lý giai đoạn ứng viên & Danh mục lý do loại
     public DbSet<RejectionReason> RejectionReasons { get; set; }
     public DbSet<CandidateStageHistory> CandidateStageHistories { get; set; }
+    public DbSet<DepartmentHeadcountBudget> DepartmentHeadcountBudgets { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -119,6 +119,23 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany()
             .HasForeignKey(jr => jr.AssignedRecruiterId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<JobRequisition>()
+            .HasOne(jr => jr.OverQuotaApprovedBy)
+            .WithMany()
+            .HasForeignKey(jr => jr.OverQuotaApprovedById)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<DepartmentHeadcountBudget>(entity =>
+        {
+            entity.HasOne(b => b.Department)
+                .WithMany()
+                .HasForeignKey(b => b.DepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(b => new { b.DepartmentId, b.Year })
+                .IsUnique();
+        });
 
         // Cascade delete behavior adjustments
         modelBuilder.Entity<RequisitionApproval>()
