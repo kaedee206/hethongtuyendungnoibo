@@ -1665,3 +1665,480 @@ body.sidebar-resizing .ats-main-area {
   background: #94A3B8;
 }
 
+/* =========================================================
+   SCRUM-319: Kanban Pipeline Board Styles
+   - Tự thích ứng 100% màn hình (Adaptive Desktop)
+   - Thu gọn cột linh hoạt (Collapsible Columns)
+   - Thẻ tối giản (Compact vs Detailed View)
+   - Trải nghiệm di động vuốt theo cột (Mobile Swipe & Snap)
+   ========================================================= */
+.kanban-board-wrapper {
+  width: 100%;
+  overflow-x: hidden;
+  padding-bottom: 6px;
+  transition: all .2s ease;
+  position: relative;
+}
+
+.kanban-board-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+.kanban-board-wrapper::-webkit-scrollbar-track {
+  background: #F1F5F9;
+  border-radius: 4px;
+}
+.kanban-board-wrapper::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+.kanban-board-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Grid layout sử dụng Flexbox tự thích ứng 100% chiều rộng */
+.kanban-board-grid {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  align-items: stretch;
+  transition: all .35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.kanban-column {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  min-height: 480px;
+  max-height: calc(100vh - 240px);
+  min-width: 0;
+  flex: 1 1 0%;
+  transition: flex .35s cubic-bezier(0.4, 0, 0.2, 1), width .35s ease, max-width .35s ease, border-color .15s, background-color .15s, box-shadow .2s;
+  position: relative;
+}
+
+.kanban-column:hover {
+  border-color: #CBD5E1;
+}
+
+/* Cột khi được Phóng to tối đa (Maximized) */
+.kanban-column.kanban-column-maximized {
+  background: #FFFFFF !important;
+  border-color: #059669 !important;
+  box-shadow: 0 4px 18px rgba(5, 150, 105, 0.12) !important;
+}
+
+/* Header cột ở trạng thái mở rộng bình thường */
+.kanban-column-header {
+  padding: 8px 8px 6px 8px;
+  border-bottom: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  transition: all .2s ease;
+}
+
+.kanban-column-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  transition: all .2s ease;
+}
+
+.kanban-col-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  line-height: 1.2;
+}
+
+.kanban-col-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.kanban-col-btn {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all .15s ease;
+  color: #64748B;
+  text-decoration: none;
+  font-size: 0.72rem;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+.kanban-col-btn:hover {
+  background: #F1F5F9;
+  color: #0F172A;
+}
+.kanban-col-btn.active {
+  background: #ECFDF5;
+  color: #059669;
+}
+
+/* =========================================================
+   CỘT THU GỌN (Collapsed Column Strip)
+   ========================================================= */
+.kanban-column.kanban-column-collapsed {
+  flex: 0 0 38px !important;
+  width: 38px !important;
+  min-width: 38px !important;
+  max-width: 38px !important;
+  background: #F8FAFC;
+  border-color: #E2E8F0;
+  cursor: pointer;
+  user-select: none;
+}
+.kanban-column.kanban-column-collapsed:hover {
+  background: #F1F5F9;
+  border-color: #94A3B8;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+.kanban-column.kanban-column-collapsed .kanban-column-strip {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 3px;
+  height: 100%;
+}
+
+.kanban-column.kanban-column-collapsed .kanban-column-header {
+  padding: 8px 4px 12px 4px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  background: transparent;
+  border-bottom: none;
+  gap: 10px;
+}
+
+.kanban-column.kanban-column-collapsed .kanban-col-expanded-content {
+  display: none !important;
+}
+
+.kanban-column .kanban-col-collapsed-content {
+  display: none !important;
+}
+
+.kanban-column.kanban-column-collapsed .kanban-col-collapsed-content {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  width: 100%;
+}
+
+.kanban-collapsed-title {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  margin-top: 4px;
+}
+
+.kanban-column.kanban-column-collapsed .kanban-cards-container {
+  display: none !important;
+}
+
+/* =========================================================
+   CONTAINER CHỨA THẺ (Cards Container)
+   ========================================================= */
+.kanban-cards-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: background-color .2s, border-color .2s;
+  min-height: 140px;
+}
+
+.kanban-cards-container::-webkit-scrollbar {
+  width: 5px;
+}
+.kanban-cards-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.kanban-cards-container::-webkit-scrollbar-thumb {
+  background: #E2E8F0;
+  border-radius: 3px;
+}
+.kanban-cards-container::-webkit-scrollbar-thumb:hover {
+  background: #CBD5E1;
+}
+
+.kanban-drop-zone-active {
+  background: #ECFDF5 !important;
+  border: 2px dashed #059669 !important;
+  border-radius: 8px;
+}
+
+/* =========================================================
+   THẺ ỨNG VIÊN (Candidate Card)
+   ========================================================= */
+.kanban-candidate-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 7px;
+  padding: 8px 8px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  cursor: grab;
+  user-select: none;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  position: relative;
+  min-width: 0;
+}
+
+.kanban-candidate-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+  border-color: #CBD5E1;
+}
+
+.kanban-candidate-card:active {
+  cursor: grabbing;
+}
+
+.kanban-candidate-card.card-dragging {
+  opacity: 0.35;
+  transform: scale(0.98);
+  border: 2px dashed #059669;
+}
+
+.kanban-card-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #0F172A;
+  color: #FFFFFF;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kanban-card-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #0F172A;
+  line-height: 1.2;
+}
+
+/* Vị trí ứng tuyển dạng Tag/Badge gọn gàng */
+.kanban-job-badge {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  font-size: 0.67rem;
+  font-weight: 600;
+  color: #047857;
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+/* Thông tin liên hệ Email & Phone */
+.kanban-card-contact-info {
+  font-size: 0.68rem;
+  color: #64748B;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: opacity .15s ease;
+}
+
+/* Chế độ Thu gọn (Compact View): Ẩn Email & SĐT */
+.kanban-mode-compact .kanban-card-contact-info {
+  display: none !important;
+}
+
+/* Tooltip Hover Popover hiển thị Email & SĐT khi ở chế độ Thu gọn */
+.kanban-card-hover-popover {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 4px);
+  transform: translateX(-50%);
+  background: #0F172A;
+  color: #FFFFFF;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+}
+.kanban-card-hover-popover::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 4px;
+  border-style: solid;
+  border-color: #0F172A transparent transparent transparent;
+}
+.kanban-mode-compact .kanban-candidate-card:hover .kanban-card-hover-popover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-2px);
+}
+
+.kanban-card-footer {
+  margin-top: 5px;
+  padding-top: 4px;
+  border-top: 1px solid #F1F5F9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kanban-empty-placeholder {
+  border: 1px dashed #CBD5E1;
+  border-radius: 6px;
+  padding: 20px 8px;
+  text-align: center;
+  color: #94A3B8;
+  font-size: 0.74rem;
+  margin: auto 0;
+  pointer-events: none;
+}
+
+.pipeline-view-btn {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: all .15s;
+}
+
+.pipeline-view-btn.active {
+  background: #059669;
+  color: #FFFFFF !important;
+  border-color: #059669;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
+}
+
+/* =========================================================
+   TỐI ƯU DI ĐỘNG: VUỐT THEO CỘT (Mobile Column Swiping)
+   ========================================================= */
+@media (max-width: 768px) {
+  .kanban-board-wrapper {
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-padding: 0 8px;
+    padding-left: 4px;
+    padding-right: 4px;
+    padding-bottom: 12px;
+  }
+  .kanban-board-grid {
+    display: flex !important;
+    gap: 12px !important;
+    width: max-content !important;
+    min-width: 100% !important;
+  }
+  .kanban-column {
+    flex: 0 0 calc(100vw - 36px) !important;
+    width: calc(100vw - 36px) !important;
+    min-width: calc(100vw - 36px) !important;
+    max-width: calc(100vw - 36px) !important;
+    scroll-snap-align: center !important;
+    scroll-snap-stop: always !important;
+    min-height: 440px;
+  }
+  /* Trên màn hình nhỏ di động không thu gọn cột */
+  .kanban-column.kanban-column-collapsed {
+    flex: 0 0 calc(100vw - 36px) !important;
+    width: calc(100vw - 36px) !important;
+    min-width: calc(100vw - 36px) !important;
+    max-width: calc(100vw - 36px) !important;
+    cursor: default !important;
+  }
+  .kanban-column.kanban-column-collapsed .kanban-col-expanded-content {
+    display: flex !important;
+  }
+  .kanban-column.kanban-column-collapsed .kanban-col-collapsed-content {
+    display: none !important;
+  }
+  .kanban-column.kanban-column-collapsed .kanban-cards-container {
+    display: flex !important;
+  }
+}
+
+/* Dots chỉ báo vị trí cột trên thiết bị di động */
+.kanban-mobile-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #CBD5E1;
+  border: none;
+  padding: 0;
+  transition: all .2s ease;
+  cursor: pointer;
+}
+.kanban-mobile-dot.active {
+  width: 20px;
+  border-radius: 4px;
+  background: #059669;
+}
+
+/* =========================================================
+   BỘ LỌC CỘT KANBAN (Gộp thành Dropdown menu duy nhất)
+   ========================================================= */
+#btnKanbanStageFilter {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+#btnKanbanStageFilter:hover {
+  background: #F8FAFC !important;
+  border-color: #94A3B8 !important;
+}
+.kanban-stage-menu-item {
+  color: #334155;
+  transition: all .12s ease;
+  border-radius: 6px;
+  margin: 1px 4px;
+}
+.kanban-stage-menu-item:hover {
+  background: #F1F5F9;
+  color: #0F172A;
+}
+.kanban-stage-menu-item.active {
+  background: #ECFDF5 !important;
+  color: #065F46 !important;
+  font-weight: 600;
+}
+
+
+

@@ -1,0 +1,112 @@
+@model Ats.Web.Models.ViewModels.Workspace.CandidatePipelineItemDto
+
+<div id="kanban-card-@Model.ApplicationId" class="kanban-candidate-card"
+     draggable="true"
+     data-application-id="@Model.ApplicationId"
+     data-candidate-name="@Model.CandidateName"
+     data-job-id="@Model.JobPostingId"
+     data-stage-order="@Model.CurrentStageOrder"
+     data-status="@Model.Status"
+     data-name="@Model.CandidateName.ToLower()"
+     data-email="@Model.CandidateEmail.ToLower()"
+     data-job="@Model.JobTitle.ToLower()"
+     title="Ứng viên: @Model.CandidateName&#10;Email: @Model.CandidateEmail&#10;SĐT: @(string.IsNullOrEmpty(Model.CandidatePhone) ? "Chưa có" : Model.CandidatePhone)"
+     ondragstart="onKanbanCardDragStart(event)"
+     ondragend="onKanbanCardDragEnd(event)"
+     onclick="openCandidateDetailModal('@Model.ApplicationId')">
+
+    <!-- Popover hiển thị nhanh thông tin liên lạc khi hover thẻ ở chế độ Thu gọn -->
+    <div class="kanban-card-hover-popover">
+        <div><i class="bi bi-envelope text-info me-1"></i>@Model.CandidateEmail</div>
+        @if (!string.IsNullOrEmpty(Model.CandidatePhone) && Model.CandidatePhone != "Chưa có")
+        {
+            <div class="mt-0.5"><i class="bi bi-telephone text-success me-1"></i>@Model.CandidatePhone</div>
+        }
+    </div>
+
+    <!-- Header thẻ: Avatar, Tên ứng viên, Tag vị trí & Menu thao tác -->
+    <div class="d-flex justify-content-between align-items-start mb-1" style="gap: 4px;">
+        <div class="d-flex align-items-center gap-1.5" style="min-width: 0; flex: 1;">
+            <div class="kanban-card-avatar flex-shrink-0">
+                @(string.IsNullOrEmpty(Model.CandidateName) ? "?" : Model.CandidateName.Substring(0, 1).ToUpper())
+            </div>
+            <div style="min-width: 0; flex: 1;">
+                <div class="kanban-card-title text-truncate" title="@Model.CandidateName">
+                    @Model.CandidateName
+                </div>
+                <div class="kanban-job-badge text-truncate" title="@Model.JobTitle">
+                    <i class="bi bi-briefcase me-1"></i>@Model.JobTitle
+                </div>
+            </div>
+        </div>
+
+        <div class="dropdown flex-shrink-0" onclick="event.stopPropagation();">
+            <button type="button" class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration:none; line-height: 1;" title="Tác vụ">
+                <i class="bi bi-three-dots-vertical" style="font-size: 0.85rem;"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.8rem; border-radius: 8px;">
+                <li><a class="dropdown-item" href="javascript:void(0)" onclick="openCandidateDetailModal('@Model.ApplicationId')"><i class="bi bi-eye text-primary me-2"></i>Chi tiết hồ sơ</a></li>
+                @if (!string.IsNullOrEmpty(Model.ResumeFilePath))
+                {
+                    <li><a class="dropdown-item" href="@Model.ResumeFilePath" target="_blank"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Xem CV</a></li>
+                }
+                <li><hr class="dropdown-divider my-1"></li>
+                @if (Model.CurrentStageOrder == 1)
+                {
+                    <li><a class="dropdown-item text-success" href="javascript:void(0)" onclick="moveCandidateStageViaButton('@Model.ApplicationId', 2, '@Model.CandidateName', 'Sàng lọc')"><i class="bi bi-arrow-right-circle me-2"></i>Chuyển Sàng lọc</a></li>
+                }
+                else if (Model.CurrentStageOrder == 2)
+                {
+                    <li><a class="dropdown-item text-info" href="javascript:void(0)" onclick="openScheduleModal('@Model.ApplicationId', '@Model.CandidateName', '@Model.JobTitle')"><i class="bi bi-calendar-plus me-2"></i>Lên lịch phỏng vấn</a></li>
+                }
+                else if (Model.CurrentStageOrder == 3 || Model.CurrentStageOrder == 4)
+                {
+                    <li><a class="dropdown-item text-warning" href="javascript:void(0)" onclick="openCreateOfferModal('@Model.ApplicationId', '@Model.CandidateName', '@Model.JobTitle')"><i class="bi bi-envelope-paper-heart me-2"></i>Đề xuất Offer</a></li>
+                }
+                else if (Model.CurrentStageOrder == 5)
+                {
+                    <li><a class="dropdown-item text-success" href="javascript:void(0)" onclick="moveCandidateStageViaButton('@Model.ApplicationId', 6, '@Model.CandidateName', 'Nhận việc')"><i class="bi bi-check2-all me-2"></i>Xác nhận Nhận việc</a></li>
+                }
+                @if (Model.Status != "REJECTED" && Model.CurrentStageOrder != 6)
+                {
+                    <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="openRejectModal('@Model.ApplicationId', '@Model.CandidateName', '@Model.JobTitle')"><i class="bi bi-x-circle me-2"></i>Loại hồ sơ</a></li>
+                }
+            </ul>
+        </div>
+    </div>
+
+    <!-- Thông tin liên hệ (Email & Phone): Ẩn ở chế độ Thu gọn, hiển thị ở chế độ Chi tiết -->
+    <div class="kanban-card-contact-info">
+        <div class="text-truncate" style="font-family:'JetBrains Mono',monospace;" title="@Model.CandidateEmail">
+            <i class="bi bi-envelope me-1 text-muted"></i>@Model.CandidateEmail
+        </div>
+        @if (!string.IsNullOrEmpty(Model.CandidatePhone) && Model.CandidatePhone != "Chưa có")
+        {
+            <div><i class="bi bi-telephone me-1 text-muted"></i>@Model.CandidatePhone</div>
+        }
+    </div>
+
+    <!-- Footer: Ngày nộp/cập nhật & Badges -->
+    <div class="kanban-card-footer" onclick="event.stopPropagation();">
+        <span class="badge bg-light text-muted border" style="font-size: 0.7rem; font-family:'JetBrains Mono',monospace;">
+            <i class="bi bi-clock me-1"></i>@Model.AppliedDateDisplay
+        </span>
+        <div class="d-flex align-items-center gap-1">
+            @if (!string.IsNullOrEmpty(Model.ResumeFilePath))
+            {
+                <a href="@Model.ResumeFilePath" target="_blank" class="candidate-cv-pill" title="Xem CV đính kèm" style="font-size: 0.7rem; padding: 2px 7px;">
+                    <i class="bi bi-file-earmark-pdf"></i> CV
+                </a>
+            }
+            @if (Model.CurrentStageOrder == 3)
+            {
+                <span class="badge" style="background:#FEF3C7; color:#B45309; font-size: 0.66rem;">Sơ loại</span>
+            }
+            else if (Model.CurrentStageOrder == 4)
+            {
+                <span class="badge" style="background:#FDE68A; color:#92400E; font-size: 0.66rem;">Chuyên môn</span>
+            }
+        </div>
+    </div>
+</div>
+

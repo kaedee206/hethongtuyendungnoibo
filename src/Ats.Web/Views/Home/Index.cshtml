@@ -991,23 +991,123 @@
                 <!-- 2. TÍNH NĂNG QUẢN LÝ ỨNG VIÊN (UNG-VIEN: FULL WIDTH) -->
                 <!-- ============================================================== -->
                 <div class="staff-feature-panel @(activeFeature == "ung-vien" ? "" : "d-none")" data-feature-panel="ung-vien">
-                    <div id="feature-section-staff-ung-vien" class="card border-0 shadow-sm p-4 bg-white mb-4 scroll-margin-nav" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
-                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 pb-2 gap-2" style="border-bottom: 1px solid #F1F5F9;">
+                    <div id="feature-section-staff-ung-vien" class="card border-0 shadow-sm p-2 p-md-3 p-xl-4 bg-white mb-4 scroll-margin-nav" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-3 pb-2 gap-2" style="border-bottom: 1px solid #F1F5F9;">
                             <div>
                                 <h5 class="fw-bold text-dark mb-0" style="font-size: 1.15rem;">
-                                    <i class="bi bi-people-fill me-2" style="color: #059669;"></i>Quản Lý Hồ Sơ &amp; Tiến Trình Tuyển Dụng
+                                    <i class="bi bi-kanban me-2" style="color: #059669;"></i>Điều Phối Hồ Sơ &amp; Pipeline Tuyển Dụng
                                 </h5>
-                                <small class="text-muted">Chuyển tiếp giai đoạn tuyển chọn, lên lịch phỏng vấn, thẩm định và phát hành offer trực tiếp</small>
+                                <small class="text-muted">Kéo thả điều phối ứng viên dạng Kanban 6 giai đoạn, bao quát toàn bộ quy trình trên 1 màn hình</small>
                             </div>
-                            <div class="d-flex align-items-center gap-2 w-100 w-md-auto">
-                                <div class="input-group input-group-sm position-relative" style="max-width: 320px;">
+                            <div class="d-flex flex-wrap align-items-center gap-2 w-100 w-lg-auto">
+                                <!-- Bộ lọc vị trí tuyển dụng (SCRUM-319: Mặc định vị trí Recruiter đang phụ trách) -->
+                                <div class="d-flex align-items-center gap-1.5">
+                                    <select id="kanbanJobFilter" class="form-select form-select-sm fw-semibold shadow-none" style="min-width: 200px; max-width: 280px; border-color: #CBD5E1; border-radius: 8px; font-size: 0.82rem;" onchange="onPipelineJobFilterChanged(this.value)">
+                                        <option value="ALL">📋 Tất cả vị trí (@Model.CandidatePipelineItems.Count)</option>
+                                        @foreach (var job in Model.JobPostingFilterOptions)
+                                        {
+                                            if (Model.DefaultJobPostingId == job.Id)
+                                            {
+                                                <option value="@job.Id" selected="selected">
+                                                    @(job.IsAssignedToCurrentUser ? "⭐ " : "")@job.Title (@job.ActiveCandidateCount)@(job.IsAssignedToCurrentUser ? " [Phụ trách]" : "")
+                                                </option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@job.Id">
+                                                    @(job.IsAssignedToCurrentUser ? "⭐ " : "")@job.Title (@job.ActiveCandidateCount)@(job.IsAssignedToCurrentUser ? " [Phụ trách]" : "")
+                                                </option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+
+                                <!-- Bộ lọc Cột / Giai đoạn Kanban (Gộp thành 1 menu gọn gàng & hiển thị cột đang chọn) -->
+                                <div class="dropdown" id="kanbanStageFilterDropdownWrapper">
+                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-1.5 fw-semibold shadow-none"
+                                            type="button" id="btnKanbanStageFilter" data-bs-toggle="dropdown" aria-expanded="false"
+                                            style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.82rem; height: 31px; background: #FFFFFF; transition: all .2s ease;"
+                                            title="Lọc hiển thị theo cột Kanban">
+                                        <i class="bi bi-funnel text-muted" id="kanbanStageFilterIcon"></i>
+                                        <span id="kanbanStageFilterLabel">Tất cả cột</span>
+                                        <span id="kanbanStageFilterBadge" class="badge bg-light text-dark border ms-1" style="font-size: 0.72rem; font-family:'JetBrains Mono',monospace;">@Model.CandidatePipelineItems.Count</span>
+                                    </button>
+                                    <ul class="dropdown-menu shadow-sm border py-1" id="kanbanStageFilterMenu" aria-labelledby="btnKanbanStageFilter" style="border-radius: 10px; font-size: 0.82rem; min-width: 230px; z-index: 1050;">
+                                        <li>
+                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 active kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('ALL', 'Tất cả cột', event)">
+                                                <span><i class="bi bi-grid-fill me-2 text-muted"></i>Tất cả các cột</span>
+                                                <span class="badge rounded-pill bg-light text-dark border font-mono" id="stageMenuCount-ALL">@Model.CandidatePipelineItems.Count</span>
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider my-1"></li>
+                                        <li>
+                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('1', 'Hồ sơ mới', event)">
+                                                <span><i class="bi bi-circle-fill me-2" style="color: #2563EB; font-size: 0.65rem;"></i>01. Hồ sơ mới</span>
+                                                <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle font-mono" id="stageMenuCount-1">0</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('2', 'Sàng lọc', event)">
+                                                <span><i class="bi bi-circle-fill me-2" style="color: #0284C7; font-size: 0.65rem;"></i>02. Sàng lọc</span>
+                                                <span class="badge rounded-pill bg-info-subtle text-info border border-info-subtle font-mono" id="stageMenuCount-2">0</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('3', 'Phỏng vấn', event)">
+                                                <span><i class="bi bi-circle-fill me-2" style="color: #7C3AED; font-size: 0.65rem;"></i>03. Phỏng vấn</span>
+                                                <span class="badge rounded-pill bg-purple-subtle text-purple border border-purple-subtle font-mono" id="stageMenuCount-3">0</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('5', 'Offer', event)">
+                                                <span><i class="bi bi-circle-fill me-2" style="color: #D97706; font-size: 0.65rem;"></i>05. Đề xuất Offer</span>
+                                                <span class="badge rounded-pill bg-warning-subtle text-warning border border-warning-subtle font-mono" id="stageMenuCount-5">0</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('6', 'Nhận việc', event)">
+                                                <span><i class="bi bi-circle-fill me-2" style="color: #059669; font-size: 0.65rem;"></i>06. Nhận việc</span>
+                                                <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle font-mono" id="stageMenuCount-6">0</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('7', 'Loại hồ sơ', event)">
+                                                <span><i class="bi bi-circle-fill me-2" style="color: #E11D48; font-size: 0.65rem;"></i>07. Loại / Từ chối</span>
+                                                <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle font-mono" id="stageMenuCount-7">0</span>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <!-- Tìm kiếm nhanh -->
+                                <div class="input-group input-group-sm position-relative" style="max-width: 210px;">
                                     <span class="input-group-text bg-light border-end-0" style="border-color: #E2E8F0;"><i class="bi bi-search text-muted"></i></span>
-                                    <input type="text" id="candidateSearchInput" class="form-control border-start-0 pe-4" placeholder="Tìm tên, email, vị trí... (từ 3 ký tự)" style="border-color: #E2E8F0; font-size: 0.82rem;" autocomplete="off" />
+                                    <input type="text" id="candidateSearchInput" class="form-control border-start-0 pe-4" placeholder="Tìm kiếm... (≥ 3 ký tự)" style="border-color: #E2E8F0; font-size: 0.82rem;" autocomplete="off" />
                                     <button type="button" id="candidateSearchClearBtn" class="btn btn-sm btn-link position-absolute top-50 end-0 translate-middle-y me-1 text-muted d-none" style="text-decoration:none; z-index: 5;" title="Xóa từ khóa">
                                         <i class="bi bi-x-circle-fill"></i>
                                     </button>
                                     <div id="candSearchHint" class="text-warning d-none position-absolute" style="top: 100%; left: 0; font-size: 0.72rem; white-space: nowrap; z-index: 10; padding-top: 2px;">
                                         <i class="bi bi-info-circle me-1"></i>Nhập tối thiểu 3 ký tự để tìm kiếm
+                                    </div>
+                                </div>
+
+                                <!-- Chuyển đổi Kanban / Bảng & Chế độ Xem Thu gọn vs Chi tiết -->
+                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" id="btnPipelineKanbanView" class="btn btn-outline-success pipeline-view-btn active" onclick="switchPipelineView('kanban')" title="Bảng Kanban Kéo Thả">
+                                            <i class="bi bi-kanban-fill me-1"></i> Kanban
+                                        </button>
+                                        <button type="button" id="btnPipelineTableView" class="btn btn-outline-secondary pipeline-view-btn" onclick="switchPipelineView('table')" title="Danh Sách Dạng Bảng">
+                                            <i class="bi bi-table me-1"></i> Bảng
+                                        </button>
+                                    </div>
+                                    <div class="btn-group btn-group-sm" role="group" id="kanbanDetailModeGroup">
+                                        <button type="button" id="btnKanbanModeCompact" class="btn btn-secondary text-white pipeline-view-btn active" onclick="setKanbanCardDetailMode('compact')" title="Xem thu gọn (Ẩn SĐT/Email, thẻ tinh gọn)">
+                                            <i class="bi bi-card-heading me-1"></i>Thu gọn
+                                        </button>
+                                        <button type="button" id="btnKanbanModeDetailed" class="btn btn-outline-secondary pipeline-view-btn" onclick="setKanbanCardDetailMode('detailed')" title="Xem chi tiết (Hiển thị đầy đủ SĐT & Email)">
+                                            <i class="bi bi-card-text me-1"></i>Chi tiết
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -1066,144 +1166,437 @@
                             </button>
                         </div>
 
-                        <div class="dashboard-table-responsive">
-                            <table class="table align-middle mb-0" style="min-width: 900px; font-size: 0.85rem;">
-                                <thead>
-                                    <tr style="border-bottom: 1px solid #E2E8F0; color: #64748B; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">
-                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold" style="border-top-left-radius: 8px; border-bottom-left-radius: 8px;">Ứng viên</th>
-                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Vị trí ứng tuyển</th>
-                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Giai đoạn hiện tại</th>
-                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Ngày nộp</th>
-                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-end" style="border-top-right-radius: 8px; border-bottom-right-radius: 8px;">Thao tác xử lý quy trình</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="candidatePipelineTableBody">
-                                    @if (Model.CandidatePipelineItems.Any())
-                                    {
-                                        @foreach (var cand in Model.CandidatePipelineItems)
+                        <!-- Mobile Column Dots Indicator (Chỉ hiển thị trên thiết bị di động để vuốt nhanh) -->
+                        <div class="d-flex d-md-none justify-content-center align-items-center gap-1.5 mt-2 mb-1" id="kanbanMobileDots">
+                            <button type="button" class="btn btn-sm p-0 kanban-mobile-dot active" onclick="scrollToKanbanColumn(1)" title="Hồ sơ mới"></button>
+                            <button type="button" class="btn btn-sm p-0 kanban-mobile-dot" onclick="scrollToKanbanColumn(2)" title="Sàng lọc"></button>
+                            <button type="button" class="btn btn-sm p-0 kanban-mobile-dot" onclick="scrollToKanbanColumn(3)" title="Phỏng vấn"></button>
+                            <button type="button" class="btn btn-sm p-0 kanban-mobile-dot" onclick="scrollToKanbanColumn(5)" title="Offer"></button>
+                            <button type="button" class="btn btn-sm p-0 kanban-mobile-dot" onclick="scrollToKanbanColumn(6)" title="Nhận việc"></button>
+                            <button type="button" class="btn btn-sm p-0 kanban-mobile-dot" onclick="scrollToKanbanColumn(7)" title="Loại"></button>
+                        </div>
+
+                        <!-- ============================================================== -->
+                        <!-- SCRUM-319: KANBAN BOARD CONTAINER (Tự thích ứng & Thu gọn cột) -->
+                        <!-- ============================================================== -->
+                        <div id="candidateKanbanViewContainer" class="kanban-board-wrapper kanban-mode-compact mt-2">
+                            <div class="kanban-board-grid">
+                                <!-- 1. CỘT HỒ SƠ MỚI (StageOrder 1) -->
+                                <div class="kanban-column" id="kanbanCol-1" data-kanban-stage="1" onclick="handleKanbanColumnClick(1, event)">
+                                    <div class="kanban-column-header">
+                                        <div class="kanban-column-strip" style="background: #2563EB;"></div>
+                                        <!-- Header khi mở rộng -->
+                                        <div class="kanban-col-expanded-content d-flex justify-content-between align-items-center w-100" style="gap: 4px;">
+                                            <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
+                                                <i class="bi bi-inbox-fill text-primary" style="font-size: 0.85rem;"></i>
+                                                <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Hồ sơ mới</span>
+                                            </div>
+                                            <div class="kanban-col-actions flex-shrink-0">
+                                                <span id="kanbanCountNew" class="kanban-col-count" style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE;">0</span>
+                                                <button type="button" class="kanban-col-btn" id="btnMaxCol-1" onclick="toggleKanbanColumnMaximize(1, event)" title="Phóng to / Mở rộng tối đa cột này">
+                                                    <i class="bi bi-arrows-angle-expand"></i>
+                                                </button>
+                                                <button type="button" class="kanban-col-btn" onclick="toggleKanbanColumnCollapse(1, event)" title="Thu gọn cột Hồ sơ mới">
+                                                    <i class="bi bi-chevron-bar-left"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <!-- Header khi thu gọn -->
+                                        <div class="kanban-col-collapsed-content">
+                                            <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(1, event)" title="Mở rộng cột Hồ sơ mới">
+                                                <i class="bi bi-chevron-bar-right text-primary"></i>
+                                            </button>
+                                            <span id="kanbanCountNewCollapsed" class="kanban-col-count" style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE;">0</span>
+                                            <span class="kanban-collapsed-title">Hồ sơ mới</span>
+                                        </div>
+                                    </div>
+                                    <div class="kanban-cards-container" id="kanbanDropZone-1" data-stage-order="1"
+                                         ondragover="onKanbanContainerDragOver(event)" ondragleave="onKanbanContainerDragLeave(event)" ondrop="onKanbanContainerDrop(event, 1)">
+                                        @foreach (var cand in Model.CandidatePipelineItems.Where(x => x.CurrentStageOrder == 1 && x.Status != "REJECTED" && x.Status != "WITHDRAWN"))
                                         {
-                                            <tr id="cand-row-@cand.ApplicationId" class="pipeline-candidate-row"
-                                                data-stage-order="@cand.CurrentStageOrder"
-                                                data-status="@cand.Status"
-                                                data-is-referral="@(cand.IsReferral ? "true" : "false")"
-                                                data-has-duplicate="@(cand.HasDuplicateWarning ? "true" : "false")"
-                                                data-name="@cand.CandidateName.ToLower()"
-                                                data-email="@cand.CandidateEmail.ToLower()"
-                                                data-job="@cand.JobTitle.ToLower()"
-                                                style="border-bottom: 1px solid #F1F5F9; transition: background .15s;"
-                                                onmouseover="this.style.background='#F8FAFC';" onmouseout="this.style.background='#FFFFFF';">
-                                                <td class="py-3 px-3">
-                                                    <div class="d-flex align-items-center gap-2.5">
-                                                        <div class="d-flex align-items-center justify-content-center fw-bold text-white rounded-circle flex-shrink-0"
-                                                             style="width: 36px; height: 36px; background: #0F172A; font-size: 0.85rem;">
-                                                            @(string.IsNullOrEmpty(cand.CandidateName) ? "?" : cand.CandidateName.Substring(0, 1).ToUpper())
-                                                        </div>
-                                                        <div>
-                                                            <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                                                                <span class="fw-bold text-dark" style="font-size: 0.9rem;">@cand.CandidateName</span>
-                                                                @if (cand.IsReferral)
-                                                                {
-                                                                    <span class="badge" style="background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; border-radius:6px; font-size:0.68rem; font-weight:600;" title="@(!string.IsNullOrWhiteSpace(cand.ReferralNote) ? $"Ghi chú: {cand.ReferralNote}" : "Hồ sơ được nhân sự nội bộ giới thiệu")">
-                                                                        <i class="bi bi-person-heart me-1 text-warning"></i>Giới thiệu nội bộ@(string.IsNullOrWhiteSpace(cand.ReferrerName) ? "" : $" ({cand.ReferrerName})")
-                                                                    </span>
-                                                                }
-                                                                @if (cand.HasDuplicateWarning)
-                                                                {
-                                                                    <a href="/Workspace/CompareCandidates?primaryId=@cand.CandidateId@(cand.MatchedCandidateId.HasValue ? $"&secondaryId={cand.MatchedCandidateId}" : "")"
-                                                                       class="badge text-decoration-none"
-                                                                       style="background: #FEF3C7; color: #B45309; border: 1px solid #FCD34D; border-radius: 6px; font-size: 0.68rem; font-weight: 600;"
-                                                                       title="@cand.DuplicateReason - Nhấn để so sánh và gộp hồ sơ">
-                                                                        <i class="bi bi-exclamation-circle-fill me-1 text-warning"></i>Cảnh báo trùng
-                                                                    </a>
-                                                                }
+                                            @await Html.PartialAsync("_KanbanCandidateCard", cand)
+                                        }
+                                        <div class="kanban-empty-placeholder d-none">
+                                            <i class="bi bi-inbox fs-5 d-block mb-1 opacity-50"></i>
+                                            Trống
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 2. CỘT SÀNG LỌC (StageOrder 2) -->
+                                <div class="kanban-column" id="kanbanCol-2" data-kanban-stage="2" onclick="handleKanbanColumnClick(2, event)">
+                                    <div class="kanban-column-header">
+                                        <div class="kanban-column-strip" style="background: #4F46E5;"></div>
+                                        <!-- Header khi mở rộng -->
+                                        <div class="kanban-col-expanded-content d-flex justify-content-between align-items-center w-100" style="gap: 4px;">
+                                            <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
+                                                <i class="bi bi-funnel-fill" style="color: #4F46E5; font-size: 0.85rem;"></i>
+                                                <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Sàng lọc</span>
+                                            </div>
+                                            <div class="kanban-col-actions flex-shrink-0">
+                                                <span id="kanbanCountScreen" class="kanban-col-count" style="background: #EEF2FF; color: #4338CA; border: 1px solid #C7D2FE;">0</span>
+                                                <button type="button" class="kanban-col-btn" id="btnMaxCol-2" onclick="toggleKanbanColumnMaximize(2, event)" title="Phóng to / Mở rộng tối đa cột này">
+                                                    <i class="bi bi-arrows-angle-expand"></i>
+                                                </button>
+                                                <button type="button" class="kanban-col-btn" onclick="toggleKanbanColumnCollapse(2, event)" title="Thu gọn cột Sàng lọc">
+                                                    <i class="bi bi-chevron-bar-left"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <!-- Header khi thu gọn -->
+                                        <div class="kanban-col-collapsed-content">
+                                            <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(2, event)" title="Mở rộng cột Sàng lọc">
+                                                <i class="bi bi-chevron-bar-right" style="color: #4F46E5;"></i>
+                                            </button>
+                                            <span id="kanbanCountScreenCollapsed" class="kanban-col-count" style="background: #EEF2FF; color: #4338CA; border: 1px solid #C7D2FE;">0</span>
+                                            <span class="kanban-collapsed-title">Sàng lọc</span>
+                                        </div>
+                                    </div>
+                                    <div class="kanban-cards-container" id="kanbanDropZone-2" data-stage-order="2"
+                                         ondragover="onKanbanContainerDragOver(event)" ondragleave="onKanbanContainerDragLeave(event)" ondrop="onKanbanContainerDrop(event, 2)">
+                                        @foreach (var cand in Model.CandidatePipelineItems.Where(x => x.CurrentStageOrder == 2 && x.Status != "REJECTED" && x.Status != "WITHDRAWN"))
+                                        {
+                                            @await Html.PartialAsync("_KanbanCandidateCard", cand)
+                                        }
+                                        <div class="kanban-empty-placeholder d-none">
+                                            <i class="bi bi-funnel fs-5 d-block mb-1 opacity-50"></i>
+                                            Trống
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 3. CỘT PHỎNG VẤN (StageOrder 3 & 4) -->
+                                <div class="kanban-column" id="kanbanCol-3" data-kanban-stage="3" onclick="handleKanbanColumnClick(3, event)">
+                                    <div class="kanban-column-header">
+                                        <div class="kanban-column-strip" style="background: #D97706;"></div>
+                                        <!-- Header khi mở rộng -->
+                                        <div class="kanban-col-expanded-content d-flex justify-content-between align-items-center w-100" style="gap: 4px;">
+                                            <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
+                                                <i class="bi bi-calendar-event-fill text-warning" style="color: #D97706; font-size: 0.85rem;"></i>
+                                                <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Phỏng vấn</span>
+                                            </div>
+                                            <div class="kanban-col-actions flex-shrink-0">
+                                                <span id="kanbanCountInterview" class="kanban-col-count" style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A;">0</span>
+                                                <button type="button" class="kanban-col-btn" id="btnMaxCol-3" onclick="toggleKanbanColumnMaximize(3, event)" title="Phóng to / Mở rộng tối đa cột này">
+                                                    <i class="bi bi-arrows-angle-expand"></i>
+                                                </button>
+                                                <button type="button" class="kanban-col-btn" onclick="toggleKanbanColumnCollapse(3, event)" title="Thu gọn cột Phỏng vấn">
+                                                    <i class="bi bi-chevron-bar-left"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <!-- Header khi thu gọn -->
+                                        <div class="kanban-col-collapsed-content">
+                                            <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(3, event)" title="Mở rộng cột Phỏng vấn">
+                                                <i class="bi bi-chevron-bar-right text-warning"></i>
+                                            </button>
+                                            <span id="kanbanCountInterviewCollapsed" class="kanban-col-count" style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A;">0</span>
+                                            <span class="kanban-collapsed-title">Phỏng vấn</span>
+                                        </div>
+                                    </div>
+                                    <div class="kanban-cards-container" id="kanbanDropZone-3" data-stage-order="3"
+                                         ondragover="onKanbanContainerDragOver(event)" ondragleave="onKanbanContainerDragLeave(event)" ondrop="onKanbanContainerDrop(event, 3)">
+                                        @foreach (var cand in Model.CandidatePipelineItems.Where(x => (x.CurrentStageOrder == 3 || x.CurrentStageOrder == 4) && x.Status != "REJECTED" && x.Status != "WITHDRAWN"))
+                                        {
+                                            @await Html.PartialAsync("_KanbanCandidateCard", cand)
+                                        }
+                                        <div class="kanban-empty-placeholder d-none">
+                                            <i class="bi bi-calendar-event fs-5 d-block mb-1 opacity-50"></i>
+                                            Trống
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 4. CỘT ĐỀ XUẤT OFFER (StageOrder 5) -->
+                                <div class="kanban-column" id="kanbanCol-5" data-kanban-stage="5" onclick="handleKanbanColumnClick(5, event)">
+                                    <div class="kanban-column-header">
+                                        <div class="kanban-column-strip" style="background: #7C3AED;"></div>
+                                        <!-- Header khi mở rộng -->
+                                        <div class="kanban-col-expanded-content d-flex justify-content-between align-items-center w-100" style="gap: 4px;">
+                                            <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
+                                                <i class="bi bi-envelope-paper-heart-fill" style="color: #7C3AED; font-size: 0.85rem;"></i>
+                                                <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Offer</span>
+                                            </div>
+                                            <div class="kanban-col-actions flex-shrink-0">
+                                                <span id="kanbanCountOffer" class="kanban-col-count" style="background: #F5F3FF; color: #6D28D9; border: 1px solid #DDD6FE;">0</span>
+                                                <button type="button" class="kanban-col-btn" id="btnMaxCol-5" onclick="toggleKanbanColumnMaximize(5, event)" title="Phóng to / Mở rộng tối đa cột này">
+                                                    <i class="bi bi-arrows-angle-expand"></i>
+                                                </button>
+                                                <button type="button" class="kanban-col-btn" onclick="toggleKanbanColumnCollapse(5, event)" title="Thu gọn cột Offer">
+                                                    <i class="bi bi-chevron-bar-left"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <!-- Header khi thu gọn -->
+                                        <div class="kanban-col-collapsed-content">
+                                            <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(5, event)" title="Mở rộng cột Offer">
+                                                <i class="bi bi-chevron-bar-right" style="color: #7C3AED;"></i>
+                                            </button>
+                                            <span id="kanbanCountOfferCollapsed" class="kanban-col-count" style="background: #F5F3FF; color: #6D28D9; border: 1px solid #DDD6FE;">0</span>
+                                            <span class="kanban-collapsed-title">Offer</span>
+                                        </div>
+                                    </div>
+                                    <div class="kanban-cards-container" id="kanbanDropZone-5" data-stage-order="5"
+                                         ondragover="onKanbanContainerDragOver(event)" ondragleave="onKanbanContainerDragLeave(event)" ondrop="onKanbanContainerDrop(event, 5)">
+                                        @foreach (var cand in Model.CandidatePipelineItems.Where(x => x.CurrentStageOrder == 5 && x.Status != "REJECTED" && x.Status != "WITHDRAWN"))
+                                        {
+                                            @await Html.PartialAsync("_KanbanCandidateCard", cand)
+                                        }
+                                        <div class="kanban-empty-placeholder d-none">
+                                            <i class="bi bi-envelope-paper-heart fs-5 d-block mb-1 opacity-50"></i>
+                                            Trống
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 5. CỘT NHẬN VIỆC (StageOrder 6) -->
+                                <div class="kanban-column" id="kanbanCol-6" data-kanban-stage="6" onclick="handleKanbanColumnClick(6, event)">
+                                    <div class="kanban-column-header">
+                                        <div class="kanban-column-strip" style="background: #059669;"></div>
+                                        <!-- Header khi mở rộng -->
+                                        <div class="kanban-col-expanded-content d-flex justify-content-between align-items-center w-100" style="gap: 4px;">
+                                            <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
+                                                <i class="bi bi-person-check-fill text-success" style="color: #059669; font-size: 0.85rem;"></i>
+                                                <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Nhận việc</span>
+                                            </div>
+                                            <div class="kanban-col-actions flex-shrink-0">
+                                                <span id="kanbanCountHired" class="kanban-col-count" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0;">0</span>
+                                                <button type="button" class="kanban-col-btn" id="btnMaxCol-6" onclick="toggleKanbanColumnMaximize(6, event)" title="Phóng to / Mở rộng tối đa cột này">
+                                                    <i class="bi bi-arrows-angle-expand"></i>
+                                                </button>
+                                                <button type="button" class="kanban-col-btn" onclick="toggleKanbanColumnCollapse(6, event)" title="Thu gọn cột Nhận việc">
+                                                    <i class="bi bi-chevron-bar-left"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <!-- Header khi thu gọn -->
+                                        <div class="kanban-col-collapsed-content">
+                                            <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(6, event)" title="Mở rộng cột Nhận việc">
+                                                <i class="bi bi-chevron-bar-right text-success"></i>
+                                            </button>
+                                            <span id="kanbanCountHiredCollapsed" class="kanban-col-count" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0;">0</span>
+                                            <span class="kanban-collapsed-title">Nhận việc</span>
+                                        </div>
+                                    </div>
+                                    <div class="kanban-cards-container" id="kanbanDropZone-6" data-stage-order="6"
+                                         ondragover="onKanbanContainerDragOver(event)" ondragleave="onKanbanContainerDragLeave(event)" ondrop="onKanbanContainerDrop(event, 6)">
+                                        @foreach (var cand in Model.CandidatePipelineItems.Where(x => x.CurrentStageOrder == 6 && x.Status != "REJECTED" && x.Status != "WITHDRAWN"))
+                                        {
+                                            @await Html.PartialAsync("_KanbanCandidateCard", cand)
+                                        }
+                                        <div class="kanban-empty-placeholder d-none">
+                                            <i class="bi bi-person-check fs-5 d-block mb-1 opacity-50"></i>
+                                            Trống
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 6. CỘT LOẠI (StageOrder 7 / REJECTED) -->
+                                <div class="kanban-column" id="kanbanCol-7" data-kanban-stage="7" onclick="handleKanbanColumnClick(7, event)">
+                                    <div class="kanban-column-header">
+                                        <div class="kanban-column-strip" style="background: #E11D48;"></div>
+                                        <!-- Header khi mở rộng -->
+                                        <div class="kanban-col-expanded-content d-flex justify-content-between align-items-center w-100" style="gap: 4px;">
+                                            <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
+                                                <i class="bi bi-person-x-fill text-danger" style="color: #E11D48; font-size: 0.85rem;"></i>
+                                                <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Loại</span>
+                                            </div>
+                                            <div class="kanban-col-actions flex-shrink-0">
+                                                <span id="kanbanCountRejected" class="kanban-col-count" style="background: #FFF1F2; color: #BE123C; border: 1px solid #FECDD3;">0</span>
+                                                <button type="button" class="kanban-col-btn" id="btnMaxCol-7" onclick="toggleKanbanColumnMaximize(7, event)" title="Phóng to / Mở rộng tối đa cột này">
+                                                    <i class="bi bi-arrows-angle-expand"></i>
+                                                </button>
+                                                <button type="button" class="kanban-col-btn" onclick="toggleKanbanColumnCollapse(7, event)" title="Thu gọn cột Loại">
+                                                    <i class="bi bi-chevron-bar-left"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <!-- Header khi thu gọn -->
+                                        <div class="kanban-col-collapsed-content">
+                                            <button type="button" class="btn btn-link p-0 kanban-col-collapse-btn" onclick="toggleKanbanColumnCollapse(7, event)" title="Mở rộng cột Loại">
+                                                <i class="bi bi-chevron-bar-right text-danger"></i>
+                                            </button>
+                                            <span id="kanbanCountRejectedCollapsed" class="kanban-col-count" style="background: #FFF1F2; color: #BE123C; border: 1px solid #FECDD3;">0</span>
+                                            <span class="kanban-collapsed-title">Loại</span>
+                                        </div>
+                                    </div>
+                                    <div class="kanban-cards-container" id="kanbanDropZone-7" data-stage-order="7"
+                                         ondragover="onKanbanContainerDragOver(event)" ondragleave="onKanbanContainerDragLeave(event)" ondrop="onKanbanContainerDrop(event, 7)">
+                                        @foreach (var cand in Model.CandidatePipelineItems.Where(x => x.CurrentStageOrder == 7 || x.Status == "REJECTED"))
+                                        {
+                                            @await Html.PartialAsync("_KanbanCandidateCard", cand)
+                                        }
+                                        <div class="kanban-empty-placeholder d-none">
+                                            <i class="bi bi-person-x fs-4 d-block mb-1 opacity-50"></i>
+                                            Không có hồ sơ loại
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ============================================================== -->
+                        <!-- TABLE VIEW CONTAINER (Ẩn mặc định, hiển thị khi chọn chế độ Bảng) -->
+                        <!-- ============================================================== -->
+                        <div id="candidateTableViewContainer" class="d-none mt-2">
+                            <!-- Filter Stage Pills (Đã được gộp vào Dropdown trên thanh công cụ chính) -->
+                            <div class="d-none" id="candidateStageFilterGroup">
+                                <button type="button" class="candidate-stage-pill active" onclick="filterPipelineCandidates('ALL', this)">
+                                    Tất cả <span class="pill-count">@Model.CandidatePipelineItems.Count</span>
+                                </button>
+                                @foreach (var stage in Model.PipelineFunnel.Where(s => !s.IsTerminal))
+                                {
+                                    <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('@stage.StageOrder', this)">
+                                        @stage.StageOrder.ToString("D2"). @(string.IsNullOrWhiteSpace(stage.ShortName) ? stage.StageName : stage.ShortName) <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == stage.StageOrder)</span>
+                                    </button>
+                                }
+                                <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('REJECTED', this)">
+                                    Đã từ chối <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.Status == "REJECTED")</span>
+                                </button>
+                                <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('WITHDRAWN', this)">
+                                    Ứng viên rút <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.Status == "WITHDRAWN")</span>
+                                </button>
+                            </div>
+
+                            <div class="dashboard-table-responsive">
+                                <table class="table align-middle mb-0" style="min-width: 900px; font-size: 0.85rem;">
+                                    <thead>
+                                        <tr style="border-bottom: 1px solid #E2E8F0; color: #64748B; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold" style="border-top-left-radius: 8px; border-bottom-left-radius: 8px;">Ứng viên</th>
+                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Vị trí ứng tuyển</th>
+                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Giai đoạn hiện tại</th>
+                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Ngày nộp</th>
+                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-end" style="border-top-right-radius: 8px; border-bottom-right-radius: 8px;">Thao tác xử lý quy trình</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="candidatePipelineTableBody">
+                                        @if (Model.CandidatePipelineItems.Any())
+                                        {
+                                            @foreach (var cand in Model.CandidatePipelineItems)
+                                            {
+                                                <tr id="cand-row-@cand.ApplicationId" class="pipeline-candidate-row"
+                                                    data-stage-order="@cand.CurrentStageOrder"
+                                                    data-status="@cand.Status"
+                                                    data-is-referral="@(cand.IsReferral ? "true" : "false")"
+                                                    data-has-duplicate="@(cand.HasDuplicateWarning ? "true" : "false")"
+                                                    data-job-id="@cand.JobPostingId"
+                                                    data-name="@cand.CandidateName.ToLower()"
+                                                    data-email="@cand.CandidateEmail.ToLower()"
+                                                    data-job="@cand.JobTitle.ToLower()"
+                                                    style="border-bottom: 1px solid #F1F5F9; transition: background .15s;"
+                                                    onmouseover="this.style.background='#F8FAFC';" onmouseout="this.style.background='#FFFFFF';">
+                                                    <td class="py-3 px-3">
+                                                        <div class="d-flex align-items-center gap-2.5">
+                                                            <div class="d-flex align-items-center justify-content-center fw-bold text-white rounded-circle flex-shrink-0"
+                                                                 style="width: 36px; height: 36px; background: #0F172A; font-size: 0.85rem;">
+                                                                @(string.IsNullOrEmpty(cand.CandidateName) ? "?" : cand.CandidateName.Substring(0, 1).ToUpper())
                                                             </div>
-                                                            <div class="d-flex align-items-center gap-2" style="font-size: 0.75rem; color: #64748B;">
-                                                                <span style="font-family:'JetBrains Mono',monospace;">@cand.CandidateEmail</span>
-                                                                @if (!string.IsNullOrEmpty(cand.CandidatePhone))
-                                                                {
-                                                                    <span>•</span>
-                                                                    <span>@cand.CandidatePhone</span>
-                                                                }
-                                                                @if (!string.IsNullOrEmpty(cand.ResumeFilePath))
-                                                                {
-                                                                    <a href="@cand.ResumeFilePath" target="_blank" class="candidate-cv-pill ms-1" title="Xem CV đính kèm">
-                                                                        <i class="bi bi-file-earmark-pdf"></i> CV
-                                                                    </a>
-                                                                }
+                                                            <div>
+                                                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                                                    <span class="fw-bold text-dark" style="font-size: 0.9rem;">@cand.CandidateName</span>
+                                                                    @if (cand.IsReferral)
+                                                                    {
+                                                                        <span class="badge" style="background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; border-radius:6px; font-size:0.68rem; font-weight:600;" title="@(!string.IsNullOrWhiteSpace(cand.ReferralNote) ? $"Ghi chú: {cand.ReferralNote}" : "Hồ sơ được nhân sự nội bộ giới thiệu")">
+                                                                            <i class="bi bi-person-heart me-1 text-warning"></i>Giới thiệu nội bộ@(string.IsNullOrWhiteSpace(cand.ReferrerName) ? "" : $" ({cand.ReferrerName})")
+                                                                        </span>
+                                                                    }
+                                                                    @if (cand.HasDuplicateWarning)
+                                                                    {
+                                                                        <a href="/Workspace/CompareCandidates?primaryId=@cand.CandidateId@(cand.MatchedCandidateId.HasValue ? $"&secondaryId={cand.MatchedCandidateId}" : "")"
+                                                                           class="badge text-decoration-none"
+                                                                           style="background: #FEF3C7; color: #B45309; border: 1px solid #FCD34D; border-radius: 6px; font-size: 0.68rem; font-weight: 600;"
+                                                                           title="@cand.DuplicateReason - Nhấn để so sánh và gộp hồ sơ">
+                                                                            <i class="bi bi-exclamation-circle-fill me-1 text-warning"></i>Cảnh báo trùng
+                                                                        </a>
+                                                                    }
+                                                                </div>
+                                                                <div class="d-flex align-items-center gap-2" style="font-size: 0.75rem; color: #64748B;">
+                                                                    <span style="font-family:'JetBrains Mono',monospace;">@cand.CandidateEmail</span>
+                                                                    @if (!string.IsNullOrEmpty(cand.CandidatePhone))
+                                                                    {
+                                                                        <span>•</span>
+                                                                        <span>@cand.CandidatePhone</span>
+                                                                    }
+                                                                    @if (!string.IsNullOrEmpty(cand.ResumeFilePath))
+                                                                    {
+                                                                        <a href="@cand.ResumeFilePath" target="_blank" class="candidate-cv-pill ms-1" title="Xem CV đính kèm">
+                                                                            <i class="bi bi-file-earmark-pdf"></i> CV
+                                                                        </a>
+                                                                    }
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                </td>
-                                                <td class="py-3 px-3">
-                                                    <span class="fw-semibold text-dark">@cand.JobTitle</span>
-                                                </td>
-                                                <td class="py-3 px-3">
-                                                    @if (cand.Status == "WITHDRAWN")
-                                                    {
-                                                        <span class="badge" style="background:#F1F5F9; color:#475569; border:1px solid #CBD5E1; border-radius:6px; font-size:0.75rem; font-weight:600;">
-                                                            <i class="bi bi-person-x me-1"></i>Ứng viên rút
-                                                        </span>
-                                                    }
-                                                    else if (cand.Status == "REJECTED")
-                                                    {
-                                                        <span class="badge" style="background:#FEE2E2; color:#DC2626; border:1px solid #FECACA; border-radius:6px; font-size:0.75rem; font-weight:600;">
-                                                            <i class="bi bi-x-circle me-1"></i>Từ chối hồ sơ
-                                                        </span>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="badge" style="background:@(cand.StageColor)15; color:@cand.StageColor; border:1px solid @(cand.StageColor)40; border-radius:6px; font-size:0.75rem; font-weight:600;">
-                                                            <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem; vertical-align: middle;"></i>@cand.CurrentStageName
-                                                        </span>
-                                                    }
-                                                </td>
-                                                <td class="py-3 px-3 text-muted" style="font-size: 0.78rem; font-family:'JetBrains Mono',monospace;">
-                                                    @cand.AppliedDateDisplay
-                                                </td>
-                                                <td class="py-3 px-3 text-end">
-                                                    <div class="d-flex justify-content-end align-items-center gap-2">
+                                                    </td>
+                                                    <td class="py-3 px-3">
+                                                        <span class="fw-semibold text-dark">@cand.JobTitle</span>
+                                                    </td>
+                                                    <td class="py-3 px-3">
                                                         @if (cand.Status == "WITHDRAWN")
                                                         {
-                                                            <span class="badge bg-secondary-subtle text-secondary border" style="border-radius:6px; font-size:0.72rem;"><i class="bi bi-box-arrow-left me-1"></i>Đã rút hồ sơ</span>
+                                                            <span class="badge" style="background:#F1F5F9; color:#475569; border:1px solid #CBD5E1; border-radius:6px; font-size:0.75rem; font-weight:600;">
+                                                                <i class="bi bi-person-x me-1"></i>Ứng viên rút
+                                                            </span>
                                                         }
                                                         else if (cand.Status == "REJECTED")
                                                         {
-                                                            <span class="badge bg-light text-muted border" style="border-radius:6px; font-size:0.72rem;">Đã lưu trữ</span>
-                                                        }
-                                                        else if (cand.CurrentStageOrder == 1)
-                                                        {
-                                                            <button type="button" class="btn btn-sm btn-outline-success candidate-action-btn-primary"
-                                                                    onclick="advanceStageQuick('@cand.ApplicationId', 'Sàng lọc CV', '@cand.CandidateName')">
-                                                                <i class="bi bi-arrow-right-circle"></i> Duyệt Sơ Loại
-                                                            </button>
-                                                        }
-                                                        else if (cand.CurrentStageOrder == 2)
-                                                        {
-                                                            <button type="button" class="btn btn-sm btn-primary candidate-action-btn-primary" style="background:#0284C7; border-color:#0284C7;"
-                                                                    onclick="openScheduleModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
-                                                                <i class="bi bi-calendar-plus"></i> Lên Lịch PV
-                                                            </button>
-                                                        }
-                                                        else if (cand.CurrentStageOrder == 4)
-                                                        {
-                                                            <button type="button" class="btn btn-sm btn-warning text-dark candidate-action-btn-primary fw-semibold"
-                                                                    onclick="openCreateOfferModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
-                                                                <i class="bi bi-envelope-paper-heart-fill"></i> Đề Xuất Offer
-                                                            </button>
-                                                        }
-                                                        else if (cand.CurrentStageOrder == 5)
-                                                        {
-                                                            <button type="button" class="btn btn-sm btn-success candidate-action-btn-primary"
-                                                                    onclick="advanceStageQuick('@cand.ApplicationId', 'Đã Onboard', '@cand.CandidateName')">
-                                                                <i class="bi bi-check2-all"></i> Xác Nhận Onboard
-                                                            </button>
-                                                        }
-                                                        else if (cand.CurrentStageOrder == 6)
-                                                        {
-                                                            <span class="badge" style="background:#ECFDF5; color:#047857; border:1px solid #A7F3D0; border-radius:6px; font-size:0.75rem; font-weight:600;">
-                                                                <i class="bi bi-person-check-fill me-1"></i>Đã Tiếp Nhận
+                                                            <span class="badge" style="background:#FEE2E2; color:#DC2626; border:1px solid #FECACA; border-radius:6px; font-size:0.75rem; font-weight:600;">
+                                                                <i class="bi bi-x-circle me-1"></i>Từ chối hồ sơ
                                                             </span>
                                                         }
+                                                        else
+                                                        {
+                                                            <span class="badge" style="background:@(cand.StageColor)15; color:@cand.StageColor; border:1px solid @(cand.StageColor)40; border-radius:6px; font-size:0.75rem; font-weight:600;">
+                                                                <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem; vertical-align: middle;"></i>@cand.CurrentStageName
+                                                            </span>
+                                                        }
+                                                    </td>
+                                                    <td class="py-3 px-3 text-muted" style="font-size: 0.78rem; font-family:'JetBrains Mono',monospace;">
+                                                        @cand.AppliedDateDisplay
+                                                    </td>
+                                                    <td class="py-3 px-3 text-end">
+                                                        <div class="d-flex justify-content-end align-items-center gap-2">
+                                                            @if (cand.Status == "WITHDRAWN")
+                                                            {
+                                                                <span class="badge bg-secondary-subtle text-secondary border" style="border-radius:6px; font-size:0.72rem;"><i class="bi bi-box-arrow-left me-1"></i>Đã rút hồ sơ</span>
+                                                            }
+                                                            else if (cand.Status == "REJECTED")
+                                                            {
+                                                                <span class="badge bg-light text-muted border" style="border-radius:6px; font-size:0.72rem;">Đã lưu trữ</span>
+                                                            }
+                                                            else if (cand.CurrentStageOrder == 1)
+                                                            {
+                                                                <button type="button" class="btn btn-sm btn-outline-success candidate-action-btn-primary"
+                                                                        onclick="advanceStageQuick('@cand.ApplicationId', 'Sàng lọc CV', '@cand.CandidateName')">
+                                                                    <i class="bi bi-arrow-right-circle"></i> Duyệt Sơ Loại
+                                                                </button>
+                                                            }
+                                                            else if (cand.CurrentStageOrder == 2)
+                                                            {
+                                                                <button type="button" class="btn btn-sm btn-primary candidate-action-btn-primary" style="background:#0284C7; border-color:#0284C7;"
+                                                                        onclick="openScheduleModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
+                                                                    <i class="bi bi-calendar-plus"></i> Lên Lịch PV
+                                                                </button>
+                                                            }
+                                                            else if (cand.CurrentStageOrder == 4)
+                                                            {
+                                                                <button type="button" class="btn btn-sm btn-warning text-dark candidate-action-btn-primary fw-semibold"
+                                                                        onclick="openCreateOfferModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
+                                                                    <i class="bi bi-envelope-paper-heart-fill"></i> Đề Xuất Offer
+                                                                </button>
+                                                            }
+                                                            else if (cand.CurrentStageOrder == 5)
+                                                            {
+                                                                <button type="button" class="btn btn-sm btn-success candidate-action-btn-primary"
+                                                                        onclick="advanceStageQuick('@cand.ApplicationId', 'Đã Onboard', '@cand.CandidateName')">
+                                                                    <i class="bi bi-check2-all"></i> Xác Nhận Onboard
+                                                                </button>
+                                                            }
+                                                            else if (cand.CurrentStageOrder == 6)
+                                                            {
+                                                                <span class="badge" style="background:#ECFDF5; color:#047857; border:1px solid #A7F3D0; border-radius:6px; font-size:0.75rem; font-weight:600;">
+                                                                    <i class="bi bi-person-check-fill me-1"></i>Đã Tiếp Nhận
+                                                                </span>
+                                                            }
 
                                                         <!-- Dropdown Thao tác mở rộng (...) -->
                                                         <div class="dropdown d-inline-block">
@@ -1245,65 +1638,57 @@
                                                                         </a>
                                                                     </li>
                                                                 }
+                                                                <li><hr class="dropdown-divider my-1"></li>
+                                                                <li>
+                                                                    <a class="dropdown-item text-primary" href="javascript:void(0)" onclick="CandidateStageManager.openHistoryModal('@cand.ApplicationId', '@cand.CandidateName')">
+                                                                        <i class="bi bi-clock-history text-primary"></i> Dòng thời gian giai đoạn
+                                                                    </a>
+                                                                </li>
                                                                 @if (cand.Status != "REJECTED" && cand.CurrentStageOrder != 6)
                                                                 {
-                                                                    <li><hr class="dropdown-divider my-1"></li>
-                                                                    <li>
-                                                                        <a class="dropdown-item text-primary" href="javascript:void(0)" onclick="CandidateStageManager.openHistoryModal('@cand.ApplicationId', '@cand.CandidateName')">
-                                                                            <i class="bi bi-clock-history text-primary"></i> Dòng thời gian giai đoạn
-                                                                        </a>
-                                                                    </li>
                                                                     <li>
                                                                         <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="openRejectModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
                                                                             <i class="bi bi-x-circle text-danger"></i> Từ chối hồ sơ
                                                                         </a>
                                                                     </li>
                                                                 }
-                                                                else
-                                                                {
-                                                                    <li><hr class="dropdown-divider my-1"></li>
-                                                                    <li>
-                                                                        <a class="dropdown-item text-primary" href="javascript:void(0)" onclick="CandidateStageManager.openHistoryModal('@cand.ApplicationId', '@cand.CandidateName')">
-                                                                            <i class="bi bi-clock-history text-primary"></i> Dòng thời gian giai đoạn
-                                                                        </a>
-                                                                    </li>
-                                                                }
                                                             </ul>
                                                         </div>
-                                                    </div>
-                                                </td>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <tr>
+                                                <td colspan="5" class="text-center text-muted py-4">Chưa có hồ sơ ứng viên nào trong hệ thống.</td>
                                             </tr>
                                         }
-                                    }
-                                    else
-                                    {
-                                        <tr>
-                                            <td colspan="5" class="text-center text-muted py-4">Chưa có hồ sơ ứng viên nào trong hệ thống.</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Pagination Container for Candidate Pipeline -->
-                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 pt-3 mt-2 border-top" id="candidatePaginationContainer" style="border-color: #F1F5F9 !important;">
-                            <div class="d-flex align-items-center gap-2 text-muted" style="font-size: 0.8rem;">
-                                <span>Hiển thị từ <strong id="candPageStart" class="text-dark">0</strong> đến <strong id="candPageEnd" class="text-dark">0</strong> trong tổng số <strong id="candTotalRecords" class="text-dark">0</strong> ứng viên</span>
-                                <span class="mx-1">•</span>
-                                <label for="candPageSizeSelect" class="me-1">Mỗi trang:</label>
-                                <select id="candPageSizeSelect" class="form-select form-select-sm" style="width: auto; font-size: 0.8rem; border-color: #E2E8F0; border-radius: 8px;" onchange="changeCandidatePageSize(this.value)">
-                                    <option value="5">5</option>
-                                    <option value="10" selected>10</option>
-                                    <option value="25">25</option>
-                                    <option value="50">50</option>
-                                </select>
+                                    </tbody>
+                                </table>
                             </div>
-                            <nav aria-label="Candidate Navigation">
-                                <ul class="pagination pagination-sm mb-0 gap-1" id="candPaginationUl">
-                                    <!-- Rendered dynamically by JavaScript -->
-                                </ul>
-                            </nav>
-                        </div>
+
+                            <!-- Pagination Container for Candidate Pipeline -->
+                            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 pt-3 mt-2 border-top" id="candidatePaginationContainer" style="border-color: #F1F5F9 !important;">
+                                <div class="d-flex align-items-center gap-2 text-muted" style="font-size: 0.8rem;">
+                                    <span>Hiển thị từ <strong id="candPageStart" class="text-dark">0</strong> đến <strong id="candPageEnd" class="text-dark">0</strong> trong tổng số <strong id="candTotalRecords" class="text-dark">0</strong> ứng viên</span>
+                                    <span class="mx-1">•</span>
+                                    <label for="candPageSizeSelect" class="me-1">Mỗi trang:</label>
+                                    <select id="candPageSizeSelect" class="form-select form-select-sm" style="width: auto; font-size: 0.8rem; border-color: #E2E8F0; border-radius: 8px;" onchange="changeCandidatePageSize(this.value)">
+                                        <option value="5">5</option>
+                                        <option value="10" selected>10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                    </select>
+                                </div>
+                                <nav aria-label="Candidate Navigation">
+                                    <ul class="pagination pagination-sm mb-0 gap-1" id="candPaginationUl">
+                                        <!-- Rendered dynamically by JavaScript -->
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div> <!-- End #candidateTableViewContainer -->
                     </div>
                 </div>
 
@@ -2866,11 +3251,678 @@
             }
         }
 
-        // 8.1. Lọc và tìm kiếm bảng ứng viên trực tiếp kèm Phân trang (Candidate Pipeline Board with Pagination & URL Sync)
+        // ==============================================================
+        // SCRUM-319: KANBAN PIPELINE BOARD & DRAG-AND-DROP CONTROLLER
+        // ==============================================================
         window.currentPipelineStage = 'ALL';
+        window.currentPipelineJob = '@(Model.DefaultJobPostingId?.ToString() ?? "ALL")';
+        window.pipelineViewMode = localStorage.getItem('ats_pipeline_view_mode') || 'kanban';
         window.candCurrentPage = 1;
         window.candPageSize = 10;
 
+        let draggedApplicationId = null;
+        let draggedCardElement = null;
+        let originalStageOrder = null;
+
+        function switchPipelineView(mode) {
+            window.pipelineViewMode = mode;
+            try { localStorage.setItem('ats_pipeline_view_mode', mode); } catch (_) {}
+
+            const kanbanContainer = document.getElementById('candidateKanbanViewContainer');
+            const tableContainer = document.getElementById('candidateTableViewContainer');
+            const btnKanban = document.getElementById('btnPipelineKanbanView');
+            const btnTable = document.getElementById('btnPipelineTableView');
+
+            if (mode === 'kanban') {
+                if (kanbanContainer) kanbanContainer.classList.remove('d-none');
+                if (tableContainer) tableContainer.classList.add('d-none');
+                if (btnKanban) {
+                    btnKanban.classList.add('active');
+                    btnKanban.classList.remove('btn-outline-success');
+                    btnKanban.classList.add('btn-success', 'text-white');
+                }
+                if (btnTable) {
+                    btnTable.classList.remove('active', 'btn-secondary', 'text-white');
+                    btnTable.classList.add('btn-outline-secondary');
+                }
+                applyKanbanFilters();
+            } else {
+                if (kanbanContainer) kanbanContainer.classList.add('d-none');
+                if (tableContainer) tableContainer.classList.remove('d-none');
+                if (btnTable) {
+                    btnTable.classList.add('active', 'btn-secondary', 'text-white');
+                    btnTable.classList.remove('btn-outline-secondary');
+                }
+                if (btnKanban) {
+                    btnKanban.classList.remove('active', 'btn-success', 'text-white');
+                    btnKanban.classList.add('btn-outline-success');
+                }
+                applyPipelineFilters(true, false);
+            }
+        }
+
+        // --- Chế độ xem thẻ Kanban: Thu gọn (Compact) vs Chi tiết (Detailed) ---
+        function setKanbanCardDetailMode(mode) {
+            const container = document.getElementById('candidateKanbanViewContainer');
+            const btnCompact = document.getElementById('btnKanbanModeCompact');
+            const btnDetailed = document.getElementById('btnKanbanModeDetailed');
+            if (!container) return;
+
+            if (mode === 'detailed') {
+                container.classList.remove('kanban-mode-compact');
+                container.classList.add('kanban-mode-detailed');
+                if (btnDetailed) {
+                    btnDetailed.classList.add('active', 'btn-secondary', 'text-white');
+                    btnDetailed.classList.remove('btn-outline-secondary');
+                }
+                if (btnCompact) {
+                    btnCompact.classList.remove('active', 'btn-secondary', 'text-white');
+                    btnCompact.classList.add('btn-outline-secondary');
+                }
+            } else { // 'compact' mặc định
+                container.classList.remove('kanban-mode-detailed');
+                container.classList.add('kanban-mode-compact');
+                if (btnCompact) {
+                    btnCompact.classList.add('active', 'btn-secondary', 'text-white');
+                    btnCompact.classList.remove('btn-outline-secondary');
+                }
+                if (btnDetailed) {
+                    btnDetailed.classList.remove('active', 'btn-secondary', 'text-white');
+                    btnDetailed.classList.add('btn-outline-secondary');
+                }
+            }
+            try { localStorage.setItem('ats_kanban_card_mode', mode); } catch (_) {}
+        }
+
+        // Trạng thái đếm số lượng hồ sơ & cột phóng to tối đa
+        window.kanbanStageCounts = { 1: 0, 2: 0, 3: 0, 5: 0, 6: 0, 7: 0 };
+        window.maximizedKanbanStage = null;
+
+        // Cập nhật phân bổ độ rộng các cột: Khi có cột Thu gọn thì các cột khác PHẢI PHÌNH (MỞ RỘNG TO RA)
+        function updateKanbanColumnWidths() {
+            const allStages = [1, 2, 3, 5, 6, 7];
+            const cols = allStages.map(order => ({
+                order: order,
+                element: document.getElementById('kanbanCol-' + order),
+                count: window.kanbanStageCounts ? (window.kanbanStageCounts[order] || 0) : 0
+            })).filter(c => c.element !== null);
+
+            const collapsedCols = cols.filter(c => c.element.classList.contains('kanban-column-collapsed'));
+            const openCols = cols.filter(c => !c.element.classList.contains('kanban-column-collapsed'));
+
+            // Cập nhật icon trên các nút Maximize
+            cols.forEach(c => {
+                const btn = document.getElementById('btnMaxCol-' + c.order);
+                if (btn) {
+                    if (window.maximizedKanbanStage === c.order) {
+                        btn.innerHTML = '<i class="bi bi-arrows-angle-contract"></i>';
+                        btn.classList.add('active');
+                        btn.title = 'Thu nhỏ cột về độ rộng bình thường';
+                    } else {
+                        btn.innerHTML = '<i class="bi bi-arrows-angle-expand"></i>';
+                        btn.classList.remove('active');
+                        btn.title = 'Phóng to / Mở rộng tối đa cột này';
+                    }
+                }
+            });
+
+            // Nếu người dùng chủ động maximize 1 cột
+            if (window.maximizedKanbanStage) {
+                const targetCol = cols.find(c => c.order === window.maximizedKanbanStage);
+                if (targetCol && !targetCol.element.classList.contains('kanban-column-collapsed')) {
+                    openCols.forEach(c => {
+                        if (c.order === window.maximizedKanbanStage) {
+                            c.element.style.flex = '2.8 1 0%';
+                            c.element.classList.add('kanban-column-maximized');
+                        } else {
+                            c.element.style.flex = '1 1 0%';
+                            c.element.classList.remove('kanban-column-maximized');
+                        }
+                    });
+                    return;
+                }
+            }
+
+            // Xóa class maximized
+            cols.forEach(c => c.element.classList.remove('kanban-column-maximized'));
+
+            // Nếu KHÔNG có cột nào bị thu gọn: tất cả các cột mở đều có độ rộng đều nhau
+            if (collapsedCols.length === 0) {
+                openCols.forEach(c => {
+                    c.element.style.flex = '1 1 0%';
+                });
+                return;
+            }
+
+            // KHI CÓ CỘT THU GỌN: CÁC CỘT CÒN LẠI PHẢI PHÌNH TO (MỞ RỘNG RA) RÕ RỆT
+            // Cột có nhiều hồ sơ nhất nhận trọng số flex 2.2, cột có hồ sơ nhận flex 1.6, cột 0 hồ sơ nhận flex 1.1
+            const sortedCounts = openCols.map(c => c.count).sort((a, b) => b - a);
+            const highestCount = sortedCounts.length > 0 ? sortedCounts[0] : 0;
+
+            openCols.forEach(c => {
+                if (c.count === highestCount && highestCount > 0) {
+                    // Cột có nhiều hồ sơ nhất PHÌNH TO GẤP ĐÔI!
+                    c.element.style.flex = '2.2 1 0%';
+                } else if (c.count > 0) {
+                    // Cột có hồ sơ phình to vừa
+                    c.element.style.flex = '1.6 1 0%';
+                } else {
+                    // Cột mở nhưng chưa có hồ sơ
+                    c.element.style.flex = '1.1 1 0%';
+                }
+            });
+        }
+
+        // Bật / Tắt phóng to tối đa 1 cột
+        function toggleKanbanColumnMaximize(stageOrder, event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            if (window.maximizedKanbanStage === stageOrder) {
+                window.maximizedKanbanStage = null;
+            } else {
+                const col = document.getElementById('kanbanCol-' + stageOrder);
+                if (col && col.classList.contains('kanban-column-collapsed')) {
+                    toggleKanbanColumnCollapse(stageOrder, event);
+                }
+                window.maximizedKanbanStage = stageOrder;
+            }
+            updateKanbanColumnWidths();
+        }
+
+        // --- BỘ LỌC CỘT KANBAN (Gộp thành 1 Dropdown duy nhất & Hiển thị tên cột đang chọn) ---
+        function selectKanbanStageFilter(stageKey, stageLabel, event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            window.currentPipelineStage = stageKey || 'ALL';
+
+            const btn = document.getElementById('btnKanbanStageFilter');
+            const label = document.getElementById('kanbanStageFilterLabel');
+            const badge = document.getElementById('kanbanStageFilterBadge');
+            const icon = document.getElementById('kanbanStageFilterIcon');
+            const menuItems = document.querySelectorAll('.kanban-stage-menu-item');
+
+            // Cập nhật trạng thái active trong menu
+            menuItems.forEach(item => {
+                const oc = item.getAttribute('onclick') || '';
+                if (oc.includes(`'${stageKey}'`)) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+
+            // Màu sắc đại diện cho từng cột
+            const stageStyleMap = {
+                'ALL': { color: '#475569', bg: '#FFFFFF', border: '#CBD5E1', icon: 'bi-funnel text-muted', name: 'Tất cả cột' },
+                '1': { color: '#1D4ED8', bg: '#EFF6FF', border: '#93C5FD', icon: 'bi-funnel-fill text-primary', name: 'Hồ sơ mới' },
+                '2': { color: '#0369A1', bg: '#F0F9FF', border: '#7DD3FC', icon: 'bi-funnel-fill text-info', name: 'Sàng lọc' },
+                '3': { color: '#6D28D9', bg: '#F5F3FF', border: '#C4B5FD', icon: 'bi-funnel-fill text-purple', name: 'Phỏng vấn' },
+                '5': { color: '#B45309', bg: '#FFFBEB', border: '#FCD34D', icon: 'bi-funnel-fill text-warning', name: 'Offer' },
+                '6': { color: '#047857', bg: '#ECFDF5', border: '#6EE7B7', icon: 'bi-funnel-fill text-success', name: 'Nhận việc' },
+                '7': { color: '#BE123C', bg: '#FFF1F2', border: '#FDA4AF', icon: 'bi-funnel-fill text-danger', name: 'Loại' }
+            };
+            const style = stageStyleMap[stageKey] || stageStyleMap['ALL'];
+            const displayName = stageLabel || style.name;
+
+            // Đếm số lượng của cột đang chọn
+            let currentCount = 0;
+            if (stageKey === 'ALL') {
+                currentCount = window.kanbanStageCounts ? Object.values(window.kanbanStageCounts).reduce((a, b) => a + b, 0) : 0;
+            } else {
+                currentCount = (window.kanbanStageCounts && window.kanbanStageCounts[parseInt(stageKey, 10)]) || 0;
+            }
+
+            // Cập nhật giao diện nút Dropdown: HIỂN THỊ TÊN CỘT ĐỂ NGƯỜI DÙNG BIẾT ĐÃ CHỌN LỌC
+            if (stageKey === 'ALL') {
+                if (label) label.textContent = 'Tất cả cột';
+                if (btn) {
+                    btn.style.background = '#FFFFFF';
+                    btn.style.borderColor = '#CBD5E1';
+                    btn.style.color = '#475569';
+                }
+                if (icon) icon.className = 'bi bi-funnel text-muted';
+                if (badge) {
+                    badge.className = 'badge bg-light text-dark border ms-1';
+                    badge.style.background = '';
+                    badge.style.color = '';
+                    badge.style.borderColor = '';
+                    badge.textContent = currentCount;
+                }
+            } else {
+                if (label) label.innerHTML = `Cột: <b>${displayName}</b>`;
+                if (btn) {
+                    btn.style.background = style.bg;
+                    btn.style.borderColor = style.border;
+                    btn.style.color = style.color;
+                }
+                if (icon) icon.className = style.icon;
+                if (badge) {
+                    badge.className = 'badge border ms-1';
+                    badge.style.background = '#FFFFFF';
+                    badge.style.color = style.color;
+                    badge.style.borderColor = style.border;
+                    badge.textContent = currentCount;
+                }
+            }
+
+            // 1. Điều khiển Bảng Kanban
+            const allStages = [1, 2, 3, 5, 6, 7];
+            if (stageKey === 'ALL') {
+                // Khôi phục tất cả cột mở đều nhau
+                window.maximizedKanbanStage = null;
+                allStages.forEach(order => {
+                    const col = document.getElementById('kanbanCol-' + order);
+                    if (col) {
+                        col.classList.remove('kanban-column-collapsed');
+                        col.classList.remove('kanban-column-maximized');
+                        col.style.display = '';
+                    }
+                });
+                try { localStorage.removeItem('ats_kanban_collapsed_stages'); } catch (_) {}
+                updateKanbanColumnWidths();
+            } else {
+                const selectedOrder = parseInt(stageKey, 10);
+                if (allStages.includes(selectedOrder)) {
+                    // Tập trung vào cột được chọn: Phóng to tối đa (Maximize) và thu gọn các cột khác
+                    window.maximizedKanbanStage = selectedOrder;
+                    allStages.forEach(order => {
+                        const col = document.getElementById('kanbanCol-' + order);
+                        if (col) {
+                            if (order === selectedOrder) {
+                                col.classList.remove('kanban-column-collapsed');
+                            } else {
+                                col.classList.add('kanban-column-collapsed');
+                            }
+                        }
+                    });
+                    updateKanbanColumnWidths();
+                    scrollToKanbanColumn(selectedOrder);
+                }
+            }
+
+            // 2. Điều khiển Bảng Table View (nếu đang ở Table)
+            applyPipelineFilters(true, true);
+
+            // Đóng menu Dropdown nếu đang mở
+            try {
+                const dropdownBtn = document.getElementById('btnKanbanStageFilter');
+                if (dropdownBtn && window.bootstrap && window.bootstrap.Dropdown) {
+                    const inst = window.bootstrap.Dropdown.getInstance(dropdownBtn);
+                    if (inst) inst.hide();
+                }
+            } catch (_) {}
+        }
+
+        // --- Tính năng Thu gọn / Mở rộng Cột (Column Collapse/Expand) ---
+        function toggleKanbanColumnCollapse(stageOrder, event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            const col = document.getElementById('kanbanCol-' + stageOrder);
+            if (!col) return;
+
+            const isCollapsed = col.classList.toggle('kanban-column-collapsed');
+
+            if (isCollapsed && window.maximizedKanbanStage === stageOrder) {
+                window.maximizedKanbanStage = null;
+            }
+
+            try {
+                let list = JSON.parse(localStorage.getItem('ats_kanban_collapsed_stages') || '[]');
+                if (!Array.isArray(list)) list = [];
+                if (isCollapsed) {
+                    if (!list.includes(stageOrder)) list.push(stageOrder);
+                } else {
+                    list = list.filter(x => x !== stageOrder);
+                }
+                localStorage.setItem('ats_kanban_collapsed_stages', JSON.stringify(list));
+            } catch (_) {}
+
+            updateKanbanColumnWidths();
+        }
+
+        function handleKanbanColumnClick(stageOrder, event) {
+            const col = document.getElementById('kanbanCol-' + stageOrder);
+            if (col && col.classList.contains('kanban-column-collapsed')) {
+                toggleKanbanColumnCollapse(stageOrder, event);
+            }
+        }
+
+        function restoreKanbanPreferences() {
+            // Khôi phục chế độ xem thẻ (Mặc định compact)
+            const savedCardMode = localStorage.getItem('ats_kanban_card_mode') || 'compact';
+            setKanbanCardDetailMode(savedCardMode);
+
+            // Khôi phục các cột đã thu gọn
+            try {
+                const list = JSON.parse(localStorage.getItem('ats_kanban_collapsed_stages') || '[]');
+                if (Array.isArray(list)) {
+                    list.forEach(stageOrder => {
+                        const col = document.getElementById('kanbanCol-' + stageOrder);
+                        if (col) col.classList.add('kanban-column-collapsed');
+                    });
+                }
+            } catch (_) {}
+
+            updateKanbanColumnWidths();
+        }
+
+        // --- Hỗ trợ di động: Vuốt qua lại giữa các cột & Dots Indicator ---
+        function scrollToKanbanColumn(stageOrder) {
+            const col = document.getElementById('kanbanCol-' + stageOrder);
+            if (col) {
+                col.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                updateMobileKanbanDots(stageOrder);
+            }
+        }
+
+        function updateMobileKanbanDots(stageOrder) {
+            const stageOrderList = [1, 2, 3, 5, 6, 7];
+            const idx = stageOrderList.indexOf(stageOrder);
+            const dots = document.querySelectorAll('.kanban-mobile-dot');
+            if (dots && dots.length > 0 && idx !== -1) {
+                dots.forEach((dot, i) => {
+                    if (i === idx) dot.classList.add('active');
+                    else dot.classList.remove('active');
+                });
+            }
+        }
+
+        function initMobileKanbanSwipeObserver() {
+            const wrapper = document.getElementById('candidateKanbanViewContainer');
+            if (!wrapper) return;
+
+            let ticking = false;
+            wrapper.addEventListener('scroll', () => {
+                if (!ticking) {
+                    window.requestAnimationFrame(() => {
+                        if (window.innerWidth <= 768) {
+                            const stageOrderList = [1, 2, 3, 5, 6, 7];
+                            const wrapperCenter = wrapper.scrollLeft + wrapper.clientWidth / 2;
+                            let closestStage = 1;
+                            let minDistance = Infinity;
+
+                            stageOrderList.forEach(order => {
+                                const col = document.getElementById('kanbanCol-' + order);
+                                if (col) {
+                                    const colCenter = col.offsetLeft + col.clientWidth / 2;
+                                    const dist = Math.abs(colCenter - wrapperCenter);
+                                    if (dist < minDistance) {
+                                        minDistance = dist;
+                                        closestStage = order;
+                                    }
+                                }
+                            });
+                            updateMobileKanbanDots(closestStage);
+                        }
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            }, { passive: true });
+        }
+
+        function onPipelineJobFilterChanged(jobId) {
+            window.currentPipelineJob = jobId || 'ALL';
+            applyKanbanFilters();
+            applyPipelineFilters(true, true);
+        }
+
+        function applyKanbanFilters() {
+            const selectedJob = window.currentPipelineJob || 'ALL';
+            const searchInput = document.getElementById('candidateSearchInput');
+            const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+
+            const cards = Array.from(document.querySelectorAll('.kanban-candidate-card'));
+
+            const counts = {
+                1: 0, // Hồ sơ mới
+                2: 0, // Sàng lọc
+                3: 0, // Phỏng vấn (3 & 4)
+                5: 0, // Đề xuất offer
+                6: 0, // Nhận việc
+                7: 0  // Loại
+            };
+
+            cards.forEach(card => {
+                const cardJobId = card.getAttribute('data-job-id') || '';
+                const cardStageOrder = parseInt(card.getAttribute('data-stage-order') || '1', 10);
+                const cardStatus = card.getAttribute('data-status') || '';
+                const name = card.getAttribute('data-name') || '';
+                const email = card.getAttribute('data-email') || '';
+                const job = card.getAttribute('data-job') || '';
+
+                // Job match
+                const jobMatch = (selectedJob === 'ALL' || cardJobId.toLowerCase() === selectedJob.toLowerCase());
+
+                // Search match (từ 3 ký tự trở lên)
+                const combined = `${name} ${email} ${job}`;
+                const textMatch = !query || query.length < 3 || combined.includes(query);
+
+                if (jobMatch && textMatch) {
+                    card.style.display = '';
+                    if (cardStatus === 'REJECTED' || cardStageOrder === 7) {
+                        counts[7]++;
+                    } else if (cardStageOrder === 1) {
+                        counts[1]++;
+                    } else if (cardStageOrder === 2) {
+                        counts[2]++;
+                    } else if (cardStageOrder === 3 || cardStageOrder === 4) {
+                        counts[3]++;
+                    } else if (cardStageOrder === 5) {
+                        counts[5]++;
+                    } else if (cardStageOrder === 6) {
+                        counts[6]++;
+                    }
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Update column header badges (cả trạng thái mở rộng và thu gọn)
+            const stageBadgeMap = {
+                1: ['kanbanCountNew', 'kanbanCountNewCollapsed'],
+                2: ['kanbanCountScreen', 'kanbanCountScreenCollapsed'],
+                3: ['kanbanCountInterview', 'kanbanCountInterviewCollapsed'],
+                5: ['kanbanCountOffer', 'kanbanCountOfferCollapsed'],
+                6: ['kanbanCountHired', 'kanbanCountHiredCollapsed'],
+                7: ['kanbanCountRejected', 'kanbanCountRejectedCollapsed']
+            };
+            Object.keys(stageBadgeMap).forEach(order => {
+                stageBadgeMap[order].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = counts[order];
+                });
+            });
+
+            // Lưu đếm số lượng và cập nhật phình to các cột mở rộng
+            window.kanbanStageCounts = counts;
+            updateKanbanColumnWidths();
+
+            // Đồng bộ số lượng hồ sơ vào Dropdown Menu bộ lọc cột
+            const totalAll = Object.values(counts).reduce((a, b) => a + b, 0);
+            const elAll = document.getElementById('stageMenuCount-ALL');
+            if (elAll) elAll.textContent = totalAll;
+            [1, 2, 3, 5, 6, 7].forEach(order => {
+                const el = document.getElementById('stageMenuCount-' + order);
+                if (el) el.textContent = counts[order] || 0;
+            });
+
+            // Cập nhật badge trên nút Dropdown chính
+            const curStage = window.currentPipelineStage || 'ALL';
+            const curBadge = document.getElementById('kanbanStageFilterBadge');
+            if (curBadge) {
+                if (curStage === 'ALL') {
+                    curBadge.textContent = totalAll;
+                } else {
+                    curBadge.textContent = counts[parseInt(curStage, 10)] || 0;
+                }
+            }
+
+            // Update empty placeholders
+            [1, 2, 3, 5, 6, 7].forEach(order => {
+                const zone = document.getElementById('kanbanDropZone-' + order);
+                if (zone) {
+                    const placeholder = zone.querySelector('.kanban-empty-placeholder');
+                    if (placeholder) {
+                        if (counts[order] === 0) {
+                            placeholder.classList.remove('d-none');
+                        } else {
+                            placeholder.classList.add('d-none');
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- Drag and Drop Handlers ---
+        function onKanbanCardDragStart(e) {
+            draggedCardElement = e.currentTarget;
+            draggedApplicationId = draggedCardElement.getAttribute('data-application-id');
+            originalStageOrder = parseInt(draggedCardElement.getAttribute('data-stage-order') || '1', 10);
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', draggedApplicationId);
+            setTimeout(() => {
+                if (draggedCardElement) draggedCardElement.classList.add('card-dragging');
+            }, 0);
+        }
+
+        function onKanbanCardDragEnd(e) {
+            if (draggedCardElement) {
+                draggedCardElement.classList.remove('card-dragging');
+            }
+            document.querySelectorAll('.kanban-cards-container').forEach(zone => {
+                zone.classList.remove('kanban-drop-zone-active');
+            });
+            draggedCardElement = null;
+            draggedApplicationId = null;
+        }
+
+        function onKanbanContainerDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const zone = e.currentTarget;
+            if (!zone.classList.contains('kanban-drop-zone-active')) {
+                zone.classList.add('kanban-drop-zone-active');
+            }
+        }
+
+        function onKanbanContainerDragLeave(e) {
+            const zone = e.currentTarget;
+            if (!zone.contains(e.relatedTarget)) {
+                zone.classList.remove('kanban-drop-zone-active');
+            }
+        }
+
+        async function onKanbanContainerDrop(e, targetStageOrder) {
+            e.preventDefault();
+            const zone = e.currentTarget;
+            zone.classList.remove('kanban-drop-zone-active');
+
+            if (!draggedCardElement || !draggedApplicationId) return;
+
+            const card = draggedCardElement;
+            const currentStageOrder = parseInt(card.getAttribute('data-stage-order') || '1', 10);
+            const currentStatus = card.getAttribute('data-status') || '';
+
+            // If dropped into the same stage
+            if ((targetStageOrder === 3 && (currentStageOrder === 3 || currentStageOrder === 4) && currentStatus !== 'REJECTED') ||
+                (targetStageOrder === currentStageOrder && (targetStageOrder !== 7 || currentStatus === 'REJECTED'))) {
+                return;
+            }
+
+            const candidateName = card.getAttribute('data-candidate-name') || 'Ứng viên';
+            const originalParent = card.parentElement;
+
+            // Optimistic move
+            zone.appendChild(card);
+            card.setAttribute('data-stage-order', targetStageOrder);
+            if (targetStageOrder === 7) {
+                card.setAttribute('data-status', 'REJECTED');
+            } else if (targetStageOrder === 6) {
+                card.setAttribute('data-status', 'HIRED');
+            } else {
+                card.setAttribute('data-status', 'IN_PROCESS');
+            }
+            applyKanbanFilters();
+
+            // Call API
+            const formData = new FormData();
+            formData.append('applicationId', draggedApplicationId);
+            formData.append('toStageOrder', targetStageOrder);
+            formData.append('__RequestVerificationToken', getCsrfToken());
+
+            try {
+                const res = await fetch('/Workspace/AdvanceStage', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, true);
+                    const tableRow = document.getElementById('cand-row-' + draggedApplicationId);
+                    if (tableRow) {
+                        tableRow.setAttribute('data-stage-order', targetStageOrder);
+                        if (data.status) tableRow.setAttribute('data-status', data.status);
+                    }
+                } else {
+                    // Revert
+                    originalParent.appendChild(card);
+                    card.setAttribute('data-stage-order', originalStageOrder);
+                    applyKanbanFilters();
+                    showToast(data.message || 'Lỗi khi chuyển giai đoạn', false);
+                }
+            } catch (err) {
+                originalParent.appendChild(card);
+                card.setAttribute('data-stage-order', originalStageOrder);
+                applyKanbanFilters();
+                showToast('Lỗi kết nối máy chủ: ' + err.message, false);
+            }
+        }
+
+        async function moveCandidateStageViaButton(applicationId, targetStageOrder, candidateName, stageName) {
+            if (!confirm(`Xác nhận chuyển ứng viên ${candidateName} sang giai đoạn "${stageName}"?`)) return;
+
+            const card = document.getElementById('kanban-card-' + applicationId);
+            const targetZone = document.getElementById('kanbanDropZone-' + targetStageOrder);
+
+            const formData = new FormData();
+            formData.append('applicationId', applicationId);
+            formData.append('toStageOrder', targetStageOrder);
+            formData.append('__RequestVerificationToken', getCsrfToken());
+
+            try {
+                const res = await fetch('/Workspace/AdvanceStage', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, true);
+                    if (card && targetZone) {
+                        targetZone.appendChild(card);
+                        card.setAttribute('data-stage-order', targetStageOrder);
+                        if (targetStageOrder === 7) card.setAttribute('data-status', 'REJECTED');
+                        else if (targetStageOrder === 6) card.setAttribute('data-status', 'HIRED');
+                        else card.setAttribute('data-status', 'IN_PROCESS');
+                        applyKanbanFilters();
+                    } else {
+                        setTimeout(() => window.location.reload(), 800);
+                    }
+                } else {
+                    showToast(data.message || 'Lỗi khi chuyển giai đoạn', false);
+                }
+            } catch (err) {
+                showToast('Lỗi kết nối: ' + err.message, false);
+            }
+        }
+
+        // --- Table View Filters ---
         function applyPipelineFilters(shouldSyncUrl = true, resetPage = false) {
             if (resetPage) {
                 window.candCurrentPage = 1;
@@ -2880,6 +3932,7 @@
             const hint = document.getElementById('candSearchHint');
             const query = (input ? input.value : '').trim();
             const stageOrder = window.currentPipelineStage || 'ALL';
+            const selectedJob = window.currentPipelineJob || 'ALL';
 
             if (clearBtn) {
                 if (query.length > 0) clearBtn.classList.remove('d-none');
@@ -2897,14 +3950,17 @@
             rows.forEach(r => {
                 const rowStage = r.getAttribute('data-stage-order') || '';
                 const rowStatus = r.getAttribute('data-status') || '';
+                const rowJobId = r.getAttribute('data-job-id') || '';
                 const name = r.getAttribute('data-name') || '';
                 const email = r.getAttribute('data-email') || '';
                 const job = r.getAttribute('data-job') || '';
 
+                // Job match
+                const jobMatch = (selectedJob === 'ALL' || rowJobId.toLowerCase() === selectedJob.toLowerCase());
+
                 // Stage match
                 let stageMatch = false;
                 if (stageOrder === 'ALL') {
-                    // Pipeline hoạt động mặc định ẩn ứng viên đã rút
                     stageMatch = (rowStatus !== 'WITHDRAWN');
                 } else if (stageOrder === 'WITHDRAWN') {
                     stageMatch = (rowStatus === 'WITHDRAWN');
@@ -2924,7 +3980,7 @@
                     ? window.NoveraInstantSearch.matchSearchTokens(combinedText, query)
                     : combinedText.toLowerCase().includes(query.toLowerCase()));
 
-                if (stageMatch && textMatch) {
+                if (stageMatch && textMatch && jobMatch) {
                     matchedRows.push(r);
                 }
             });
@@ -3096,8 +4152,14 @@
 
             if (candInput) {
                 const debouncedSearch = window.NoveraInstantSearch
-                    ? window.NoveraInstantSearch.debounce(() => applyPipelineFilters(true, true), 15)
-                    : () => applyPipelineFilters(true, true);
+                    ? window.NoveraInstantSearch.debounce(() => {
+                        applyPipelineFilters(true, true);
+                        applyKanbanFilters();
+                    }, 15)
+                    : () => {
+                        applyPipelineFilters(true, true);
+                        applyKanbanFilters();
+                    };
                 candInput.addEventListener('input', debouncedSearch);
                 candInput.addEventListener('keydown', function (e) {
                     if (e.key === 'Enter') e.preventDefault();
@@ -3109,6 +4171,7 @@
                     if (candInput) {
                         candInput.value = '';
                         applyPipelineFilters(true, true);
+                        applyKanbanFilters();
                         candInput.focus();
                     }
                 });
@@ -3139,6 +4202,12 @@
 
             window.addEventListener('popstate', hydrateCandidatePipelineFromUrl);
             hydrateCandidatePipelineFromUrl();
+
+            // Khởi tạo chế độ xem Kanban và lọc ban đầu
+            switchPipelineView(window.pipelineViewMode || 'kanban');
+            applyKanbanFilters();
+            restoreKanbanPreferences();
+            initMobileKanbanSwipeObserver();
         });
 
         // 8.2. Chuyển tiếp giai đoạn tuyển chọn nhanh (Advance Stage)

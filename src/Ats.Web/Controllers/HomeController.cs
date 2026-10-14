@@ -468,7 +468,48 @@ public class HomeController : Controller
                 })
                 .ToList();
 
-            // Toàn bộ ứng viên cho Bảng Quản Lý Ứng Viên & Tiến Trình Tuyển Dụng
+            // SCRUM-319: Lấy danh sách vị trí tuyển dụng kèm thông tin Recruiter phụ trách
+            var jobPostings = await _dbContext.JobPostings
+                .Include(j => j.Requisition)
+                    .ThenInclude(r => r.Department)
+                .Where(j => !j.IsDeleted)
+                .OrderBy(j => j.Title)
+                .ToListAsync();
+
+            var jobCandidateCounts = await _dbContext.Applications
+                .Where(a => !a.IsDeleted && a.Status != ApplicationStatus.WITHDRAWN)
+                .GroupBy(a => a.JobPostingId)
+                .Select(g => new { JobPostingId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.JobPostingId, x => x.Count);
+
+            var filterOptions = new List<JobPostingFilterOptionDto>();
+            Guid? defaultJobId = null;
+
+            foreach (var job in jobPostings)
+            {
+                var isAssigned = (userId != Guid.Empty && job.Requisition?.AssignedRecruiterId == userId);
+                jobCandidateCounts.TryGetValue(job.Id, out var count);
+
+                filterOptions.Add(new JobPostingFilterOptionDto
+                {
+                    Id = job.Id,
+                    Title = job.Title,
+                    DepartmentName = job.Requisition?.Department?.Name ?? "Chung",
+                    IsAssignedToCurrentUser = isAssigned,
+                    ActiveCandidateCount = count
+                });
+
+                if (isAssigned && defaultJobId == null)
+                {
+                    defaultJobId = job.Id;
+                }
+            }
+
+            model.JobPostingFilterOptions = filterOptions;
+            model.DefaultJobPostingId = defaultJobId;
+
+            // Toàn bộ ứng viên cho Bảng Quản Lý Ứng Viên & Tiến Trình Tuyển Dụng (Kanban & Table)
+            // Mặc định hiển thị pipeline đang hoạt động (loại trừ hồ sơ đã rút)
             var allAppsQuery = _dbContext.Applications
                 .Include(a => a.Candidate)
                     .ThenInclude(c => c.Resumes)
@@ -487,7 +528,7 @@ public class HomeController : Controller
 
             var allApps = await allAppsQuery
                 .OrderByDescending(a => a.AppliedAt)
-                .Take(50)
+                .Take(200)
                 .ToListAsync();
 
             // Quét phát hiện ứng viên trùng lặp (Scrum #40)
@@ -519,6 +560,7 @@ public class HomeController : Controller
                 {
                     ApplicationId = a.Id,
                     CandidateId = a.CandidateId,
+                    JobPostingId = a.JobPostingId,
                     CandidateName = candName,
                     CandidateEmail = a.Candidate.Email,
                     CandidatePhone = a.Candidate.Phone ?? "Chưa có",
@@ -529,6 +571,7 @@ public class HomeController : Controller
                     StageColor = a.CurrentStage.ColorCode ?? "#059669",
                     AppliedDateDisplay = a.AppliedAt.HasValue ? a.AppliedAt.Value.ToString("dd/MM/yyyy") : a.CreatedAt.ToString("dd/MM/yyyy"),
                     Status = a.Status.ToString(),
+                    Rating = a.Rating,
                     ResumeFileName = primaryResume?.FileName ?? "CV_UngVien.pdf",
                     ResumeFilePath = primaryResume?.FilePath ?? "#",
                     IsReferral = isRef,
@@ -575,6 +618,7 @@ public class HomeController : Controller
         [FromQuery] string? search,
         [FromQuery] string? stageOrder,
         [FromQuery] Guid? recruiterId = null,
+        [FromQuery] Guid? jobPostingId = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         CancellationToken cancellationToken = default)
@@ -613,6 +657,11 @@ public class HomeController : Controller
         {
             var filterReqIds = await _assignmentService.GetAssignedRequisitionIdsForRecruiterAsync(recruiterId.Value);
             query = query.Where(a => filterReqIds.Contains(a.JobPosting.RequisitionId));
+        }
+
+        if (jobPostingId.HasValue && jobPostingId.Value != Guid.Empty)
+        {
+            query = query.Where(a => a.JobPostingId == jobPostingId.Value);
         }
 
         if (!string.IsNullOrWhiteSpace(search) && search.Trim().Length >= 3)
@@ -670,6 +719,7 @@ public class HomeController : Controller
             {
                 ApplicationId = a.Id,
                 CandidateId = a.CandidateId,
+                JobPostingId = a.JobPostingId,
                 CandidateName = candName,
                 CandidateEmail = a.Candidate.Email,
                 CandidatePhone = a.Candidate.Phone ?? "Chưa có",
@@ -680,6 +730,7 @@ public class HomeController : Controller
                 StageColor = a.CurrentStage.ColorCode ?? "#059669",
                 AppliedDateDisplay = a.AppliedAt.HasValue ? a.AppliedAt.Value.ToString("dd/MM/yyyy") : a.CreatedAt.ToString("dd/MM/yyyy"),
                 Status = a.Status.ToString(),
+                Rating = a.Rating,
                 ResumeFileName = primaryResume?.FileName ?? "CV_UngVien.pdf",
                 ResumeFilePath = primaryResume?.FilePath ?? "#",
                 IsReferral = isRef,

@@ -247,6 +247,8 @@ public static class DatabaseSeeder
                     user.FullName = item.FullName;
                     user.UpdatedAt = DateTimeOffset.UtcNow;
                 }
+                user.LockedUntil = null;
+                user.FailedLoginAttempts = 0;
             }
         }
         await context.SaveChangesAsync();
