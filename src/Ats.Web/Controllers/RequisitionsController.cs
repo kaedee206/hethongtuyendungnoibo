@@ -18,25 +18,30 @@ namespace Ats.Web.Controllers;
 public class RequisitionsController : Controller
 {
     private readonly IRequisitionService _requisitionService;
+    private readonly Ats.Web.Data.ApplicationDbContext _dbContext;
     private readonly IDepartmentBudgetService _departmentBudgetService;
     private readonly ILogger<RequisitionsController> _logger;
 
     [ActivatorUtilitiesConstructor]
     public RequisitionsController(
         IRequisitionService requisitionService,
+        Ats.Web.Data.ApplicationDbContext dbContext,
         IDepartmentBudgetService departmentBudgetService,
         ILogger<RequisitionsController> logger)
     {
         _requisitionService = requisitionService;
+        _dbContext = dbContext;
         _departmentBudgetService = departmentBudgetService;
         _logger = logger;
     }
 
     public RequisitionsController(
         IRequisitionService requisitionService,
+        Ats.Web.Data.ApplicationDbContext dbContext,
         ILogger<RequisitionsController> logger)
         : this(
             requisitionService,
+            dbContext,
             new DepartmentBudgetService(null!, Microsoft.Extensions.Logging.Abstractions.NullLogger<DepartmentBudgetService>.Instance),
             logger)
     {
@@ -57,17 +62,35 @@ public class RequisitionsController : Controller
     public async Task<IActionResult> Index(
         [FromQuery] string? tab = null,
         [FromQuery] string? search = null,
+        [FromQuery] Guid? departmentId = null,
+        [FromQuery] Guid? recruiterId = null,
+        [FromQuery] DateOnly? fromDate = null,
+        [FromQuery] DateOnly? toDate = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 15,
         CancellationToken cancellationToken = default)
     {
         var userId = GetCurrentUserId();
-        var items = await _requisitionService.GetRequisitionsForApprovalAsync(userId, tab, search, cancellationToken);
+        var items = await _requisitionService.GetRequisitionsForApprovalAsync(userId, tab, search, departmentId, recruiterId, fromDate, toDate, page, pageSize, cancellationToken);
         var pendingCount = await _requisitionService.GetPendingApprovalCountForUserAsync(userId, cancellationToken);
         var myCount = await _requisitionService.GetMyRequisitionsCountAsync(userId, cancellationToken);
 
         ViewBag.CurrentTab = string.IsNullOrWhiteSpace(tab) ? "all" : tab.ToLowerInvariant();
         ViewBag.Search = search;
+        ViewBag.DepartmentId = departmentId;
+        ViewBag.RecruiterId = recruiterId;
+        ViewBag.FromDate = fromDate;
+        ViewBag.ToDate = toDate;
         ViewBag.PendingMyApprovalCount = pendingCount;
         ViewBag.MyRequisitionsCount = myCount;
+
+        ViewBag.Departments = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(
+            _dbContext.Departments.Where(d => !d.IsDeleted).ToList(),
+            "Id", "Name", departmentId);
+
+        var recruiters = _dbContext.Users.Where(u => u.Role == Ats.Web.Constants.UserRoles.Recruiter || u.Role == Ats.Web.Constants.UserRoles.HRManager).ToList();
+        ViewBag.Recruiters = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(
+            recruiters, "Id", "FullName", recruiterId);
 
         return View(items);
     }

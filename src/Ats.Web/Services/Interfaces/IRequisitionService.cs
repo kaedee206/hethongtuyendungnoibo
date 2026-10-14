@@ -52,10 +52,16 @@ public interface IRequisitionService
         Guid currentUserId,
         CancellationToken cancellationToken = default);
 
-    Task<List<RequisitionApprovalListItemViewModel>> GetRequisitionsForApprovalAsync(
+    Task<Ats.Web.Models.DTOs.PagedResult<RequisitionApprovalListItemViewModel>> GetRequisitionsForApprovalAsync(
         Guid currentUserId,
         string? tab = null,
         string? search = null,
+        Guid? departmentId = null,
+        Guid? recruiterId = null,
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        int page = 1,
+        int pageSize = 15,
         CancellationToken cancellationToken = default);
 
     Task<int> GetPendingApprovalCountForUserAsync(
