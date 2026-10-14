@@ -1,3 +1,4 @@
+using Ats.Web.Constants;
 using Ats.Web.Models.DTOs;
 using Ats.Web.Models.DTOs.ApprovalRule;
 using Ats.Web.Services;
@@ -10,7 +11,7 @@ namespace Ats.Web.Controllers;
 
 [ApiController]
 [Route("api/approval-rules")]
-[Authorize] // Should ideally be [Authorize(Roles = "HR Manager,Admin")] depending on the exact RBAC
+[Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},Quản trị viên,Trưởng phòng nhân sự,HRManager,Admin")]
 public class ApprovalRuleController : Controller
 {
     private readonly IApprovalRuleService _approvalRuleService;

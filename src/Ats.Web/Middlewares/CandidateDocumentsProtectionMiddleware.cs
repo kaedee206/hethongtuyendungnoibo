@@ -1,7 +1,10 @@
 using System.Security.Claims;
 using Ats.Web.Common;
+using Ats.Web.Constants;
+using Ats.Web.Data;
 using Ats.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 
 namespace Ats.Web.Middlewares;
 
@@ -19,7 +22,7 @@ public class CandidateDocumentsProtectionMiddleware
         _next = next;
     }
 
-    public async Task InvokeAsync(HttpContext context, ISecurityAuditService? auditService = null)
+    public async Task InvokeAsync(HttpContext context, ApplicationDbContext dbContext, ISecurityAuditService? auditService = null)
     {
         var path = context.Request.Path.Value ?? string.Empty;
 
@@ -49,7 +52,49 @@ public class CandidateDocumentsProtectionMiddleware
             }
 
             var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userEmail = context.User.FindFirstValue(ClaimTypes.Email) ?? context.User.Identity?.Name;
+            var userEmail = context.User.FindFirstValue(ClaimTypes.Email) ?? context.User.Identity?.Name ?? string.Empty;
+            Guid.TryParse(userId, out var parsedUserId);
+            var lowerEmail = userEmail.ToLower();
+
+            var isStaff = context.User.IsInRole(UserRoles.Admin) ||
+                          context.User.IsInRole(UserRoles.HRManager) ||
+                          context.User.IsInRole(UserRoles.HiringManager) ||
+                          context.User.IsInRole(UserRoles.Recruiter) ||
+                          context.User.IsInRole(UserRoles.Interviewer) ||
+                          context.User.IsInRole("Quản trị viên") ||
+                          context.User.IsInRole("Trưởng phòng nhân sự") ||
+                          context.User.IsInRole("Chuyên viên tuyển dụng") ||
+                          context.User.IsInRole("Người phỏng vấn");
+
+            // Nếu không phải nhân sự nội bộ (là Ứng viên), kiểm tra quyền sở hữu đối với file CV (Chống IDOR / BOLA)
+            if (!isStaff && !path.EndsWith("default_cv.pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                var isOwner = await dbContext.Resumes
+                    .AnyAsync(r => (r.FilePath == path || r.FilePath.EndsWith(path) || path.EndsWith(r.FilePath)) &&
+                                   ((parsedUserId != Guid.Empty && r.Candidate.UserId == parsedUserId) ||
+                                    (!string.IsNullOrEmpty(lowerEmail) && r.Candidate.Email.ToLower() == lowerEmail)));
+
+                if (!isOwner)
+                {
+                    auditService?.LogSecurityEvent(new SecurityAuditEvent
+                    {
+                        EventType = SecurityAuditEventType.CandidateDocumentAccessDenied,
+                        UserId = userId,
+                        UserNameOrEmail = userEmail,
+                        ClientIp = clientIp,
+                        ResourcePath = path,
+                        Action = "DOWNLOAD_CV_FORBIDDEN_IDOR",
+                        IsSuccess = false,
+                        Details = "Từ chối truy cập tài liệu ứng viên: Người dùng không có quyền truy cập hồ sơ của ứng viên khác (Chống IDOR)"
+                    });
+
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    context.Response.ContentType = "text/plain; charset=utf-8";
+                    context.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+                    await context.Response.WriteAsync("Truy cập bị từ chối: Bạn không có quyền truy cập hoặc tải tài liệu hồ sơ này.");
+                    return;
+                }
+            }
 
             auditService?.LogSecurityEvent(new SecurityAuditEvent
             {
@@ -60,7 +105,7 @@ public class CandidateDocumentsProtectionMiddleware
                 ResourcePath = path,
                 Action = "DOWNLOAD_CV_AUTHORIZED",
                 IsSuccess = true,
-                Details = "Truy cập tài liệu ứng viên thành công từ người dùng đã xác thực"
+                Details = "Truy cập tài liệu ứng viên thành công từ người dùng đã xác thực và có quyền hạn"
             });
 
             // Với dữ liệu PII nhạy cảm, không lưu cache trên trình duyệt công cộng hoặc proxy

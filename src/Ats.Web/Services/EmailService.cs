@@ -157,6 +157,7 @@ public class EmailService : IEmailService
         string candidateName,
         string jobTitle,
         string applicationCode,
+        string? withdrawUrl = null,
         CancellationToken cancellationToken = default)
     {
         var subject = $"[NoveraTech Careers] Xác nhận tiếp nhận hồ sơ ứng tuyển: {jobTitle}";
@@ -187,9 +188,95 @@ public class EmailService : IEmailService
                 <p style=""color: #475569; font-size: 0.9rem; line-height: 1.6; margin-top: 20px;"">
                     Bạn có thể đăng nhập vào Cổng ứng viên để theo dõi tiến độ xử lý hồ sơ và cập nhật thông tin cá nhân bất cứ lúc nào.
                 </p>
+                {(!string.IsNullOrWhiteSpace(withdrawUrl) ? $@"
+                <div style=""margin-top: 24px; padding-top: 18px; border-top: 1px dashed #E2E8F0; font-size: 0.85rem; color: #64748B;"">
+                    <p style=""margin: 0 0 8px 0;"">
+                        Nếu bạn đã nhận việc nơi khác hoặc vì lý do cá nhân muốn dừng quy trình tuyển dụng, bạn có thể chủ động rút hồ sơ bất cứ lúc nào qua liên kết bảo mật:
+                    </p>
+                    <a href=""{withdrawUrl}"" style=""display: inline-block; color: #DC2626; text-decoration: underline; font-weight: 600; font-size: 0.82rem;"">
+                        &rarr; Rút hồ sơ ứng tuyển vị trí này
+                    </a>
+                </div>" : "")}
             </div>
             <div style=""background: #F1F5F9; padding: 16px; text-align: center; font-size: 0.75rem; color: #64748B; border-top: 1px solid #E2E8F0;"">
                 NoveraTech Careers · Phòng Tuyển dụng & Thu hút Nhân tài Công nghệ · Email: tuyendung@noveratech.com
+            </div>
+        </div>";
+
+        return await SendEmailAsync(new SendEmailRequestDto(candidateEmail, subject, body), cancellationToken);
+    }
+
+    public async Task<bool> SendRecruiterWithdrawalAlertAsync(
+        string recruiterEmail,
+        string recruiterName,
+        string candidateName,
+        string candidateEmail,
+        string jobTitle,
+        string? reason,
+        DateTimeOffset withdrawnAt,
+        CancellationToken cancellationToken = default)
+    {
+        var subject = $"[Thông báo Tuyển dụng] Ứng viên {candidateName} đã rút hồ sơ: {jobTitle}";
+        var body = $@"
+        <div style=""font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden;"">
+            <div style=""background: #0F172A; padding: 22px; text-align: center;"">
+                <h2 style=""color: #F8FAFC; margin: 0; font-size: 1.25rem; font-weight: 700;"">ỨNG VIÊN RÚT HỒ SƠ ỨNG TUYỂN</h2>
+                <div style=""color: #94A3B8; font-size: 0.82rem; margin-top: 4px;"">Hệ thống Tuyển dụng Nội bộ NoveraTech ATS</div>
+            </div>
+            <div style=""padding: 26px 22px;"">
+                <p style=""font-size: 0.95rem; color: #0F172A; margin-top: 0;"">Kính gửi <strong>{recruiterName}</strong>,</p>
+                <p style=""color: #475569; font-size: 0.9rem; line-height: 1.6;"">
+                    Hệ thống ghi nhận ứng viên <strong>{candidateName}</strong> ({candidateEmail}) đã chủ động rút hồ sơ ứng tuyển cho vị trí <strong>{jobTitle}</strong> vào lúc <strong>{withdrawnAt:HH:mm dd/MM/yyyy}</strong>.
+                </p>
+                <div style=""background: #FFFBEB; border: 1px solid #FDE68A; border-left: 4px solid #D97706; border-radius: 8px; padding: 14px; margin: 18px 0; font-size: 0.88rem; color: #78350F;"">
+                    <div style=""font-weight: 700; margin-bottom: 4px;"">Lý do rút hồ sơ:</div>
+                    <div>{(!string.IsNullOrWhiteSpace(reason) ? reason : "Ứng viên không cung cấp lý do chi tiết.")}</div>
+                </div>
+                <p style=""color: #475569; font-size: 0.88rem; line-height: 1.6;"">
+                    Hồ sơ này đã được tự động chuyển sang trạng thái <strong>Ứng viên rút (WITHDRAWN)</strong> và đã biến mất khỏi pipeline tuyển dụng đang hoạt động.
+                </p>
+                <div style=""text-align: center; margin-top: 24px;"">
+                    <a href=""https://tuyendung.noveratech.digital/dashboard/ung-vien"" style=""background: #059669; color: #FFFFFF; text-decoration: none; font-weight: 600; font-size: 0.85rem; padding: 10px 20px; border-radius: 6px; display: inline-block;"">
+                        Xem Danh sách Ứng viên &rarr;
+                    </a>
+                </div>
+            </div>
+            <div style=""background: #F1F5F9; padding: 14px; text-align: center; font-size: 0.75rem; color: #64748B; border-top: 1px solid #E2E8F0;"">
+                Hệ thống Quản trị Tuyển dụng NoveraTech ATS · Tự động gửi thông báo
+            </div>
+        </div>";
+
+        return await SendEmailAsync(new SendEmailRequestDto(recruiterEmail, subject, body), cancellationToken);
+    }
+
+    public async Task<bool> SendCandidateWithdrawalConfirmedAsync(
+        string candidateEmail,
+        string candidateName,
+        string jobTitle,
+        string? reason,
+        CancellationToken cancellationToken = default)
+    {
+        var subject = $"[NoveraTech Careers] Xác nhận đã hoàn tất rút hồ sơ ứng tuyển: {jobTitle}";
+        var body = $@"
+        <div style=""font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden;"">
+            <div style=""background: #475569; padding: 22px; text-align: center;"">
+                <h2 style=""color: #FFFFFF; margin: 0; font-size: 1.25rem; font-weight: 700;"">HỒ SƠ ỨNG TUYỂN ĐÃ ĐƯỢC RÚT</h2>
+                <div style=""color: #CBD5E1; font-size: 0.82rem; margin-top: 4px;"">NoveraTech Engineering & Product Hiring</div>
+            </div>
+            <div style=""padding: 26px 22px;"">
+                <p style=""font-size: 0.95rem; color: #0F172A; margin-top: 0;"">Xin chào <strong>{candidateName}</strong>,</p>
+                <p style=""color: #475569; font-size: 0.9rem; line-height: 1.6;"">
+                    Chúng tôi xác nhận bạn đã chủ động rút hồ sơ ứng tuyển cho vị trí <strong>{jobTitle}</strong> tại NoveraTech. Quá trình tuyển dụng cho vị trí này đã được dừng lại theo nguyện vọng của bạn.
+                </p>
+                <p style=""color: #475569; font-size: 0.9rem; line-height: 1.6;"">
+                    Cảm ơn bạn đã thẳng thắn thông báo để đội ngũ tuyển dụng chủ động sắp xếp kế hoạch. NoveraTech chúc bạn gặt hái thật nhiều thành công và phát triển vượt bậc trên con đường sự nghiệp sắp tới!
+                </p>
+                <p style=""color: #475569; font-size: 0.9rem; line-height: 1.6;"">
+                    Nếu trong tương lai bạn có mong muốn tiếp tục ứng tuyển các cơ hội nghề nghiệp khác tại NoveraTech, chúng tôi luôn chào đón bạn.
+                </p>
+            </div>
+            <div style=""background: #F1F5F9; padding: 14px; text-align: center; font-size: 0.75rem; color: #64748B; border-top: 1px solid #E2E8F0;"">
+                NoveraTech Careers · Phòng Tuyển dụng & Thu hút Nhân tài Công nghệ
             </div>
         </div>";
 

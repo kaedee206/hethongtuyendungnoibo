@@ -292,6 +292,7 @@ public class WorkspaceController : Controller
             }
 
             var trackingCode = await _trackingService.GenerateUniqueTrackingCodeAsync();
+            var withdrawToken = Guid.NewGuid().ToString("N");
             var application = new Application
             {
                 Id = Guid.NewGuid(),
@@ -303,7 +304,8 @@ public class WorkspaceController : Controller
                 TrackingCode = trackingCode,
                 AppliedAt = DateTimeOffset.UtcNow,
                 CreatedAt = DateTimeOffset.UtcNow,
-                UpdatedAt = DateTimeOffset.UtcNow
+                UpdatedAt = DateTimeOffset.UtcNow,
+                WithdrawToken = withdrawToken
             };
 
             await _dbContext.Applications.AddAsync(application);
@@ -323,6 +325,28 @@ public class WorkspaceController : Controller
 
             await _dbContext.ApplicationStageHistories.AddAsync(stageHistory);
             await _dbContext.SaveChangesAsync();
+
+            // SCRUM-291: Gửi email xác nhận tiếp nhận hồ sơ kèm liên kết bảo mật rút hồ sơ
+            var appCode = $"#NOV-2026-{application.Id.ToString("N")[..4].ToUpper()}";
+            var withdrawUrl = Url.Action("Withdraw", "Applications", new { token = withdrawToken }, Request.Scheme)
+                           ?? $"/Applications/Withdraw?token={withdrawToken}";
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _emailService.SendApplicationReceivedAsync(
+                        candidate.Email,
+                        candidate.FirstName,
+                        jobPosting.Title,
+                        appCode,
+                        withdrawUrl);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Không thể gửi email xác nhận ứng tuyển: {Msg}", ex.Message);
+                }
+            });
 
             return Json(new
             {
@@ -842,6 +866,7 @@ public class WorkspaceController : Controller
     /// Lọc danh sách hồ sơ ứng viên theo giai đoạn (Stage).
     /// </summary>
     [HttpGet("FilterCandidates")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.HiringManager},{UserRoles.Recruiter},{UserRoles.Interviewer},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng,Người phỏng vấn")]
     public async Task<IActionResult> FilterCandidates([FromQuery] string? stage)
     {
         try
@@ -1452,6 +1477,28 @@ public class WorkspaceController : Controller
             if (app == null)
             {
                 return Json(new { success = false, message = "Không tìm thấy hồ sơ." });
+            }
+
+            var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            Guid.TryParse(currentUserIdStr, out var currentUserId);
+            var currentUserEmail = (User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name ?? "").ToLower();
+
+            var isStaff = User.IsInRole(UserRoles.Admin) ||
+                          User.IsInRole(UserRoles.HRManager) ||
+                          User.IsInRole(UserRoles.HiringManager) ||
+                          User.IsInRole(UserRoles.Recruiter) ||
+                          User.IsInRole(UserRoles.Interviewer) ||
+                          User.IsInRole("Quản trị viên") ||
+                          User.IsInRole("Trưởng phòng nhân sự") ||
+                          User.IsInRole("Chuyên viên tuyển dụng") ||
+                          User.IsInRole("Người phỏng vấn");
+
+            var isOwner = (currentUserId != Guid.Empty && app.Candidate.UserId == currentUserId) ||
+                          (!string.IsNullOrEmpty(currentUserEmail) && app.Candidate.Email.ToLower() == currentUserEmail);
+
+            if (!isStaff && !isOwner)
+            {
+                return Json(new { success = false, message = "Truy cập bị từ chối: Bạn không có quyền xem thông tin hồ sơ này." });
             }
 
             var candName = $"{app.Candidate.FirstName} {app.Candidate.LastName}".Trim();

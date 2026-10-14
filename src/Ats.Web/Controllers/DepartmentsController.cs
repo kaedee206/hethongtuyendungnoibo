@@ -1,6 +1,8 @@
+using Ats.Web.Constants;
 using Ats.Web.Data;
 using Ats.Web.Models.DTOs;
 using Ats.Web.Models.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +10,7 @@ namespace Ats.Web.Controllers;
 
 [ApiController]
 [Route("api/phong-ban")]
+[Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.HiringManager},{UserRoles.Recruiter},{UserRoles.Interviewer},{UserRoles.Approver},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng")]
 public class DepartmentsController : Controller
 {
     private readonly ApplicationDbContext _dbContext;
@@ -32,6 +35,7 @@ public class DepartmentsController : Controller
     }
 
     [HttpPost]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},Quản trị viên,Trưởng phòng nhân sự")]
     public async Task<IActionResult> Create([FromBody] DepartmentCreateRequestDto request)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -81,6 +85,7 @@ public class DepartmentsController : Controller
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},Quản trị viên,Trưởng phòng nhân sự")]
     public async Task<IActionResult> Update(Guid id, [FromBody] DepartmentUpdateRequestDto request)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -281,6 +286,7 @@ public class DepartmentsController : Controller
     }
 
     [HttpPut("{id}/manager")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},Quản trị viên,Trưởng phòng nhân sự")]
     public async Task<IActionResult> AssignManager(Guid id, [FromBody] AssignManagerRequestDto request)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -332,6 +338,7 @@ public class DepartmentsController : Controller
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},Quản trị viên,Trưởng phòng nhân sự")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var dept = await _dbContext.Departments.FirstOrDefaultAsync(d => d.Id == id && !d.IsDeleted);
@@ -373,6 +380,7 @@ public class DepartmentsController : Controller
     }
 
     [HttpPut("{id}/deactivate")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},Quản trị viên,Trưởng phòng nhân sự")]
     public async Task<IActionResult> Deactivate(Guid id)
     {
         var dept = await _dbContext.Departments.FirstOrDefaultAsync(d => d.Id == id && !d.IsDeleted);
@@ -402,6 +410,7 @@ public class DepartmentsController : Controller
     }
 
     [HttpPut("{id}/reactivate")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},Quản trị viên,Trưởng phòng nhân sự")]
     public async Task<IActionResult> Reactivate(Guid id)
     {
         var dept = await _dbContext.Departments.FirstOrDefaultAsync(d => d.Id == id && !d.IsDeleted);

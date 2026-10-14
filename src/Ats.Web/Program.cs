@@ -20,6 +20,11 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
     ContentRootPath = contentRoot
 });
 
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.AddServerHeader = false;
+});
+
 // Add services to the container.
 builder.Services.AddControllersWithViews(options =>
 {
@@ -296,6 +301,10 @@ using (var scope = app.Services.CreateScope())
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS referrer_user_id uuid;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS referral_note text;");
         await dbContext.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS ix_applications_referrer_user_id ON applications (referrer_user_id);");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS withdraw_token text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS withdrawn_at timestamp with time zone;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS withdraw_reason text;");
+        await dbContext.Database.ExecuteSqlRawAsync("UPDATE applications SET withdraw_token = md5(random()::text || id::text) WHERE withdraw_token IS NULL;");
 
     }
     catch (Exception e)

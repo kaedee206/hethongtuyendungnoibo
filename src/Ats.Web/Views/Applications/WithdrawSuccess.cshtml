@@ -1,0 +1,73 @@
+@model Ats.Web.Models.ViewModels.Applications.WithdrawApplicationViewModel
+@{
+    ViewData["Title"] = "Rút hồ sơ thành công";
+    Layout = "_Layout";
+}
+
+<div class="container py-5" style="max-width: 680px;">
+    <div class="card border-0 shadow-sm bg-white text-center p-4 p-md-5" style="border: 1px solid #E2E8F0 !important; border-radius: 16px;">
+        <!-- Success Icon Pulse -->
+        <div class="d-inline-flex align-items-center justify-content-center mx-auto mb-3"
+             style="width: 72px; height: 72px; border-radius: 50%; background: #ECFDF5; color: #059669; border: 2px solid #A7F3D0;">
+            <i class="bi bi-check2-circle" style="font-size: 2.4rem;"></i>
+        </div>
+
+        <h3 class="fw-bold text-dark mb-2" style="font-size: 1.45rem;">
+            Đã hoàn tất rút hồ sơ ứng tuyển
+        </h3>
+        <p class="text-muted small mb-4" style="max-width: 480px; margin: 0 auto; line-height: 1.6;">
+            Cảm ơn bạn <strong class="text-dark">@Model.CandidateName</strong> đã thẳng thắn thông báo. Quá trình tuyển dụng cho vị trí này đã chính thức dừng lại theo yêu cầu của bạn.
+        </p>
+
+        <!-- Summary Receipt Box -->
+        <div class="p-3.5 mb-4 text-start" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px;">
+            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                <span class="text-muted small">Mã đơn ứng tuyển:</span>
+                <span class="fw-bold font-mono text-dark small">@Model.ApplicationCode</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                <span class="text-muted small">Vị trí ứng tuyển:</span>
+                <span class="fw-bold text-dark small">@Model.JobTitle</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                <span class="text-muted small">Thời gian xác nhận rút:</span>
+                <span class="font-mono text-dark small">@(Model.WithdrawnAt?.ToString("dd/MM/yyyy HH:mm") ?? DateTimeOffset.UtcNow.ToString("dd/MM/yyyy HH:mm"))</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                <span class="text-muted small">Trạng thái hồ sơ:</span>
+                <span class="badge" style="background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 0.75rem;">
+                    <i class="bi bi-person-x me-1"></i>Ứng viên rút (WITHDRAWN)
+                </span>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.ExistingReason))
+            {
+                <div class="d-flex justify-content-between align-items-start pt-1">
+                    <span class="text-muted small">Lý do ghi nhận:</span>
+                    <span class="text-dark small text-end" style="max-width: 60%;">@Model.ExistingReason</span>
+                </div>
+            }
+        </div>
+
+        <!-- Recruiter Notification Status -->
+        <div class="p-3 mb-4 d-flex align-items-center gap-2.5 text-start" style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px;">
+            <i class="bi bi-bell-fill text-primary fs-5 flex-shrink-0"></i>
+            <div class="small text-primary" style="line-height: 1.5;">
+                <strong>Đã gửi thông báo đến Chuyên viên Tuyển dụng phụ trách:</strong> Hệ thống đã tự động cập nhật pipeline và gửi email xác nhận đến hòm thư <strong class="font-mono">@Model.CandidateEmail</strong>.
+            </div>
+        </div>
+
+        <p class="text-muted small mb-4" style="line-height: 1.6;">
+            NoveraTech trân trọng sự đóng góp và chúc bạn gặt hái nhiều bước tiến rực rỡ trên hành trình sự nghiệp! Chúng tôi luôn sẵn sàng đón chào bạn ở các cơ hội phù hợp trong tương lai.
+        </p>
+
+        <!-- Action Links -->
+        <div class="d-flex flex-column flex-sm-row justify-content-center gap-2.5">
+            <a href="/Jobs" class="btn btn-success fw-semibold px-4 py-2" style="border-radius: 8px; font-size: 0.85rem; background: #059669; border-color: #059669;">
+                <i class="bi bi-briefcase me-1"></i> Khám phá các vị trí khác
+            </a>
+            <a href="/gioi-thieu" class="btn btn-light border px-4 py-2" style="border-radius: 8px; font-size: 0.85rem;">
+                <i class="bi bi-house me-1"></i> Trang chủ Tuyển dụng
+            </a>
+        </div>
+    </div>
+</div>

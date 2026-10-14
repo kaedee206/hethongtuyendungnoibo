@@ -20,6 +20,21 @@ public class Application : BaseEntity
     public Guid? ReferrerUserId { get; set; }
     public string? ReferralNote { get; set; }
 
+    /// <summary>
+    /// Mã token bảo mật dùng để rút hồ sơ qua liên kết email xác nhận (SCRUM-291).
+    /// </summary>
+    public string? WithdrawToken { get; set; }
+
+    /// <summary>
+    /// Thời điểm ứng viên thực hiện rút hồ sơ.
+    /// </summary>
+    public DateTimeOffset? WithdrawnAt { get; set; }
+
+    /// <summary>
+    /// Lý do ứng viên rút hồ sơ ứng tuyển.
+    /// </summary>
+    public string? WithdrawReason { get; set; }
+
     public JobPosting JobPosting { get; set; } = null!;
     public Candidate Candidate { get; set; } = null!;
     public Resume Resume { get; set; } = null!;

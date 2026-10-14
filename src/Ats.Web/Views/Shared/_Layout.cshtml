@@ -161,11 +161,43 @@
                                 </span>
                             </div>
 
+                            @if (User.Identity?.IsAuthenticated == true && !User.IsInRole(UserRoles.Candidate))
+                            {
+                                <!-- Staff Notification Bell -->
+                                <div class="dropdown me-lg-1" id="staffNotificationDropdown">
+                                    <button class="btn btn-sm position-relative d-flex align-items-center justify-content-center" 
+                                            style="width: 36px; height: 36px; border-radius: 8px; border: 1px solid #E2E8F0; background: #F8FAFC;" 
+                                            type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo tuyển dụng" onclick="loadStaffNotifications()">
+                                        <i class="bi bi-bell text-secondary fs-6"></i>
+                                        <span id="staffNotifBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle d-none">
+                                            <span class="visually-hidden">Thông báo mới</span>
+                                        </span>
+                                    </button>
+                                    <div class="dropdown-menu dropdown-menu-end mt-2 shadow-sm border p-0" style="border-color: #E2E8F0; border-radius: 10px; width: 330px; max-width: 90vw;">
+                                        <div class="p-2.5 px-3 border-bottom d-flex justify-content-between align-items-center bg-light" style="border-top-left-radius: 10px; border-top-right-radius: 10px;">
+                                            <span class="fw-bold text-dark small"><i class="bi bi-bell-fill text-success me-1"></i>Thông báo tuyển dụng</span>
+                                            <span id="staffNotifCountText" class="badge bg-success-subtle text-success small" style="font-size: 0.7rem;">0 mới</span>
+                                        </div>
+                                        <div id="staffNotifList" class="overflow-auto" style="max-height: 320px;">
+                                            <div class="text-center py-4 text-muted small">
+                                                <i class="bi bi-bell-slash fs-4 d-block mb-1 text-secondary"></i>
+                                                Không có thông báo mới
+                                            </div>
+                                        </div>
+                                        <div class="p-2 text-center border-top bg-light" style="border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
+                                            <a href="/#ung-vien" class="text-decoration-none small text-success fw-semibold" style="font-size: 0.75rem;">
+                                                Xem danh sách ứng viên &rarr;
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
                             <!-- Dropdown User (RULE.MD: 8px radius, clean neutral, full navigation inside) -->
                             <div class="dropdown w-100 w-lg-auto">
                                 <button class="btn-user-toggle d-flex align-items-center gap-2 px-3 py-1.5 w-100 w-lg-auto" style="border-radius: 8px; cursor: pointer; border: 1px solid #E2E8F0; background: #F8FAFC;" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <div class="d-flex align-items-center justify-content-center fw-bold rounded-lg" style="width: 26px; height: 26px; font-size: 11px; background: #ECFDF5; color: #059669; border-radius: 6px;">
-                                        @(User.Identity.Name?.Substring(0, 1).ToUpper() ?? "U")
+                                        @(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "U")
                                     </div>
                                     <span class="fw-semibold text-truncate" style="max-width: 140px; color: #0F172A; font-size: 0.85rem;">
                                         @(User.Identity.Name ?? "Nhân viên")
@@ -445,6 +477,50 @@
     </div>
 
     @await RenderSectionAsync("Scripts", required: false)
+
+    @if (User.Identity?.IsAuthenticated == true && !User.IsInRole(UserRoles.Candidate))
+    {
+        <script>
+            function loadStaffNotifications() {
+                fetch('/api/notifications/recent')
+                    .then(function(r) { return r.json(); })
+                    .then(function(res) {
+                        if (res && res.success && res.items) {
+                            var list = document.getElementById('staffNotifList');
+                            var badge = document.getElementById('staffNotifBadge');
+                            var countText = document.getElementById('staffNotifCountText');
+                            if (countText) countText.textContent = res.unreadCount + ' mới';
+                            if (badge) {
+                                if (res.unreadCount > 0) badge.classList.remove('d-none');
+                                else badge.classList.add('d-none');
+                            }
+                            if (list && res.items.length > 0) {
+                                list.innerHTML = res.items.map(function(n) {
+                                    return '<div class="p-2.5 px-3 border-bottom ' + (n.isRead ? 'bg-white' : 'bg-warning-subtle') + '" style="font-size: 0.8rem; cursor: pointer;" onclick="markNotifRead(\'' + n.id + '\', \'' + n.link + '\')">' +
+                                        '<div class="d-flex justify-content-between align-items-center mb-1">' +
+                                            '<span class="fw-bold text-dark text-truncate" style="max-width: 190px;">' + n.title + '</span>' +
+                                            '<span class="text-muted" style="font-size: 0.68rem;">' + n.timeDisplay + '</span>' +
+                                        '</div>' +
+                                        '<div class="text-secondary small" style="font-size: 0.74rem; line-height: 1.35;">' + n.content + '</div>' +
+                                    '</div>';
+                                }).join('');
+                            }
+                        }
+                    })
+                    .catch(function() {});
+            }
+            function markNotifRead(id, link) {
+                fetch('/api/notifications/mark-read/' + id, { method: 'POST' }).finally(function() {
+                    if (link) window.location.href = link;
+                });
+            }
+            document.addEventListener('DOMContentLoaded', function() {
+                if (document.getElementById('staffNotificationDropdown')) {
+                    loadStaffNotifications();
+                }
+            });
+        </script>
+    }
 
 </body>
 </html>

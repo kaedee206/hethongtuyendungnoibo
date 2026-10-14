@@ -354,12 +354,38 @@
                                         @Model.ActiveApplication.JobTitle
                                     </h5>
                                 </div>
-                                <div class="text-sm-end">
-                                    <span style="background: #ECFDF5; color: #047857; font-size: 0.8rem; font-weight: 700; padding: 4px 12px; border-radius: 6px; border: 1px solid #A7F3D0; display: inline-block;">
-                                        @Model.ActiveApplication.CurrentStageName
-                                    </span>
+                                <div class="text-sm-end d-flex align-items-center gap-2">
+                                    @if (Model.ActiveApplication.IsWithdrawn)
+                                    {
+                                        <span style="background: #FEF2F2; color: #DC2626; font-size: 0.8rem; font-weight: 700; padding: 4px 12px; border-radius: 6px; border: 1px solid #FECACA; display: inline-block;">
+                                            <i class="bi bi-person-x me-1"></i>Đã rút hồ sơ
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span style="background: #ECFDF5; color: #047857; font-size: 0.8rem; font-weight: 700; padding: 4px 12px; border-radius: 6px; border: 1px solid #A7F3D0; display: inline-block;">
+                                            @Model.ActiveApplication.CurrentStageName
+                                        </span>
+                                        @if (!string.IsNullOrWhiteSpace(Model.ActiveApplication.WithdrawToken))
+                                        {
+                                            <a href="/Applications/Withdraw?token=@Model.ActiveApplication.WithdrawToken" class="btn btn-outline-danger btn-sm fw-semibold" style="border-radius: 8px; font-size: 0.78rem;" title="Rút hồ sơ nếu bạn đã nhận việc nơi khác">
+                                                <i class="bi bi-box-arrow-left me-1"></i> Rút hồ sơ
+                                            </a>
+                                        }
+                                    }
                                 </div>
                             </div>
+
+                            @if (Model.ActiveApplication.IsWithdrawn)
+                            {
+                                <div class="alert alert-warning border border-warning-subtle d-flex align-items-center gap-3 mb-4 p-3" style="border-radius: 10px; background-color: #FFFBEB;">
+                                    <i class="bi bi-exclamation-triangle-fill text-warning fs-4 flex-shrink-0"></i>
+                                    <div>
+                                        <div class="fw-bold text-dark" style="font-size: 0.9rem;">Hồ sơ này đã dừng quy trình xét tuyển theo nguyện vọng của bạn</div>
+                                        <div class="text-secondary small mt-0.5">Thời điểm rút: <b>@(Model.ActiveApplication.WithdrawnAt?.ToString("HH:mm, dd/MM/yyyy") ?? "Gần đây")</b> · Lý do: <b>@(Model.ActiveApplication.WithdrawReason ?? "Đã nhận việc nơi khác")</b></div>
+                                    </div>
+                                </div>
+                            }
 
                             <!-- Connected Step Tracker (Clean Line Stepper) -->
                             <div class="mb-4 pt-1 pb-3">
@@ -1025,6 +1051,9 @@
                             <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('REJECTED', this)">
                                 Đã từ chối <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.Status == "REJECTED")</span>
                             </button>
+                            <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('WITHDRAWN', this)">
+                                Ứng viên rút <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.Status == "WITHDRAWN")</span>
+                            </button>
                         </div>
 
                         <div class="dashboard-table-responsive">
@@ -1099,7 +1128,13 @@
                                                     <span class="fw-semibold text-dark">@cand.JobTitle</span>
                                                 </td>
                                                 <td class="py-3 px-3">
-                                                    @if (cand.Status == "REJECTED")
+                                                    @if (cand.Status == "WITHDRAWN")
+                                                    {
+                                                        <span class="badge" style="background:#F1F5F9; color:#475569; border:1px solid #CBD5E1; border-radius:6px; font-size:0.75rem; font-weight:600;">
+                                                            <i class="bi bi-person-x me-1"></i>Ứng viên rút
+                                                        </span>
+                                                    }
+                                                    else if (cand.Status == "REJECTED")
                                                     {
                                                         <span class="badge" style="background:#FEE2E2; color:#DC2626; border:1px solid #FECACA; border-radius:6px; font-size:0.75rem; font-weight:600;">
                                                             <i class="bi bi-x-circle me-1"></i>Từ chối hồ sơ
@@ -1117,7 +1152,11 @@
                                                 </td>
                                                 <td class="py-3 px-3 text-end">
                                                     <div class="d-flex justify-content-end align-items-center gap-2">
-                                                        @if (cand.Status == "REJECTED")
+                                                        @if (cand.Status == "WITHDRAWN")
+                                                        {
+                                                            <span class="badge bg-secondary-subtle text-secondary border" style="border-radius:6px; font-size:0.72rem;"><i class="bi bi-box-arrow-left me-1"></i>Đã rút hồ sơ</span>
+                                                        }
+                                                        else if (cand.Status == "REJECTED")
                                                         {
                                                             <span class="badge bg-light text-muted border" style="border-radius:6px; font-size:0.72rem;">Đã lưu trữ</span>
                                                         }
@@ -2821,7 +2860,10 @@
                 // Stage match
                 let stageMatch = false;
                 if (stageOrder === 'ALL') {
-                    stageMatch = true;
+                    // Pipeline hoạt động mặc định ẩn ứng viên đã rút
+                    stageMatch = (rowStatus !== 'WITHDRAWN');
+                } else if (stageOrder === 'WITHDRAWN') {
+                    stageMatch = (rowStatus === 'WITHDRAWN');
                 } else if (stageOrder === 'REJECTED') {
                     stageMatch = (rowStatus === 'REJECTED');
                 } else if (stageOrder === 'REFERRAL') {
@@ -2829,7 +2871,7 @@
                 } else if (stageOrder === 'DUPLICATE') {
                     stageMatch = (r.getAttribute('data-has-duplicate') === 'true');
                 } else {
-                    stageMatch = (rowStage === stageOrder && rowStatus !== 'REJECTED');
+                    stageMatch = (rowStage === stageOrder && rowStatus !== 'REJECTED' && rowStatus !== 'WITHDRAWN');
                 }
 
                 // Text search match: Chỉ lọc khi từ khóa có từ 3 ký tự trở lên (>= 3 chars)
