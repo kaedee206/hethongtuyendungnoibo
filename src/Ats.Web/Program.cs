@@ -72,6 +72,7 @@ builder.Services.AddScoped<IApplicationTrackingService, ApplicationTrackingServi
 builder.Services.AddScoped<ICandidateReferralService, CandidateReferralService>();
 builder.Services.AddScoped<ICandidateMergeService, CandidateMergeService>();
 builder.Services.AddScoped<ICandidateStageService, CandidateStageService>();
+builder.Services.AddScoped<ICandidateTimelineService, CandidateTimelineService>();
 
 // Cấu hình Rate Limiting bảo vệ các endpoint nhạy cảm (OWASP A04 / A07)
 builder.Services.AddRateLimiter(options =>
@@ -497,6 +498,28 @@ using (var scope = app.Services.CreateScope())
                 is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
                 deleted_at TIMESTAMPTZ
             );
+
+            -- Scrum #46: Bảng ghi nhận tương tác, cuộc gọi trao đổi với ứng viên
+            CREATE TABLE IF NOT EXISTS candidate_interactions (
+                id UUID PRIMARY KEY,
+                candidate_id UUID NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+                application_id UUID REFERENCES applications(id) ON DELETE SET NULL,
+                created_by_user_id UUID NOT NULL REFERENCES users(id),
+                interaction_type INT NOT NULL DEFAULT 1,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                outcome TEXT,
+                interaction_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+            CREATE INDEX IF NOT EXISTS ix_candidate_interactions_candidate_id ON candidate_interactions(candidate_id);
+            CREATE INDEX IF NOT EXISTS ix_candidate_interactions_application_id ON candidate_interactions(application_id);
+            CREATE INDEX IF NOT EXISTS ix_candidate_interactions_interaction_date ON candidate_interactions(interaction_date);
         ");
     }
     catch (Exception ex)

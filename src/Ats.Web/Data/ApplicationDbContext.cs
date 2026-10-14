@@ -44,6 +44,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<InterviewQuestionBank> InterviewQuestionBanks { get; set; }
     public DbSet<RecruitmentCatalog> RecruitmentCatalogs { get; set; }
     public DbSet<CandidateMergeHistory> CandidateMergeHistories { get; set; }
+    public DbSet<CandidateInteraction> CandidateInteractions { get; set; }
     public DbSet<CompanyProfile> CompanyProfiles { get; set; }
     
     public DbSet<ApprovalRule> ApprovalRules { get; set; }
@@ -323,6 +324,29 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasIndex(r => r.Code).IsUnique();
             entity.HasIndex(r => r.IsActive);
             entity.HasIndex(r => r.DisplayOrder);
+        });
+
+        // CandidateInteraction relationships & indexes (Scrum #46)
+        modelBuilder.Entity<CandidateInteraction>(entity =>
+        {
+            entity.HasOne(ci => ci.Candidate)
+                .WithMany(c => c.Interactions)
+                .HasForeignKey(ci => ci.CandidateId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(ci => ci.Application)
+                .WithMany(a => a.Interactions)
+                .HasForeignKey(ci => ci.ApplicationId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(ci => ci.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(ci => ci.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(ci => ci.CandidateId);
+            entity.HasIndex(ci => ci.ApplicationId);
+            entity.HasIndex(ci => ci.InteractionDate);
         });
     }
 }

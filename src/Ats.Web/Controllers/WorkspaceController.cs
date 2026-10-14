@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Ats.Web.Services.Interfaces;
 using Ats.Web.Models.ViewModels.Referral;
 using Ats.Web.Models.ViewModels.CandidateMerge;
+using Ats.Web.Models.ViewModels.CandidateTimeline;
 
 namespace Ats.Web.Controllers;
 
@@ -25,6 +26,7 @@ public class WorkspaceController : Controller
     private readonly IApplicationTrackingService _trackingService;
     private readonly ICandidateReferralService _referralService;
     private readonly ICandidateMergeService _mergeService;
+    private readonly ICandidateTimelineService _timelineService;
 
     public WorkspaceController(
         ApplicationDbContext dbContext,
@@ -34,7 +36,8 @@ public class WorkspaceController : Controller
         ILogger<WorkspaceController> logger,
         IApplicationTrackingService trackingService,
         ICandidateReferralService referralService,
-        ICandidateMergeService mergeService)
+        ICandidateMergeService mergeService,
+        ICandidateTimelineService timelineService)
     {
         _dbContext = dbContext;
         _env = env;
@@ -44,6 +47,7 @@ public class WorkspaceController : Controller
         _trackingService = trackingService;
         _referralService = referralService;
         _mergeService = mergeService;
+        _timelineService = timelineService;
     }
 
     #region Role Redirects (Tránh 404 cho các vai trò nội bộ)
@@ -1686,6 +1690,113 @@ public class WorkspaceController : Controller
             success,
             message,
             redirectUrl = Url.Action(nameof(CandidateDuplicates), new { tab = "history" })
+        });
+    }
+
+    #endregion
+
+    #region Candidate Interaction Timeline (Scrum #46)
+
+    /// <summary>
+    /// GET: /Workspace/NhatKyTuongTac hoặc /Workspace/CandidateTimeline
+    /// Màn hình dòng thời gian toàn bộ tương tác của ứng viên
+    /// </summary>
+    [HttpGet("NhatKyTuongTac")]
+    [HttpGet("CandidateTimeline")]
+    public async Task<IActionResult> CandidateTimeline(
+        [FromQuery] Guid? candidateId,
+        [FromQuery] Guid? applicationId,
+        [FromQuery] string? filter,
+        [FromQuery] string? q)
+    {
+        if (!candidateId.HasValue && applicationId.HasValue)
+        {
+            var app = await _dbContext.Applications.AsNoTracking().FirstOrDefaultAsync(a => a.Id == applicationId.Value);
+            if (app != null)
+            {
+                candidateId = app.CandidateId;
+            }
+        }
+
+        if (!candidateId.HasValue)
+        {
+            TempData["ErrorMessage"] = "Vui lòng chọn ứng viên để xem nhật ký tương tác.";
+            return RedirectToAction("Index", "Home", new { tab = "pipeline" });
+        }
+
+        var model = await _timelineService.GetCandidateTimelineAsync(candidateId.Value, applicationId, filter, q);
+        if (model == null)
+        {
+            TempData["ErrorMessage"] = "Không tìm thấy dữ liệu ứng viên hoặc hồ sơ tương ứng.";
+            return RedirectToAction("Index", "Home", new { tab = "pipeline" });
+        }
+
+        return View("CandidateTimeline", model);
+    }
+
+    /// <summary>
+    /// GET: /Workspace/GetCandidateTimelineJson
+    /// API AJAX nạp dòng thời gian tương tác phục vụ Modal/Drawer
+    /// </summary>
+    [HttpGet("GetCandidateTimelineJson")]
+    public async Task<IActionResult> GetCandidateTimelineJson(
+        [FromQuery] Guid? candidateId,
+        [FromQuery] Guid? applicationId,
+        [FromQuery] string? filter,
+        [FromQuery] string? q)
+    {
+        if (!candidateId.HasValue && applicationId.HasValue)
+        {
+            var app = await _dbContext.Applications.AsNoTracking().FirstOrDefaultAsync(a => a.Id == applicationId.Value);
+            if (app != null)
+            {
+                candidateId = app.CandidateId;
+            }
+        }
+
+        if (!candidateId.HasValue)
+        {
+            return Json(new { success = false, message = "Chưa cung cấp thông tin ứng viên." });
+        }
+
+        var model = await _timelineService.GetCandidateTimelineAsync(candidateId.Value, applicationId, filter, q);
+        if (model == null)
+        {
+            return Json(new { success = false, message = "Không tìm thấy thông tin ứng viên." });
+        }
+
+        return Json(new { success = true, data = model });
+    }
+
+    /// <summary>
+    /// POST: /Workspace/AddCandidateInteraction
+    /// API ghi nhận cuộc gọi / trao đổi trực tiếp với ứng viên
+    /// </summary>
+    [HttpPost("AddCandidateInteraction")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddCandidateInteraction([FromForm] AddCandidateInteractionInputModel model)
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+        if (currentUserId == Guid.Empty)
+        {
+            return Json(new { success = false, message = "Phiên làm việc hết hạn. Vui lòng đăng nhập lại." });
+        }
+
+        if (!ModelState.IsValid)
+        {
+            var errors = string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+            return Json(new { success = false, message = errors.Length > 0 ? errors : "Dữ liệu nhập không hợp lệ." });
+        }
+
+        var (success, message, interactionId) = await _timelineService.AddInteractionAsync(model, currentUserId);
+
+        return Json(new
+        {
+            success,
+            message,
+            interactionId
         });
     }
 
