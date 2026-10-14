@@ -37,6 +37,13 @@ public class WorkspaceDashboardViewModel
     // Thông báo dành cho Staff / Recruiter
     public int UnreadNotificationsCount { get; set; }
     public List<NotificationDto> RecentNotifications { get; set; } = new();
+
+    /// <summary>
+    /// true nếu giao diện đang được giới hạn chỉ hiển thị ứng viên thuộc vị trí được giao (Scrum 26).
+    /// </summary>
+    public bool IsRecruiterScoped { get; set; } = false;
+    public int AssignedPositionsCount { get; set; } = 0;
+    public List<Ats.Web.Models.ViewModels.RequisitionAssignments.RecruiterOptionViewModel> RecruitersFilterList { get; set; } = new();
 }
 
 public class NotificationDto

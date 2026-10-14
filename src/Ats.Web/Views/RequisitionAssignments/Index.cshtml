@@ -1,0 +1,773 @@
+@model Ats.Web.Models.ViewModels.RequisitionAssignments.RequisitionAssignmentListViewModel
+@{
+    ViewData["Title"] = "Phân công Recruiter Phụ trách";
+}
+
+<div class="container-fluid px-3 px-md-4 py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Trang chủ</a></li>
+            <li class="breadcrumb-item"><span class="text-muted">Cơ cấu &amp; Tiêu chuẩn</span></li>
+            <li class="breadcrumb-item active text-primary fw-semibold" aria-current="page">Phân công Recruiter</li>
+        </ol>
+    </nav>
+
+    <!-- Alerts -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm mb-4" role="alert" style="border-radius: 10px;">
+            <i class="bi bi-check-circle-fill fs-5 text-success"></i>
+            <div>@TempData["SuccessMessage"]</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm mb-4" role="alert" style="border-radius: 10px;">
+            <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
+            <div>@TempData["ErrorMessage"]</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Top Action Bar -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fw-bold" style="font-size: 0.75rem;">
+                    <i class="bi bi-person-badge-fill me-1"></i>SCRUM-26
+                </span>
+                <h1 class="h3 fw-bold text-dark mb-0">Phân công Recruiter Phụ trách Yêu cầu Tuyển dụng</h1>
+            </div>
+            <p class="text-muted small mb-0">
+                Chỉ định 01 Recruiter chính chịu trách nhiệm chạy tới cùng và các Recruiter hỗ trợ cho từng vị trí. Tự động ghi vết lịch sử chuyển giao minh bạch.
+            </p>
+        </div>
+    </div>
+
+    <!-- 4 KPI Summary Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Tổng vị trí tuyển dụng -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: #FFFFFF; border-left: 4px solid #3B82F6 !important;">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-secondary small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Vị trí tuyển dụng</span>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: rgba(59, 130, 246, 0.1); color: #3B82F6;">
+                            <i class="bi bi-briefcase-fill"></i>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold text-dark mb-0">@Model.TotalRequisitions <span class="fs-6 fw-normal text-muted">yêu cầu</span></div>
+                    <div class="text-muted small mt-1">Đang mở tuyển hoặc chờ phân bổ</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Đã phân công chính -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: #FFFFFF; border-left: 4px solid #10B981 !important;">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-secondary small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Đã có người phụ trách</span>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: rgba(16, 185, 129, 0.1); color: #10B981;">
+                            <i class="bi bi-person-check-fill"></i>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold text-success mb-0">@Model.AssignedRequisitionsCount <span class="fs-6 fw-normal text-muted">vị trí</span></div>
+                    <div class="text-muted small mt-1">Có 01 Recruiter chính chạy tới cùng</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chưa phân công -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: #FFFFFF; border-left: 4px solid #EF4444 !important;">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-secondary small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Chưa phân công</span>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: rgba(239, 68, 68, 0.1); color: #EF4444;">
+                            <i class="bi bi-exclamation-circle-fill"></i>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold @(Model.UnassignedRequisitionsCount > 0 ? "text-danger" : "text-dark") mb-0">
+                        @Model.UnassignedRequisitionsCount <span class="fs-6 fw-normal text-muted">vị trí</span>
+                    </div>
+                    <div class="text-muted small mt-1">Cần Trưởng phòng chỉ định phụ trách</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Đội ngũ Recruiter -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: #FFFFFF; border-left: 4px solid #8B5CF6 !important;">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-secondary small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Đội ngũ Recruiter</span>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: rgba(139, 92, 246, 0.1); color: #8B5CF6;">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold text-dark mb-0">@Model.TotalRecruitersCount <span class="fs-6 fw-normal text-muted">chuyên viên</span></div>
+                    <div class="text-muted small mt-1">Sẵn sàng nhận nhiệm vụ tuyển dụng</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+        <div class="card-body p-3">
+            <div class="row g-2 align-items-center">
+                <!-- Search text -->
+                <div class="col-12 col-md-4">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 8px 0 0 8px;">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" id="filterSearchInput" class="form-control bg-light border-start-0" 
+                               placeholder="Tìm theo mã hoặc chức danh tuyển dụng..." style="border-radius: 0 8px 8px 0;">
+                    </div>
+                </div>
+
+                <!-- Department Filter -->
+                <div class="col-6 col-md-3">
+                    <select id="filterDepartmentSelect" class="form-select form-select-sm" style="border-radius: 8px;">
+                        <option value="">-- Tất cả phòng ban --</option>
+                        @foreach (var dept in Model.Departments)
+                        {
+                            <option value="@dept">@dept</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Recruiter Filter -->
+                <div class="col-6 col-md-3">
+                    <select id="filterRecruiterSelect" class="form-select form-select-sm" style="border-radius: 8px;">
+                        <option value="">-- Tất cả Recruiter --</option>
+                        @foreach (var rec in Model.AvailableRecruiters)
+                        {
+                            <option value="@rec.UserId">@rec.FullName (@rec.ActiveLeadCount chính / @rec.ActiveSupportingCount phụ)</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Assignment Status Filter -->
+                <div class="col-12 col-md-2">
+                    <select id="filterStatusSelect" class="form-select form-select-sm" style="border-radius: 8px;">
+                        <option value="">-- Trạng thái --</option>
+                        <option value="ASSIGNED">Đã phân công</option>
+                        <option value="UNASSIGNED">Chưa phân công</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Requisitions List Table -->
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="assignmentsTable">
+                <thead class="bg-light text-secondary small text-uppercase fw-semibold" style="letter-spacing: 0.05em; font-size: 0.75rem;">
+                    <tr>
+                        <th class="ps-4 py-3" style="width: 25%;">Vị trí tuyển dụng</th>
+                        <th class="py-3" style="width: 15%;">Phòng ban &amp; Cấp bậc</th>
+                        <th class="py-3" style="width: 20%;">Recruiter chính</th>
+                        <th class="py-3" style="width: 18%;">Recruiter hỗ trợ</th>
+                        <th class="py-3 text-center" style="width: 10%;">Ứng viên</th>
+                        <th class="pe-4 py-3 text-end" style="width: 12%;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    @if (!Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                                Không có yêu cầu tuyển dụng nào phù hợp điều kiện lọc.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr class="assignment-row" 
+                                data-requisition-id="@item.RequisitionId"
+                                data-title="@item.JobTitle.ToLower()"
+                                data-code="@item.Code.ToLower()"
+                                data-dept="@item.DepartmentName"
+                                data-lead-id="@(item.LeadRecruiterId?.ToString() ?? "")"
+                                data-support-ids="@string.Join(",", item.SupportingRecruiters.Select(s => s.RecruiterId))"
+                                data-status="@(item.HasLeadRecruiter ? "ASSIGNED" : "UNASSIGNED")">
+                                
+                                <!-- Vị trí -->
+                                <td class="ps-4 py-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar rounded d-flex align-items-center justify-content-center fw-bold @(item.HasLeadRecruiter ? "bg-primary-subtle text-primary" : "bg-warning-subtle text-warning-emphasis")"
+                                             style="width: 40px; height: 40px; min-width: 40px; font-size: 0.85rem;">
+                                            @(item.JobTitle.Length > 0 ? item.JobTitle[..1].ToUpper() : "R")
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark" style="font-size: 0.95rem;">@item.JobTitle</div>
+                                            <div class="d-flex align-items-center gap-2 mt-1">
+                                                <span class="badge bg-light text-secondary border small">@item.Code</span>
+                                                <span class="text-muted small">Chỉ tiêu: <strong class="text-dark">@item.Quantity</strong></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- Phòng ban & Cấp bậc -->
+                                <td class="py-3">
+                                    <div class="fw-semibold text-dark small">@item.DepartmentName</div>
+                                    <div class="text-muted small">Cấp bậc: @(string.IsNullOrWhiteSpace(item.JobLevel) ? "Middle" : item.JobLevel)</div>
+                                    <div class="mt-1">
+                                        <span class="badge @item.StatusBadgeClass" style="font-size: 0.7rem;">@item.StatusDisplay</span>
+                                    </div>
+                                </td>
+
+                                <!-- Recruiter chính (Chịu trách nhiệm chạy tới cùng) -->
+                                <td class="py-3">
+                                    @if (item.HasLeadRecruiter)
+                                    {
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="avatar rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold"
+                                                 style="width: 32px; height: 32px; font-size: 0.75rem;">
+                                                @item.LeadRecruiterAvatarLetter
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark small d-flex align-items-center gap-1">
+                                                    @item.LeadRecruiterName
+                                                    <i class="bi bi-star-fill text-warning small" title="Recruiter chính"></i>
+                                                </div>
+                                                <div class="text-muted" style="font-size: 0.75rem;">@item.LeadRecruiterEmail</div>
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle mt-1" style="font-size: 0.65rem;">
+                                                    Phụ trách chính
+                                                </span>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="d-flex align-items-center gap-2 text-danger">
+                                            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                                            <div>
+                                                <div class="fw-bold small">Chưa chỉ định</div>
+                                                <div class="text-muted" style="font-size: 0.75rem;">Cần phân công ngay</div>
+                                            </div>
+                                        </div>
+                                    }
+                                </td>
+
+                                <!-- Recruiter hỗ trợ -->
+                                <td class="py-3">
+                                    @if (item.SupportingRecruiters.Any())
+                                    {
+                                        <div class="d-flex flex-wrap gap-1 align-items-center">
+                                            @foreach (var supp in item.SupportingRecruiters)
+                                            {
+                                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle d-inline-flex align-items-center gap-1 py-1 px-2"
+                                                      style="font-size: 0.75rem;" title="@supp.Email">
+                                                    <i class="bi bi-person-fill small"></i>
+                                                    @supp.FullName
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small fst-italic">Không có hỗ trợ</span>
+                                    }
+                                </td>
+
+                                <!-- Ứng viên -->
+                                <td class="py-3 text-center">
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fw-bold" style="font-size: 0.85rem;">
+                                        @item.ApplicantCount
+                                    </span>
+                                    <div class="text-muted mt-1" style="font-size: 0.7rem;">hồ sơ</div>
+                                </td>
+
+                                <!-- Thao tác -->
+                                <td class="pe-4 py-3 text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-primary btn-assign-action"
+                                                data-req-id="@item.RequisitionId"
+                                                title="Phân công hoặc chuyển giao Recruiter">
+                                            <i class="bi bi-person-gear me-1"></i>Phân công
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-history-action"
+                                                data-req-id="@item.RequisitionId"
+                                                data-req-title="@item.JobTitle"
+                                                title="Xem lịch sử chuyển giao">
+                                            <i class="bi bi-clock-history"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL 1: PHÂN CÔNG / CHUYỂN GIAO RECRUITER -->
+<!-- ========================================== -->
+<div class="modal fade" id="assignModal" tabindex="-1" aria-labelledby="assignModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow" style="border-radius: 14px;">
+            <div class="modal-header bg-light border-0 pb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                        <i class="bi bi-person-badge fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="assignModalLabel">Phân công Recruiter Phụ trách</h5>
+                        <p class="text-muted small mb-0">Thiết lập người phụ trách chính chạy tới cùng và các nhân sự hỗ trợ</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form id="assignForm" method="post" action="/phan-cong-recruiter/assign">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="RequisitionId" id="modalRequisitionId" />
+                <input type="hidden" id="modalCurrentLeadId" />
+
+                <div class="modal-body p-4">
+                    <!-- Position info header -->
+                    <div class="p-3 bg-light rounded-3 border mb-4">
+                        <div class="row g-2">
+                            <div class="col-sm-8">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 mb-1" id="modalReqCode">REQ-CODE</span>
+                                <h6 class="fw-bold text-dark mb-1" id="modalReqTitle">Chức danh tuyển dụng</h6>
+                                <div class="text-muted small" id="modalReqDepartment">Phòng ban: Công nghệ thông tin</div>
+                            </div>
+                            <div class="col-sm-4 text-sm-end">
+                                <div class="small text-muted">Chỉ tiêu / Hồ sơ hiện có:</div>
+                                <div class="fw-bold text-dark fs-6" id="modalReqCountInfo">0 chỉ tiêu / 0 ứng viên</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 1. CHỈ ĐỊNH RECRUITER CHÍNH -->
+                    <div class="mb-4">
+                        <label for="modalLeadSelect" class="form-label fw-bold text-dark d-flex align-items-center gap-1">
+                            <i class="bi bi-star-fill text-warning"></i>
+                            Recruiter chính (Bắt buộc) <span class="text-danger">*</span>
+                        </label>
+                        <select name="LeadRecruiterId" id="modalLeadSelect" class="form-select form-select-lg" required style="border-radius: 8px;">
+                            <option value="">-- Chọn Recruiter chịu trách nhiệm chính --</option>
+                            @foreach (var rec in Model.AvailableRecruiters)
+                            {
+                                <option value="@rec.UserId" data-name="@rec.FullName">
+                                    @rec.FullName - @rec.Email (Hiện đang: @rec.ActiveLeadCount chính, @rec.ActiveSupportingCount hỗ trợ)
+                                </option>
+                            }
+                        </select>
+                        <div class="form-text text-muted">
+                            <i class="bi bi-info-circle me-1"></i>Recruiter chính chịu trách nhiệm quản lý toàn diện ứng viên, thúc đẩy phễu tuyển dụng và kết quả tới khi tuyển dụng thành công.
+                        </div>
+                    </div>
+
+                    <!-- 2. RECRUITER HỖ TRỢ (CHECKBOX LIST) -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-dark d-flex align-items-center gap-1">
+                            <i class="bi bi-people-fill text-primary"></i>
+                            Recruiter hỗ trợ (Tùy chọn)
+                        </label>
+                        <div class="border rounded-3 p-3 bg-light" style="max-height: 180px; overflow-y: auto;">
+                            <div class="row g-2" id="supportingRecruitersContainer">
+                                @foreach (var rec in Model.AvailableRecruiters)
+                                {
+                                    <div class="col-12 col-md-6 supporting-option-wrapper" data-user-id="@rec.UserId">
+                                        <div class="form-check p-2 rounded bg-white border">
+                                            <input class="form-check-input supporting-check" type="checkbox" 
+                                                   name="SupportingRecruiterIds" value="@rec.UserId" 
+                                                   id="supp_@rec.UserId">
+                                            <label class="form-check-label d-block text-truncate small" for="supp_@rec.UserId">
+                                                <strong>@rec.FullName</strong>
+                                                <div class="text-muted" style="font-size: 0.75rem;">@rec.Email (@rec.ActiveLeadCount chính / @rec.ActiveSupportingCount phụ)</div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        <div class="form-text text-muted">
+                            Các Recruiter hỗ trợ cũng sẽ có quyền truy cập hồ sơ ứng viên vị trí này để cùng sàng lọc và lên lịch phỏng vấn.
+                        </div>
+                    </div>
+
+                    <!-- 3. BOX CHUYỂN GIAO (BẮT BUỘC KHI ĐỔI RECRUITER CHÍNH) -->
+                    <div id="handoverSection" class="p-3 rounded-3 border border-warning bg-warning-subtle mb-3" style="display: none;">
+                        <div class="d-flex align-items-center gap-2 mb-2 text-warning-emphasis fw-bold">
+                            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                            <span>Phát hiện thay đổi Recruiter chính (Chuyển giao trách nhiệm)</span>
+                        </div>
+                        <p class="small text-secondary mb-3">
+                            Hệ thống tự động ghi nhật ký chuyển giao công việc khi thay đổi người phụ trách chính. Vui lòng ghi rõ lý do bàn giao để đảm bảo tính minh bạch.
+                        </p>
+                        
+                        <div class="mb-3">
+                            <label for="modalReasonInput" class="form-label fw-bold text-dark small">
+                                Lý do chuyển giao <span class="text-danger">*</span>
+                            </label>
+                            <textarea name="Reason" id="modalReasonInput" rows="2" class="form-control form-control-sm"
+                                      placeholder="Ví dụ: Điều chuyển khối lượng công việc, nhân sự nghỉ phép dài hạn, thay đổi cơ cấu dự án..."></textarea>
+                            <div class="invalid-feedback">Vui lòng nhập lý do chuyển giao người phụ trách.</div>
+                        </div>
+
+                        <div>
+                            <label for="modalNotesInput" class="form-label fw-bold text-dark small">Ghi chú bàn giao thêm (Tùy chọn)</label>
+                            <textarea name="Notes" id="modalNotesInput" rows="2" class="form-control form-control-sm"
+                                      placeholder="Ghi chú về tiến độ hiện tại của các ứng viên, đầu mối liên hệ tiếp theo..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 pt-0 px-4 pb-4">
+                    <button type="button" class="btn btn-light px-3" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-primary px-4 fw-semibold" id="btnSubmitAssign">
+                        <i class="bi bi-check-lg me-1"></i>Lưu phân công
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL 2: LỊCH SỬ CHUYỂN GIAO (TIMELINE)   -->
+<!-- ========================================== -->
+<div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow" style="border-radius: 14px;">
+            <div class="modal-header bg-light border-0 pb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                        <i class="bi bi-clock-history fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="historyModalLabel">Lịch sử Chuyển giao Recruiter</h5>
+                        <p class="text-muted small mb-0" id="historyModalSubtitle">Nhật ký phân công và chuyển giao trách nhiệm tuyển dụng</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <div id="historyLoadingSpinner" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                    <div class="text-muted small mt-2">Đang tải lịch sử chuyển giao...</div>
+                </div>
+
+                <div id="historyTimelineContainer" style="display: none;">
+                    <div class="timeline" id="historyTimelineList">
+                        <!-- Dynamically injected -->
+                    </div>
+                </div>
+
+                <div id="historyEmptyState" class="text-center py-4 text-muted" style="display: none;">
+                    <i class="bi bi-journal-text fs-1 text-secondary mb-2 d-block"></i>
+                    <div>Chưa có lịch sử chuyển giao nào được ghi nhận cho yêu cầu này.</div>
+                </div>
+            </div>
+
+            <div class="modal-footer border-0 pt-0 px-4 pb-4">
+                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Timeline styles for Handover History */
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 10px;
+        top: 8px;
+        bottom: 8px;
+        width: 2px;
+        background: #E2E8F0;
+    }
+    .timeline-item {
+        position: relative;
+        margin-bottom: 24px;
+    }
+    .timeline-item:last-child {
+        margin-bottom: 0;
+    }
+    .timeline-badge {
+        position: absolute;
+        left: -30px;
+        top: 2px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #3B82F6;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        box-shadow: 0 0 0 4px #EFF6FF;
+    }
+    .timeline-badge.badge-lead {
+        background: #F59E0B;
+        box-shadow: 0 0 0 4px #FEF3C7;
+    }
+    .timeline-badge.badge-initial {
+        background: #10B981;
+        box-shadow: 0 0 0 4px #D1FAE5;
+    }
+    .timeline-badge.badge-support {
+        background: #8B5CF6;
+        box-shadow: 0 0 0 4px #EDE9FE;
+    }
+</style>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const filterSearchInput = document.getElementById('filterSearchInput');
+        const filterDepartmentSelect = document.getElementById('filterDepartmentSelect');
+        const filterRecruiterSelect = document.getElementById('filterRecruiterSelect');
+        const filterStatusSelect = document.getElementById('filterStatusSelect');
+        const tableRows = document.querySelectorAll('.assignment-row');
+
+        // Client-side filtering
+        function applyFilters() {
+            const search = (filterSearchInput.value || '').trim().toLowerCase();
+            const dept = filterDepartmentSelect.value;
+            const recId = filterRecruiterSelect.value;
+            const status = filterStatusSelect.value;
+
+            tableRows.forEach(row => {
+                const title = row.getAttribute('data-title') || '';
+                const code = row.getAttribute('data-code') || '';
+                const rowDept = row.getAttribute('data-dept') || '';
+                const leadId = row.getAttribute('data-lead-id') || '';
+                const supportIds = (row.getAttribute('data-support-ids') || '').split(',');
+                const rowStatus = row.getAttribute('data-status') || '';
+
+                let matchSearch = !search || title.includes(search) || code.includes(search);
+                let matchDept = !dept || rowDept === dept;
+                let matchStatus = !status || rowStatus === status;
+                let matchRec = !recId || leadId === recId || supportIds.includes(recId);
+
+                if (matchSearch && matchDept && matchStatus && matchRec) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        filterSearchInput.addEventListener('input', applyFilters);
+        filterDepartmentSelect.addEventListener('change', applyFilters);
+        filterRecruiterSelect.addEventListener('change', applyFilters);
+        filterStatusSelect.addEventListener('change', applyFilters);
+
+        // ==========================================
+        // ASSIGN MODAL LOGIC
+        // ==========================================
+        const assignModalEl = document.getElementById('assignModal');
+        const assignModal = new bootstrap.Modal(assignModalEl);
+        const modalReqId = document.getElementById('modalRequisitionId');
+        const modalCurrentLeadId = document.getElementById('modalCurrentLeadId');
+        const modalReqCode = document.getElementById('modalReqCode');
+        const modalReqTitle = document.getElementById('modalReqTitle');
+        const modalReqDepartment = document.getElementById('modalReqDepartment');
+        const modalReqCountInfo = document.getElementById('modalReqCountInfo');
+        const modalLeadSelect = document.getElementById('modalLeadSelect');
+        const supportingChecks = document.querySelectorAll('.supporting-check');
+        const supportingWrappers = document.querySelectorAll('.supporting-option-wrapper');
+        const handoverSection = document.getElementById('handoverSection');
+        const modalReasonInput = document.getElementById('modalReasonInput');
+        const assignForm = document.getElementById('assignForm');
+
+        // Check if Lead Recruiter changed -> Show handover section and require reason
+        function checkHandoverRequirement() {
+            const currentLead = modalCurrentLeadId.value;
+            const newLead = modalLeadSelect.value;
+
+            // Also disable selected lead in supporting options
+            supportingWrappers.forEach(wrap => {
+                const uid = wrap.getAttribute('data-user-id');
+                const chk = wrap.querySelector('.supporting-check');
+                if (uid === newLead) {
+                    chk.checked = false;
+                    chk.disabled = true;
+                    wrap.style.opacity = '0.5';
+                } else {
+                    chk.disabled = false;
+                    wrap.style.opacity = '1';
+                }
+            });
+
+            if (currentLead && newLead && currentLead !== newLead) {
+                handoverSection.style.display = 'block';
+                modalReasonInput.setAttribute('required', 'required');
+            } else {
+                handoverSection.style.display = 'none';
+                modalReasonInput.removeAttribute('required');
+                modalReasonInput.classList.remove('is-invalid');
+            }
+        }
+
+        modalLeadSelect.addEventListener('change', checkHandoverRequirement);
+
+        // Open Assign Modal via button
+        document.querySelectorAll('.btn-assign-action').forEach(btn => {
+            btn.addEventListener('click', async function () {
+                const reqId = this.getAttribute('data-req-id');
+                modalReqId.value = reqId;
+
+                try {
+                    const res = await fetch(`/phan-cong-recruiter/detail/${reqId}`);
+                    const json = await res.json();
+                    if (!json.success) {
+                        alert(json.message || 'Không thể lấy thông tin vị trí.');
+                        return;
+                    }
+
+                    const data = json.data;
+                    modalReqCode.textContent = data.code;
+                    modalReqTitle.textContent = data.jobTitle;
+                    modalReqDepartment.textContent = `Phòng ban: ${data.departmentName} - Cấp bậc: ${data.jobLevel || 'Middle'}`;
+                    modalReqCountInfo.textContent = `${data.quantity} chỉ tiêu / ${data.applicantCount} ứng viên`;
+
+                    modalCurrentLeadId.value = data.leadRecruiterId || '';
+                    modalLeadSelect.value = data.leadRecruiterId || '';
+
+                    // Reset all supporting checkboxes
+                    const currentSupportingIds = data.supportingRecruiters ? data.supportingRecruiters.map(s => s.recruiterId) : [];
+                    supportingChecks.forEach(chk => {
+                        chk.checked = currentSupportingIds.includes(chk.value);
+                    });
+
+                    // Clear reason & notes
+                    modalReasonInput.value = '';
+                    document.getElementById('modalNotesInput').value = '';
+
+                    checkHandoverRequirement();
+                    assignModal.show();
+                } catch (err) {
+                    console.error(err);
+                    alert('Lỗi kết nối máy chủ.');
+                }
+            });
+        });
+
+        // Form validation on submit
+        assignForm.addEventListener('submit', function (e) {
+            const currentLead = modalCurrentLeadId.value;
+            const newLead = modalLeadSelect.value;
+
+            if (currentLead && newLead && currentLead !== newLead) {
+                if (!modalReasonInput.value.trim()) {
+                    e.preventDefault();
+                    modalReasonInput.classList.add('is-invalid');
+                    modalReasonInput.focus();
+                    return false;
+                }
+            }
+        });
+
+        // ==========================================
+        // HANDOVER HISTORY MODAL LOGIC
+        // ==========================================
+        const historyModalEl = document.getElementById('historyModal');
+        const historyModal = new bootstrap.Modal(historyModalEl);
+        const historySubtitle = document.getElementById('historyModalSubtitle');
+        const historyLoadingSpinner = document.getElementById('historyLoadingSpinner');
+        const historyTimelineContainer = document.getElementById('historyTimelineContainer');
+        const historyTimelineList = document.getElementById('historyTimelineList');
+        const historyEmptyState = document.getElementById('historyEmptyState');
+
+        document.querySelectorAll('.btn-history-action').forEach(btn => {
+            btn.addEventListener('click', async function () {
+                const reqId = this.getAttribute('data-req-id');
+                const reqTitle = this.getAttribute('data-req-title');
+
+                historySubtitle.textContent = `Vị trí: ${reqTitle}`;
+                historyLoadingSpinner.style.display = 'block';
+                historyTimelineContainer.style.display = 'none';
+                historyEmptyState.style.display = 'none';
+                historyTimelineList.innerHTML = '';
+
+                historyModal.show();
+
+                try {
+                    const res = await fetch(`/phan-cong-recruiter/lich-su/${reqId}`);
+                    const json = await res.json();
+
+                    historyLoadingSpinner.style.display = 'none';
+
+                    if (json.success && json.data && json.data.length > 0) {
+                        historyTimelineContainer.style.display = 'block';
+                        
+                        json.data.forEach(item => {
+                            const badgeIcon = item.handoverType === 'LEAD_HANDOVER' ? 'bi-star-fill' : 
+                                              (item.handoverType === 'INITIAL_ASSIGNMENT' ? 'bi-check-lg' : 'bi-people-fill');
+                            const badgeClass = item.handoverType === 'LEAD_HANDOVER' ? 'badge-lead' : 
+                                               (item.handoverType === 'INITIAL_ASSIGNMENT' ? 'badge-initial' : 'badge-support');
+
+                            const node = document.createElement('div');
+                            node.className = 'timeline-item';
+                            node.innerHTML = `
+                                <div class="timeline-badge ${badgeClass}">
+                                    <i class="bi ${badgeIcon}"></i>
+                                </div>
+                                <div class="card border-0 bg-light p-3 shadow-sm rounded-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
+                                        <div class="fw-bold text-dark small">
+                                            <span class="badge ${badgeClass === 'badge-lead' ? 'bg-warning-subtle text-warning-emphasis' : (badgeClass === 'badge-initial' ? 'bg-success-subtle text-success' : 'bg-primary-subtle text-primary')} border me-1">
+                                                ${item.handoverTypeDisplay}
+                                            </span>
+                                            ${item.fromRecruiterName ? `Từ: <strong>${item.fromRecruiterName}</strong> &rarr; ` : ''}
+                                            Đến: <strong>${item.toRecruiterName}</strong>
+                                        </div>
+                                        <div class="text-muted small" style="font-size: 0.75rem;">
+                                            <i class="bi bi-clock me-1"></i>${item.transferredAtDisplay}
+                                        </div>
+                                    </div>
+                                    <div class="text-muted small mb-1">
+                                        Thực hiện bởi: <strong>${item.transferredByName}</strong>
+                                    </div>
+                                    ${item.reason ? `<div class="mt-2 text-dark small bg-white p-2 rounded border">
+                                        <strong>Lý do:</strong> ${item.reason}
+                                    </div>` : ''}
+                                    ${item.notes ? `<div class="mt-1 text-secondary small fst-italic">
+                                        <strong>Ghi chú:</strong> ${item.notes}
+                                    </div>` : ''}
+                                </div>
+                            `;
+                            historyTimelineList.appendChild(node);
+                        });
+                    } else {
+                        historyEmptyState.style.display = 'block';
+                    }
+                } catch (err) {
+                    console.error(err);
+                    historyLoadingSpinner.style.display = 'none';
+                    historyEmptyState.style.display = 'block';
+                }
+            });
+        });
+    });
+</script>
+}

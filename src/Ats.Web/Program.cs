@@ -80,6 +80,7 @@ builder.Services.AddScoped<ICandidateStageService, CandidateStageService>();
 builder.Services.AddScoped<ICandidateTimelineService, CandidateTimelineService>();
 builder.Services.AddScoped<IJobPostingService, JobPostingService>();
 builder.Services.AddScoped<IDepartmentBudgetService, DepartmentBudgetService>();
+builder.Services.AddScoped<IRequisitionAssignmentService, RequisitionAssignmentService>();
 
 // Cấu hình Rate Limiting bảo vệ các endpoint nhạy cảm (OWASP A04 / A07)
 builder.Services.AddRateLimiter(options =>
@@ -558,6 +559,43 @@ using (var scope = app.Services.CreateScope())
             CREATE INDEX IF NOT EXISTS ix_candidate_interactions_candidate_id ON candidate_interactions(candidate_id);
             CREATE INDEX IF NOT EXISTS ix_candidate_interactions_application_id ON candidate_interactions(application_id);
             CREATE INDEX IF NOT EXISTS ix_candidate_interactions_interaction_date ON candidate_interactions(interaction_date);
+
+            -- Scrum #26: Phân công recruiter phụ trách yêu cầu tuyển dụng và lịch sử bàn giao
+            CREATE TABLE IF NOT EXISTS requisition_recruiters (
+                id UUID PRIMARY KEY,
+                requisition_id UUID NOT NULL REFERENCES job_requisitions(id) ON DELETE CASCADE,
+                recruiter_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+                assigned_by_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+                assigned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                note TEXT,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+            CREATE INDEX IF NOT EXISTS ix_requisition_recruiters_req_rec ON requisition_recruiters(requisition_id, recruiter_id);
+
+            CREATE TABLE IF NOT EXISTS requisition_handover_histories (
+                id UUID PRIMARY KEY,
+                requisition_id UUID NOT NULL REFERENCES job_requisitions(id) ON DELETE CASCADE,
+                from_recruiter_id UUID REFERENCES users(id) ON DELETE SET NULL,
+                to_recruiter_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+                handover_type VARCHAR(50) NOT NULL DEFAULT 'PRIMARY_TRANSFER',
+                reason TEXT NOT NULL DEFAULT '',
+                notes TEXT,
+                transferred_by_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+                transferred_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+            CREATE INDEX IF NOT EXISTS ix_requisition_handover_histories_req ON requisition_handover_histories(requisition_id, transferred_at DESC);
         ");
     }
     catch (Exception ex)
