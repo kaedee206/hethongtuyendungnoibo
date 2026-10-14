@@ -386,7 +386,10 @@
                 <div class="d-flex flex-column gap-2 justify-content-lg-end align-items-lg-end">
                     @if (canEditJob)
                     {
-                        <div class="d-flex gap-2 w-100">
+                        <div class="d-flex gap-2 w-100 flex-wrap">
+                            <a href="/kho-tiem-nang/goi-y/@job.Id" class="btn btn-outline-warning text-dark fw-bold w-100 shadow-sm d-flex align-items-center justify-content-center gap-1.5" style="border-radius: var(--radius-button); padding: 0.65rem 1rem;" title="Xem danh sách ứng viên phù hợp từ Kho tiềm năng (Scrum 45)">
+                                <i class="bi bi-stars text-warning"></i> Gợi ý từ Kho tiềm năng
+                            </a>
                             <button type="button" class="btn btn-warning text-dark fw-bold flex-grow-1 shadow-sm d-flex align-items-center justify-content-center gap-1.5" data-bs-toggle="modal" data-bs-target="#editJobPostingModal" style="border-radius: var(--radius-button); padding: 0.65rem 1rem;">
                                 <i class="bi bi-pencil-square"></i> Chỉnh sửa
                             </button>

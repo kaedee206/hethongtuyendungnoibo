@@ -22,6 +22,7 @@ public class WorkspaceController : Controller
     private readonly IWebHostEnvironment _env;
     private readonly IEmailService _emailService;
     private readonly IFileStorageService _fileStorageService;
+    private readonly ITalentPoolService _talentPoolService;
     private readonly ILogger<WorkspaceController> _logger;
     private readonly IApplicationTrackingService _trackingService;
     private readonly ICandidateReferralService _referralService;
@@ -35,6 +36,7 @@ public class WorkspaceController : Controller
         IWebHostEnvironment env,
         IEmailService emailService,
         IFileStorageService fileStorageService,
+        ITalentPoolService talentPoolService,
         ILogger<WorkspaceController> logger,
         IApplicationTrackingService trackingService,
         ICandidateReferralService referralService,
@@ -46,6 +48,7 @@ public class WorkspaceController : Controller
         _env = env;
         _emailService = emailService;
         _fileStorageService = fileStorageService;
+        _talentPoolService = talentPoolService;
         _logger = logger;
         _trackingService = trackingService;
         _referralService = referralService;
@@ -59,7 +62,7 @@ public class WorkspaceController : Controller
         IWebHostEnvironment env,
         IEmailService emailService,
         ILogger<WorkspaceController> logger)
-        : this(dbContext, env, emailService, null!, logger, null!, null!, null!, null!, null!)
+        : this(dbContext, env, emailService, null!, null!, logger, null!, null!, null!, null!, null!)
     {
     }
 
@@ -1430,7 +1433,12 @@ public class WorkspaceController : Controller
         [FromForm] Guid? rejectionReasonId,
         [FromForm] string? reason,
         [FromForm] string? feedbackNote,
-        [FromForm] bool sendEmail = true)
+        [FromForm] bool sendEmail = true,
+        [FromForm] bool addToTalentPool = false,
+        [FromForm] string? talentPoolReason = null,
+        [FromForm] string? targetJobTitle = null,
+        [FromForm] string? talentPoolSkills = null,
+        [FromForm] int? talentPoolRating = null)
     {
         try
         {
@@ -1464,6 +1472,7 @@ public class WorkspaceController : Controller
             }
 
             var prev = application.CurrentStageId;
+            var prevStageName = application.CurrentStage?.Name ?? "Vòng phỏng vấn cuối";
             application.Status = ApplicationStatus.REJECTED;
             application.UpdatedAt = DateTimeOffset.UtcNow;
 
@@ -1526,7 +1535,42 @@ public class WorkspaceController : Controller
 
             await _dbContext.SaveChangesAsync();
 
+            // Scrum 45: Đưa ứng viên trượt vòng cuối vào Kho tiềm năng kèm lý do
+            string talentPoolMessage = "";
+            if (addToTalentPool)
+            {
+                try
+                {
+                    var finalPoolReason = !string.IsNullOrWhiteSpace(talentPoolReason)
+                        ? talentPoolReason.Trim()
+                        : (!string.IsNullOrWhiteSpace(cleanFeedback) ? cleanFeedback : rejectReasonTitle);
+
+                    var finalTargetTitle = !string.IsNullOrWhiteSpace(targetJobTitle)
+                        ? targetJobTitle.Trim()
+                        : (application.JobPosting?.Title ?? "Chuyên viên");
+
+                    await _talentPoolService.AddCandidateToPoolAsync(new Ats.Web.Models.ViewModels.TalentPool.AddTalentPoolCandidateInputModel
+                    {
+                        CandidateId = application.CandidateId,
+                        SourceApplicationId = application.Id,
+                        LastStageReached = prevStageName,
+                        Reason = finalPoolReason,
+                        TargetJobTitle = finalTargetTitle,
+                        Skills = talentPoolSkills,
+                        Rating = talentPoolRating ?? 4,
+                        Notes = $"Tự động lưu từ kết quả phỏng vấn vị trí {application.JobPosting?.Title}. Lý do dừng: {rejectReasonTitle}"
+                    }, effectiveUserId);
+
+                    talentPoolMessage = " và đã lưu vào Kho ứng viên tiềm năng";
+                }
+                catch (Exception poolEx)
+                {
+                    _logger.LogWarning("Không thể lưu ứng viên vào kho tiềm năng: {Msg}", poolEx.Message);
+                }
+            }
+
             var candFullName = $"{application.Candidate.FirstName} {application.Candidate.LastName}".Trim();
+            var jobPostingTitle = application.JobPosting?.Title ?? "Vị trí tuyển dụng";
             if (sendEmail)
             {
                 _ = Task.Run(async () =>
@@ -1536,7 +1580,7 @@ public class WorkspaceController : Controller
                         await _emailService.SendRejectionLetterAsync(
                             application.Candidate.Email,
                             candFullName,
-                            application.JobPosting.Title,
+                            jobPostingTitle,
                             rejectReasonTitle);
                     }
                     catch (Exception ex)
@@ -1549,7 +1593,7 @@ public class WorkspaceController : Controller
             return Json(new
             {
                 success = true,
-                message = $"Đã cập nhật trạng thái Từ chối cho hồ sơ ứng viên {candFullName}{(sendEmail ? " và gửi email thư cảm ơn lịch sự." : ".")}"
+                message = $"Đã cập nhật trạng thái Từ chối cho hồ sơ ứng viên {candFullName}{talentPoolMessage}{(sendEmail ? " và gửi email thư cảm ơn lịch sự." : ".")}"
             });
         }
         catch (Exception ex)

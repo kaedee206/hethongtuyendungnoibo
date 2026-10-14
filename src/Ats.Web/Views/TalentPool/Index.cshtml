@@ -1,0 +1,766 @@
+@using Ats.Web.Models.ViewModels.TalentPool
+@model TalentPoolListViewModel
+@{
+    ViewData["Title"] = "Quản lý Kho Ứng viên Tiềm năng — NoveraTech";
+    Layout = "_Layout";
+}
+
+<style>
+    :root {
+        --color-canvas: #F8FAFC;
+        --color-card: #FFFFFF;
+        --color-border: #E2E8F0;
+        --color-text-main: #0F172A;
+        --color-text-muted: #64748B;
+        --color-accent: #059669;
+        --color-accent-subtle: #ECFDF5;
+        --radius-button: 8px;
+        --radius-card: 12px;
+        --radius-badge: 6px;
+    }
+
+    .talent-stat-card {
+        background: #FFFFFF;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-card);
+        padding: 1.25rem 1.5rem;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        transition: transform .2s ease, box-shadow .2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .talent-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    }
+    .talent-stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+    }
+    .stat-total::before { background-color: #3B82F6; }
+    .stat-available::before { background-color: #10B981; }
+    .stat-contacted::before { background-color: #F59E0B; }
+    .stat-reapplied::before { background-color: #8B5CF6; }
+
+    .talent-card {
+        background: #FFFFFF;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-card);
+        transition: all .2s ease;
+    }
+    .talent-card:hover {
+        border-color: #CBD5E1;
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+    }
+
+    .skill-tag {
+        background: #F1F5F9;
+        color: #334155;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 0.15rem 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: inline-block;
+    }
+
+    .status-badge-available {
+        background: #ECFDF5;
+        color: #047857;
+        border: 1px solid #A7F3D0;
+    }
+    .status-badge-contacted {
+        background: #FFFBEB;
+        color: #B45309;
+        border: 1px solid #FDE68A;
+    }
+    .status-badge-reapplied {
+        background: #EEF2FF;
+        color: #4338CA;
+        border: 1px solid #C7D2FE;
+    }
+    .status-badge-hired {
+        background: #F0FDF4;
+        color: #15803D;
+        border: 1px solid #86EFAC;
+    }
+    .status-badge-archived {
+        background: #F1F5F9;
+        color: #475569;
+        border: 1px solid #CBD5E1;
+    }
+</style>
+
+<div class="container-fluid px-3 px-lg-4 py-3">
+
+    <!-- ── Breadcrumb & Top Navigation ── -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
+                <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none text-muted"><i class="bi bi-house-door me-1"></i>Bàn làm việc</a></li>
+                <li class="breadcrumb-item"><a href="/ung-vien" class="text-decoration-none text-muted">Hồ sơ ứng viên</a></li>
+                <li class="breadcrumb-item active fw-semibold text-dark" aria-current="page">Kho ứng viên tiềm năng</li>
+            </ol>
+        </nav>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <!-- Nút Chọn vị trí để xem Gợi ý nhanh -->
+            @if (Model.OpenJobs.Any())
+            {
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-warning text-dark fw-semibold rounded-2 dropdown-toggle shadow-sm d-flex align-items-center gap-1.5" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-stars text-warning"></i> Gợi ý theo vị trí tuyển dụng (@Model.OpenJobs.Count)
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border mt-1" style="border-radius: 8px; min-width: 280px; max-height: 360px; overflow-y: auto;">
+                        <li class="dropdown-header small text-muted">Chọn vị trí đang mở để xem gợi ý:</li>
+                        @foreach (var j in Model.OpenJobs)
+                        {
+                            <li>
+                                <a class="dropdown-item py-2 small d-flex flex-column" href="/kho-tiem-nang/goi-y/@j.Id">
+                                    <span class="fw-semibold text-dark text-truncate">@j.Title</span>
+                                    <span class="text-muted text-xs"><i class="bi bi-building me-1"></i>@j.Department • @j.Code</span>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <a href="/ung-vien" class="btn btn-sm btn-outline-secondary rounded-2">
+                <i class="bi bi-people me-1"></i>Hồ sơ hợp nhất
+            </a>
+            <button type="button" class="btn btn-sm btn-success rounded-2 text-white fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#addNewPoolModal">
+                <i class="bi bi-plus-lg me-1"></i>Thêm ứng viên vào kho
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Header Banner (Scrum 45) ── -->
+    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); border-radius: 12px; color: white;">
+        <div class="card-body p-4">
+            <div class="row align-items-center g-3">
+                <div class="col-12 col-lg-8">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge rounded-2 px-2.5 py-1 text-xs fw-semibold" style="background: rgba(245, 158, 11, 0.2); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.4);">
+                            <i class="bi bi-award-fill me-1"></i>Scrum - Số 45
+                        </span>
+                        <span class="badge rounded-2 bg-secondary text-white text-xs px-2 py-1">Trưởng phòng Nhân sự & Tuyển dụng</span>
+                    </div>
+                    <h2 class="h4 fw-bold text-white mb-2" style="letter-spacing: -0.3px;">
+                        Kho Ứng Viên Tiềm Năng (Talent Pool)
+                    </h2>
+                    <p class="text-white-50 mb-0 small" style="max-width: 680px; line-height: 1.6;">
+                        Tập hợp những ứng viên chất lượng cao từng lọt vào vòng phỏng vấn chuyên môn hoặc vòng Offer cuối cùng.
+                        Tìm kiếm theo chức danh quan tâm & kỹ năng để tái tiếp cận nhanh chóng, tiết kiệm chi phí tìm kiếm ứng viên mới từ đầu.
+                    </p>
+                </div>
+                <div class="col-12 col-lg-4 text-lg-end">
+                    <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1);">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="text-white-50 small">Khả năng tái dụng</span>
+                            <span class="text-success fw-bold small"><i class="bi bi-check2-circle me-1"></i>Sẵn sàng 100%</span>
+                        </div>
+                        <div class="text-start text-xs text-white-50">
+                            Hệ thống tự động chấm điểm và gợi ý khi phòng ban đăng ký mở vị trí tuyển dụng mới.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Flash Messages ── -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-2 py-2.5 px-3 mb-3 border-0 shadow-sm" style="background:#ECFDF5; color:#065F46; border-left: 4px solid #059669 !important;" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                <span class="small fw-semibold">@TempData["SuccessMessage"]</span>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-2 py-2.5 px-3 mb-3 border-0 shadow-sm" style="background:#FEF2F2; color:#991B1B; border-left: 4px solid #DC2626 !important;" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                <span class="small fw-semibold">@TempData["ErrorMessage"]</span>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- ── KPI Metric Cards ── -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="talent-stat-card stat-total">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-medium mb-1">Tổng trong kho</div>
+                        <div class="h3 fw-bold text-dark mb-0 font-monospace">@Model.TotalInPool</div>
+                    </div>
+                    <div class="p-2.5 rounded-2" style="background:#EFF6FF; color:#2563EB;">
+                        <i class="bi bi-collection fs-4"></i>
+                    </div>
+                </div>
+                <div class="text-muted text-xs mt-2">Ứng viên đã đánh giá &amp; lưu trữ</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="talent-stat-card stat-available">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-medium mb-1">Sẵn sàng tiếp cận</div>
+                        <div class="h3 fw-bold text-success mb-0 font-monospace">@Model.AvailableCount</div>
+                    </div>
+                    <div class="p-2.5 rounded-2" style="background:#ECFDF5; color:#059669;">
+                        <i class="bi bi-person-check fs-4"></i>
+                    </div>
+                </div>
+                <div class="text-muted text-xs mt-2">Chưa liên hệ hoặc có thể mời ngay</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="talent-stat-card stat-contacted">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-medium mb-1">Đã liên hệ</div>
+                        <div class="h3 fw-bold text-warning mb-0 font-monospace">@Model.ContactedCount</div>
+                    </div>
+                    <div class="p-2.5 rounded-2" style="background:#FFFBEB; color:#D97706;">
+                        <i class="bi bi-telephone-outbound fs-4"></i>
+                    </div>
+                </div>
+                <div class="text-muted text-xs mt-2">Đang trao đổi hoặc chờ phản hồi</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="talent-stat-card stat-reapplied">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-medium mb-1">Đã ứng tuyển lại / Đạt</div>
+                        <div class="h3 fw-bold text-purple mb-0 font-monospace" style="color:#7C3AED;">@Model.ReappliedCount</div>
+                    </div>
+                    <div class="p-2.5 rounded-2" style="background:#F5F3FF; color:#7C3AED;">
+                        <i class="bi bi-arrow-repeat fs-4"></i>
+                    </div>
+                </div>
+                <div class="text-muted text-xs mt-2">Đã mở hồ sơ tuyển dụng mới</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Filter & Search Toolbar (Scrum 45: Tìm kiếm theo Chức danh & Kỹ năng) ── -->
+    <div class="card border-0 shadow-sm mb-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+        <div class="card-body p-3">
+            <form method="get" action="/kho-tiem-nang" class="row g-2 align-items-center">
+                <!-- Search Keyword -->
+                <div class="col-12 col-md-3">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 8px 0 0 8px;">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" name="search" class="form-control border-start-0" placeholder="Tên, email, số điện thoại..." value="@Model.CurrentSearch" style="border-radius: 0 8px 8px 0;" />
+                    </div>
+                </div>
+
+                <!-- Chức danh quan tâm (Target Job Title) -->
+                <div class="col-12 col-md-3">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 8px 0 0 8px;">
+                            <i class="bi bi-briefcase"></i>
+                        </span>
+                        <input type="text" name="targetJobTitle" class="form-control border-start-0" list="jobTitleDatalist" placeholder="Chức danh quan tâm..." value="@Model.CurrentTargetJobTitle" style="border-radius: 0 8px 8px 0;" />
+                        <datalist id="jobTitleDatalist">
+                            @foreach (var t in Model.AvailableJobTitles)
+                            {
+                                <option value="@t"></option>
+                            }
+                        </datalist>
+                    </div>
+                </div>
+
+                <!-- Kỹ năng (Skills) -->
+                <div class="col-12 col-md-3">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 8px 0 0 8px;">
+                            <i class="bi bi-code-slash"></i>
+                        </span>
+                        <input type="text" name="skills" class="form-control border-start-0" placeholder="Kỹ năng (C#, React, SQL...)" value="@Model.CurrentSkills" style="border-radius: 0 8px 8px 0;" />
+                    </div>
+                </div>
+
+                <!-- Trạng thái kho -->
+                <div class="col-6 col-md-2">
+                    <select name="status" class="form-select form-select-sm rounded-2">
+                        <option value="">-- Tất cả trạng thái --</option>
+                        <option value="AVAILABLE" selected="@(Model.CurrentStatus == "AVAILABLE")">Sẵn sàng (Available)</option>
+                        <option value="CONTACTED" selected="@(Model.CurrentStatus == "CONTACTED")">Đã liên hệ</option>
+                        <option value="REAPPLIED" selected="@(Model.CurrentStatus == "REAPPLIED")">Đã ứng tuyển lại</option>
+                        <option value="HIRED" selected="@(Model.CurrentStatus == "HIRED")">Đã tuyển dụng</option>
+                        <option value="ARCHIVED" selected="@(Model.CurrentStatus == "ARCHIVED")">Lưu trữ</option>
+                    </select>
+                </div>
+
+                <!-- Nút Submit & Reset -->
+                <div class="col-6 col-md-1 d-flex gap-1">
+                    <button type="submit" class="btn btn-sm btn-primary rounded-2 flex-grow-1" title="Lọc dữ liệu">
+                        <i class="bi bi-funnel"></i>
+                    </button>
+                    <a href="/kho-tiem-nang" class="btn btn-sm btn-light border rounded-2" title="Xóa bộ lọc">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            </form>
+
+            @if (Model.AvailableSkills.Any())
+            {
+                <div class="d-flex flex-wrap align-items-center gap-1.5 mt-2.5 pt-2" style="border-top: 1px dashed #E2E8F0; font-size: 0.78rem;">
+                    <span class="text-muted me-1"><i class="bi bi-lightning-charge me-0.5 text-warning"></i>Kỹ năng phổ biến trong kho:</span>
+                    @foreach (var s in Model.AvailableSkills.Take(10))
+                    {
+                        <a href="/kho-tiem-nang?skills=@Uri.EscapeDataString(s)" class="badge text-decoration-none skill-tag hover-bg-light">
+                            @s
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ── Candidate Cards Grid / Empty State ── -->
+    @if (!Model.Items.Any())
+    {
+        <div class="card border-0 shadow-sm bg-white text-center py-5" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+            <div class="py-4">
+                <div class="d-inline-flex p-3 rounded-circle mb-3" style="background:#FEF3C7; color:#D97706;">
+                    <i class="bi bi-person-x fs-1"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-1">Chưa có ứng viên nào trong Kho tiềm năng phù hợp bộ lọc</h5>
+                <p class="text-muted small mb-3" style="max-width: 460px; margin: 0 auto;">
+                    Khi ứng viên bị loại ở vòng cuối (Phỏng vấn chuyên môn / Offer), hãy tích chọn <strong>"Đưa vào Kho tiềm năng"</strong> hoặc bấm nút thêm mới để quản lý tại đây.
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="/kho-tiem-nang" class="btn btn-sm btn-outline-secondary rounded-2">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Đặt lại bộ lọc
+                    </a>
+                    <button type="button" class="btn btn-sm btn-success rounded-2 text-white" data-bs-toggle="modal" data-bs-target="#addNewPoolModal">
+                        <i class="bi bi-plus-lg me-1"></i>Thêm ứng viên ngay
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var c in Model.Items)
+            {
+                <div class="col-12 col-lg-6 col-xl-4">
+                    <div class="talent-card h-100 p-3.5 d-flex flex-column justify-content-between position-relative">
+                        <!-- Top Card: Header & Status Badge -->
+                        <div>
+                            <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                                         style="width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #1E293B 0%, #334155 100%); font-size: 1.1rem;">
+                                        @c.CandidateInitials
+                                    </div>
+                                    <div>
+                                        <a href="/ung-vien/@c.CandidateId" class="fw-bold text-dark text-decoration-none hover-primary mb-0 d-block" style="font-size: 0.95rem;">
+                                            @c.CandidateFullName
+                                        </a>
+                                        <div class="text-muted small" style="font-size: 0.76rem;">
+                                            <i class="bi bi-clock-history me-1"></i>Lưu: @c.FormattedAddedAt
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Status Badge -->
+                                @{
+                                    var badgeClass = c.Status switch
+                                    {
+                                        "AVAILABLE" => "status-badge-available",
+                                        "CONTACTED" => "status-badge-contacted",
+                                        "REAPPLIED" => "status-badge-reapplied",
+                                        "HIRED" => "status-badge-hired",
+                                        _ => "status-badge-archived"
+                                    };
+                                }
+                                <span class="badge rounded-2 px-2 py-1 text-xs fw-semibold @badgeClass">
+                                    @c.StatusDisplay
+                                </span>
+                            </div>
+
+                            <!-- Target Job Title & Rating -->
+                            <div class="p-2 mb-2.5 rounded-2" style="background: #F8FAFC; border: 1px solid #F1F5F9;">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-1.5 text-truncate">
+                                        <i class="bi bi-briefcase-fill text-primary" style="font-size: 0.8rem;"></i>
+                                        <span class="fw-bold text-dark small text-truncate">@c.TargetJobTitle</span>
+                                    </div>
+                                    <div class="text-warning small text-nowrap" title="Đánh giá tiềm năng: @(c.Rating ?? 0)/5 sao">
+                                        @c.RatingStars
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(c.LastStageReached))
+                                {
+                                    <div class="text-muted mt-1" style="font-size: 0.75rem;">
+                                        <i class="bi bi-signpost-split me-1 text-secondary"></i>Đạt tới: 
+                                        <strong class="text-dark">@c.LastStageReached</strong>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Scrum 45: Lý do đưa vào kho tiềm năng (Bắt buộc) -->
+                            <div class="mb-2.5 p-2 rounded-2" style="background:#FFFBEB; border: 1px solid #FEF3C7;">
+                                <div class="d-flex align-items-start gap-1.5">
+                                    <i class="bi bi-quote text-warning fs-6 lh-1"></i>
+                                    <div class="small text-dark" style="font-size: 0.8rem; line-height: 1.45;">
+                                        <strong class="text-secondary" style="font-size: 0.74rem;">LÝ DO LƯU KHO:</strong><br />
+                                        @c.Reason
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Skills Tags -->
+                            @if (c.SkillList.Any())
+                            {
+                                <div class="mb-2.5">
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @foreach (var sk in c.SkillList.Take(5))
+                                        {
+                                            <span class="skill-tag">@sk</span>
+                                        }
+                                        @if (c.SkillList.Count > 5)
+                                        {
+                                            <span class="skill-tag text-muted">+@(c.SkillList.Count - 5)</span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Contact info snippet -->
+                            <div class="small text-muted mb-2 font-monospace" style="font-size: 0.76rem;">
+                                <div class="text-truncate"><i class="bi bi-envelope me-1"></i>@c.CandidateEmail</div>
+                                @if (!string.IsNullOrWhiteSpace(c.CandidatePhone))
+                                {
+                                    <div><i class="bi bi-telephone me-1"></i>@c.CandidatePhone</div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Bottom Card: Actions Footer -->
+                        <div class="pt-2.5 mt-2 d-flex align-items-center justify-content-between gap-1" style="border-top: 1px solid #F1F5F9;">
+                            <div class="d-flex align-items-center gap-1">
+                                <a href="/ung-vien/@c.CandidateId" class="btn btn-sm btn-outline-secondary rounded-2 py-1 px-2 text-xs" title="Xem chi tiết hồ sơ gốc">
+                                    <i class="bi bi-person-lines-fill me-1"></i>Hồ sơ
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-2 py-1 px-2 text-xs" 
+                                        onclick="openEditPoolModal('@c.Id', '@c.TargetJobTitle', '@(c.Rating ?? 4)', '@c.Status', '@c.Skills', '@(c.Reason?.Replace("'", "\\'"))', '@(c.Notes?.Replace("'", "\\'"))')"
+                                        title="Chỉnh sửa thông tin kho">
+                                    <i class="bi bi-pencil me-1"></i>Sửa
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-2 py-1 px-2 text-xs" 
+                                        onclick="openRemovePoolModal('@c.Id', '@c.CandidateFullName')"
+                                        title="Gỡ khỏi kho">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+
+                            <!-- 1-Click Mời ứng tuyển vị trí mới -->
+                            <button type="button" class="btn btn-sm btn-success rounded-2 py-1 px-2.5 text-xs text-white fw-semibold shadow-sm"
+                                    onclick="openInvitePoolModal('@c.Id', '@c.CandidateFullName', '@c.TargetJobTitle')">
+                                <i class="bi bi-send-fill me-1"></i>Mời ứng tuyển
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- MODAL 1: THÊM ỨNG VIÊN THỦ CÔNG VÀO KHO TIỀM NĂNG             -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="addNewPoolModal" tabindex="-1" aria-labelledby="addNewPoolModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-0 pb-0">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 rounded-2" style="background:#ECFDF5; color:#059669;">
+                        <i class="bi bi-plus-circle fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="addNewPoolModalLabel" style="font-size: 1.05rem;">
+                            Thêm Ứng Viên Vào Kho Tiềm Năng
+                        </h5>
+                        <small class="text-muted" style="font-size: 0.78rem;">Scrum 45: Lưu giữ ứng viên giỏi từng trượt vòng cuối</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/kho-tiem-nang/them-ung-vien" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body py-3">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">ID hoặc Email Ứng viên trong hệ thống <span class="text-danger">*</span></label>
+                        <input type="text" name="CandidateSearch" id="poolAddCandidateSearch" class="form-control form-control-sm rounded-2" placeholder="Nhập ID ứng viên (GUID)..." required onchange="handleCandidateIdInput(this.value)" />
+                        <input type="hidden" name="CandidateId" id="poolAddCandidateId" />
+                        <small class="text-muted text-xs">Mở trang "Hồ sơ ứng viên hợp nhất" để sao chép mã ID ứng viên cần thêm.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Lý do đưa vào kho tiềm năng <span class="text-danger">*</span></label>
+                        <textarea name="Reason" class="form-control form-control-sm rounded-2" rows="2" placeholder="Vd: Ứng viên thể hiện xuất sắc ở vòng phỏng vấn chuyên môn, trượt do chọn ứng viên có kinh nghiệm ngành phù hợp hơn ở thời điểm đó" required></textarea>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold text-dark">Chức danh phù hợp tiếp cận <span class="text-danger">*</span></label>
+                            <input type="text" name="TargetJobTitle" class="form-control form-control-sm rounded-2" placeholder="Vd: Backend Developer, Solution Architect" required />
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold text-dark">Đánh giá tiềm năng</label>
+                            <select name="Rating" class="form-select form-select-sm rounded-2">
+                                <option value="5">⭐⭐⭐⭐⭐ 5/5</option>
+                                <option value="4" selected>⭐⭐⭐⭐ 4/5</option>
+                                <option value="3">⭐⭐⭐ 3/5</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Vòng tuyển dụng đã đạt đến</label>
+                        <select name="LastStageReached" class="form-select form-select-sm rounded-2">
+                            <option value="Đề nghị tuyển dụng (Offer)" selected>Vòng 5: Đề nghị tuyển dụng (Offer)</option>
+                            <option value="Phỏng vấn chuyên môn">Vòng 4: Phỏng vấn chuyên môn</option>
+                            <option value="Phỏng vấn sơ loại">Vòng 3: Phỏng vấn sơ loại</option>
+                            <option value="Sàng lọc CV">Vòng 2: Sàng lọc CV</option>
+                        </select>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold text-dark">Kỹ năng nổi bật (cách nhau dấu phẩy)</label>
+                            <input type="text" name="Skills" class="form-control form-control-sm rounded-2" placeholder="Vd: C#, .NET, Docker, React, PostgreSQL" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-dark">Năm kinh nghiệm</label>
+                            <input type="number" name="ExperienceYears" class="form-control form-control-sm rounded-2" min="0" max="40" placeholder="Vd: 3" />
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold text-dark">Ghi chú chuyên môn</label>
+                        <textarea name="Notes" class="form-control form-control-sm rounded-2" rows="2" placeholder="Ghi chú thêm về kỳ vọng lương, văn hóa..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-sm btn-light rounded-2 px-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-sm btn-success rounded-2 px-4 text-white fw-semibold">
+                        <i class="bi bi-check-circle me-1"></i>Lưu vào Kho
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- MODAL 2: MỜI ỨNG VIÊN VÀO VỊ TRÍ TUYỂN DỤNG MỚI (1-CLICK)      -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="inviteCandidateModal" tabindex="-1" aria-labelledby="inviteCandidateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-0 pb-0">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 rounded-2" style="background:#ECFDF5; color:#059669;">
+                        <i class="bi bi-send-check fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="inviteCandidateModalLabel" style="font-size: 1.05rem;">
+                            Mời Ứng Tuyển Vào Vị Trí Mới
+                        </h5>
+                        <small class="text-muted" style="font-size: 0.78rem;">Tận dụng ứng viên tiềm năng thay vì tuyển mới từ đầu</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/kho-tiem-nang/moi-ung-tuyen" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="TalentPoolId" id="inviteTalentPoolId" />
+
+                <div class="modal-body py-3">
+                    <div class="p-2.5 mb-3 rounded-2" style="background:#F8FAFC; border:1px solid #E2E8F0;">
+                        <div class="fw-bold text-dark small" id="inviteCandidateNameText">-</div>
+                        <div class="text-muted small" style="font-size: 0.78rem;" id="inviteCandidateTargetTitleText">-</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Chọn Vị trí tuyển dụng đang mở <span class="text-danger">*</span></label>
+                        <select name="JobPostingId" class="form-select form-select-sm rounded-2" required>
+                            <option value="">-- Chọn tin tuyển dụng --</option>
+                            @foreach (var j in Model.OpenJobs)
+                            {
+                                <option value="@j.Id">@j.Title (@j.Department - @j.Code)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Ghi chú liên hệ / tiếp cận</label>
+                        <textarea name="Note" class="form-control form-control-sm rounded-2" rows="3" placeholder="Vd: Đã gọi điện trao đổi, ứng viên rất hào hứng và đồng ý tham gia ứng tuyển lại vị trí này"></textarea>
+                    </div>
+
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" name="SendEmail" value="true" id="inviteSendEmail" checked>
+                        <label class="form-check-label small text-dark fw-medium" for="inviteSendEmail">
+                            Gửi email thông báo mời tham gia tuyển dụng vị trí mới
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-sm btn-light rounded-2 px-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-sm btn-success rounded-2 px-4 text-white fw-semibold">
+                        <i class="bi bi-send-fill me-1"></i>Xác nhận & Mời
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- MODAL 3: CẬP NHẬT THÔNG TIN TRONG KHO TIỀM NĂNG                -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="editPoolModal" tabindex="-1" aria-labelledby="editPoolModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="editPoolModalLabel" style="font-size: 1.05rem;">
+                    <i class="bi bi-pencil-square text-primary me-2"></i>Cập nhật thông tin ứng viên trong kho
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/kho-tiem-nang/cap-nhat" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Id" id="editPoolId" />
+
+                <div class="modal-body py-3">
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold text-dark">Chức danh quan tâm <span class="text-danger">*</span></label>
+                            <input type="text" name="TargetJobTitle" id="editTargetJobTitle" class="form-control form-control-sm rounded-2" required />
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold text-dark">Trạng thái kho</label>
+                            <select name="Status" id="editStatus" class="form-select form-select-sm rounded-2">
+                                <option value="AVAILABLE">Sẵn sàng (Available)</option>
+                                <option value="CONTACTED">Đã liên hệ</option>
+                                <option value="REAPPLIED">Đã ứng tuyển lại</option>
+                                <option value="HIRED">Đã tuyển dụng</option>
+                                <option value="ARCHIVED">Lưu trữ</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold text-dark">Kỹ năng</label>
+                            <input type="text" name="Skills" id="editSkills" class="form-control form-control-sm rounded-2" />
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold text-dark">Đánh giá tiềm năng</label>
+                            <select name="Rating" id="editRating" class="form-select form-select-sm rounded-2">
+                                <option value="5">⭐⭐⭐⭐⭐ 5/5</option>
+                                <option value="4">⭐⭐⭐⭐ 4/5</option>
+                                <option value="3">⭐⭐⭐ 3/5</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Lý do đưa vào kho <span class="text-danger">*</span></label>
+                        <textarea name="Reason" id="editReason" class="form-control form-control-sm rounded-2" rows="2" required></textarea>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold text-dark">Ghi chú bổ sung</label>
+                        <textarea name="Notes" id="editNotes" class="form-control form-control-sm rounded-2" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-sm btn-light rounded-2 px-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-sm btn-primary rounded-2 px-4 text-white fw-semibold">
+                        Lưu thay đổi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- MODAL 4: XÁC NHẬN GỠ KHỎI KHO TIỀM NĂNG                        -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="removePoolModal" tabindex="-1" aria-labelledby="removePoolModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-body p-4 text-center">
+                <div class="p-3 rounded-circle d-inline-flex mb-3" style="background:#FEF2F2; color:#DC2626;">
+                    <i class="bi bi-exclamation-triangle fs-3"></i>
+                </div>
+                <h6 class="fw-bold text-dark mb-1">Gỡ khỏi Kho tiềm năng?</h6>
+                <p class="text-muted small mb-3" id="removePoolConfirmText">Bạn có chắc chắn muốn gỡ ứng viên này khỏi kho tiềm năng?</p>
+                <form action="/kho-tiem-nang/xoa" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Id" id="removePoolId" />
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-sm btn-light rounded-2 px-3" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-sm btn-danger rounded-2 px-3 text-white fw-semibold">Xác nhận gỡ</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function handleCandidateIdInput(val) {
+        document.getElementById('poolAddCandidateId').value = val.trim();
+    }
+
+    function openInvitePoolModal(talentPoolId, candidateName, targetTitle) {
+        document.getElementById('inviteTalentPoolId').value = talentPoolId;
+        document.getElementById('inviteCandidateNameText').textContent = 'Ứng viên: ' + candidateName;
+        document.getElementById('inviteCandidateTargetTitleText').textContent = 'Chức danh quan tâm: ' + targetTitle;
+        new bootstrap.Modal(document.getElementById('inviteCandidateModal')).show();
+    }
+
+    function openEditPoolModal(id, targetTitle, rating, status, skills, reason, notes) {
+        document.getElementById('editPoolId').value = id;
+        document.getElementById('editTargetJobTitle').value = targetTitle || '';
+        document.getElementById('editRating').value = rating || '4';
+        document.getElementById('editStatus').value = status || 'AVAILABLE';
+        document.getElementById('editSkills').value = skills || '';
+        document.getElementById('editReason').value = reason || '';
+        document.getElementById('editNotes').value = notes || '';
+        new bootstrap.Modal(document.getElementById('editPoolModal')).show();
+    }
+
+    function openRemovePoolModal(id, candidateName) {
+        document.getElementById('removePoolId').value = id;
+        document.getElementById('removePoolConfirmText').textContent = 'Bạn có chắc chắn muốn gỡ ứng viên ' + candidateName + ' khỏi kho tiềm năng?';
+        new bootstrap.Modal(document.getElementById('removePoolModal')).show();
+    }
+</script>
+}

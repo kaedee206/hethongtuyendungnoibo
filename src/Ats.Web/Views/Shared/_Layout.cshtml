@@ -85,6 +85,11 @@
                             @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
                             {
                                 <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" href="/kho-tiem-nang">
+                                        <i class="bi bi-stars me-1 text-warning"></i> Kho tiềm năng
+                                    </a>
+                                </li>
+                                <li class="nav-item">
                                     <a class="nav-link ats-nav-link" asp-controller="Jobs" asp-action="Create">
                                         <i class="bi bi-megaphone me-1"></i> + Đăng tin tuyển dụng
                                     </a>
@@ -249,6 +254,11 @@
                                         <li>
                                             <a class="dropdown-item py-2" href="/ung-vien">
                                                 <i class="bi bi-person-lines-fill me-2 text-success"></i> Hồ sơ ứng viên hợp nhất
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item py-2" href="/kho-tiem-nang">
+                                                <i class="bi bi-stars me-2 text-warning"></i> Kho ứng viên tiềm năng
                                             </a>
                                         </li>
                                     }

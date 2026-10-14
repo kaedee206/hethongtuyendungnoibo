@@ -36,4 +36,5 @@ public class Candidate : BaseEntity
     public ICollection<CandidateInteraction> Interactions { get; set; } = new List<CandidateInteraction>();
     public ICollection<CandidateTag> Tags { get; set; } = new List<CandidateTag>();
     public ICollection<CandidateNote> Notes { get; set; } = new List<CandidateNote>();
+    public ICollection<TalentPoolCandidate> TalentPoolEntries { get; set; } = new List<TalentPoolCandidate>();
 }
