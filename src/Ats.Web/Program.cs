@@ -73,6 +73,7 @@ builder.Services.AddScoped<ICandidateReferralService, CandidateReferralService>(
 builder.Services.AddScoped<ICandidateMergeService, CandidateMergeService>();
 builder.Services.AddScoped<ICandidateStageService, CandidateStageService>();
 builder.Services.AddScoped<ICandidateTimelineService, CandidateTimelineService>();
+builder.Services.AddScoped<IJobPostingService, JobPostingService>();
 
 // Cấu hình Rate Limiting bảo vệ các endpoint nhạy cảm (OWASP A04 / A07)
 builder.Services.AddRateLimiter(options =>
@@ -164,7 +165,7 @@ var authBuilder = builder.Services.AddAuthentication(options =>
     });
 
 // Kiểm tra xem đã cung cấp ClientId thực tế hay chưa
-bool hasValidGoogleConfig = !string.IsNullOrWhiteSpace(googleClientId) && 
+bool hasValidGoogleConfig = !string.IsNullOrWhiteSpace(googleClientId) &&
                             !string.IsNullOrWhiteSpace(googleClientSecret) &&
                             !googleClientId.Contains("YOUR_GOOGLE_CLIENT_ID", StringComparison.OrdinalIgnoreCase);
 
@@ -185,7 +186,7 @@ var oidcAuthority = Environment.GetEnvironmentVariable("OIDC_AUTHORITY")?.Trim()
 var oidcClientId = Environment.GetEnvironmentVariable("OIDC_CLIENT_ID")?.Trim();
 var oidcClientSecret = Environment.GetEnvironmentVariable("OIDC_CLIENT_SECRET")?.Trim();
 
-bool hasValidOidcConfig = !string.IsNullOrWhiteSpace(oidcAuthority) && 
+bool hasValidOidcConfig = !string.IsNullOrWhiteSpace(oidcAuthority) &&
                           !string.IsNullOrWhiteSpace(oidcClientId) &&
                           !oidcClientId.Contains("YOUR_OIDC_CLIENT_ID", StringComparison.OrdinalIgnoreCase);
 
@@ -280,8 +281,9 @@ using (var scope = app.Services.CreateScope())
     }
 
     // Ensure database columns and custom tables
-    try {
-        
+    try
+    {
+
         // Add missing columns manually
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE departments ADD COLUMN IF NOT EXISTS level integer NOT NULL DEFAULT 1;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE departments ADD COLUMN IF NOT EXISTS path text NOT NULL DEFAULT '';");
@@ -294,8 +296,10 @@ using (var scope = app.Services.CreateScope())
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS referrer_user_id uuid;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS referral_note text;");
         await dbContext.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS ix_applications_referrer_user_id ON applications (referrer_user_id);");
-        
-    } catch(Exception e) {
+
+    }
+    catch (Exception e)
+    {
         Console.WriteLine(e.Message);
     }
 
