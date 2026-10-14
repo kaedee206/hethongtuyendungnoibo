@@ -23,6 +23,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<Candidate> Candidates { get; set; }
     public DbSet<Resume> Resumes { get; set; }
+    public DbSet<CandidateTag> CandidateTags { get; set; }
+    public DbSet<CandidateNote> CandidateNotes { get; set; }
     public DbSet<PipelineStage> PipelineStages { get; set; }
     public DbSet<Application> Applications { get; set; }
     public DbSet<ApplicationStageHistory> ApplicationStageHistories { get; set; }
@@ -208,6 +210,30 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany()
             .HasForeignKey(c => c.ReferrerUserId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<CandidateTag>()
+            .HasOne(t => t.Candidate)
+            .WithMany(c => c.Tags)
+            .HasForeignKey(t => t.CandidateId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<CandidateTag>()
+            .HasOne(t => t.CreatedByUser)
+            .WithMany()
+            .HasForeignKey(t => t.CreatedByUserId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<CandidateNote>()
+            .HasOne(n => n.Candidate)
+            .WithMany(c => c.Notes)
+            .HasForeignKey(n => n.CandidateId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<CandidateNote>()
+            .HasOne(n => n.AuthorUser)
+            .WithMany()
+            .HasForeignKey(n => n.AuthorUserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<ApplicationStageHistory>()
             .HasOne(ash => ash.ChangedByUser)

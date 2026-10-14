@@ -1,0 +1,878 @@
+@model Ats.Web.Models.ViewModels.Candidates.CandidateDetailsViewModel
+@{
+    ViewData["Title"] = $"Hồ sơ hợp nhất - {Model.FullName}";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid px-3 px-lg-4 py-3">
+
+    <!-- ── Breadcrumb & Top Controls ── -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
+                <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none text-muted"><i class="bi bi-house-door me-1"></i>Bàn làm việc</a></li>
+                <li class="breadcrumb-item"><a href="/ung-vien" class="text-decoration-none text-muted">Hồ sơ ứng viên</a></li>
+                <li class="breadcrumb-item active fw-semibold text-dark" aria-current="page">@Model.FullName</li>
+            </ol>
+        </nav>
+        <div class="d-flex align-items-center gap-2">
+            <a href="/ung-vien" class="btn btn-sm btn-outline-secondary rounded-2">
+                <i class="bi bi-arrow-left me-1"></i>Danh sách ứng viên
+            </a>
+            <a href="/dashboard/ung-vien" class="btn btn-sm btn-outline-primary rounded-2">
+                <i class="bi bi-kanban me-1"></i>Pipeline tuyển dụng
+            </a>
+            @if (Model.ActiveResume != null)
+            {
+                <a href="@Url.Action("DownloadCv", "Candidates", new { resumeId = Model.ActiveResume.ResumeId })" 
+                   class="btn btn-sm btn-success rounded-2 text-white" target="_blank">
+                    <i class="bi bi-download me-1"></i>Tải CV gốc
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- ── Alert Messages (TempData) ── -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-2 py-2 px-3 mb-3 border-0 shadow-sm" style="background:#ECFDF5; color:#065F46; border-left: 4px solid #059669 !important;" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                <span class="small fw-semibold">@TempData["SuccessMessage"]</span>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-2 py-2 px-3 mb-3 border-0 shadow-sm" style="background:#FEF2F2; color:#991B1B; border-left: 4px solid #DC2626 !important;" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                <span class="small fw-semibold">@TempData["ErrorMessage"]</span>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- ── Dossier Header Card (Unified Profile Banner) ── -->
+    <div class="card border-0 shadow-sm mb-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px; overflow: hidden;">
+        <div class="card-body p-3 p-lg-4">
+            <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3">
+                <div class="d-flex align-items-start gap-3">
+                    <!-- Initials Avatar -->
+                    <div class="d-flex align-items-center justify-content-center text-white fw-bold shadow-sm flex-shrink-0"
+                         style="width: 64px; height: 64px; border-radius: 12px; background: linear-gradient(135deg, #0F172A 0%, #334155 100%); font-size: 1.5rem; letter-spacing: -0.5px;">
+                        @Model.InitialLetter
+                    </div>
+                    <div>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                            <h4 class="fw-bold text-dark mb-0" style="letter-spacing: -0.3px;">@Model.FullName</h4>
+                            @if (Model.IsBlacklisted)
+                            {
+                                <span class="badge rounded-2 bg-danger px-2.5 py-1.5" style="font-size: 0.75rem;">
+                                    <i class="bi bi-shield-x me-1"></i>BLACKLIST
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge rounded-2 px-2.5 py-1.5" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 0.75rem;">
+                                    <i class="bi bi-patch-check-fill me-1"></i>Hồ sơ hợp lệ
+                                </span>
+                            }
+                            <span class="badge rounded-2 bg-light text-muted border px-2 py-1" style="font-size: 0.72rem; font-family:'JetBrains Mono',monospace;">
+                                ID: @Model.CandidateId.ToString().Substring(0, 8)
+                            </span>
+                        </div>
+                        <div class="d-flex flex-wrap align-items-center gap-3 text-muted" style="font-size: 0.82rem;">
+                            <span>
+                                <i class="bi bi-briefcase me-1 text-secondary"></i>
+                                @(string.IsNullOrWhiteSpace(Model.CurrentTitle) ? "Ứng viên chuyên môn" : Model.CurrentTitle)
+                                @if (!string.IsNullOrWhiteSpace(Model.CurrentCompany))
+                                {
+                                    <span class="text-dark fw-medium"> tại @Model.CurrentCompany</span>
+                                }
+                            </span>
+                            <span>•</span>
+                            <span>
+                                <i class="bi bi-envelope me-1 text-secondary"></i>
+                                <a href="mailto:@Model.Email" class="text-decoration-none text-muted" style="font-family:'JetBrains Mono',monospace;">@Model.Email</a>
+                            </span>
+                            @if (!string.IsNullOrWhiteSpace(Model.Phone))
+                            {
+                                <span>•</span>
+                                <span>
+                                    <i class="bi bi-telephone me-1 text-secondary"></i>
+                                    <a href="tel:@Model.Phone" class="text-decoration-none text-muted">@Model.Phone</a>
+                                </span>
+                            }
+                            <span>•</span>
+                            <span>
+                                <i class="bi bi-clock-history me-1 text-secondary"></i>Gia nhập: @Model.FormattedCreatedAt
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Access & Role Authorization Badge -->
+                <div class="text-lg-end bg-light p-2.5 rounded-2 border w-100 w-lg-auto" style="border-color: #E2E8F0 !important;">
+                    <div class="d-flex align-items-center justify-content-lg-end gap-1.5 text-success fw-semibold" style="font-size: 0.8rem;">
+                        <i class="bi bi-shield-check fs-6"></i>
+                        <span>Quyền truy cập được xác thực</span>
+                    </div>
+                    <div class="small text-muted mt-0.5" style="font-size: 0.75rem;">
+                        @if (Model.IsAssignedRecruiter)
+                        {
+                            <span class="badge rounded-2 bg-primary text-white">Chuyên viên tuyển dụng phụ trách</span>
+                        }
+                        else if (Model.IsHiringManager)
+                        {
+                            <span class="badge rounded-2 bg-info text-dark">Quản lý chuyên môn (Hiring Manager)</span>
+                        }
+                        else
+                        {
+                            <span class="badge rounded-2 bg-secondary text-white">Quản trị viên / HR Manager</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Main Grid Layout: 2 Columns ── -->
+    <div class="row g-4">
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- CỘT TRÁI: CV PREVIEW & TOÀN BỘ LỊCH SỬ ỨNG TUYỂN CÁC VỊ TRÍ   -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <div class="col-12 col-xl-7">
+
+            <!-- 1. KHUNG XEM TRƯỚC CV TRỰC TIẾP NGAY TRONG TRANG (In-Page CV Preview) -->
+            <div class="card border-0 shadow-sm bg-white mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 12px; overflow: hidden;">
+                <div class="card-header bg-white py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2" style="border-bottom: 1px solid #F1F5F9;">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="p-1.5 rounded-2" style="background:#EFF6FF; color:#2563EB;">
+                            <i class="bi bi-file-earmark-person fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">Bản Xem Trước CV Ngay Trong Trang</h6>
+                            <small class="text-muted" style="font-size: 0.75rem;">Trực tiếp duyệt hồ sơ không cần tải về máy</small>
+                        </div>
+                    </div>
+
+                    <!-- CV Switcher & Tools -->
+                    <div class="d-flex align-items-center gap-2">
+                        @if (Model.Resumes.Count > 1)
+                        {
+                            <select id="cvSelectDropdown" class="form-select form-select-sm rounded-2 text-dark fw-medium" style="font-size: 0.78rem; width: auto;" onchange="switchCvPreview(this.value)">
+                                @foreach (var r in Model.Resumes)
+                                {
+                                    <option value="@Url.Action("PreviewCv", "Candidates", new { resumeId = r.ResumeId })" data-filename="@r.FileName" data-size="@r.FileSizeDisplay" selected="@(r.IsPrimary)">
+                                        @(r.IsPrimary ? "⭐ Bản chính: " : "Bản phụ: ") @r.FileName (@r.FileSizeDisplay)
+                                    </option>
+                                }
+                            </select>
+                        }
+
+                        @if (Model.ActiveResume != null)
+                        {
+                            <a id="btnOpenCvNewTab" href="@Url.Action("PreviewCv", "Candidates", new { resumeId = Model.ActiveResume.ResumeId })" 
+                               target="_blank" class="btn btn-sm btn-outline-secondary rounded-2" title="Mở toàn màn hình tab mới" style="font-size: 0.78rem;">
+                                <i class="bi bi-arrows-fullscreen"></i>
+                            </a>
+                            <a id="btnDownloadCvFile" href="@Url.Action("DownloadCv", "Candidates", new { resumeId = Model.ActiveResume.ResumeId })" 
+                               target="_blank" class="btn btn-sm btn-outline-primary rounded-2" title="Tải xuống tệp gốc" style="font-size: 0.78rem;">
+                                <i class="bi bi-download"></i>
+                            </a>
+                        }
+                    </div>
+                </div>
+
+                <div class="card-body p-0 position-relative" style="background: #0F172A;">
+                    @if (Model.ActiveResume != null)
+                    {
+                        <!-- Viewer Container -->
+                        <div style="height: 620px; width: 100%; position: relative;">
+                            <iframe id="cvPreviewIframe"
+                                    src="@Url.Action("PreviewCv", "Candidates", new { resumeId = Model.ActiveResume.ResumeId })"
+                                    style="width: 100%; height: 100%; border: none;"
+                                    title="Xem trước hồ sơ CV của ứng viên">
+                            </iframe>
+                        </div>
+                        <div class="p-2.5 px-3 bg-light border-top d-flex justify-content-between align-items-center" style="font-size: 0.75rem; color: #64748B;">
+                            <span id="cvFileInfoText">
+                                <i class="bi bi-file-earmark-check me-1 text-primary"></i>
+                                Tệp: <b>@Model.ActiveResume.FileName</b> (@Model.ActiveResume.FileSizeDisplay)
+                            </span>
+                            <span>
+                                <i class="bi bi-calendar3 me-1"></i>Cập nhật: @Model.ActiveResume.FormattedUploadedAt
+                            </span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5 px-3 bg-white text-muted">
+                            <i class="bi bi-file-earmark-x display-4 text-secondary mb-2"></i>
+                            <p class="fw-semibold mb-1">Ứng viên chưa tải lên tệp CV đính kèm.</p>
+                            <small>Hồ sơ này được tạo thủ công hoặc ứng viên chưa bổ sung file CV định dạng PDF.</small>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- 2. TOÀN BỘ LỊCH SỬ CÁC LẦN ỨNG TUYỂN TRƯỚC ĐÂY (Multi-Application Timeline) -->
+            <div class="card border-0 shadow-sm bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px; overflow: hidden;">
+                <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center" style="border-bottom: 1px solid #F1F5F9;">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="p-1.5 rounded-2" style="background:#F0FDF4; color:#059669;">
+                            <i class="bi bi-clock-history fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">Lịch Sử Ứng Tuyển Các Vị Trí</h6>
+                            <small class="text-muted" style="font-size: 0.75rem;">Toàn bộ các lần ứng tuyển của cùng ứng viên này trong hệ thống ATS</small>
+                        </div>
+                    </div>
+                    <span class="badge rounded-2 px-2.5 py-1.5" style="background: #F1F5F9; color: #475569; font-size: 0.75rem;">
+                        Tổng số: <b>@Model.ApplicationHistories.Count</b> đợt ứng tuyển
+                    </span>
+                </div>
+
+                <div class="card-body p-3 p-lg-4">
+                    @if (Model.ApplicationHistories.Any())
+                    {
+                        <div class="accordion d-flex flex-column gap-3" id="applicationHistoryAccordion">
+                            @for (int i = 0; i < Model.ApplicationHistories.Count; i++)
+                            {
+                                var app = Model.ApplicationHistories[i];
+                                var isFirst = (i == 0);
+                                var collapseId = $"collapseApp_{app.ApplicationId.ToString("N")[..8]}";
+
+                                <div class="accordion-item border rounded-2 shadow-none overflow-hidden" style="border-color: #E2E8F0 !important;">
+                                    <h2 class="accordion-header" id="heading_@collapseId">
+                                        <button class="accordion-button @(isFirst ? "" : "collapsed") px-3 py-3" type="button" 
+                                                data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="@(isFirst ? "true" : "false")"
+                                                style="background: @(isFirst ? "#F8FAFC" : "#FFFFFF"); font-size: 0.88rem;">
+                                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center w-100 pe-3 gap-2">
+                                                <div>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <span class="badge rounded-2 bg-dark text-white px-2 py-1" style="font-size: 0.7rem;">
+                                                            Đợt @(Model.ApplicationHistories.Count - i)
+                                                        </span>
+                                                        <span class="fw-bold text-dark" style="font-size: 0.92rem;">@app.JobTitle</span>
+                                                        <span class="badge rounded-2 @app.StatusBadgeClass" style="font-size: 0.7rem;">@app.StatusText</span>
+                                                    </div>
+                                                    <div class="text-muted mt-1" style="font-size: 0.76rem;">
+                                                        <span><i class="bi bi-building me-1"></i>@app.DepartmentName</span>
+                                                        <span class="mx-1.5">•</span>
+                                                        <span><i class="bi bi-geo-alt me-1"></i>@app.WorkLocation</span>
+                                                        <span class="mx-1.5">•</span>
+                                                        <span><i class="bi bi-calendar3 me-1"></i>Nộp đơn: @app.FormattedAppliedAt</span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="text-md-end">
+                                                    <span class="badge rounded-2" style="background:@(app.StageColor)15; color:@app.StageColor; border:1px solid @(app.StageColor)40; font-size:0.75rem; font-weight:600;">
+                                                        <i class="bi bi-circle-fill me-1" style="font-size: 0.45rem; vertical-align: middle;"></i>Vòng @app.StageOrder: @app.CurrentStageName
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </h2>
+
+                                    <div id="@collapseId" class="accordion-collapse collapse @(isFirst ? "show" : "")" aria-labelledby="heading_@collapseId">
+                                        <div class="accordion-body p-3 p-lg-4" style="background: #FAFAFA; border-top: 1px solid #E2E8F0;">
+                                            
+                                            <!-- Key Roles Info -->
+                                            <div class="row g-2 mb-3">
+                                                <div class="col-12 col-md-6">
+                                                    <div class="p-2.5 bg-white border rounded-2" style="font-size: 0.78rem;">
+                                                        <span class="text-muted">Chuyên viên tuyển dụng phụ trách:</span>
+                                                        <div class="fw-bold text-dark mt-0.5">
+                                                            <i class="bi bi-person-check text-primary me-1"></i>
+                                                            @(string.IsNullOrWhiteSpace(app.AssignedRecruiterName) ? "Chưa chỉ định" : $"{app.AssignedRecruiterName} ({app.AssignedRecruiterEmail})")
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12 col-md-6">
+                                                    <div class="p-2.5 bg-white border rounded-2" style="font-size: 0.78rem;">
+                                                        <span class="text-muted">Quản lý chuyên môn (Hiring Manager):</span>
+                                                        <div class="fw-bold text-dark mt-0.5">
+                                                            <i class="bi bi-person-workspace text-info me-1"></i>
+                                                            @(string.IsNullOrWhiteSpace(app.HiringManagerName) ? "Chưa chỉ định" : $"{app.HiringManagerName} ({app.HiringManagerEmail})")
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Lịch sử Phỏng vấn -->
+                                            @if (app.Interviews.Any())
+                                            {
+                                                <div class="mb-3">
+                                                    <div class="fw-bold text-dark mb-2" style="font-size: 0.82rem;">
+                                                        <i class="bi bi-calendar2-week me-1 text-primary"></i>Kết quả phỏng vấn các vòng:
+                                                    </div>
+                                                    <div class="d-flex flex-column gap-2">
+                                                        @foreach (var iv in app.Interviews)
+                                                        {
+                                                            <div class="p-2.5 bg-white border rounded-2" style="font-size: 0.8rem;">
+                                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                    <span class="fw-bold text-dark">
+                                                                        Vòng @iv.RoundNumber: @iv.Title
+                                                                    </span>
+                                                                    <span class="badge @(iv.Status == "COMPLETED" ? "bg-success" : "bg-primary") rounded-2" style="font-size: 0.68rem;">
+                                                                        @iv.Status
+                                                                    </span>
+                                                                </div>
+                                                                <div class="text-muted small">
+                                                                    <span>Thời gian: <b>@iv.FormattedTime</b></span>
+                                                                    <span class="mx-1">•</span>
+                                                                    <span>Hình thức: <b>@iv.InterviewType</b> (@iv.LocationOrLink)</span>
+                                                                </div>
+                                                                @if (iv.OverallScore.HasValue)
+                                                                {
+                                                                    <div class="mt-1.5 p-2 rounded-2" style="background:#F0FDF4; border: 1px solid #DCFCE7;">
+                                                                        <div class="d-flex align-items-center gap-2">
+                                                                            <span class="badge bg-success rounded-2">Đạt: @iv.OverallScore / 5.0</span>
+                                                                            <span class="fw-semibold text-dark">Đề xuất: @iv.Recommendation</span>
+                                                                        </div>
+                                                                        @if (!string.IsNullOrWhiteSpace(iv.Feedback))
+                                                                        {
+                                                                            <div class="small text-muted mt-1 fst-italic">" @iv.Feedback "</div>
+                                                                        }
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
+
+                                            <!-- Thư mời Offer -->
+                                            @if (app.Offer != null)
+                                            {
+                                                <div class="p-3 mb-3 rounded-2" style="background: #FEF3C7; border: 1px solid #FDE68A;">
+                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                        <span class="fw-bold text-dark" style="font-size: 0.85rem;">
+                                                            <i class="bi bi-gift-fill me-1 text-warning"></i>Thư Mời Nhận Việc (Offer Letter)
+                                                        </span>
+                                                        <span class="badge rounded-2 @(app.Offer.Status == "APPROVED" ? "bg-success" : "bg-warning text-dark")" style="font-size: 0.7rem;">
+                                                            @app.Offer.Status
+                                                        </span>
+                                                    </div>
+                                                    <div class="row g-2 mt-1" style="font-size: 0.8rem;">
+                                                        <div class="col-6">Lương cơ bản: <b>@app.Offer.FormattedBaseSalary</b></div>
+                                                        <div class="col-6">Ngày dự kiến gia nhập: <b>@app.Offer.FormattedJoinDate</b></div>
+                                                        <div class="col-12 text-muted small">Loại hợp đồng: @app.Offer.ContractType</div>
+                                                    </div>
+                                                </div>
+                                            }
+
+                                            <!-- Từ chối lý do -->
+                                            @if (!string.IsNullOrWhiteSpace(app.RejectionNote))
+                                            {
+                                                <div class="p-2.5 mb-3 rounded-2" style="background: #FEF2F2; border: 1px solid #FECACA; font-size: 0.8rem;">
+                                                    <span class="text-danger fw-bold"><i class="bi bi-x-octagon me-1"></i>Lý do từ chối:</span>
+                                                    <span class="text-dark">@app.RejectionNote</span>
+                                                </div>
+                                            }
+
+                                            <!-- Stepper / Stage History Audit Trail -->
+                                            <div class="mt-2">
+                                                <div class="fw-bold text-dark mb-1.5" style="font-size: 0.78rem;">
+                                                    <i class="bi bi-list-check me-1 text-secondary"></i>Nhật ký chuyển bước (Audit Trail):
+                                                </div>
+                                                <div class="border rounded-2 p-2 bg-white" style="max-height: 160px; overflow-y: auto;">
+                                                    @foreach (var h in app.StageHistories)
+                                                    {
+                                                        <div class="d-flex align-items-start gap-2 py-1 border-bottom" style="font-size: 0.74rem;">
+                                                            <i class="bi bi-arrow-right-circle text-primary mt-0.5"></i>
+                                                            <div class="flex-grow-1">
+                                                                <span class="fw-semibold text-dark">@(h.Comment ?? $"Chuyển sang: {h.ToStageName}")</span>
+                                                                <span class="text-muted ms-1">bởi @h.ChangedByUserName</span>
+                                                            </div>
+                                                            <span class="text-muted font-monospace" style="font-size: 0.7rem;">@h.FormattedCreatedAt</span>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-2 text-secondary mb-2"></i>
+                            <p class="mb-0">Chưa có lịch sử ứng tuyển nào được ghi nhận cho người này.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- CỘT PHẢI: THÔNG TIN CÁ NHÂN, NHÃN & GHI CHÚ NỘI BỘ             -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <div class="col-12 col-xl-5">
+
+            <!-- 1. THẺ THÔNG TIN CÁ NHÂN CHI TIẾT -->
+            <div class="card border-0 shadow-sm bg-white mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <div class="card-header bg-white py-3 px-4 d-flex align-items-center gap-2" style="border-bottom: 1px solid #F1F5F9;">
+                    <div class="p-1.5 rounded-2" style="background:#FEF3C7; color:#D97706;">
+                        <i class="bi bi-person-vcard fs-5"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">Thông Tin Hồ Sơ Cá Nhân</h6>
+                        <small class="text-muted" style="font-size: 0.75rem;">Dữ liệu PII tuân thủ Nghị định 13/2023/NĐ-CP</small>
+                    </div>
+                </div>
+                <div class="card-body p-3 p-lg-4" style="font-size: 0.85rem;">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tbody>
+                            <tr>
+                                <td class="text-muted py-1.5 ps-0" style="width: 130px;">Họ và tên:</td>
+                                <td class="fw-bold text-dark py-1.5">@Model.FullName</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-1.5 ps-0">Email liên hệ:</td>
+                                <td class="py-1.5 font-monospace text-dark">
+                                    @Model.Email
+                                    <button type="button" class="btn btn-sm btn-link p-0 text-muted ms-1" onclick="navigator.clipboard.writeText('@Model.Email')" title="Sao chép email">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-1.5 ps-0">Số điện thoại:</td>
+                                <td class="py-1.5 text-dark fw-medium">@(Model.Phone ?? "Chưa cập nhật")</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-1.5 ps-0">Ngày sinh:</td>
+                                <td class="py-1.5 text-dark">@(Model.DateOfBirth.HasValue ? Model.DateOfBirth.Value.ToString("dd/MM/yyyy") : "Chưa cập nhật")</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-1.5 ps-0">Địa chỉ cư trú:</td>
+                                <td class="py-1.5 text-dark">@(Model.Address ?? "Hà Nội, Việt Nam")</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-1.5 ps-0">Nguồn ứng viên:</td>
+                                <td class="py-1.5">
+                                    <span class="badge rounded-2 bg-light text-dark border">@Model.Source</span>
+                                    @if (!string.IsNullOrWhiteSpace(Model.ReferrerName))
+                                    {
+                                        <small class="text-muted ms-1">(Người giới thiệu: <b>@Model.ReferrerName</b>)</small>
+                                    }
+                                </td>
+                            </tr>
+                            @if (!string.IsNullOrWhiteSpace(Model.LinkedinUrl))
+                            {
+                                <tr>
+                                    <td class="text-muted py-1.5 ps-0">Hồ sơ LinkedIn:</td>
+                                    <td class="py-1.5">
+                                        <a href="@Model.LinkedinUrl" target="_blank" class="text-decoration-none text-primary fw-medium">
+                                            <i class="bi bi-linkedin me-1"></i>Xem trang cá nhân <i class="bi bi-box-arrow-up-right" style="font-size:0.7rem;"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 2. HỆ THỐNG NHÃN (Tags & Labels) -->
+            <div class="card border-0 shadow-sm bg-white mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center" style="border-bottom: 1px solid #F1F5F9;">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="p-1.5 rounded-2" style="background:#ECFDF5; color:#059669;">
+                            <i class="bi bi-tags-fill fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">Nhãn Phân Loại Ứng Viên</h6>
+                            <small class="text-muted" style="font-size: 0.75rem;">Gắn nhãn định danh năng lực &amp; mức độ phù hợp</small>
+                        </div>
+                    </div>
+                    <span id="tagsCountBadge" class="badge rounded-2 bg-light text-dark border px-2 py-1" style="font-size: 0.72rem;">
+                        @Model.Tags.Count nhãn
+                    </span>
+                </div>
+
+                <div class="card-body p-3 p-lg-4">
+                    <!-- Danh sách nhãn hiện tại -->
+                    <div class="d-flex flex-wrap gap-2 mb-3" id="candidateTagsContainer">
+                        @if (Model.Tags.Any())
+                        {
+                            @foreach (var tag in Model.Tags)
+                            {
+                                <span class="candidate-tag-chip rounded-2 px-2.5 py-1 text-white d-inline-flex align-items-center gap-1.5 shadow-xs" 
+                                      id="tag-pill-@tag.Id"
+                                      style="background: @tag.ColorCode; font-size: 0.78rem; font-weight: 500;">
+                                    <i class="bi bi-tag-fill" style="font-size:0.65rem;"></i>
+                                    <span>@tag.TagName</span>
+                                    <button type="button" class="btn btn-link text-white p-0 ms-1" style="line-height:1; opacity:0.85;" 
+                                            onclick="removeCandidateTag('@tag.Id')" title="Gỡ nhãn này">
+                                        <i class="bi bi-x-circle-fill" style="font-size:0.75rem;"></i>
+                                    </button>
+                                </span>
+                            }
+                        }
+                        else
+                        {
+                            <span id="noTagsText" class="text-muted small fst-italic">Chưa có nhãn nào được gắn. Vui lòng thêm nhãn bên dưới.</span>
+                        }
+                    </div>
+
+                    <!-- Gợi ý nhãn nhanh (Click để thêm) -->
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-1.5" style="font-size: 0.72rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">
+                            Gợi ý nhãn phổ biến (bấm để thêm nhanh):
+                        </small>
+                        <div class="d-flex flex-wrap gap-1.5">
+                            @foreach (var sug in Model.SuggestedTags)
+                            {
+                                <button type="button" class="btn btn-sm btn-light border rounded-2 py-0.5 px-2 text-dark" 
+                                        style="font-size: 0.74rem;" onclick="addQuickTag('@sug')">
+                                    + @sug
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Form nhập nhãn tùy chỉnh -->
+                    <form id="addTagForm" asp-controller="Candidates" asp-action="AddTag" method="post" class="mt-2" onsubmit="handleTagFormSubmit(event)">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="CandidateId" value="@Model.CandidateId" />
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-tag text-muted"></i></span>
+                            <input type="text" id="customTagNameInput" name="TagName" class="form-control" placeholder="Nhập tên nhãn mới..." required />
+                            <button type="submit" id="btnAddTagSubmit" class="btn btn-success text-white rounded-end-2 px-3 fw-semibold">
+                                <i class="bi bi-plus-lg me-1"></i>Thêm nhãn
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 3. GHI CHÚ NỘI BỘ TUYỂN DỤNG (Recruitment Notes) -->
+            <div class="card border-0 shadow-sm bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center" style="border-bottom: 1px solid #F1F5F9;">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="p-1.5 rounded-2" style="background:#F5F3FF; color:#7C3AED;">
+                            <i class="bi bi-sticky-fill fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">Ghi Chú Nội Bộ Tuyển Dụng</h6>
+                            <small class="text-muted" style="font-size: 0.75rem;">Chỉ chuyên viên nhân sự &amp; quản lý có quyền xem</small>
+                        </div>
+                    </div>
+                    <span id="notesCountBadge" class="badge rounded-2 bg-light text-dark border px-2 py-1" style="font-size: 0.72rem;">
+                        @Model.Notes.Count ghi chú
+                    </span>
+                </div>
+
+                <div class="card-body p-3 p-lg-4">
+                    <!-- Form thêm ghi chú mới -->
+                    <form id="addNoteForm" asp-controller="Candidates" asp-action="AddNote" method="post" class="mb-4" onsubmit="handleNoteFormSubmit(event)">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="CandidateId" value="@Model.CandidateId" />
+                        <div class="p-3 rounded-2 bg-light border" style="border-color: #E2E8F0 !important;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small fw-semibold text-dark">Thêm nhận xét / ghi chú mới:</span>
+                                <select name="NoteType" class="form-select form-select-sm rounded-2 w-auto py-0.5" style="font-size: 0.75rem;">
+                                    <option value="GENERAL">Ghi chú chung</option>
+                                    <option value="INTERVIEW">Đánh giá phỏng vấn</option>
+                                    <option value="SALARY">Trao đổi mức đãi ngộ</option>
+                                    <option value="RECRUITER_CALL">Trao đổi qua điện thoại</option>
+                                    <option value="FLAG">Lưu ý rủi ro / Cân nhắc</option>
+                                </select>
+                            </div>
+                            <textarea name="Content" id="noteContentInput" class="form-control rounded-2 mb-2" rows="2" 
+                                      placeholder="Nhập chi tiết trao đổi, thái độ, mức kỳ vọng, hoặc nhận định..." required style="font-size: 0.82rem;"></textarea>
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" id="btnAddNoteSubmit" class="btn btn-sm btn-primary rounded-2 text-white px-3 fw-semibold">
+                                    <i class="bi bi-send-fill me-1"></i>Lưu ghi chú
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Danh sách ghi chú đã lưu -->
+                    <div class="d-flex flex-column gap-2.5" id="candidateNotesContainer">
+                        @if (Model.Notes.Any())
+                        {
+                            @foreach (var note in Model.Notes)
+                            {
+                                <div class="p-3 bg-white border rounded-2 shadow-xs" id="note-item-@note.Id" style="border-color: #E2E8F0 !important;">
+                                    <div class="d-flex justify-content-between align-items-start mb-1.5">
+                                        <div class="d-flex align-items-center gap-1.5">
+                                            <span class="fw-bold text-dark" style="font-size: 0.82rem;">@note.AuthorName</span>
+                                            <span class="badge @note.NoteTypeClass rounded-2" style="font-size: 0.68rem;">@note.NoteTypeBadge</span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="text-muted font-monospace" style="font-size: 0.72rem;">@note.FormattedCreatedAt</span>
+                                            @if (note.CanDelete)
+                                            {
+                                                <button type="button" class="btn btn-link p-0 text-danger" onclick="deleteCandidateNote('@note.Id')" title="Xóa ghi chú này">
+                                                    <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                    <p class="mb-0 text-secondary" style="font-size: 0.82rem; line-height: 1.5; white-space: pre-line;">@note.Content</p>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div id="noNotesText" class="text-center py-4 text-muted">
+                                <i class="bi bi-chat-square-text fs-3 text-secondary mb-1"></i>
+                                <p class="mb-0 small">Chưa có ghi chú nội bộ nào cho ứng viên này.</p>
+                            </div>
+                        }
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+<script>
+    const candidateId = '@Model.CandidateId';
+
+    // 1. Chuyển đổi xem trước CV khi có nhiều bản CV
+    function switchCvPreview(previewUrl) {
+        const iframe = document.getElementById('cvPreviewIframe');
+        const openBtn = document.getElementById('btnOpenCvNewTab');
+        const dlBtn = document.getElementById('btnDownloadCvFile');
+        const select = document.getElementById('cvSelectDropdown');
+        
+        if (iframe && previewUrl) {
+            iframe.src = previewUrl;
+        }
+        if (openBtn) {
+            openBtn.href = previewUrl;
+        }
+        if (dlBtn && select) {
+            const selectedOpt = select.options[select.selectedIndex];
+            const fileName = selectedOpt.getAttribute('data-filename') || 'CV.pdf';
+            const size = selectedOpt.getAttribute('data-size') || '';
+            const infoText = document.getElementById('cvFileInfoText');
+            if (infoText) {
+                infoText.innerHTML = `<i class="bi bi-file-earmark-check me-1 text-primary"></i>Tệp: <b>${fileName}</b> (${size})`;
+            }
+        }
+    }
+
+    // 2. Thêm nhãn nhanh từ danh mục gợi ý
+    function addQuickTag(tagName) {
+        const input = document.getElementById('customTagNameInput');
+        if (input) {
+            input.value = tagName;
+            document.getElementById('addTagForm').requestSubmit();
+        }
+    }
+
+    // 3. Xử lý Thêm Nhãn qua AJAX
+    async function handleTagFormSubmit(e) {
+        e.preventDefault();
+        const input = document.getElementById('customTagNameInput');
+        const tagName = input.value.trim();
+        if (!tagName) return;
+
+        const form = document.getElementById('addTagForm');
+        const formData = new FormData(form);
+        const submitBtn = document.getElementById('btnAddTagSubmit');
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+            if (result.success && result.data) {
+                const tag = result.data;
+                const container = document.getElementById('candidateTagsContainer');
+                const noTags = document.getElementById('noTagsText');
+                if (noTags) noTags.remove();
+
+                // Tạo chip nhãn mới
+                const span = document.createElement('span');
+                span.id = `tag-pill-${tag.id}`;
+                span.className = 'candidate-tag-chip rounded-2 px-2.5 py-1 text-white d-inline-flex align-items-center gap-1.5 shadow-xs';
+                span.style.background = tag.colorCode || '#059669';
+                span.style.fontSize = '0.78rem';
+                span.style.fontWeight = '500';
+                span.innerHTML = `
+                    <i class="bi bi-tag-fill" style="font-size:0.65rem;"></i>
+                    <span>${tag.tagName}</span>
+                    <button type="button" class="btn btn-link text-white p-0 ms-1" style="line-height:1; opacity:0.85;" onclick="removeCandidateTag('${tag.id}')" title="Gỡ nhãn này">
+                        <i class="bi bi-x-circle-fill" style="font-size:0.75rem;"></i>
+                    </button>
+                `;
+                container.appendChild(span);
+                input.value = '';
+
+                // Cập nhật đếm
+                updateTagsCount(1);
+            } else {
+                alert(result.message || 'Lỗi khi gắn nhãn.');
+            }
+        } catch (err) {
+            alert('Lỗi kết nối: ' + err.message);
+        } finally {
+            submitBtn.disabled = false;
+        }
+    }
+
+    // 4. Xóa Nhãn qua AJAX
+    async function removeCandidateTag(tagId) {
+        if (!confirm('Bạn có chắc chắn muốn gỡ nhãn này?')) return;
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        const formData = new FormData();
+        formData.append('tagId', tagId);
+        formData.append('candidateId', candidateId);
+        if (token) formData.append('__RequestVerificationToken', token);
+
+        try {
+            const response = await fetch('/ung-vien/RemoveTag', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            });
+            const result = await response.json();
+            if (result.success) {
+                const el = document.getElementById(`tag-pill-${tagId}`);
+                if (el) el.remove();
+                updateTagsCount(-1);
+            } else {
+                alert(result.message || 'Không thể xóa nhãn.');
+            }
+        } catch (err) {
+            alert('Lỗi kết nối: ' + err.message);
+        }
+    }
+
+    function updateTagsCount(delta) {
+        const badge = document.getElementById('tagsCountBadge');
+        if (badge) {
+            const cur = parseInt(badge.innerText, 10) || 0;
+            const next = Math.max(0, cur + delta);
+            badge.innerText = `${next} nhãn`;
+        }
+    }
+
+    // 5. Xử lý Thêm Ghi Chú qua AJAX
+    async function handleNoteFormSubmit(e) {
+        e.preventDefault();
+        const textarea = document.getElementById('noteContentInput');
+        const content = textarea.value.trim();
+        if (!content) return;
+
+        const form = document.getElementById('addNoteForm');
+        const formData = new FormData(form);
+        const submitBtn = document.getElementById('btnAddNoteSubmit');
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            });
+            const result = await response.json();
+            if (result.success && result.data) {
+                const note = result.data;
+                const container = document.getElementById('candidateNotesContainer');
+                const noNotes = document.getElementById('noNotesText');
+                if (noNotes) noNotes.remove();
+
+                const noteDiv = document.createElement('div');
+                noteDiv.id = `note-item-${note.id}`;
+                noteDiv.className = 'p-3 bg-white border rounded-2 shadow-xs';
+                noteDiv.style.borderColor = '#E2E8F0';
+                noteDiv.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start mb-1.5">
+                        <div class="d-flex align-items-center gap-1.5">
+                            <span class="fw-bold text-dark" style="font-size: 0.82rem;">${note.authorName}</span>
+                            <span class="badge ${note.noteTypeClass} rounded-2" style="font-size: 0.68rem;">${note.noteTypeBadge}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-muted font-monospace" style="font-size: 0.72rem;">${note.formattedCreatedAt}</span>
+                            <button type="button" class="btn btn-link p-0 text-danger" onclick="deleteCandidateNote('${note.id}')" title="Xóa ghi chú này">
+                                <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="mb-0 text-secondary" style="font-size: 0.82rem; line-height: 1.5; white-space: pre-line;">${escapeHtml(note.content)}</p>
+                `;
+                container.prepend(noteDiv);
+                textarea.value = '';
+                updateNotesCount(1);
+            } else {
+                alert(result.message || 'Lỗi khi lưu ghi chú.');
+            }
+        } catch (err) {
+            alert('Lỗi kết nối: ' + err.message);
+        } finally {
+            submitBtn.disabled = false;
+        }
+    }
+
+    // 6. Xóa Ghi Chú qua AJAX
+    async function deleteCandidateNote(noteId) {
+        if (!confirm('Bạn có chắc chắn muốn xóa ghi chú này?')) return;
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        const formData = new FormData();
+        formData.append('noteId', noteId);
+        formData.append('candidateId', candidateId);
+        if (token) formData.append('__RequestVerificationToken', token);
+
+        try {
+            const response = await fetch('/ung-vien/DeleteNote', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            });
+            const result = await response.json();
+            if (result.success) {
+                const el = document.getElementById(`note-item-${noteId}`);
+                if (el) el.remove();
+                updateNotesCount(-1);
+            } else {
+                alert(result.message || 'Không thể xóa ghi chú.');
+            }
+        } catch (err) {
+            alert('Lỗi kết nối: ' + err.message);
+        }
+    }
+
+    function updateNotesCount(delta) {
+        const badge = document.getElementById('notesCountBadge');
+        if (badge) {
+            const cur = parseInt(badge.innerText, 10) || 0;
+            const next = Math.max(0, cur + delta);
+            badge.innerText = `${next} ghi chú`;
+        }
+    }
+
+    function escapeHtml(text) {
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return text.replace(/[&<>"']/g, m => map[m]);
+    }
+</script>
+}

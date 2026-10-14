@@ -65,6 +65,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IJobService, JobService>();
+builder.Services.AddScoped<ICandidateService, CandidateService>();
 builder.Services.AddScoped<ICompetencyFrameworkService, CompetencyFrameworkService>();
 builder.Services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
 builder.Services.AddScoped<IRequisitionService, RequisitionService>();
@@ -532,6 +533,30 @@ using (var scope = app.Services.CreateScope())
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 created_by_id UUID,
                 updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+
+            CREATE TABLE IF NOT EXISTS candidate_tags (
+                id UUID PRIMARY KEY,
+                candidate_id UUID NOT NULL,
+                tag_name TEXT NOT NULL,
+                color_code TEXT,
+                created_by_user_id UUID,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+
+            CREATE TABLE IF NOT EXISTS candidate_notes (
+                id UUID PRIMARY KEY,
+                candidate_id UUID NOT NULL,
+                author_user_id UUID NOT NULL,
+                content TEXT NOT NULL,
+                note_type TEXT DEFAULT 'GENERAL',
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
                 deleted_at TIMESTAMPTZ
             );

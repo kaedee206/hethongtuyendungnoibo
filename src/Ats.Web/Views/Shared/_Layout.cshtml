@@ -244,6 +244,15 @@
                                         </li>
                                     }
 
+                                    @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter) || User.IsInRole(UserRoles.HiringManager))
+                                    {
+                                        <li>
+                                            <a class="dropdown-item py-2" href="/ung-vien">
+                                                <i class="bi bi-person-lines-fill me-2 text-success"></i> Hồ sơ ứng viên hợp nhất
+                                            </a>
+                                        </li>
+                                    }
+
                                     @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
                                     {
                                         <li>

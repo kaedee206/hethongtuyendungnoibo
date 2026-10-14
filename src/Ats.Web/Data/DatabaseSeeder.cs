@@ -991,6 +991,105 @@ public static class DatabaseSeeder
             }
         }
 
+        // 14. Seed Hồ sơ Hợp nhất (Scrum 39: Lịch sử nhiều đợt ứng tuyển, Nhãn và Ghi chú nội bộ)
+        if (candidateEntities.TryGetValue("candidate.minhtuan@gmail.com", out var candTuanUnified))
+        {
+            // Seed lần ứng tuyển trong quá khứ (Lịch sử ứng tuyển các vị trí khác nhau của cùng người này)
+            if (!await context.Applications.AnyAsync(a => a.CandidateId == candTuanUnified.Id && a.JobPostingId == devopsJob.Id))
+            {
+                var resumeTuan = await context.Resumes.FirstOrDefaultAsync(r => r.CandidateId == candTuanUnified.Id)
+                    ?? await context.Resumes.FirstAsync();
+
+                var pastApp = new Application
+                {
+                    Id = Guid.NewGuid(),
+                    JobPostingId = devopsJob.Id,
+                    CandidateId = candTuanUnified.Id,
+                    ResumeId = resumeTuan.Id,
+                    CurrentStageId = stage7.Id,
+                    Status = ApplicationStatus.REJECTED,
+                    RejectionNote = "Hồ sơ năng lực tốt, phù hợp định hướng Backend .NET hơn DevOps. Đã lưu talent pool.",
+                    AppliedAt = DateTimeOffset.UtcNow.AddMonths(-6),
+                    CreatedAt = DateTimeOffset.UtcNow.AddMonths(-6),
+                    UpdatedAt = DateTimeOffset.UtcNow.AddMonths(-5)
+                };
+                await context.Applications.AddAsync(pastApp);
+
+                await context.ApplicationStageHistories.AddRangeAsync(
+                    new ApplicationStageHistory { Id = Guid.NewGuid(), ApplicationId = pastApp.Id, FromStageId = null, ToStageId = stage1.Id, ChangedByUserId = hrRecruiter.Id, Comment = "Ứng tuyển đợt tuyển dụng Q2/2026.", CreatedAt = DateTimeOffset.UtcNow.AddMonths(-6) },
+                    new ApplicationStageHistory { Id = Guid.NewGuid(), ApplicationId = pastApp.Id, FromStageId = stage1.Id, ToStageId = stage2.Id, ChangedByUserId = hrRecruiter.Id, Comment = "Đạt sơ loại hồ sơ CV.", CreatedAt = DateTimeOffset.UtcNow.AddMonths(-6).AddDays(3) },
+                    new ApplicationStageHistory { Id = Guid.NewGuid(), ApplicationId = pastApp.Id, FromStageId = stage2.Id, ToStageId = stage7.Id, ChangedByUserId = hrRecruiter.Id, Comment = "Đề xuất chuyển hướng sang vị trí .NET khi có đợt tuyển mới.", CreatedAt = DateTimeOffset.UtcNow.AddMonths(-5) }
+                );
+            }
+
+            // Seed Nhãn (Tags) cho ứng viên
+            if (!await context.CandidateTags.AnyAsync(t => t.CandidateId == candTuanUnified.Id))
+            {
+                await context.CandidateTags.AddRangeAsync(
+                    new CandidateTag { Id = Guid.NewGuid(), CandidateId = candTuanUnified.Id, TagName = "Senior .NET", ColorCode = "#2563EB", CreatedByUserId = hrRecruiter.Id, CreatedAt = DateTimeOffset.UtcNow.AddDays(-7) },
+                    new CandidateTag { Id = Guid.NewGuid(), CandidateId = candTuanUnified.Id, TagName = "Tiềm năng cao", ColorCode = "#059669", CreatedByUserId = hrRecruiter.Id, CreatedAt = DateTimeOffset.UtcNow.AddDays(-6) },
+                    new CandidateTag { Id = Guid.NewGuid(), CandidateId = candTuanUnified.Id, TagName = "Tiếng Anh tốt", ColorCode = "#D97706", CreatedByUserId = hrRecruiter.Id, CreatedAt = DateTimeOffset.UtcNow.AddDays(-4) }
+                );
+            }
+
+            // Seed Ghi chú nội bộ (Recruitment Notes) cho ứng viên
+            if (!await context.CandidateNotes.AnyAsync(n => n.CandidateId == candTuanUnified.Id))
+            {
+                await context.CandidateNotes.AddRangeAsync(
+                    new CandidateNote
+                    {
+                        Id = Guid.NewGuid(),
+                        CandidateId = candTuanUnified.Id,
+                        AuthorUserId = hrRecruiter.Id,
+                        NoteType = "RECRUITER_CALL",
+                        Content = "Đã trao đổi qua điện thoại vòng sơ loại: Ứng viên tự tin, giao tiếp lưu loát, có định hướng gắn bó lâu dài và mong muốn phát triển lên Tech Lead.",
+                        CreatedAt = DateTimeOffset.UtcNow.AddDays(-6)
+                    },
+                    new CandidateNote
+                    {
+                        Id = Guid.NewGuid(),
+                        CandidateId = candTuanUnified.Id,
+                        AuthorUserId = hrRecruiter.Id,
+                        NoteType = "EVALUATION",
+                        Content = "Đánh giá phỏng vấn kỹ thuật: Nắm chắc ASP.NET Core 9, Clean Architecture, PostgreSQL và Docker. Trả lời bài toán concurrency xuất sắc.",
+                        CreatedAt = DateTimeOffset.UtcNow.AddDays(-3)
+                    },
+                    new CandidateNote
+                    {
+                        Id = Guid.NewGuid(),
+                        CandidateId = candTuanUnified.Id,
+                        AuthorUserId = hrRecruiter.Id,
+                        NoteType = "SALARY",
+                        Content = "Mức lương kỳ vọng: 45.000.000 VNĐ net. Thời gian có thể bắt đầu làm việc: 30 ngày sau khi nhận offer.",
+                        CreatedAt = DateTimeOffset.UtcNow.AddDays(-2)
+                    }
+                );
+            }
+        }
+
+        if (candidateEntities.TryGetValue("duc.tran@gmail.com", out var candDucUnified))
+        {
+            if (!await context.CandidateTags.AnyAsync(t => t.CandidateId == candDucUnified.Id))
+            {
+                await context.CandidateTags.AddRangeAsync(
+                    new CandidateTag { Id = Guid.NewGuid(), CandidateId = candDucUnified.Id, TagName = "AI Engineer", ColorCode = "#7C3AED", CreatedByUserId = hrRecruiter.Id, CreatedAt = DateTimeOffset.UtcNow.AddDays(-5) },
+                    new CandidateTag { Id = Guid.NewGuid(), CandidateId = candDucUnified.Id, TagName = "Python/PyTorch", ColorCode = "#0284C7", CreatedByUserId = hrRecruiter.Id, CreatedAt = DateTimeOffset.UtcNow.AddDays(-5) }
+                );
+            }
+            if (!await context.CandidateNotes.AnyAsync(n => n.CandidateId == candDucUnified.Id))
+            {
+                await context.CandidateNotes.AddAsync(new CandidateNote
+                {
+                    Id = Guid.NewGuid(),
+                    CandidateId = candDucUnified.Id,
+                    AuthorUserId = hrRecruiter.Id,
+                    NoteType = "EVALUATION",
+                    Content = "Ứng viên có các bài báo nghiên cứu về NLP và RAG. Đang chờ kết quả phỏng vấn chuyên môn với ban công nghệ.",
+                    CreatedAt = DateTimeOffset.UtcNow.AddDays(-4)
+                });
+            }
+        }
+
         await context.SaveChangesAsync();
     }
 }

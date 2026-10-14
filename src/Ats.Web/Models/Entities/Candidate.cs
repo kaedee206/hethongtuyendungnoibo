@@ -34,4 +34,6 @@ public class Candidate : BaseEntity
     public ICollection<Resume> Resumes { get; set; } = new List<Resume>();
     public ICollection<Application> Applications { get; set; } = new List<Application>();
     public ICollection<CandidateInteraction> Interactions { get; set; } = new List<CandidateInteraction>();
+    public ICollection<CandidateTag> Tags { get; set; } = new List<CandidateTag>();
+    public ICollection<CandidateNote> Notes { get; set; } = new List<CandidateNote>();
 }
