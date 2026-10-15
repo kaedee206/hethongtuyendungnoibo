@@ -1,8 +1,12 @@
+using System.Text.Json;
 using Ats.Web.Constants;
 using Ats.Web.Data;
+using Ats.Web.Models.DTOs;
 using Ats.Web.Models.Entities;
+using Ats.Web.Models.Enums;
 using Ats.Web.Models.ViewModels.Candidates;
 using Ats.Web.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -582,5 +586,471 @@ public class CandidateService(
         }
 
         return (physicalPath, resume.FileName, resume.MimeType ?? "application/pdf");
+    }
+
+    public async Task<CandidateSearchIndexViewModel> GetFilteredCandidatesAsync(
+        CandidateFilterCriteria criteria,
+        Guid currentUserId,
+        string currentUserRole,
+        CancellationToken cancellationToken = default)
+    {
+        var vm = new CandidateSearchIndexViewModel
+        {
+            Criteria = criteria
+        };
+
+        // 1. Tải danh mục chọn lựa cho bộ lọc
+        vm.AvailableJobPostings = await _dbContext.JobPostings
+            .AsNoTracking()
+            .Where(j => !j.IsDeleted)
+            .OrderByDescending(j => j.CreatedAt)
+            .Select(j => new SelectListItem
+            {
+                Value = j.Id.ToString(),
+                Text = $"{j.Title} ({j.Code})",
+                Selected = criteria.JobPostingId.HasValue && criteria.JobPostingId.Value == j.Id
+            })
+            .ToListAsync(cancellationToken);
+
+        vm.AvailableTags = await _dbContext.CandidateTags
+            .AsNoTracking()
+            .Where(t => !t.IsDeleted)
+            .Select(t => t.TagName)
+            .Distinct()
+            .OrderBy(t => t)
+            .ToListAsync(cancellationToken);
+
+        vm.AvailableStages = Enum.GetValues<CandidateStage>()
+            .Select(s => new SelectListItem
+            {
+                Value = s.ToString(),
+                Text = s.GetDisplayName(),
+                Selected = criteria.Stage.HasValue && criteria.Stage.Value == s
+            })
+            .ToList();
+
+        vm.AvailableSources = Enum.GetValues<CandidateSource>()
+            .Select(s => new SelectListItem
+            {
+                Value = s.ToString(),
+                Text = s switch
+                {
+                    CandidateSource.PORTAL => "Cổng tuyển dụng",
+                    CandidateSource.REFERRAL => "Giới thiệu nội bộ",
+                    CandidateSource.LINKEDIN => "LinkedIn",
+                    CandidateSource.HEADHUNTER => "Headhunter",
+                    _ => "Khác"
+                },
+                Selected = criteria.Source.HasValue && criteria.Source.Value == s
+            })
+            .ToList();
+
+        // 2. Tính toán khoảng thời gian theo Preset hoặc FromDate / ToDate
+        DateTimeOffset? filterStartUtc = null;
+        DateTimeOffset? filterEndUtc = null;
+
+        var nowVn = DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(7));
+
+        if (!string.IsNullOrWhiteSpace(criteria.DatePreset) && criteria.DatePreset != "all")
+        {
+            switch (criteria.DatePreset.ToLowerInvariant())
+            {
+                case "last_month":
+                    // Tháng trước: Ngày đầu tiên đến ngày cuối cùng của tháng trước
+                    var currentMonthFirstDay = new DateTime(nowVn.Year, nowVn.Month, 1);
+                    var lastMonthFirstDay = currentMonthFirstDay.AddMonths(-1);
+                    var lastMonthLastDay = currentMonthFirstDay.AddDays(-1);
+
+                    filterStartUtc = new DateTimeOffset(lastMonthFirstDay, TimeSpan.FromHours(7)).ToUniversalTime();
+                    filterEndUtc = new DateTimeOffset(lastMonthLastDay.Year, lastMonthLastDay.Month, lastMonthLastDay.Day, 23, 59, 59, 999, TimeSpan.FromHours(7)).ToUniversalTime();
+                    break;
+
+                case "this_month":
+                    // Tháng này: Từ ngày 1 của tháng hiện tại đến hiện tại
+                    var thisMonthFirstDay = new DateTime(nowVn.Year, nowVn.Month, 1);
+                    filterStartUtc = new DateTimeOffset(thisMonthFirstDay, TimeSpan.FromHours(7)).ToUniversalTime();
+                    filterEndUtc = DateTimeOffset.UtcNow;
+                    break;
+
+                case "last_30_days":
+                    filterStartUtc = DateTimeOffset.UtcNow.AddDays(-30);
+                    filterEndUtc = DateTimeOffset.UtcNow;
+                    break;
+
+                case "last_7_days":
+                    filterStartUtc = DateTimeOffset.UtcNow.AddDays(-7);
+                    filterEndUtc = DateTimeOffset.UtcNow;
+                    break;
+            }
+        }
+        else
+        {
+            if (criteria.FromDate.HasValue)
+            {
+                filterStartUtc = new DateTimeOffset(criteria.FromDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.FromHours(7)).ToUniversalTime();
+            }
+            if (criteria.ToDate.HasValue)
+            {
+                filterEndUtc = new DateTimeOffset(criteria.ToDate.Value.ToDateTime(TimeOnly.MaxValue), TimeSpan.FromHours(7)).ToUniversalTime();
+            }
+        }
+
+        // 3. Xây dựng truy vấn lọc ứng viên
+        var query = _dbContext.Candidates
+            .Include(c => c.Tags.Where(t => !t.IsDeleted))
+            .Include(c => c.Applications.Where(a => !a.IsDeleted))
+                .ThenInclude(a => a.JobPosting)
+            .Include(c => c.Applications.Where(a => !a.IsDeleted))
+                .ThenInclude(a => a.CurrentStage)
+            .Include(c => c.Applications.Where(a => !a.IsDeleted))
+                .ThenInclude(a => a.StageHistories)
+            .Where(c => !c.IsDeleted);
+
+        // 3.1. Tìm kiếm tổng hợp (Search)
+        if (!string.IsNullOrWhiteSpace(criteria.Search))
+        {
+            var s = criteria.Search.Trim().ToLower();
+            query = query.Where(c =>
+                c.FirstName.ToLower().Contains(s) ||
+                c.LastName.ToLower().Contains(s) ||
+                c.Email.ToLower().Contains(s) ||
+                (c.Phone != null && c.Phone.Contains(s)) ||
+                (c.CurrentTitle != null && c.CurrentTitle.ToLower().Contains(s)) ||
+                c.Applications.Any(a => !a.IsDeleted && (
+                    (a.CoverLetter != null && a.CoverLetter.ToLower().Contains(s)) ||
+                    (a.ReferralNote != null && a.ReferralNote.ToLower().Contains(s)) ||
+                    a.StageHistories.Any(h => !h.IsDeleted && h.Comment != null && h.Comment.ToLower().Contains(s))
+                ))
+            );
+        }
+
+        // 3.2. Tìm kiếm từ khóa riêng trong thư giới thiệu (CoverLetterKeyword)
+        if (!string.IsNullOrWhiteSpace(criteria.CoverLetterKeyword))
+        {
+            var kw = criteria.CoverLetterKeyword.Trim().ToLower();
+            query = query.Where(c => c.Applications.Any(a => !a.IsDeleted && (
+                (a.CoverLetter != null && a.CoverLetter.ToLower().Contains(kw)) ||
+                (a.ReferralNote != null && a.ReferralNote.ToLower().Contains(kw)) ||
+                a.StageHistories.Any(h => !h.IsDeleted && h.Comment != null && h.Comment.ToLower().Contains(kw))
+            )));
+        }
+
+        // 3.3. Lọc theo vị trí tin tuyển dụng (JobPostingId)
+        if (criteria.JobPostingId.HasValue && criteria.JobPostingId.Value != Guid.Empty)
+        {
+            query = query.Where(c => c.Applications.Any(a => !a.IsDeleted && a.JobPostingId == criteria.JobPostingId.Value));
+        }
+
+        // 3.4. Lọc theo giai đoạn (Stage)
+        if (criteria.Stage.HasValue)
+        {
+            query = query.Where(c => c.Applications.Any(a => !a.IsDeleted && a.Stage == criteria.Stage.Value));
+        }
+
+        // 3.5. Lọc theo nguồn (Source)
+        if (criteria.Source.HasValue)
+        {
+            query = query.Where(c => c.Source == criteria.Source.Value);
+        }
+
+        // 3.6. Lọc theo nhãn (Tag)
+        if (!string.IsNullOrWhiteSpace(criteria.Tag))
+        {
+            var tagClean = criteria.Tag.Trim().ToLower();
+            query = query.Where(c => c.Tags.Any(t => !t.IsDeleted && t.TagName.ToLower() == tagClean));
+        }
+
+        // 3.7. Lọc theo thời gian nộp hồ sơ
+        if (filterStartUtc.HasValue)
+        {
+            query = query.Where(c => c.Applications.Any(a => !a.IsDeleted && (a.AppliedAt ?? a.CreatedAt) >= filterStartUtc.Value));
+        }
+        if (filterEndUtc.HasValue)
+        {
+            query = query.Where(c => c.Applications.Any(a => !a.IsDeleted && (a.AppliedAt ?? a.CreatedAt) <= filterEndUtc.Value));
+        }
+
+        // 3.8. Lọc theo mức đánh giá (MinRating)
+        if (criteria.MinRating.HasValue && criteria.MinRating.Value > 0)
+        {
+            query = query.Where(c => c.Applications.Any(a => !a.IsDeleted && a.Rating.HasValue && a.Rating.Value >= criteria.MinRating.Value));
+        }
+
+        // 4. Sắp xếp & Phân trang
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var page = Math.Max(1, criteria.Page);
+        var pageSize = criteria.PageSize is > 0 and <= 100 ? criteria.PageSize : 15;
+
+        var candidates = await query
+            .OrderByDescending(c => c.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        // 5. Map sang CandidateListViewModel
+        var items = candidates.Select(c =>
+        {
+            var apps = c.Applications.Where(a => !a.IsDeleted).ToList();
+            var latestApp = apps.OrderByDescending(a => a.AppliedAt ?? a.CreatedAt).FirstOrDefault();
+
+            // Tìm trích đoạn thư giới thiệu
+            string? coverSnippet = null;
+            if (latestApp != null)
+            {
+                if (!string.IsNullOrWhiteSpace(latestApp.CoverLetter))
+                {
+                    coverSnippet = latestApp.CoverLetter;
+                }
+                else if (!string.IsNullOrWhiteSpace(latestApp.ReferralNote))
+                {
+                    coverSnippet = latestApp.ReferralNote;
+                }
+                else
+                {
+                    var commentWithLetter = latestApp.StageHistories
+                        .Where(h => !h.IsDeleted && !string.IsNullOrWhiteSpace(h.Comment) && (h.Comment.Contains("Cover letter") || h.Comment.Contains("Lời nhắn")))
+                        .Select(h => h.Comment)
+                        .FirstOrDefault();
+
+                    if (!string.IsNullOrWhiteSpace(commentWithLetter))
+                    {
+                        coverSnippet = commentWithLetter.Replace("Cover letter:", "").Replace("Lời nhắn ứng viên:", "").Trim();
+                    }
+                }
+            }
+
+            return new CandidateListViewModel
+            {
+                Id = c.Id,
+                FullName = $"{c.FirstName} {c.LastName}".Trim(),
+                Email = c.Email,
+                Phone = c.Phone,
+                CurrentTitle = c.CurrentTitle,
+                CurrentCompany = c.CurrentCompany,
+                ApplicationCount = apps.Count,
+                LatestJobTitle = latestApp?.JobPosting?.Title,
+                LatestJobPostingId = latestApp?.JobPostingId,
+                LatestStage = latestApp?.Stage,
+                LatestStageName = latestApp?.CurrentStage?.Name ?? (latestApp != null ? latestApp.Stage.GetDisplayName() : null),
+                LatestStageColor = latestApp?.CurrentStage?.ColorCode ?? "#2563EB",
+                Source = c.Source,
+                Rating = latestApp?.Rating,
+                CoverLetterSnippet = coverSnippet,
+                LatestAppliedAt = latestApp?.AppliedAt ?? latestApp?.CreatedAt,
+                IsBlacklisted = c.IsBlacklisted,
+                Tags = c.Tags.Select(t => new CandidateTagViewModel
+                {
+                    Id = t.Id,
+                    TagName = t.TagName,
+                    ColorCode = t.ColorCode ?? "#059669"
+                }).ToList()
+            };
+        }).ToList();
+
+        vm.PagedResult = new PagedResult<CandidateListViewModel>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
+
+        // 6. Thống kê KPI phục vụ Recruiter
+        var baseCandidatesQuery = _dbContext.Candidates.Where(c => !c.IsDeleted);
+
+        var firstDayCurrentMonthVn = new DateTime(nowVn.Year, nowVn.Month, 1);
+        var firstDayLastMonthVn = firstDayCurrentMonthVn.AddMonths(-1);
+        var lastDayLastMonthVn = firstDayCurrentMonthVn.AddDays(-1);
+        var startLastMonthUtc = new DateTimeOffset(firstDayLastMonthVn, TimeSpan.FromHours(7)).ToUniversalTime();
+        var endLastMonthUtc = new DateTimeOffset(lastDayLastMonthVn.Year, lastDayLastMonthVn.Month, lastDayLastMonthVn.Day, 23, 59, 59, 999, TimeSpan.FromHours(7)).ToUniversalTime();
+
+        vm.LastMonthCandidatesCount = await baseCandidatesQuery
+            .CountAsync(c => c.Applications.Any(a => !a.IsDeleted && (a.AppliedAt ?? a.CreatedAt) >= startLastMonthUtc && (a.AppliedAt ?? a.CreatedAt) <= endLastMonthUtc), cancellationToken);
+
+        vm.HighRatingCandidatesCount = await baseCandidatesQuery
+            .CountAsync(c => c.Applications.Any(a => !a.IsDeleted && a.Rating.HasValue && a.Rating.Value >= 4), cancellationToken);
+
+        vm.MultiAppCandidatesCount = await baseCandidatesQuery
+            .CountAsync(c => c.Applications.Count(a => !a.IsDeleted) > 1, cancellationToken);
+
+        vm.TaggedCandidatesCount = await baseCandidatesQuery
+            .CountAsync(c => c.Tags.Any(t => !t.IsDeleted), cancellationToken);
+
+        // 7. Lấy danh sách bộ lọc đã lưu của Recruiter
+        if (currentUserId != Guid.Empty)
+        {
+            vm.SavedFilters = (await GetSavedFiltersAsync(currentUserId, cancellationToken)).ToList();
+        }
+
+        return vm;
+    }
+
+    public async Task<SavedCandidateFilterDto> SaveFilterAsync(
+        Guid currentUserId,
+        SaveCandidateFilterInputModel model,
+        CancellationToken cancellationToken = default)
+    {
+        var cleanName = model.Name?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(cleanName))
+        {
+            throw new ArgumentException("Tên bộ lọc không được để trống.", nameof(model));
+        }
+
+        if (currentUserId == Guid.Empty)
+        {
+            throw new InvalidOperationException("Không xác định được danh tính người dùng.");
+        }
+
+        var jsonOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            WriteIndented = false
+        };
+
+        var criteriaJson = JsonSerializer.Serialize(model.Criteria, jsonOptions);
+
+        // Nếu đặt làm mặc định thì bỏ cờ default của các filter khác
+        if (model.IsDefault)
+        {
+            var oldDefaults = await _dbContext.SavedCandidateFilters
+                .Where(f => f.UserId == currentUserId && f.IsDefault && !f.IsDeleted)
+                .ToListAsync(cancellationToken);
+
+            foreach (var od in oldDefaults)
+            {
+                od.IsDefault = false;
+                od.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+        }
+
+        // Kiểm tra xem đã có bộ lọc trùng tên của user chưa
+        var existing = await _dbContext.SavedCandidateFilters
+            .FirstOrDefaultAsync(f => f.UserId == currentUserId && f.Name.ToLower() == cleanName.ToLower() && !f.IsDeleted, cancellationToken);
+
+        if (existing != null)
+        {
+            existing.CriteriaJson = criteriaJson;
+            existing.Description = model.Description?.Trim();
+            existing.IsDefault = model.IsDefault;
+            existing.UpdatedAt = DateTimeOffset.UtcNow;
+            existing.UpdatedById = currentUserId;
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            return new SavedCandidateFilterDto
+            {
+                Id = existing.Id,
+                UserId = existing.UserId,
+                Name = existing.Name,
+                Description = existing.Description,
+                Criteria = model.Criteria,
+                IsDefault = existing.IsDefault,
+                CreatedAt = existing.CreatedAt
+            };
+        }
+
+        var savedFilter = new SavedCandidateFilter
+        {
+            Id = Guid.NewGuid(),
+            UserId = currentUserId,
+            Name = cleanName,
+            Description = model.Description?.Trim(),
+            CriteriaJson = criteriaJson,
+            IsDefault = model.IsDefault,
+            CreatedById = currentUserId,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+
+        await _dbContext.SavedCandidateFilters.AddAsync(savedFilter, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Recruiter {UserId} đã lưu bộ lọc tìm kiếm mới '{FilterName}' (Id: {FilterId})",
+            currentUserId, cleanName, savedFilter.Id);
+
+        return new SavedCandidateFilterDto
+        {
+            Id = savedFilter.Id,
+            UserId = savedFilter.UserId,
+            Name = savedFilter.Name,
+            Description = savedFilter.Description,
+            Criteria = model.Criteria,
+            IsDefault = savedFilter.IsDefault,
+            CreatedAt = savedFilter.CreatedAt
+        };
+    }
+
+    public async Task<IReadOnlyList<SavedCandidateFilterDto>> GetSavedFiltersAsync(
+        Guid currentUserId,
+        CancellationToken cancellationToken = default)
+    {
+        if (currentUserId == Guid.Empty) return [];
+
+        var list = await _dbContext.SavedCandidateFilters
+            .AsNoTracking()
+            .Where(f => f.UserId == currentUserId && !f.IsDeleted)
+            .OrderByDescending(f => f.IsDefault)
+            .ThenByDescending(f => f.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        var jsonOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
+        return list.Select(f =>
+        {
+            CandidateFilterCriteria criteria;
+            try
+            {
+                criteria = JsonSerializer.Deserialize<CandidateFilterCriteria>(f.CriteriaJson, jsonOptions) ?? new CandidateFilterCriteria();
+            }
+            catch
+            {
+                criteria = new CandidateFilterCriteria();
+            }
+
+            return new SavedCandidateFilterDto
+            {
+                Id = f.Id,
+                UserId = f.UserId,
+                Name = f.Name,
+                Description = f.Description,
+                Criteria = criteria,
+                IsDefault = f.IsDefault,
+                CreatedAt = f.CreatedAt
+            };
+        }).ToList();
+    }
+
+    public async Task<bool> DeleteSavedFilterAsync(
+        Guid filterId,
+        Guid currentUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var filter = await _dbContext.SavedCandidateFilters
+            .FirstOrDefaultAsync(f => f.Id == filterId && !f.IsDeleted, cancellationToken);
+
+        if (filter == null) return false;
+
+        // Chỉ chủ nhân hoặc Admin mới được xóa
+        if (filter.UserId != currentUserId)
+        {
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == currentUserId, cancellationToken);
+            if (user?.Role != UserRoles.Admin)
+            {
+                return false;
+            }
+        }
+
+        filter.IsDeleted = true;
+        filter.DeletedAt = DateTimeOffset.UtcNow;
+        filter.UpdatedAt = DateTimeOffset.UtcNow;
+        filter.UpdatedById = currentUserId;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Đã xóa bộ lọc tìm kiếm {FilterId} của Recruiter {UserId}", filterId, currentUserId);
+        return true;
     }
 }
