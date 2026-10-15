@@ -359,11 +359,26 @@ public class HomeController : Controller
                 })
                 .ToList();
 
+            // Danh sách vị trí tuyển dụng cho bộ lọc ứng viên (Filter & Export)
+            var availableJobs = await _dbContext.JobPostings
+                .Include(j => j.Requisition)
+                .Where(j => j.Status == JobPostingStatus.PUBLISHED || _dbContext.Applications.Any(a => a.JobPostingId == j.Id))
+                .OrderBy(j => j.Title)
+                .Select(j => new JobFilterOptionDto
+                {
+                    Id = j.Id,
+                    Code = j.Requisition != null ? j.Requisition.Code : "",
+                    Title = j.Title
+                })
+                .ToListAsync();
+            model.AvailableJobsForFilter = availableJobs;
+
             // Toàn bộ ứng viên cho Bảng Quản Lý Ứng Viên & Tiến Trình Tuyển Dụng
             var allApps = await _dbContext.Applications
                 .Include(a => a.Candidate)
                     .ThenInclude(c => c.Resumes)
                 .Include(a => a.JobPosting)
+                    .ThenInclude(j => j.Requisition)
                 .Include(a => a.CurrentStage)
                 .Where(a => !a.IsDeleted)
                 .OrderByDescending(a => a.AppliedAt)
@@ -374,14 +389,17 @@ public class HomeController : Controller
             {
                 var candName = $"{a.Candidate.FirstName} {a.Candidate.LastName}".Trim();
                 var primaryResume = a.Candidate.Resumes.FirstOrDefault(r => r.IsPrimary) ?? a.Candidate.Resumes.FirstOrDefault();
+                var jobCode = a.JobPosting?.Requisition?.Code ?? "";
                 return new CandidatePipelineItemDto
                 {
                     ApplicationId = a.Id,
                     CandidateId = a.CandidateId,
+                    JobPostingId = a.JobPostingId,
+                    JobCode = jobCode,
                     CandidateName = candName,
                     CandidateEmail = a.Candidate.Email,
                     CandidatePhone = a.Candidate.Phone ?? "Chưa có",
-                    JobTitle = a.JobPosting.Title,
+                    JobTitle = a.JobPosting?.Title ?? "Vị trí tuyển dụng",
                     CurrentStageId = a.CurrentStageId,
                     CurrentStageName = a.CurrentStage.Name,
                     CurrentStageOrder = a.CurrentStage.StageOrder,

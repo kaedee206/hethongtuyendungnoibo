@@ -936,8 +936,20 @@
                                 </h5>
                                 <small class="text-muted">Chuyển tiếp giai đoạn tuyển chọn, lên lịch phỏng vấn, thẩm định và phát hành offer trực tiếp</small>
                             </div>
-                            <div class="d-flex align-items-center gap-2 w-100 w-md-auto">
-                                <div class="input-group input-group-sm position-relative" style="max-width: 320px;">
+                            <div class="d-flex flex-wrap align-items-center gap-2 w-100 w-md-auto justify-content-start justify-content-md-end">
+                                <div class="candidate-job-filter-wrapper" style="min-width: 200px; max-width: 260px;">
+                                    <select id="candidateJobFilter" class="form-select form-select-sm" style="border-color: #E2E8F0; font-size: 0.82rem; border-radius: 8px;" onchange="filterPipelineByJob(this.value)" title="Lọc theo vị trí tuyển dụng">
+                                        <option value="">Tất cả vị trí tuyển dụng</option>
+                                        @if (Model.AvailableJobsForFilter != null && Model.AvailableJobsForFilter.Any())
+                                        {
+                                            @foreach (var job in Model.AvailableJobsForFilter)
+                                            {
+                                                <option value="@job.Id">@job.DisplayText</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                                <div class="input-group input-group-sm position-relative" style="max-width: 280px;">
                                     <span class="input-group-text bg-light border-end-0" style="border-color: #E2E8F0;"><i class="bi bi-search text-muted"></i></span>
                                     <input type="text" id="candidateSearchInput" class="form-control border-start-0 pe-4" placeholder="Tìm tên, email, vị trí... (từ 3 ký tự)" style="border-color: #E2E8F0; font-size: 0.82rem;" autocomplete="off" />
                                     <button type="button" id="candidateSearchClearBtn" class="btn btn-sm btn-link position-absolute top-50 end-0 translate-middle-y me-1 text-muted d-none" style="text-decoration:none; z-index: 5;" title="Xóa từ khóa">
@@ -947,6 +959,10 @@
                                         <i class="bi bi-info-circle me-1"></i>Nhập tối thiểu 3 ký tự để tìm kiếm
                                     </div>
                                 </div>
+                                <button type="button" id="btnExportCandidateExcel" class="btn btn-sm btn-outline-success fw-semibold d-inline-flex align-items-center gap-1.5" style="border-radius: 8px; font-size: 0.82rem; padding: 0.35rem 0.75rem; border-color: #059669; color: #059669; white-space: nowrap;" onclick="exportCandidateShortlistExcel()" title="Xuất danh sách ứng viên theo bộ lọc hiện tại ra file Excel để gửi Trưởng bộ phận (SCRUM-328)">
+                                    <i class="bi bi-file-earmark-excel-fill" style="font-size: 0.95rem; color: #059669;"></i>
+                                    <span>Xuất Excel</span>
+                                </button>
                             </div>
                         </div>
 
@@ -985,6 +1001,8 @@
                                             <tr id="cand-row-@cand.ApplicationId" class="pipeline-candidate-row"
                                                 data-stage-order="@cand.CurrentStageOrder"
                                                 data-status="@cand.Status"
+                                                data-job-id="@cand.JobPostingId"
+                                                data-job-code="@cand.JobCode"
                                                 data-name="@cand.CandidateName.ToLower()"
                                                 data-email="@cand.CandidateEmail.ToLower()"
                                                 data-job="@cand.JobTitle.ToLower()"
@@ -2564,10 +2582,12 @@
                 window.candCurrentPage = 1;
             }
             const input = document.getElementById('candidateSearchInput');
+            const jobSelect = document.getElementById('candidateJobFilter');
             const clearBtn = document.getElementById('candidateSearchClearBtn');
             const hint = document.getElementById('candSearchHint');
             const query = (input ? input.value : '').trim();
             const stageOrder = window.currentPipelineStage || 'ALL';
+            const selectedJobId = (jobSelect ? jobSelect.value : '') || (window.currentPipelineJobId || '');
 
             if (clearBtn) {
                 if (query.length > 0) clearBtn.classList.remove('d-none');
@@ -2585,9 +2605,13 @@
             rows.forEach(r => {
                 const rowStage = r.getAttribute('data-stage-order') || '';
                 const rowStatus = r.getAttribute('data-status') || '';
+                const rowJobId = r.getAttribute('data-job-id') || '';
                 const name = r.getAttribute('data-name') || '';
                 const email = r.getAttribute('data-email') || '';
                 const job = r.getAttribute('data-job') || '';
+
+                // Job match
+                let jobMatch = !selectedJobId || (rowJobId.toLowerCase() === selectedJobId.toLowerCase());
 
                 // Stage match
                 let stageMatch = false;
@@ -2605,7 +2629,7 @@
                     ? window.NoveraInstantSearch.matchSearchTokens(combinedText, query)
                     : combinedText.toLowerCase().includes(query.toLowerCase()));
 
-                if (stageMatch && textMatch) {
+                if (stageMatch && textMatch && jobMatch) {
                     matchedRows.push(r);
                 }
             });
@@ -2664,6 +2688,7 @@
                 window.NoveraInstantSearch.syncUrlParams({
                     cand_search: query || null,
                     cand_stage: stageOrder !== 'ALL' ? stageOrder : null,
+                    cand_job: selectedJobId || null,
                     cand_page: window.candCurrentPage > 1 ? window.candCurrentPage : null
                 });
             }
@@ -2762,14 +2787,40 @@
             applyPipelineFilters(true, true);
         }
 
+        function filterPipelineByJob(jobId) {
+            window.currentPipelineJobId = jobId || '';
+            window.candCurrentPage = 1;
+            applyPipelineFilters(true, true);
+        }
+
         function searchPipelineCandidates(query) {
             applyPipelineFilters(true, true);
+        }
+
+        // SCRUM-328: Xuất danh sách ứng viên rút gọn ra file Excel cho Trưởng bộ phận theo bộ lọc đang áp dụng
+        function exportCandidateShortlistExcel() {
+            const stageOrder = window.currentPipelineStage || 'ALL';
+            const jobSelect = document.getElementById('candidateJobFilter');
+            const jobId = (jobSelect ? jobSelect.value : '') || (window.currentPipelineJobId || '');
+            const searchInput = document.getElementById('candidateSearchInput');
+            const search = (searchInput ? searchInput.value : '').trim();
+
+            showToast('Đang khởi tạo tệp Excel danh sách rút gọn ứng viên...', true);
+
+            const params = new URLSearchParams();
+            if (jobId) params.append('jobId', jobId);
+            if (stageOrder && stageOrder !== 'ALL') params.append('stage', stageOrder);
+            if (search && search.length >= 3) params.append('search', search);
+
+            const exportUrl = '/Workspace/ExportCandidates?' + params.toString();
+            window.location.href = exportUrl;
         }
 
         // Initialize candidate pipeline search events & URL hydration
         document.addEventListener('DOMContentLoaded', function () {
             const candInput = document.getElementById('candidateSearchInput');
             const candClearBtn = document.getElementById('candidateSearchClearBtn');
+            const candJobSelect = document.getElementById('candidateJobFilter');
 
             if (candInput) {
                 const debouncedSearch = window.NoveraInstantSearch
@@ -2796,6 +2847,10 @@
                 const params = window.NoveraInstantSearch.getUrlParams();
                 if (candInput && params.cand_search !== undefined) {
                     candInput.value = params.cand_search;
+                }
+                if (candJobSelect && params.cand_job !== undefined) {
+                    candJobSelect.value = params.cand_job;
+                    window.currentPipelineJobId = params.cand_job;
                 }
                 if (params.cand_page !== undefined) {
                     window.candCurrentPage = parseInt(params.cand_page, 10) || 1;

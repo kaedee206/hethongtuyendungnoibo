@@ -29,12 +29,23 @@ public class WorkspaceDashboardViewModel
     public List<PendingOfferDto> PendingOffers { get; set; } = new();
     public List<InterviewEvaluationCandidateDto> EvaluationCandidates { get; set; } = new();
     public List<CandidatePipelineItemDto> CandidatePipelineItems { get; set; } = new();
+    public List<JobFilterOptionDto> AvailableJobsForFilter { get; set; } = new();
+}
+
+public class JobFilterOptionDto
+{
+    public Guid Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string DisplayText => string.IsNullOrWhiteSpace(Code) ? Title : $"[{Code}] {Title}";
 }
 
 public class CandidatePipelineItemDto
 {
     public Guid ApplicationId { get; set; }
     public Guid CandidateId { get; set; }
+    public Guid JobPostingId { get; set; }
+    public string JobCode { get; set; } = string.Empty;
     public string CandidateName { get; set; } = string.Empty;
     public string CandidateEmail { get; set; } = string.Empty;
     public string CandidatePhone { get; set; } = string.Empty;

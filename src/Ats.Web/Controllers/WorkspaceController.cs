@@ -19,6 +19,7 @@ public class WorkspaceController : Controller
     private readonly IWebHostEnvironment _env;
     private readonly IEmailService _emailService;
     private readonly IFileStorageService _fileStorageService;
+    private readonly ICandidateExportService _candidateExportService;
     private readonly ILogger<WorkspaceController> _logger;
 
     public WorkspaceController(
@@ -26,12 +27,14 @@ public class WorkspaceController : Controller
         IWebHostEnvironment env,
         IEmailService emailService,
         IFileStorageService fileStorageService,
+        ICandidateExportService candidateExportService,
         ILogger<WorkspaceController> logger)
     {
         _dbContext = dbContext;
         _env = env;
         _emailService = emailService;
         _fileStorageService = fileStorageService;
+        _candidateExportService = candidateExportService;
         _logger = logger;
     }
 
@@ -1443,6 +1446,40 @@ public class WorkspaceController : Controller
         catch (Exception ex)
         {
             return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// SCRUM-328: Xuất danh sách ứng viên rút gọn ra file Excel cho Trưởng bộ phận theo các bộ lọc đang áp dụng
+    /// </summary>
+    [HttpGet("ExportCandidates")]
+    public async Task<IActionResult> ExportCandidates(
+        [FromQuery] Guid? jobId,
+        [FromQuery] string? stage,
+        [FromQuery] string? search,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var exporterName = User.FindFirstValue(ClaimTypes.Name)
+                ?? User.FindFirstValue("name")
+                ?? User.FindFirstValue(ClaimTypes.Email)
+                ?? "Nhân viên tuyển dụng";
+
+            var (fileBytes, fileName, contentType) = await _candidateExportService.ExportCandidatesShortlistAsync(
+                jobId,
+                stage,
+                search,
+                exporterName,
+                cancellationToken);
+
+            return File(fileBytes, contentType, fileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi xuất danh sách ứng viên ra Excel (SCRUM-328)");
+            TempData["ErrorMessage"] = "Không thể xuất danh sách ứng viên ra Excel: " + ex.Message;
+            return RedirectToAction("Index", "Home", new { tab = "ung-vien" });
         }
     }
 
