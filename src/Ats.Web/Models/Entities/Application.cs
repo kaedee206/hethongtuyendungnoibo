@@ -19,6 +19,7 @@ public class Application : BaseEntity
     public string? TrackingCode { get; set; }
     public Guid? ReferrerUserId { get; set; }
     public string? ReferralNote { get; set; }
+    public string? CoverLetter { get; set; }
 
     /// <summary>
     /// Mã token bảo mật dùng để rút hồ sơ qua liên kết email xác nhận (SCRUM-291).
