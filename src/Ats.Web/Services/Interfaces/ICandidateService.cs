@@ -75,4 +75,24 @@ public interface ICandidateService
         Guid currentUserId, 
         string currentUserRole, 
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Kiểm tra trùng lặp ứng viên qua Email hoặc Số điện thoại (SCRUM-47).
+    /// Kiểm tra xem ứng viên đã tồn tại chưa và đã có đơn ứng tuyển đang hoạt động ở chính JobPostingId này hay chưa.
+    /// </summary>
+    Task<CandidateDuplicateCheckResultViewModel> CheckDuplicateCandidateAsync(
+        string email, 
+        string? phoneNumber, 
+        Guid jobPostingId, 
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Thêm ứng viên thủ công vào vị trí tuyển dụng (SCRUM-47).
+    /// Hỗ trợ nguồn LinkedIn, Headhunt, Referral, Direct.
+    /// Tái sử dụng hồ sơ nếu đã có trong hệ thống, lưu CV an toàn, tạo Application và ghi nhận AuditLog trong transaction.
+    /// </summary>
+    Task<Guid> AddManualCandidateAsync(
+        CandidateManualCreateInputModel input, 
+        string recruiterUserId, 
+        CancellationToken cancellationToken = default);
 }

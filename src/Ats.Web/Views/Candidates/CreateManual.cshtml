@@ -1,0 +1,534 @@
+@using Ats.Web.Models.Enums
+@model Ats.Web.Models.ViewModels.Candidates.CandidateManualCreateInputModel
+@{
+    ViewData["Title"] = "Thêm Ứng Viên Thủ Công (LinkedIn) — NoveraTech ATS";
+    Layout = "_Layout";
+    var jobPostings = ViewBag.JobPostings as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var selectedJob = ViewBag.SelectedJob as Ats.Web.Models.Entities.JobPosting;
+}
+
+@* ══════════════════════════════════════════════════════════
+   NOVERATECH ATS — THÊM ỨNG VIÊN THỦ CÔNG VÀO VỊ TRÍ (SCRUM-47)
+   Quy chuẩn: Bootstrap 5 | 8px Radius | Cấm rounded-pill | Tag Helpers | Realtime Debounce
+   ══════════════════════════════════════════════════════════ *@
+
+<div class="container-fluid px-3 px-lg-4 py-4" style="max-width: 1100px;">
+
+    <!-- ── Breadcrumbs & Header ── -->
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1" style="font-size: 0.85rem;">
+                <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted"><i class="bi bi-house-door me-1"></i>Bàn làm việc</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Candidates" asp-action="Index" class="text-decoration-none text-muted">Hồ sơ ứng viên</a></li>
+                <li class="breadcrumb-item active fw-semibold text-dark" aria-current="page">Thêm ứng viên thủ công</li>
+            </ol>
+        </nav>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+            <div>
+                <h3 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2" style="letter-spacing: -0.5px;">
+                    <span class="d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px; border-radius: 8px; background: #0A66C2; color: #FFFFFF;">
+                        <i class="bi bi-linkedin fs-5"></i>
+                    </span>
+                    <span>Thêm Ứng Viên Vào Vị Trí Tuyển Dụng</span>
+                </h3>
+                <p class="text-muted small mb-0">
+                    Đưa nhanh ứng viên tìm kiếm từ LinkedIn, Headhunt hoặc giới thiệu trực tiếp vào pipeline tuyển dụng của vị trí tương ứng.
+                </p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a asp-controller="Candidates" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-2">
+                    <i class="bi bi-arrow-left me-1"></i>Danh sách ứng viên
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show p-3 mb-4 shadow-sm" style="border-radius: 8px; border-left: 5px solid #DC2626;" role="alert">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
+                <div class="fw-semibold">@TempData["ErrorMessage"]</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- ── Main Form Card ── -->
+    <div class="card border-0 shadow-sm bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px; overflow: hidden;">
+        <div class="card-header bg-white py-3 px-4" style="border-bottom: 1px solid #F1F5F9;">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge px-2.5 py-1 text-xs" style="background: #EFF6FF; color: #1D4ED8; border-radius: 6px; font-weight: 600;">
+                        <i class="bi bi-person-plus-fill me-1"></i> SCRUM-47
+                    </span>
+                    <span class="text-muted small">Kiểm tra trùng lặp thời gian thực & Tự động liên kết hồ sơ</span>
+                </div>
+                <div class="text-muted small" style="font-size: 0.8rem;">
+                    <i class="bi bi-shield-check text-success me-1"></i>Bảo mật phân quyền Recruiter / Admin
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body p-4">
+            <form asp-controller="Candidates" asp-action="CreateManual" method="post" enctype="multipart/form-data" id="manualCandidateForm" novalidate>
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger alert-dismissible fade show p-3 mb-4 shadow-sm" style="border-radius: 8px; border-left: 5px solid #DC2626;" role="alert">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-octagon-fill text-danger fs-5"></i>
+                        <span class="fw-semibold">Vui lòng điều chỉnh các thông tin chưa hợp lệ bên dưới.</span>
+                    </div>
+                </div>
+
+                <!-- ════ PHẦN 1: VỊ TRÍ TUYỂN DỤNG MỤC TIÊU ════ -->
+                <div class="p-3.5 mb-4" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <label asp-for="JobPostingId" class="form-label fw-bold text-dark mb-0" style="font-size: 0.92rem;">
+                            <i class="bi bi-briefcase-fill text-primary me-1.5"></i>Vị trí tuyển dụng mục tiêu <span class="text-danger">*</span>
+                        </label>
+                        @if (selectedJob != null)
+                        {
+                            <span class="badge bg-success text-white" style="border-radius: 6px; font-size: 0.75rem;">
+                                <i class="bi bi-check-circle-fill me-1"></i>Đã chỉ định vị trí
+                            </span>
+                        }
+                    </div>
+
+                    <select asp-for="JobPostingId" asp-items="jobPostings" class="form-select form-select-lg" id="jobPostingSelect" style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.95rem;">
+                        <option value="">-- Vui lòng chọn vị trí tuyển dụng đang mở tiếp nhận hồ sơ --</option>
+                    </select>
+                    <span asp-validation-for="JobPostingId" class="text-danger small mt-1 d-block fw-semibold"></span>
+
+                    @if (selectedJob != null)
+                    {
+                        <div class="mt-2.5 p-2.5 bg-white border rounded-2 d-flex align-items-center justify-content-between flex-wrap gap-2" style="border-color: #E2E8F0 !important;">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge font-monospace" style="background: #0F172A; color: #38BDF8; border-radius: 6px;">@(selectedJob.Code ?? "JOB")</span>
+                                <span class="fw-bold text-dark">@selectedJob.Title</span>
+                                <span class="text-muted small">• @(selectedJob.Requisition?.Department?.Name ?? selectedJob.WorkLocation)</span>
+                            </div>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="border-radius: 6px;">
+                                Đang mở nhận hồ sơ (PUBLISHED)
+                            </span>
+                        </div>
+                    }
+                </div>
+
+                <!-- ════ HỘP CẢNH BÁO KIỂM TRA TRÙNG LẶP THỜI GIAN THỰC ════ -->
+                <div id="duplicateAlertBox" class="mb-4 d-none">
+                    <div class="alert p-3.5 shadow-sm d-flex align-items-start gap-3" id="duplicateAlertContent" style="border-radius: 10px; border-left: 5px solid;">
+                        <div id="duplicateAlertIcon" class="fs-4 mt-0.5"></div>
+                        <div class="flex-grow-1">
+                            <h6 class="fw-bold mb-1" id="duplicateAlertTitle"></h6>
+                            <div class="small" id="duplicateAlertMessage"></div>
+                            <div id="duplicateAlertActions" class="mt-2.5 d-none">
+                                <a id="btnViewExistingCandidate" href="#" target="_blank" class="btn btn-sm btn-outline-dark rounded-2 fw-semibold">
+                                    <i class="bi bi-box-arrow-up-right me-1"></i>Xem hồ sơ ứng viên cũ
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ════ PHẦN 2: THÔNG TIN ỨNG VIÊN ════ -->
+                <div class="mb-4">
+                    <h6 class="fw-bold text-dark text-uppercase mb-3 d-flex align-items-center gap-2" style="font-size: 0.8rem; letter-spacing: 0.05em; color: #475569 !important;">
+                        <i class="bi bi-person-bounding-box text-primary"></i>Thông tin cá nhân &amp; Hồ sơ nguồn
+                    </h6>
+
+                    <div class="row g-3">
+                        <!-- Họ và tên -->
+                        <div class="col-12 col-md-6">
+                            <label asp-for="FullName" class="form-label fw-semibold text-dark" style="font-size: 0.88rem;">
+                                Họ và tên ứng viên <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white" style="border-color: #CBD5E1; border-radius: 8px 0 0 8px;">
+                                    <i class="bi bi-person text-muted"></i>
+                                </span>
+                                <input asp-for="FullName" class="form-control" placeholder="Ví dụ: Nguyễn Văn An" style="border-color: #CBD5E1; border-radius: 0 8px 8px 0;" required />
+                            </div>
+                            <span asp-validation-for="FullName" class="text-danger small mt-1 d-block fw-semibold"></span>
+                        </div>
+
+                        <!-- Nguồn ứng viên -->
+                        <div class="col-12 col-md-6">
+                            <label asp-for="Source" class="form-label fw-semibold text-dark" style="font-size: 0.88rem;">
+                                Nguồn tiếp nhận ứng viên <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white" style="border-color: #CBD5E1; border-radius: 8px 0 0 8px;">
+                                    <i class="bi bi-diagram-3 text-muted"></i>
+                                </span>
+                                <select asp-for="Source" class="form-select" style="border-color: #CBD5E1; border-radius: 0 8px 8px 0;">
+                                    <option value="@CandidateSource.LINKEDIN" selected>LinkedIn (Tìm kiếm chủ động / Sourcing)</option>
+                                    <option value="@CandidateSource.HEADHUNTER">Headhunt / Đơn vị săn đầu người</option>
+                                    <option value="@CandidateSource.REFERRAL">Giới thiệu nội bộ (Referral)</option>
+                                    <option value="@CandidateSource.DIRECT">Ứng tuyển trực tiếp (Direct)</option>
+                                    <option value="@CandidateSource.OTHER">Khác</option>
+                                </select>
+                            </div>
+                            <span asp-validation-for="Source" class="text-danger small mt-1 d-block fw-semibold"></span>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="col-12 col-md-6">
+                            <label asp-for="Email" class="form-label fw-semibold text-dark d-flex align-items-center justify-content-between" style="font-size: 0.88rem;">
+                                <span>Địa chỉ Email <span class="text-danger">*</span></span>
+                                <span id="emailCheckSpinner" class="spinner-border spinner-border-sm text-primary d-none" role="status" title="Đang kiểm tra trùng..."></span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white" style="border-color: #CBD5E1; border-radius: 8px 0 0 8px;">
+                                    <i class="bi bi-envelope text-muted"></i>
+                                </span>
+                                <input asp-for="Email" type="email" class="form-control" id="candidateEmail" placeholder="candidate@example.com" style="border-color: #CBD5E1; border-radius: 0 8px 8px 0;" required />
+                            </div>
+                            <span asp-validation-for="Email" class="text-danger small mt-1 d-block fw-semibold"></span>
+                        </div>
+
+                        <!-- Số điện thoại -->
+                        <div class="col-12 col-md-6">
+                            <label asp-for="PhoneNumber" class="form-label fw-semibold text-dark d-flex align-items-center justify-content-between" style="font-size: 0.88rem;">
+                                <span>Số điện thoại (Việt Nam 10 số)</span>
+                                <span id="phoneCheckSpinner" class="spinner-border spinner-border-sm text-primary d-none" role="status" title="Đang kiểm tra trùng..."></span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white" style="border-color: #CBD5E1; border-radius: 8px 0 0 8px;">
+                                    <i class="bi bi-telephone text-muted"></i>
+                                </span>
+                                <input asp-for="PhoneNumber" type="tel" class="form-control" id="candidatePhone" placeholder="Ví dụ: 0912345678 hoặc +84912345678" style="border-color: #CBD5E1; border-radius: 0 8px 8px 0;" />
+                            </div>
+                            <span asp-validation-for="PhoneNumber" class="text-danger small mt-1 d-block fw-semibold"></span>
+                        </div>
+
+                        <!-- Đường dẫn LinkedIn -->
+                        <div class="col-12">
+                            <label asp-for="LinkedInUrl" class="form-label fw-semibold text-dark" style="font-size: 0.88rem;">
+                                Đường dẫn hồ sơ LinkedIn / Profile trực tuyến
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white" style="border-color: #CBD5E1; border-radius: 8px 0 0 8px; color: #0A66C2;">
+                                    <i class="bi bi-linkedin"></i>
+                                </span>
+                                <input asp-for="LinkedInUrl" type="url" class="form-control" placeholder="https://www.linkedin.com/in/ten-ung-vien" style="border-color: #CBD5E1; border-radius: 0 8px 8px 0;" />
+                            </div>
+                            <span asp-validation-for="LinkedInUrl" class="text-danger small mt-1 d-block fw-semibold"></span>
+                            <div class="form-text text-muted small" style="font-size: 0.78rem;">
+                                Dán liên kết trang cá nhân của ứng viên trên LinkedIn để tiện theo dõi và đối soát lý lịch công tác.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ════ PHẦN 3: TỆP ĐÍNH KÈM CV ════ -->
+                <div class="mb-4">
+                    <h6 class="fw-bold text-dark text-uppercase mb-3 d-flex align-items-center gap-2" style="font-size: 0.8rem; letter-spacing: 0.05em; color: #475569 !important;">
+                        <i class="bi bi-file-earmark-arrow-up text-primary"></i>Hồ sơ đính kèm (CV)
+                    </h6>
+
+                    <div class="upload-dropzone p-4 text-center border-dashed position-relative" id="cvDropZone" style="border: 2px dashed #CBD5E1; border-radius: 10px; background: #F8FAFC; transition: all 0.2s ease;">
+                        <input asp-for="CvFile" type="file" id="cvFileInput" class="position-absolute top-0 start-0 w-100 h-100 opacity-0" style="cursor: pointer;" accept=".pdf,.doc,.docx" />
+                        
+                        <div id="uploadPrompt">
+                            <div class="d-inline-flex align-items-center justify-content-center mb-2" style="width: 52px; height: 52px; border-radius: 50%; background: #EFF6FF; color: #2563EB;">
+                                <i class="bi bi-cloud-arrow-up-fill fs-3"></i>
+                            </div>
+                            <div class="fw-bold text-dark fs-6 mb-1">
+                                Kéo &amp; thả tệp CV vào đây hoặc <span class="text-primary text-decoration-underline" style="cursor: pointer;">chọn tệp từ máy tính</span>
+                            </div>
+                            <div class="text-muted small" style="font-size: 0.8rem;">
+                                Hỗ trợ định dạng: <strong>.PDF, .DOC, .DOCX</strong> (Dung lượng tối đa: <strong>10MB</strong>)
+                            </div>
+                        </div>
+
+                        <!-- Khung hiển thị tệp đã chọn -->
+                        <div id="fileSelectedDisplay" class="d-none">
+                            <div class="d-inline-flex align-items-center gap-3 p-3 bg-white border rounded-2 shadow-sm" style="border-color: #E2E8F0 !important;">
+                                <div class="d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border-radius: 8px; background: #FEF3C7; color: #D97706;">
+                                    <i class="bi bi-file-earmark-pdf fs-4" id="fileIcon"></i>
+                                </div>
+                                <div class="text-start">
+                                    <div class="fw-bold text-dark text-truncate" id="fileNameDisplay" style="max-width: 320px;"></div>
+                                    <div class="text-muted small" id="fileSizeDisplay" style="font-size: 0.78rem;"></div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-2 ms-2" id="btnRemoveFile" title="Xóa tệp đã chọn">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <span asp-validation-for="CvFile" class="text-danger small mt-1 d-block fw-semibold"></span>
+                </div>
+
+                <!-- ════ PHẦN 4: ĐÁNH GIÁ SƠ BỘ BAN ĐẦU ════ -->
+                <div class="mb-4">
+                    <h6 class="fw-bold text-dark text-uppercase mb-3 d-flex align-items-center gap-2" style="font-size: 0.8rem; letter-spacing: 0.05em; color: #475569 !important;">
+                        <i class="bi bi-chat-square-quote text-primary"></i>Đánh giá sơ bộ &amp; Ghi chú của Recruiter
+                    </h6>
+
+                    <label asp-for="Note" class="form-label fw-semibold text-dark" style="font-size: 0.88rem;">
+                        Nhận xét ban đầu khi tìm kiếm ứng viên
+                    </label>
+                    <textarea asp-for="Note" class="form-control" rows="4" placeholder="Ví dụ: Ứng viên 5 năm kinh nghiệm Tech Lead .NET, hiện công tác tại Công ty X. Tìm thấy qua LinkedIn Recruiter, ứng viên phản hồi tích cực và đồng ý tham gia phỏng vấn..."></textarea>
+                    <span asp-validation-for="Note" class="text-danger small mt-1 d-block fw-semibold"></span>
+                    <div class="form-text text-muted small" style="font-size: 0.78rem;">
+                        Ghi chú này sẽ được lưu thành bản ghi nhận xét nội bộ (Recruitment Note) trong hồ sơ hợp nhất 360 độ của ứng viên.
+                    </div>
+                </div>
+
+                <!-- ════ ACTION BUTTONS ════ -->
+                <div class="d-flex align-items-center justify-content-end gap-2 pt-3 border-top" style="border-color: #F1F5F9 !important;">
+                    <a asp-controller="Candidates" asp-action="Index" class="btn btn-outline-secondary px-4 py-2 fw-semibold rounded-2" style="font-size: 0.9rem;">
+                        <i class="bi bi-x-circle me-1"></i>Hủy bỏ
+                    </a>
+                    <button type="submit" class="btn btn-success px-4 py-2 fw-semibold rounded-2 shadow-sm d-flex align-items-center gap-2" id="btnSubmitManualCandidate" style="font-size: 0.9rem; background: #059669; border-color: #059669;">
+                        <i class="bi bi-check2-circle fs-6"></i>
+                        <span id="btnSubmitText">Lưu &amp; Đưa Vào Pipeline</span>
+                        <span id="btnSubmitSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const emailInput = document.getElementById('candidateEmail');
+            const phoneInput = document.getElementById('candidatePhone');
+            const jobSelect = document.getElementById('jobPostingSelect');
+            const duplicateBox = document.getElementById('duplicateAlertBox');
+            const duplicateContent = document.getElementById('duplicateAlertContent');
+            const duplicateIcon = document.getElementById('duplicateAlertIcon');
+            const duplicateTitle = document.getElementById('duplicateAlertTitle');
+            const duplicateMessage = document.getElementById('duplicateAlertMessage');
+            const duplicateActions = document.getElementById('duplicateAlertActions');
+            const btnViewExistingCandidate = document.getElementById('btnViewExistingCandidate');
+            const btnSubmit = document.getElementById('btnSubmitManualCandidate');
+            const emailSpinner = document.getElementById('emailCheckSpinner');
+            const phoneSpinner = document.getElementById('phoneCheckSpinner');
+            const form = document.getElementById('manualCandidateForm');
+            const btnSubmitText = document.getElementById('btnSubmitText');
+            const btnSubmitSpinner = document.getElementById('btnSubmitSpinner');
+
+            // Xử lý tệp đính kèm CV
+            const fileInput = document.getElementById('cvFileInput');
+            const dropZone = document.getElementById('cvDropZone');
+            const uploadPrompt = document.getElementById('uploadPrompt');
+            const fileSelectedDisplay = document.getElementById('fileSelectedDisplay');
+            const fileNameDisplay = document.getElementById('fileNameDisplay');
+            const fileSizeDisplay = document.getElementById('fileSizeDisplay');
+            const fileIcon = document.getElementById('fileIcon');
+            const btnRemoveFile = document.getElementById('btnRemoveFile');
+
+            let debounceTimer = null;
+
+            // Debounce hàm kiểm tra trùng lặp (500ms)
+            function triggerDuplicateCheck() {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(performDuplicateCheck, 500);
+            }
+
+            emailInput.addEventListener('input', triggerDuplicateCheck);
+            phoneInput.addEventListener('input', triggerDuplicateCheck);
+            jobSelect.addEventListener('change', triggerDuplicateCheck);
+
+            async function performDuplicateCheck() {
+                const email = emailInput.value.trim();
+                const phone = phoneInput.value.trim();
+                const jobId = jobSelect.value.trim();
+
+                // Nếu chưa có email và sđt thì ẩn cảnh báo
+                if (!email && !phone) {
+                    hideDuplicateAlert();
+                    return;
+                }
+
+                // Hiển thị spinners
+                if (email) emailSpinner.classList.remove('d-none');
+                if (phone) phoneSpinner.classList.remove('d-none');
+
+                try {
+                    const url = `/ung-vien/kiem-tra-trung?email=${encodeURIComponent(email)}&phoneNumber=${encodeURIComponent(phone)}&jobPostingId=${encodeURIComponent(jobId)}`;
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        return;
+                    }
+
+                    const data = await response.json();
+                    renderDuplicateResult(data);
+                } catch (error) {
+                    console.error('Lỗi kiểm tra trùng lặp:', error);
+                } finally {
+                    emailSpinner.classList.add('d-none');
+                    phoneSpinner.classList.add('d-none');
+                }
+            }
+
+            function renderDuplicateResult(data) {
+                if (!data || !data.isDuplicate) {
+                    // Không trùng lặp
+                    hideDuplicateAlert();
+                    btnSubmit.disabled = false;
+                    return;
+                }
+
+                duplicateBox.classList.remove('d-none');
+
+                if (data.hasActiveApplicationInSameJob) {
+                    // ── MÀU ĐỎ: Ứng viên đang có đơn dở dang cho vị trí này -> CHẶN LƯU
+                    duplicateContent.className = 'alert alert-danger p-3.5 shadow-sm d-flex align-items-start gap-3';
+                    duplicateContent.style.borderLeft = '5px solid #DC2626';
+                    duplicateContent.style.background = '#FEF2F2';
+                    duplicateIcon.innerHTML = '<i class="bi bi-x-circle-fill text-danger fs-3"></i>';
+                    duplicateTitle.className = 'fw-bold mb-1 text-danger';
+                    duplicateTitle.innerText = 'Cảnh báo: Ứng viên đã có đơn ứng tuyển đang hoạt động cho vị trí này!';
+                    duplicateMessage.innerHTML = `${data.message || 'Không được phép thêm trùng hồ sơ vào cùng một vị trí tuyển dụng.'}`;
+                    
+                    if (data.existingCandidateId) {
+                        btnViewExistingCandidate.href = `/ung-vien/${data.existingCandidateId}`;
+                        duplicateActions.classList.remove('d-none');
+                    } else {
+                        duplicateActions.classList.add('d-none');
+                    }
+
+                    // Vô hiệu hóa nút Submit để chặn trùng
+                    btnSubmit.disabled = true;
+                    btnSubmit.title = 'Không thể lưu vì ứng viên đã có hồ sơ đang xử lý cho vị trí này.';
+                } else {
+                    // ── MÀU VÀNG: Đã có trong hệ thống nhưng ở vị trí khác -> Cho phép liên kết
+                    duplicateContent.className = 'alert alert-warning p-3.5 shadow-sm d-flex align-items-start gap-3';
+                    duplicateContent.style.borderLeft = '5px solid #F59E0B';
+                    duplicateContent.style.background = '#FFFBEB';
+                    duplicateIcon.innerHTML = '<i class="bi bi-exclamation-triangle-fill text-warning fs-3"></i>';
+                    duplicateTitle.className = 'fw-bold mb-1 text-dark';
+                    duplicateTitle.innerText = `Phát hiện hồ sơ ứng viên đã có trong hệ thống (${data.matchedBy})`;
+                    duplicateMessage.innerHTML = `${data.message || 'Dữ liệu ứng viên sẽ được liên kết tự động và tạo đơn ứng tuyển mới cho vị trí này.'}`;
+
+                    if (data.existingCandidateId) {
+                        btnViewExistingCandidate.href = `/ung-vien/${data.existingCandidateId}`;
+                        duplicateActions.classList.remove('d-none');
+                    } else {
+                        duplicateActions.classList.add('d-none');
+                    }
+
+                    // Vẫn cho phép lưu để tái sử dụng
+                    btnSubmit.disabled = false;
+                    btnSubmit.title = '';
+                }
+            }
+
+            function hideDuplicateAlert() {
+                duplicateBox.classList.add('d-none');
+                btnSubmit.disabled = false;
+                btnSubmit.title = '';
+            }
+
+            // ── Quản lý File Upload UI ──
+            fileInput.addEventListener('change', function () {
+                handleFileSelect(this.files);
+            });
+
+            btnRemoveFile.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInput.value = '';
+                uploadPrompt.classList.remove('d-none');
+                fileSelectedDisplay.classList.add('d-none');
+            });
+
+            // Drag and drop events
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.style.borderColor = '#2563EB';
+                    dropZone.style.background = '#EFF6FF';
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.style.borderColor = '#CBD5E1';
+                    dropZone.style.background = '#F8FAFC';
+                }, false);
+            });
+
+            dropZone.addEventListener('drop', function (e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files && files.length > 0) {
+                    fileInput.files = files;
+                    handleFileSelect(files);
+                }
+            });
+
+            function handleFileSelect(files) {
+                if (!files || files.length === 0) return;
+                const file = files[0];
+
+                // Kiểm tra kích thước (10MB)
+                const maxSize = 10 * 1024 * 1024;
+                if (file.size > maxSize) {
+                    alert('Dung lượng tệp vượt quá giới hạn 10MB. Vui lòng chọn tệp nhỏ hơn.');
+                    fileInput.value = '';
+                    return;
+                }
+
+                // Kiểm tra đuôi tệp
+                const fileName = file.name;
+                const ext = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
+                if (!['.pdf', '.doc', '.docx'].includes(ext)) {
+                    alert('Định dạng tệp không được hỗ trợ. Chỉ chấp nhận .pdf, .doc, .docx.');
+                    fileInput.value = '';
+                    return;
+                }
+
+                fileNameDisplay.innerText = fileName;
+                fileSizeDisplay.innerText = formatFileSize(file.size);
+
+                if (ext === '.pdf') {
+                    fileIcon.className = 'bi bi-file-earmark-pdf fs-4 text-danger';
+                } else {
+                    fileIcon.className = 'bi bi-file-earmark-word fs-4 text-primary';
+                }
+
+                uploadPrompt.classList.add('d-none');
+                fileSelectedDisplay.classList.remove('d-none');
+            }
+
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            // Hiệu ứng loading khi submit form
+            form.addEventListener('submit', function () {
+                if (form.checkValidity() && !btnSubmit.disabled) {
+                    btnSubmit.disabled = true;
+                    btnSubmitText.innerText = 'Đang xử lý & lưu hồ sơ...';
+                    btnSubmitSpinner.classList.remove('d-none');
+                }
+            });
+
+            // Chạy kiểm tra ban đầu nếu đã có dữ liệu sẵn
+            if (emailInput.value.trim() || phoneInput.value.trim()) {
+                performDuplicateCheck();
+            }
+        });
+    </script>
+}

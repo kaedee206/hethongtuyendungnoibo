@@ -1,16 +1,19 @@
 using System.Security.Claims;
 using Ats.Web.Common;
 using Ats.Web.Constants;
+using Ats.Web.Models.Enums;
 using Ats.Web.Models.ViewModels.Candidates;
 using Ats.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Logging;
 
 namespace Ats.Web.Controllers;
 
 /// <summary>
-/// Controller điều phối nghiệp vụ ứng viên, quản lý hồ sơ hợp nhất (SCRUM-39) & giai đoạn tuyển dụng (SCRUM-42).
+/// Controller điều phối nghiệp vụ ứng viên, quản lý hồ sơ hợp nhất (SCRUM-39), 
+/// giai đoạn tuyển dụng (SCRUM-42) & thêm ứng viên thủ công (SCRUM-47).
 /// Tuân thủ quy chuẩn C# 12 Primary Constructors, kebab-case routing và bảo mật Anti-Forgery Token.
 /// </summary>
 [Authorize]
@@ -19,11 +22,13 @@ namespace Ats.Web.Controllers;
 public class CandidatesController(
     ICandidateStageService candidateStageService,
     ICandidateService candidateService,
+    IJobPostingService jobPostingService,
     ISecurityAuditService securityAuditService,
     ILogger<CandidatesController> logger) : Controller
 {
     private readonly ICandidateStageService _candidateStageService = candidateStageService;
     private readonly ICandidateService _candidateService = candidateService;
+    private readonly IJobPostingService _jobPostingService = jobPostingService;
     private readonly ISecurityAuditService _securityAuditService = securityAuditService;
     private readonly ILogger<CandidatesController> _logger = logger;
 
@@ -524,5 +529,153 @@ public class CandidatesController(
                 message = "Không thể tải lịch sử giai đoạn của ứng viên. Vui lòng thử lại sau."
             });
         }
+    }
+
+    // ==========================================
+    // SCRUM-47: THÊM ỨNG VIÊN THỦ CÔNG VÀO VỊ TRÍ
+    // ==========================================
+
+    /// <summary>
+    /// API kiểm tra trùng lặp thời gian thực qua Email và Số điện thoại (SCRUM-47).
+    /// </summary>
+    [HttpGet("kiem-tra-trung")]
+    [HttpGet("check-duplicate")]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.Admin},{UserRoles.HRManager}")]
+    public async Task<IActionResult> CheckDuplicate(
+        [FromQuery] string? email,
+        [FromQuery] string? phoneNumber,
+        [FromQuery] Guid jobPostingId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _candidateService.CheckDuplicateCandidateAsync(
+            email ?? string.Empty,
+            phoneNumber,
+            jobPostingId,
+            cancellationToken);
+
+        return Json(result);
+    }
+
+    /// <summary>
+    /// Giao diện form / modal thêm ứng viên thủ công vào vị trí tuyển dụng (SCRUM-47).
+    /// </summary>
+    [HttpGet("them-thu-cong/{jobPostingId:guid?}")]
+    [HttpGet("them-thu-cong")]
+    [HttpGet("create-manual/{jobPostingId:guid?}")]
+    [HttpGet("create-manual")]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.Admin},{UserRoles.HRManager}")]
+    public async Task<IActionResult> CreateManual(
+        [FromRoute] Guid? jobPostingId,
+        [FromQuery] Guid? queryJobPostingId,
+        CancellationToken cancellationToken)
+    {
+        var targetJobPostingId = (jobPostingId.HasValue && jobPostingId.Value != Guid.Empty)
+            ? jobPostingId.Value
+            : (queryJobPostingId ?? Guid.Empty);
+
+        var model = new CandidateManualCreateInputModel
+        {
+            JobPostingId = targetJobPostingId,
+            Source = CandidateSource.LINKEDIN
+        };
+
+        await PopulateJobPostingsDropdownAsync(targetJobPostingId, cancellationToken);
+        return View(model);
+    }
+
+    /// <summary>
+    /// Xử lý lưu hồ sơ ứng viên thêm thủ công vào vị trí tuyển dụng (SCRUM-47).
+    /// Hỗ trợ cả phản hồi AJAX (JSON) và Form submit truyền thống.
+    /// </summary>
+    [HttpPost("them-thu-cong")]
+    [HttpPost("create-manual")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.Admin},{UserRoles.HRManager}")]
+    public async Task<IActionResult> CreateManual(
+        [FromForm] CandidateManualCreateInputModel input,
+        CancellationToken cancellationToken)
+    {
+        var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+
+        if (!ModelState.IsValid)
+        {
+            if (isAjax)
+            {
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+                return Json(new { success = false, message = "Dữ liệu nhập vào chưa hợp lệ. Vui lòng kiểm tra lại các trường thông tin.", errors });
+            }
+
+            await PopulateJobPostingsDropdownAsync(input.JobPostingId, cancellationToken);
+            return View(input);
+        }
+
+        try
+        {
+            var currentUserId = GetCurrentUserId().ToString();
+            var candidateId = await _candidateService.AddManualCandidateAsync(input, currentUserId, cancellationToken);
+            var successMsg = $"Đã thêm ứng viên '{input.FullName}' vào vị trí tuyển dụng thành công!";
+
+            if (isAjax)
+            {
+                return Json(new
+                {
+                    success = true,
+                    candidateId,
+                    applicationId = input.CreatedApplicationId,
+                    message = successMsg,
+                    redirectUrl = Url.Action(nameof(Details), "Candidates", new { id = candidateId })
+                });
+            }
+
+            TempData["SuccessMessage"] = successMsg;
+            return RedirectToAction(nameof(Details), new { id = candidateId });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Người dùng không có quyền thêm ứng viên thủ công: UserId={UserId}", GetCurrentUserId());
+            if (isAjax) return Json(new { success = false, message = ex.Message });
+            ModelState.AddModelError(string.Empty, ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Lỗi nghiệp vụ khi thêm ứng viên thủ công: {Message}", ex.Message);
+            if (isAjax) return Json(new { success = false, message = ex.Message });
+            ModelState.AddModelError(string.Empty, ex.Message);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Không tìm thấy dữ liệu: {Message}", ex.Message);
+            if (isAjax) return Json(new { success = false, message = ex.Message });
+            ModelState.AddModelError(string.Empty, ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi hệ thống khi thêm ứng viên thủ công");
+            var errorMsg = "Đã xảy ra sự cố trong quá trình lưu hồ sơ ứng viên. Vui lòng thử lại sau.";
+            if (isAjax) return Json(new { success = false, message = errorMsg });
+            ModelState.AddModelError(string.Empty, errorMsg);
+        }
+
+        await PopulateJobPostingsDropdownAsync(input.JobPostingId, cancellationToken);
+        return View(input);
+    }
+
+    private async Task PopulateJobPostingsDropdownAsync(Guid selectedJobId, CancellationToken cancellationToken)
+    {
+        var publishedJobs = await _jobPostingService.GetPublishedJobPostingsAsync(cancellationToken);
+        var items = publishedJobs.Select(j => new SelectListItem
+        {
+            Value = j.Id.ToString(),
+            Text = string.IsNullOrWhiteSpace(j.Code)
+                ? j.Title
+                : $"[{j.Code}] {j.Title} - {(j.Requisition?.Department?.Name ?? j.WorkLocation)}",
+            Selected = j.Id == selectedJobId
+        }).ToList();
+
+        ViewBag.JobPostings = items;
+        ViewBag.SelectedJob = publishedJobs.FirstOrDefault(j => j.Id == selectedJobId);
     }
 }

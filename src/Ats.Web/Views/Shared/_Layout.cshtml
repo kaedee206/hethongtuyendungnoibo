@@ -205,13 +205,13 @@
                                         @(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "U")
                                     </div>
                                     <span class="fw-semibold text-truncate" style="max-width: 140px; color: #0F172A; font-size: 0.85rem;">
-                                        @(User.Identity.Name ?? "Nhân viên")
+                                        @(User.Identity?.Name ?? "Nhân viên")
                                     </span>
                                     <i class="bi bi-chevron-down small" style="color: #64748B;"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end mt-2 shadow-sm border" style="border-color: #E2E8F0; border-radius: 10px; min-width: 240px;">
                                     <li class="px-3 py-2" style="border-bottom: 1px solid #E2E8F0;">
-                                        <div class="small fw-bold" style="color: #0F172A;">@User.Identity.Name</div>
+                                        <div class="small fw-bold" style="color: #0F172A;">@(User.Identity?.Name ?? "Người dùng")</div>
                                         <div class="small text-truncate font-mono" style="color: #64748B; font-size: 0.75rem;">@User.FindFirstValue(ClaimTypes.Email)</div>
                                     </li>
                                     <li>

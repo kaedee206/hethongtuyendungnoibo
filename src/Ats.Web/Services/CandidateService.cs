@@ -1,6 +1,9 @@
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using Ats.Web.Constants;
 using Ats.Web.Data;
 using Ats.Web.Models.Entities;
+using Ats.Web.Models.Enums;
 using Ats.Web.Models.ViewModels.Candidates;
 using Ats.Web.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +12,8 @@ using Microsoft.Extensions.Logging;
 namespace Ats.Web.Services;
 
 /// <summary>
-/// Dịch vụ quản lý Hồ sơ Ứng viên Hợp nhất (Scrum 39 - Candidate Unified Profile / Dossier).
+/// Dịch vụ quản lý Hồ sơ Ứng viên Hợp nhất (Scrum 39 - Candidate Unified Profile / Dossier)
+/// và Thêm ứng viên thủ công đa nguồn (SCRUM-47).
 /// Tuân thủ quy chuẩn C# 12 Primary Constructors, bảo mật phân quyền nghiêm ngặt theo vai trò
 /// và chuẩn hóa múi giờ Việt Nam UTC+7.
 /// </summary>
@@ -17,11 +21,13 @@ public class CandidateService(
     ApplicationDbContext dbContext,
     IFileStorageService fileStorageService,
     ISecurityAuditService securityAuditService,
+    IApplicationTrackingService trackingService,
     ILogger<CandidateService> logger) : ICandidateService
 {
     private readonly ApplicationDbContext _dbContext = dbContext;
     private readonly IFileStorageService _fileStorageService = fileStorageService;
     private readonly ISecurityAuditService _securityAuditService = securityAuditService;
+    private readonly IApplicationTrackingService _trackingService = trackingService;
     private readonly ILogger<CandidateService> _logger = logger;
 
     public async Task<bool> CanAccessCandidateAsync(
@@ -583,4 +589,460 @@ public class CandidateService(
 
         return (physicalPath, resume.FileName, resume.MimeType ?? "application/pdf");
     }
+
+    // ==========================================
+    // SCRUM-47: THÊM ỨNG VIÊN THỦ CÔNG VÀO VỊ TRÍ
+    // ==========================================
+
+    /// <inheritdoc />
+    public async Task<CandidateDuplicateCheckResultViewModel> CheckDuplicateCandidateAsync(
+        string email,
+        string? phoneNumber,
+        Guid jobPostingId,
+        CancellationToken cancellationToken = default)
+    {
+        var result = new CandidateDuplicateCheckResultViewModel();
+        var cleanEmail = (email ?? string.Empty).Trim().ToLowerInvariant();
+        var cleanPhone = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
+        var normalizedPhone = NormalizePhoneNumber(cleanPhone);
+
+        if (string.IsNullOrWhiteSpace(cleanEmail) && string.IsNullOrWhiteSpace(cleanPhone))
+        {
+            result.IsDuplicate = false;
+            result.Message = "Không có thông tin email hoặc số điện thoại để kiểm tra trùng lặp.";
+            return result;
+        }
+
+        // 1. Tìm kiếm ứng viên trong cơ sở dữ liệu theo Email hoặc Số điện thoại
+        var candidates = await _dbContext.Candidates
+            .AsNoTracking()
+            .Where(c => !c.IsDeleted && (
+                (!string.IsNullOrEmpty(cleanEmail) && c.Email.ToLower() == cleanEmail) ||
+                (!string.IsNullOrEmpty(cleanPhone) && c.Phone != null && c.Phone != "")))
+            .ToListAsync(cancellationToken);
+
+        Candidate? matchedCandidate = null;
+        var matchedByEmail = false;
+        var matchedByPhone = false;
+
+        if (!string.IsNullOrEmpty(cleanEmail))
+        {
+            matchedCandidate = candidates.FirstOrDefault(c => c.Email.Trim().ToLowerInvariant() == cleanEmail);
+            if (matchedCandidate != null)
+            {
+                matchedByEmail = true;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(normalizedPhone))
+        {
+            var phoneCandidate = candidates.FirstOrDefault(c => NormalizePhoneNumber(c.Phone) == normalizedPhone);
+            if (phoneCandidate != null)
+            {
+                matchedByPhone = true;
+                matchedCandidate ??= phoneCandidate;
+            }
+        }
+
+        if (matchedCandidate == null)
+        {
+            result.IsDuplicate = false;
+            result.Message = "Hồ sơ mới, không phát hiện trùng lặp thông tin với ứng viên nào trong hệ thống.";
+            return result;
+        }
+
+        // Nếu ứng viên đã bị gộp vào hồ sơ chính (Scrum #40), lấy hồ sơ chính
+        if (matchedCandidate.IsMerged && matchedCandidate.MergedIntoCandidateId.HasValue)
+        {
+            var primaryCandidate = await _dbContext.Candidates
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == matchedCandidate.MergedIntoCandidateId.Value && !c.IsDeleted, cancellationToken);
+            if (primaryCandidate != null)
+            {
+                matchedCandidate = primaryCandidate;
+            }
+        }
+
+        result.IsDuplicate = true;
+        result.ExistingCandidateId = matchedCandidate.Id;
+        result.CandidateFullName = $"{matchedCandidate.FirstName} {matchedCandidate.LastName}".Trim();
+        result.CandidateEmail = matchedCandidate.Email;
+        result.CandidatePhone = matchedCandidate.Phone;
+
+        if (matchedByEmail && matchedByPhone)
+        {
+            result.MatchedBy = "Email và Số điện thoại";
+        }
+        else if (matchedByEmail)
+        {
+            result.MatchedBy = "Email";
+        }
+        else
+        {
+            result.MatchedBy = "Số điện thoại";
+        }
+
+        // 2. Kiểm tra xem ứng viên này đã có đơn ứng tuyển (Application) ở chính JobPostingId này chưa
+        if (jobPostingId != Guid.Empty)
+        {
+            var existingApplications = await _dbContext.Applications
+                .AsNoTracking()
+                .Include(a => a.JobPosting)
+                .Where(a => !a.IsDeleted && a.CandidateId == matchedCandidate.Id && a.JobPostingId == jobPostingId)
+                .OrderByDescending(a => a.CreatedAt)
+                .ToListAsync(cancellationToken);
+
+            var activeApp = existingApplications.FirstOrDefault(a => a.Status == ApplicationStatus.IN_PROCESS);
+            if (activeApp != null)
+            {
+                result.ExistingApplicationId = activeApp.Id;
+                result.HasActiveApplicationInSameJob = true;
+                result.Message = $"Ứng viên '{result.CandidateFullName}' ({result.CandidateEmail}) đã có hồ sơ đang xử lý (IN_PROCESS) cho vị trí này (Mã đơn: {activeApp.TrackingCode ?? activeApp.Id.ToString()}). Không được phép thêm hồ sơ trùng lặp.";
+                return result;
+            }
+
+            if (existingApplications.Count > 0)
+            {
+                var pastApp = existingApplications.First();
+                result.ExistingApplicationId = pastApp.Id;
+                result.HasActiveApplicationInSameJob = false;
+                result.Message = $"Ứng viên '{result.CandidateFullName}' đã có lịch sử ứng tuyển vị trí này trước đây (Trạng thái: {pastApp.Status}). Hệ thống sẽ liên kết và tạo đơn ứng tuyển mới cho đợt này.";
+                return result;
+            }
+        }
+
+        result.HasActiveApplicationInSameJob = false;
+        result.Message = $"Phát hiện ứng viên '{result.CandidateFullName}' đã tồn tại trong hệ thống (trùng khớp qua {result.MatchedBy}). Hệ thống sẽ tự động liên kết hồ sơ ứng viên này vào vị trí tuyển dụng mới.";
+        return result;
+    }
+
+    /// <inheritdoc />
+    public async Task<Guid> AddManualCandidateAsync(
+        CandidateManualCreateInputModel input,
+        string recruiterUserId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+
+        if (string.IsNullOrWhiteSpace(recruiterUserId) || !Guid.TryParse(recruiterUserId, out var recruiterGuid) || recruiterGuid == Guid.Empty)
+        {
+            throw new ArgumentException("Mã định danh người dùng thực hiện không hợp lệ.", nameof(recruiterUserId));
+        }
+
+        // 1. Kiểm tra quyền Recruiter / Admin / HRManager
+        var user = await _dbContext.Users
+            .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+            .Include(u => u.RoleEntity)
+            .FirstOrDefaultAsync(u => u.Id == recruiterGuid && u.Status == "ACTIVE", cancellationToken)
+            ?? throw new KeyNotFoundException($"Không tìm thấy tài khoản người dùng với mã: {recruiterUserId}");
+
+        var roles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (!string.IsNullOrWhiteSpace(user.Role)) roles.Add(user.Role);
+        if (user.RoleEntity != null) roles.Add(user.RoleEntity.Code.ToString());
+        foreach (var ur in user.UserRoles.Where(x => x.Role != null))
+        {
+            roles.Add(ur.Role.Code.ToString());
+            if (!string.IsNullOrWhiteSpace(ur.Role.Name)) roles.Add(ur.Role.Name);
+        }
+
+        var isAuthorized = roles.Any(r =>
+            string.Equals(r, UserRoles.Recruiter, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(r, UserRoles.Admin, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(r, UserRoles.HRManager, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(r, "RECRUITER", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(r, "ADMIN", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(r, "HRMANAGER", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(r, "HR_MANAGER", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(r, "Chuyên viên tuyển dụng", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(r, "Quản lý nhân sự", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(r, "Quản trị viên", StringComparison.OrdinalIgnoreCase));
+
+        if (!isAuthorized)
+        {
+            throw new UnauthorizedAccessException("Bạn không có quyền thêm ứng viên thủ công. Chức năng chỉ dành cho Nhân viên tuyển dụng (Recruiter), Quản lý nhân sự (HRManager) hoặc Quản trị viên (Admin).");
+        }
+
+        // 2. Kiểm tra JobPosting tồn tại và đang mở (PUBLISHED)
+        var jobPosting = await _dbContext.JobPostings
+            .Include(jp => jp.Requisition)
+            .FirstOrDefaultAsync(jp => jp.Id == input.JobPostingId && !jp.IsDeleted, cancellationToken)
+            ?? throw new KeyNotFoundException($"Không tìm thấy tin tuyển dụng với mã: {input.JobPostingId}");
+
+        if (jobPosting.Status != JobPostingStatus.PUBLISHED)
+        {
+            throw new InvalidOperationException($"Tin tuyển dụng '{jobPosting.Title}' hiện không ở trạng thái mở nhận hồ sơ (PUBLISHED). Trạng thái hiện tại: {jobPosting.Status}.");
+        }
+
+        // 3. Chạy luồng kiểm tra trùng
+        var duplicateCheck = await CheckDuplicateCandidateAsync(input.Email, input.PhoneNumber, input.JobPostingId, cancellationToken);
+        if (duplicateCheck.HasActiveApplicationInSameJob)
+        {
+            throw new InvalidOperationException(
+                $"Ứng viên '{input.FullName}' ({input.Email}) đã có hồ sơ đang xử lý trong vị trí này (Mã hồ sơ: {duplicateCheck.ExistingApplicationId}). Không được phép thêm hồ sơ trùng lặp.");
+        }
+
+        // 4. Mở Database Transaction tường minh
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var nowUtc = DateTimeOffset.UtcNow;
+            Candidate candidate;
+            var isExistingCandidate = false;
+
+            if (duplicateCheck.IsDuplicate && duplicateCheck.ExistingCandidateId.HasValue)
+            {
+                candidate = await _dbContext.Candidates
+                    .Include(c => c.Resumes)
+                    .FirstOrDefaultAsync(c => c.Id == duplicateCheck.ExistingCandidateId.Value, cancellationToken)
+                    ?? throw new InvalidOperationException("Không thể tìm thấy thông tin ứng viên trùng khớp.");
+
+                isExistingCandidate = true;
+
+                // Bổ sung thông tin nếu còn thiếu
+                if (string.IsNullOrWhiteSpace(candidate.Phone) && !string.IsNullOrWhiteSpace(input.PhoneNumber))
+                {
+                    candidate.Phone = input.PhoneNumber.Trim();
+                }
+                if (string.IsNullOrWhiteSpace(candidate.LinkedinUrl) && !string.IsNullOrWhiteSpace(input.LinkedInUrl))
+                {
+                    candidate.LinkedinUrl = input.LinkedInUrl.Trim();
+                }
+                candidate.Source = input.Source;
+                candidate.UpdatedAt = nowUtc;
+                candidate.UpdatedById = recruiterGuid;
+            }
+            else
+            {
+                // Tách Họ và Tên từ FullName
+                var trimmedName = input.FullName.Trim();
+                var lastSpaceIdx = trimmedName.LastIndexOf(' ');
+                string firstName, lastName;
+                if (lastSpaceIdx > 0)
+                {
+                    firstName = trimmedName[..lastSpaceIdx].Trim();
+                    lastName = trimmedName[(lastSpaceIdx + 1)..].Trim();
+                }
+                else
+                {
+                    firstName = trimmedName;
+                    lastName = string.Empty;
+                }
+
+                candidate = new Candidate
+                {
+                    Id = Guid.NewGuid(),
+                    FirstName = firstName,
+                    LastName = lastName,
+                    Email = input.Email.Trim().ToLowerInvariant(),
+                    Phone = input.PhoneNumber?.Trim(),
+                    LinkedinUrl = input.LinkedInUrl?.Trim(),
+                    Source = input.Source,
+                    CreatedAt = nowUtc,
+                    UpdatedAt = nowUtc,
+                    CreatedById = recruiterGuid,
+                    UpdatedById = recruiterGuid
+                };
+
+                await _dbContext.Candidates.AddAsync(candidate, cancellationToken);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            // 5. Lưu file CV an toàn
+            Resume? resume = null;
+            if (input.CvFile != null && input.CvFile.Length > 0)
+            {
+                var originalFileName = Path.GetFileName(input.CvFile.FileName);
+                var savedPath = await _fileStorageService.SaveCvAsync(input.CvFile, $"cv_manual_{candidate.Id:N}", cancellationToken);
+
+                var existingResumes = await _dbContext.Resumes
+                    .Where(r => r.CandidateId == candidate.Id)
+                    .ToListAsync(cancellationToken);
+
+                foreach (var r in existingResumes)
+                {
+                    r.IsPrimary = false;
+                }
+
+                resume = new Resume
+                {
+                    Id = Guid.NewGuid(),
+                    CandidateId = candidate.Id,
+                    FileName = originalFileName,
+                    FilePath = savedPath,
+                    FileSize = input.CvFile.Length,
+                    MimeType = input.CvFile.ContentType ?? "application/pdf",
+                    IsPrimary = true,
+                    CreatedAt = nowUtc,
+                    UpdatedAt = nowUtc,
+                    CreatedById = recruiterGuid,
+                    UpdatedById = recruiterGuid
+                };
+
+                await _dbContext.Resumes.AddAsync(resume, cancellationToken);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+            else
+            {
+                resume = await _dbContext.Resumes
+                    .Where(r => r.CandidateId == candidate.Id && !r.IsDeleted)
+                    .OrderByDescending(r => r.IsPrimary)
+                    .ThenByDescending(r => r.CreatedAt)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (resume == null)
+                {
+                    throw new InvalidOperationException("Vui lòng đính kèm tệp CV cho ứng viên khi tạo mới hồ sơ.");
+                }
+            }
+
+            // 6. Tạo Application mới trỏ vào JobPosting với trạng thái vòng đầu (APPLIED / SCREENING)
+            var initialPipelineStage = await _dbContext.PipelineStages
+                .OrderBy(s => s.StageOrder)
+                .FirstOrDefaultAsync(cancellationToken)
+                ?? await _dbContext.PipelineStages.FirstAsync(cancellationToken);
+
+            var trackingCode = await _trackingService.GenerateUniqueTrackingCodeAsync(cancellationToken);
+
+            var application = new Application
+            {
+                Id = Guid.NewGuid(),
+                JobPostingId = jobPosting.Id,
+                CandidateId = candidate.Id,
+                ResumeId = resume.Id,
+                CurrentStageId = initialPipelineStage.Id,
+                Stage = CandidateStage.APPLIED,
+                Status = ApplicationStatus.IN_PROCESS,
+                TrackingCode = trackingCode,
+                AppliedAt = nowUtc,
+                StageEnteredAt = nowUtc,
+                CreatedAt = nowUtc,
+                UpdatedAt = nowUtc,
+                CreatedById = recruiterGuid,
+                UpdatedById = recruiterGuid
+            };
+
+            await _dbContext.Applications.AddAsync(application, cancellationToken);
+
+            // Lưu bản ghi lịch sử ApplicationStageHistory
+            var appStageHistory = new ApplicationStageHistory
+            {
+                Id = Guid.NewGuid(),
+                ApplicationId = application.Id,
+                FromStageId = null,
+                ToStageId = initialPipelineStage.Id,
+                ChangedByUserId = recruiterGuid,
+                Comment = $"Nhân viên tuyển dụng thêm ứng viên thủ công từ nguồn: {input.Source.GetDisplayName()}",
+                CreatedAt = nowUtc,
+                UpdatedAt = nowUtc,
+                CreatedById = recruiterGuid,
+                UpdatedById = recruiterGuid
+            };
+            await _dbContext.ApplicationStageHistories.AddAsync(appStageHistory, cancellationToken);
+
+            // Lưu bản ghi CandidateStageHistory (SCRUM-42)
+            var candStageHistory = new CandidateStageHistory
+            {
+                Id = Guid.NewGuid(),
+                ApplicationId = application.Id,
+                FromStage = null,
+                ToStage = CandidateStage.APPLIED,
+                ChangedByUserId = recruiterGuid,
+                Note = $"Thêm ứng viên thủ công từ nguồn: {input.Source.GetDisplayName()}",
+                CreatedAt = nowUtc,
+                UpdatedAt = nowUtc,
+                CreatedById = recruiterGuid,
+                UpdatedById = recruiterGuid
+            };
+            await _dbContext.CandidateStageHistories.AddAsync(candStageHistory, cancellationToken);
+
+            // 7. Thêm CandidateNote nếu có ghi chú sơ bộ ban đầu
+            if (!string.IsNullOrWhiteSpace(input.Note))
+            {
+                var note = new CandidateNote
+                {
+                    Id = Guid.NewGuid(),
+                    CandidateId = candidate.Id,
+                    AuthorUserId = recruiterGuid,
+                    Content = input.Note.Trim(),
+                    NoteType = "RECRUITER_CALL",
+                    CreatedAt = nowUtc,
+                    UpdatedAt = nowUtc,
+                    CreatedById = recruiterGuid,
+                    UpdatedById = recruiterGuid
+                };
+                await _dbContext.CandidateNotes.AddAsync(note, cancellationToken);
+            }
+
+            // 8. Ghi AuditLog đầy đủ
+            var jsonOptions = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
+
+            var auditLog = new AuditLog
+            {
+                Id = Guid.NewGuid(),
+                UserId = recruiterGuid,
+                Action = "CANDIDATE_MANUAL_CREATE",
+                EntityName = "Candidate",
+                EntityId = candidate.Id.ToString(),
+                OldValues = isExistingCandidate 
+                    ? JsonSerializer.Serialize(new { CandidateId = candidate.Id, Status = "EXISTING_CANDIDATE_REUSED" }, jsonOptions) 
+                    : null,
+                NewValues = JsonSerializer.Serialize(new
+                {
+                    CandidateId = candidate.Id,
+                    FullName = $"{candidate.FirstName} {candidate.LastName}".Trim(),
+                    Email = candidate.Email,
+                    Phone = candidate.Phone,
+                    LinkedinUrl = candidate.LinkedinUrl,
+                    Source = candidate.Source.ToString(),
+                    ApplicationId = application.Id,
+                    JobPostingId = jobPosting.Id,
+                    JobTitle = jobPosting.Title,
+                    ResumeId = resume.Id,
+                    ResumeFileName = resume.FileName,
+                    TrackingCode = trackingCode,
+                    Stage = CandidateStage.APPLIED.ToString(),
+                    Status = ApplicationStatus.IN_PROCESS.ToString(),
+                    RecruiterUserId = recruiterGuid,
+                    RecruiterName = user.FullName,
+                    InitialNote = input.Note,
+                    CreatedAt = nowUtc
+                }, jsonOptions),
+                CreatedAt = nowUtc
+            };
+            await _dbContext.AuditLogs.AddAsync(auditLog, cancellationToken);
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            input.CreatedApplicationId = application.Id;
+
+            _logger.LogInformation(
+                "Thêm ứng viên thủ công thành công (SCRUM-47): CandidateId={CandidateId}, ApplicationId={ApplicationId}, JobPostingId={JobPostingId}, Recruiter={RecruiterName}",
+                candidate.Id, application.Id, jobPosting.Id, user.FullName);
+
+            return candidate.Id;
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex, "Lỗi xảy ra trong quá trình thêm ứng viên thủ công cho vị trí {JobPostingId}", input.JobPostingId);
+            throw;
+        }
+    }
+
+    private static string NormalizePhoneNumber(string? phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone)) return string.Empty;
+        var digits = new string(phone.Where(char.IsDigit).ToArray());
+        if (digits.StartsWith("84") && digits.Length >= 11)
+        {
+            digits = "0" + digits[2..];
+        }
+        return digits;
+    }
 }
+

@@ -667,7 +667,7 @@ public class HomeController : Controller
 
         if (isRecruiterOnly && _assignmentService != null)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userIdStr = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             _ = Guid.TryParse(userIdStr, out var currentUserId);
             if (currentUserId != Guid.Empty)
             {
