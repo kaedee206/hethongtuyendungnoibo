@@ -6,7 +6,9 @@ using Ats.Web.Models.Enums;
 using Ats.Web.Models.ViewModels.DepartmentBudgets;
 using Ats.Web.Models.ViewModels.Requisitions;
 using Ats.Web.Services;
+using Ats.Web.Services.Interfaces;
 using FluentAssertions;
+using Moq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -253,7 +255,8 @@ public class DepartmentBudgetTests
         await db.SaveChangesAsync();
 
         var budgetService = new DepartmentBudgetService(db, _budgetLogger);
-        var reqService = new RequisitionService(db, budgetService, _reqServiceLogger);
+        var mockApproval = new Mock<IApprovalRuleService>();
+        var reqService = new RequisitionService(db, mockApproval.Object, budgetService, _reqServiceLogger);
 
         var model = new RequisitionCreateViewModel
         {
@@ -322,7 +325,8 @@ public class DepartmentBudgetTests
         await db.SaveChangesAsync();
 
         var budgetService = new DepartmentBudgetService(db, _budgetLogger);
-        var reqService = new RequisitionService(db, budgetService, _reqServiceLogger);
+        var mockApproval = new Mock<IApprovalRuleService>();
+        var reqService = new RequisitionService(db, mockApproval.Object, budgetService, _reqServiceLogger);
 
         // 1. HR Manager without override -> Blocked
         var modelNoOverride = new RequisitionCreateViewModel
@@ -404,7 +408,8 @@ public class DepartmentBudgetTests
         await db.SaveChangesAsync();
 
         var budgetService = new DepartmentBudgetService(db, _budgetLogger);
-        var reqService = new RequisitionService(db, budgetService, _reqServiceLogger);
+        var mockApproval = new Mock<IApprovalRuleService>();
+        var reqService = new RequisitionService(db, mockApproval.Object, budgetService, _reqServiceLogger);
 
         // Request 10 people (over quota of 1), but saved as DRAFT
         var draftModel = new RequisitionCreateViewModel

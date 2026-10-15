@@ -85,6 +85,7 @@ builder.Services.AddScoped<IRequisitionAssignmentService, RequisitionAssignmentS
 builder.Services.AddScoped<ISlaService, SlaService>();
 builder.Services.AddHostedService<SlaOverdueBackgroundService>();
 builder.Services.AddScoped<ITalentPoolService, TalentPoolService>();
+builder.Services.AddScoped<IInterviewEvaluationService, InterviewEvaluationService>();
 builder.Services.AddSingleton<IJobExpirationService, JobExpirationService>();
 builder.Services.AddHostedService<JobExpirationBackgroundService>();
 
@@ -670,6 +671,12 @@ using (var scope = app.Services.CreateScope())
             CREATE INDEX IF NOT EXISTS ix_talent_pool_candidates_candidate_id ON talent_pool_candidates(candidate_id);
             CREATE INDEX IF NOT EXISTS ix_talent_pool_candidates_target_job_title ON talent_pool_candidates(target_job_title);
             CREATE INDEX IF NOT EXISTS ix_talent_pool_candidates_status ON talent_pool_candidates(status);
+
+            -- Scrum - Số 57: Mở lại phiếu đánh giá trong 24 giờ cho Recruiter
+            ALTER TABLE interview_evaluations ADD COLUMN IF NOT EXISTS is_reopened BOOLEAN NOT NULL DEFAULT FALSE;
+            ALTER TABLE interview_evaluations ADD COLUMN IF NOT EXISTS reopened_at TIMESTAMPTZ;
+            ALTER TABLE interview_evaluations ADD COLUMN IF NOT EXISTS reopened_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL;
+            ALTER TABLE interview_evaluations ADD COLUMN IF NOT EXISTS reopen_reason TEXT;
         ");
     }
     catch (Exception ex)

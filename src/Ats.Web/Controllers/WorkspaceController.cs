@@ -29,6 +29,7 @@ public class WorkspaceController : Controller
     private readonly ICandidateMergeService _mergeService;
     private readonly ICandidateTimelineService _timelineService;
     private readonly IRequisitionAssignmentService? _assignmentService;
+    private readonly IInterviewEvaluationService? _interviewEvaluationService;
 
     [ActivatorUtilitiesConstructor]
     public WorkspaceController(
@@ -42,7 +43,8 @@ public class WorkspaceController : Controller
         ICandidateReferralService referralService,
         ICandidateMergeService mergeService,
         ICandidateTimelineService timelineService,
-        IRequisitionAssignmentService? assignmentService = null)
+        IRequisitionAssignmentService? assignmentService = null,
+        IInterviewEvaluationService? interviewEvaluationService = null)
     {
         _dbContext = dbContext;
         _env = env;
@@ -55,6 +57,7 @@ public class WorkspaceController : Controller
         _mergeService = mergeService;
         _timelineService = timelineService;
         _assignmentService = assignmentService;
+        _interviewEvaluationService = interviewEvaluationService;
     }
 
     public WorkspaceController(
@@ -62,7 +65,7 @@ public class WorkspaceController : Controller
         IWebHostEnvironment env,
         IEmailService emailService,
         ILogger<WorkspaceController> logger)
-        : this(dbContext, env, emailService, null!, null!, logger, null!, null!, null!, null!, null!)
+        : this(dbContext, env, emailService, null!, null!, logger, null!, null!, null!, null!, null!, null!)
     {
     }
 
@@ -749,137 +752,46 @@ public class WorkspaceController : Controller
         [FromForm] Guid? interviewId,
         [FromForm] decimal score,
         [FromForm] string? recommendation,
-        [FromForm] string? feedback)
+        [FromForm] string? feedback,
+        [FromForm] string? strengths,
+        [FromForm] string? weaknesses,
+        CancellationToken cancellationToken = default)
     {
         try
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             _ = Guid.TryParse(userIdStr, out var currentUserId);
 
-            Interview? interview = null;
-            if (interviewId.HasValue && interviewId.Value != Guid.Empty)
+            if (!interviewId.HasValue || interviewId.Value == Guid.Empty)
             {
-                interview = await _dbContext.Interviews
-                    .Include(i => i.Application)
-                        .ThenInclude(a => a.Candidate)
-                    .Include(i => i.Application)
-                        .ThenInclude(a => a.JobPosting)
-                    .Include(i => i.Evaluations)
-                    .FirstOrDefaultAsync(i => i.Id == interviewId.Value);
+                return Json(new { success = false, message = "Vui lòng chọn buổi phỏng vấn cần đánh giá." });
             }
 
-            if (interview == null)
+            if (_interviewEvaluationService != null)
             {
-                // Lấy interview có lịch gần nhất để đánh giá
-                interview = await _dbContext.Interviews
-                    .Include(i => i.Application)
-                        .ThenInclude(a => a.Candidate)
-                    .Include(i => i.Application)
-                        .ThenInclude(a => a.JobPosting)
-                    .Include(i => i.Evaluations)
-                    .OrderBy(i => i.StartTime)
-                    .FirstOrDefaultAsync();
-            }
-
-            if (interview == null)
-            {
-                return Json(new { success = false, message = "Không tìm thấy buổi phỏng vấn cần đánh giá." });
-            }
-
-            // Parse recommendation enum
-            RecommendationType recType = RecommendationType.HIRE;
-            if (!string.IsNullOrWhiteSpace(recommendation))
-            {
-                if (recommendation.Contains("PASS", StringComparison.OrdinalIgnoreCase) || recommendation.Contains("STRONG_HIRE", StringComparison.OrdinalIgnoreCase))
-                    recType = RecommendationType.HIRE;
-                else if (recommendation.Contains("CONSIDER", StringComparison.OrdinalIgnoreCase))
-                    recType = RecommendationType.CONSIDER;
-                else if (recommendation.Contains("REJECT", StringComparison.OrdinalIgnoreCase))
-                    recType = RecommendationType.STRONG_NO_HIRE;
-            }
-
-            var eval = interview.Evaluations.FirstOrDefault(e => e.InterviewerId == currentUserId)
-                ?? interview.Evaluations.FirstOrDefault();
-
-            if (eval == null)
-            {
-                eval = new InterviewEvaluation
+                var input = new Ats.Web.Models.ViewModels.Interviews.InterviewEvaluationSubmitInputModel
                 {
-                    Id = Guid.NewGuid(),
-                    InterviewId = interview.Id,
-                    InterviewerId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.FirstAsync()).Id,
+                    InterviewId = interviewId.Value,
+                    Recommendation = recommendation ?? "",
                     OverallScore = score > 0 ? score : 4.0m,
-                    Recommendation = recType,
-                    DetailedFeedback = feedback ?? "Ứng viên đáp ứng tốt yêu cầu chuyên môn.",
-                    IsSubmitted = true,
-                    SubmittedAt = DateTimeOffset.UtcNow,
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    UpdatedAt = DateTimeOffset.UtcNow
+                    DetailedFeedback = feedback,
+                    Strengths = strengths,
+                    Weaknesses = weaknesses
                 };
-                await _dbContext.InterviewEvaluations.AddAsync(eval);
-            }
-            else
-            {
-                eval.OverallScore = score > 0 ? score : 4.0m;
-                eval.Recommendation = recType;
-                eval.DetailedFeedback = feedback ?? eval.DetailedFeedback;
-                eval.IsSubmitted = true;
-                eval.SubmittedAt = DateTimeOffset.UtcNow;
-                eval.UpdatedAt = DateTimeOffset.UtcNow;
-            }
 
-            interview.Status = InterviewStatus.COMPLETED;
-            interview.UpdatedAt = DateTimeOffset.UtcNow;
+                var (success, message, evalId) = await _interviewEvaluationService.SubmitEvaluationAsync(
+                    input, currentUserId, cancellationToken);
 
-            // Nếu ĐẠT -> chuyển hồ sơ sang giai đoạn Offer (Stage 5)
-            if (recType == RecommendationType.HIRE || recType == RecommendationType.STRONG_HIRE)
-            {
-                var stageOffer = await _dbContext.PipelineStages.FirstOrDefaultAsync(s => s.StageOrder == 5)
-                    ?? await _dbContext.PipelineStages.FirstOrDefaultAsync(s => s.Name.Contains("Offer"));
-                if (stageOffer != null && interview.Application != null)
+                return Json(new
                 {
-                    interview.Application.CurrentStageId = stageOffer.Id;
-                    interview.Application.StageEnteredAt = DateTimeOffset.UtcNow;
-                    interview.Application.IsSlaOverdue = false;
-                    interview.Application.SlaOverdueAlertedAt = null;
-                    interview.Application.UpdatedAt = DateTimeOffset.UtcNow;
-
-                    var effectiveUserId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync());
-                    await _dbContext.ApplicationStageHistories.AddAsync(new ApplicationStageHistory
-                    {
-                        Id = Guid.NewGuid(),
-                        ApplicationId = interview.Application.Id,
-                        FromStageId = interview.Application.CurrentStageId,
-                        ToStageId = stageOffer.Id,
-                        ChangedByUserId = effectiveUserId,
-                        Comment = $"Đã phỏng vấn ĐẠT (Điểm: {eval.OverallScore}/5). Đề xuất tiến hành gửi Thư mời Offer.",
-                        CreatedAt = DateTimeOffset.UtcNow
-                    });
-                }
-            }
-            else if (recType == RecommendationType.STRONG_NO_HIRE)
-            {
-                var stageReject = await _dbContext.PipelineStages.FirstOrDefaultAsync(s => s.StageOrder == 7)
-                    ?? await _dbContext.PipelineStages.FirstOrDefaultAsync(s => s.Name.Contains("Từ chối"));
-                if (stageReject != null && interview.Application != null)
-                {
-                    interview.Application.CurrentStageId = stageReject.Id;
-                    interview.Application.Status = ApplicationStatus.REJECTED;
-                    interview.Application.StageEnteredAt = DateTimeOffset.UtcNow;
-                    interview.Application.IsSlaOverdue = false;
-                    interview.Application.UpdatedAt = DateTimeOffset.UtcNow;
-                }
+                    success,
+                    message,
+                    interviewId = interviewId.Value,
+                    evaluationId = evalId
+                });
             }
 
-            await _dbContext.SaveChangesAsync();
-
-            var candName = interview.Application?.Candidate?.FirstName ?? "ứng viên";
-            return Json(new
-            {
-                success = true,
-                message = $"📋 Phiếu đánh giá cho ứng viên {candName} đã được lưu thành công! Kết quả: {(recType == RecommendationType.HIRE ? "ĐẠT (Chuyển sang bước Offer)" : "Đã lưu nhận xét")}.",
-                interviewId = interview.Id
-            });
+            return Json(new { success = false, message = "Dịch vụ đánh giá chưa sẵn sàng." });
         }
         catch (Exception ex)
         {

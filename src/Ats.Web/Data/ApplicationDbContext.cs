@@ -254,6 +254,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(ie => ie.InterviewerId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<InterviewEvaluation>()
+            .HasOne(ie => ie.ReopenedByUser)
+            .WithMany()
+            .HasForeignKey(ie => ie.ReopenedByUserId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         modelBuilder.Entity<OfferApproval>()
             .HasOne(oa => oa.Approver)
             .WithMany()
