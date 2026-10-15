@@ -1,3 +1,7 @@
+using Ats.Web.Models.DTOs;
+using Ats.Web.Models.Enums;
+using Microsoft.AspNetCore.Mvc.Rendering;
+
 namespace Ats.Web.Models.ViewModels.Candidates;
 
 public class CandidateDetailsViewModel
@@ -236,14 +240,55 @@ public class CandidateListViewModel
     public string? CurrentCompany { get; set; }
     public int ApplicationCount { get; set; }
     public string? LatestJobTitle { get; set; }
+    public Guid? LatestJobPostingId { get; set; }
+    public CandidateStage? LatestStage { get; set; }
     public string? LatestStageName { get; set; }
     public string? LatestStageColor { get; set; }
+    public CandidateSource Source { get; set; } = CandidateSource.PORTAL;
+    public string SourceDisplayName => Source switch
+    {
+        CandidateSource.PORTAL => "Cổng tuyển dụng",
+        CandidateSource.REFERRAL => "Giới thiệu nội bộ",
+        CandidateSource.LINKEDIN => "LinkedIn",
+        CandidateSource.HEADHUNTER => "Headhunter",
+        _ => "Khác"
+    };
+    public int? Rating { get; set; }
+    public string RatingStars => Rating.HasValue && Rating.Value > 0
+        ? string.Concat(Enumerable.Repeat("⭐", Math.Clamp(Rating.Value, 1, 5)))
+        : "—";
+    public string? CoverLetterSnippet { get; set; }
+    public bool HasCoverLetter => !string.IsNullOrWhiteSpace(CoverLetterSnippet);
     public DateTimeOffset? LatestAppliedAt { get; set; }
     public string FormattedLatestAppliedAt => LatestAppliedAt.HasValue
         ? LatestAppliedAt.Value.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")
         : "Chưa nộp";
     public List<CandidateTagViewModel> Tags { get; set; } = [];
     public bool IsBlacklisted { get; set; }
+}
+
+/// <summary>
+/// ViewModel chính cho màn hình danh sách, tra cứu và lọc hồ sơ ứng viên (SCRUM-44).
+/// </summary>
+public class CandidateSearchIndexViewModel
+{
+    public PagedResult<CandidateListViewModel> PagedResult { get; set; } = new();
+    public IReadOnlyList<CandidateListViewModel> Candidates => PagedResult.Items;
+    public CandidateFilterCriteria Criteria { get; set; } = new();
+    public List<SavedCandidateFilterDto> SavedFilters { get; set; } = [];
+
+    // Danh sách chọn lựa cho bộ lọc
+    public List<SelectListItem> AvailableJobPostings { get; set; } = [];
+    public List<string> AvailableTags { get; set; } = [];
+    public List<SelectListItem> AvailableStages { get; set; } = [];
+    public List<SelectListItem> AvailableSources { get; set; } = [];
+
+    // Số liệu thống kê nhanh
+    public int TotalCandidates => PagedResult.TotalCount;
+    public int LastMonthCandidatesCount { get; set; }
+    public int HighRatingCandidatesCount { get; set; }
+    public int MultiAppCandidatesCount { get; set; }
+    public int TaggedCandidatesCount { get; set; }
 }
 
 public class CandidateTagInputModel
