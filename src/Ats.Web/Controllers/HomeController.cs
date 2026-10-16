@@ -67,7 +67,7 @@ public class HomeController : Controller
 
     [HttpGet("/dashboard")]
     [HttpGet("/dashboard/{feature}")]
-    public async Task<IActionResult> Dashboard(string? feature = null)
+    public async Task<IActionResult> Dashboard(string? feature = null, [FromQuery] string? interviewScope = null)
     {
         if (User.Identity?.IsAuthenticated != true)
         {
@@ -90,11 +90,11 @@ public class HomeController : Controller
         }
         ViewBag.ActiveFeature = normalizedFeature;
 
-        var model = await BuildWorkspaceDashboardViewModelAsync();
+        var model = await BuildWorkspaceDashboardViewModelAsync(interviewScope);
         return View("Index", model);
     }
 
-    private async Task<WorkspaceDashboardViewModel> BuildWorkspaceDashboardViewModelAsync()
+    private async Task<WorkspaceDashboardViewModel> BuildWorkspaceDashboardViewModelAsync(string? interviewScope = null)
     {
         var model = new WorkspaceDashboardViewModel
         {
@@ -270,8 +270,34 @@ public class HomeController : Controller
             var startOfWeek = todayUtc.AddDays(-(int)nowUtc.DayOfWeek + 1);
             var endOfWeek = startOfWeek.AddDays(7);
 
+            var isInterviewerOnly = User?.Identity?.IsAuthenticated == true &&
+                                    User.IsInRole(UserRoles.Interviewer) &&
+                                    !User.IsInRole(UserRoles.Admin) &&
+                                    !User.IsInRole(UserRoles.HRManager) &&
+                                    !User.IsInRole(UserRoles.Recruiter) &&
+                                    !User.IsInRole("Quản trị viên") &&
+                                    !User.IsInRole("Trưởng phòng nhân sự") &&
+                                    !User.IsInRole("Chuyên viên tuyển dụng");
+
+            var isInterviewerRole = User.IsInRole(UserRoles.Interviewer) || User.IsInRole(UserRoles.HiringManager);
+            model.IsInterviewer = isInterviewerRole || isInterviewerOnly;
+
+            // Đếm số lượng buổi phỏng vấn mà người dùng hiện tại là Panelist
+            if (userId != Guid.Empty)
+            {
+                model.MyUpcomingInterviewsCount = await _dbContext.Interviews
+                    .CountAsync(i => i.Panelists.Any(p => p.InterviewerId == userId) && i.Status != InterviewStatus.CANCELLED);
+            }
+
+            var effectiveScope = (isInterviewerOnly || interviewScope == "my") ? "my" : "all";
+            model.InterviewScope = effectiveScope;
+
             var interviewBaseQuery = _dbContext.Interviews.AsQueryable();
-            if (isRecruiterOnly)
+            if (effectiveScope == "my" && userId != Guid.Empty)
+            {
+                interviewBaseQuery = interviewBaseQuery.Where(i => i.Panelists.Any(p => p.InterviewerId == userId));
+            }
+            else if (isRecruiterOnly)
             {
                 interviewBaseQuery = interviewBaseQuery.Where(i => assignedReqIds.Contains(i.Application.JobPosting.RequisitionId));
             }
@@ -346,7 +372,7 @@ public class HomeController : Controller
             }
             model.PipelineFunnel = funnelList;
 
-            // Lịch phỏng vấn tuần này
+            // Lịch phỏng vấn tuần này (Scrum - Số 51: Hiển thị trên lịch của người phỏng vấn)
             var interviewListQuery = _dbContext.Interviews
                 .Include(i => i.Application)
                     .ThenInclude(a => a.Candidate)
@@ -357,14 +383,18 @@ public class HomeController : Controller
                 .Include(i => i.Evaluations)
                 .AsQueryable();
 
-            if (isRecruiterOnly)
+            if (effectiveScope == "my" && userId != Guid.Empty)
+            {
+                interviewListQuery = interviewListQuery.Where(i => i.Panelists.Any(p => p.InterviewerId == userId));
+            }
+            else if (isRecruiterOnly)
             {
                 interviewListQuery = interviewListQuery.Where(i => assignedReqIds.Contains(i.Application.JobPosting.RequisitionId));
             }
 
             var dbInterviews = await interviewListQuery
                 .OrderBy(i => i.StartTime)
-                .Take(10)
+                .Take(25)
                 .ToListAsync();
 
             var isStaffManager = User.IsInRole(UserRoles.Admin) || 

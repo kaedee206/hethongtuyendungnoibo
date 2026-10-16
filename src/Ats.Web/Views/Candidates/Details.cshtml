@@ -306,14 +306,25 @@
                                                 </div>
                                             </div>
 
-                                            <!-- Lịch sử Phỏng vấn -->
-                                            @if (app.Interviews.Any())
-                                            {
-                                                <div class="mb-3">
-                                                    <div class="fw-bold text-dark mb-2" style="font-size: 0.82rem;">
-                                                        <i class="bi bi-calendar2-week me-1 text-primary"></i>Kết quả phỏng vấn các vòng:
+                                            <!-- Lịch sử Phỏng vấn (Scrum - Số 51) -->
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <div class="fw-bold text-dark" style="font-size: 0.82rem;">
+                                                        <i class="bi bi-calendar2-week me-1 text-primary"></i>Lịch trình &amp; Kết quả phỏng vấn các vòng:
                                                     </div>
-                                                    <div class="d-flex flex-column gap-2">
+                                                    @if (app.Status != "REJECTED" && app.Status != "WITHDRAWN")
+                                                    {
+                                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-2 px-2.5 py-1 fw-semibold d-inline-flex align-items-center gap-1 shadow-xs" 
+                                                                style="font-size: 0.76rem;"
+                                                                onclick="openCandidateScheduleInterviewModal('@app.ApplicationId', '@Model.FullName', '@app.JobTitle', @(app.Interviews.Count + 1))">
+                                                            <i class="bi bi-calendar-plus"></i>
+                                                            <span>Đặt lịch phỏng vấn</span>
+                                                        </button>
+                                                    }
+                                                </div>
+                                                <div class="d-flex flex-column gap-2" id="interviews-list-@app.ApplicationId">
+                                                    @if (app.Interviews.Any())
+                                                    {
                                                         @foreach (var iv in app.Interviews)
                                                         {
                                                             <div class="p-2.5 bg-white border rounded-2" style="font-size: 0.8rem;">
@@ -321,15 +332,21 @@
                                                                     <span class="fw-bold text-dark">
                                                                         Vòng @iv.RoundNumber: @iv.Title
                                                                     </span>
-                                                                    <span class="badge @(iv.Status == "COMPLETED" ? "bg-success" : "bg-primary") rounded-2" style="font-size: 0.68rem;">
-                                                                        @iv.Status
+                                                                    <span class="badge @(iv.Status == "COMPLETED" ? "bg-success" : (iv.Status == "CANCELLED" ? "bg-danger" : "bg-primary")) rounded-2" style="font-size: 0.68rem;">
+                                                                        @(iv.Status == "COMPLETED" ? "Đã hoàn thành" : (iv.Status == "SCHEDULED" ? "Đã lên lịch" : iv.Status))
                                                                     </span>
                                                                 </div>
                                                                 <div class="text-muted small">
                                                                     <span>Thời gian: <b>@iv.FormattedTime</b></span>
                                                                     <span class="mx-1">•</span>
-                                                                    <span>Hình thức: <b>@iv.InterviewType</b> (@iv.LocationOrLink)</span>
+                                                                    <span>Hình thức: <b>@(iv.InterviewType == "ONLINE_MEET" ? "Trực tuyến" : (iv.InterviewType == "OFFLINE_OFFICE" ? "Trực tiếp" : iv.InterviewType))</b> (@iv.LocationOrLink)</span>
                                                                 </div>
+                                                                @if (iv.Panelists.Any())
+                                                                {
+                                                                    <div class="text-secondary small mt-1" style="font-size: 0.74rem;">
+                                                                        <i class="bi bi-people me-1 text-muted"></i>Người phỏng vấn: <b>@string.Join(", ", iv.Panelists)</b>
+                                                                    </div>
+                                                                }
                                                                 @if (iv.OverallScore.HasValue)
                                                                 {
                                                                     <div class="mt-1.5 p-2 rounded-2" style="background:#F0FDF4; border: 1px solid #DCFCE7;">
@@ -345,9 +362,15 @@
                                                                 }
                                                             </div>
                                                         }
-                                                    </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="p-2.5 bg-white border rounded-2 text-muted text-center" id="no-interviews-@app.ApplicationId" style="font-size: 0.78rem;">
+                                                            <i class="bi bi-calendar-x me-1 text-secondary"></i>Chưa có buổi phỏng vấn nào được lên lịch cho đợt ứng tuyển này.
+                                                        </div>
+                                                    }
                                                 </div>
-                                            }
+                                            </div>
 
                                             <!-- Thư mời Offer -->
                                             @if (app.Offer != null)
@@ -733,6 +756,153 @@
     </div>
 </div>
 
+<!-- Modal Đặt lịch phỏng vấn ứng viên (Scrum - Số 51) -->
+<div class="modal fade" id="candidateScheduleInterviewModal" tabindex="-1" aria-labelledby="candidateScheduleInterviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-0 pb-0">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 rounded-2" style="background:#ECFDF5; color:#059669;">
+                        <i class="bi bi-calendar-plus-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="candidateScheduleInterviewModalLabel" style="font-size: 1.05rem;">
+                            Đặt Lịch Phỏng Vấn Ứng Viên
+                        </h5>
+                        <small class="text-muted" style="font-size: 0.78rem;">Scrum 51: Chốt lịch trong một lần thao tác, đồng bộ hồ sơ ứng viên và lịch hội đồng</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="candidateScheduleInterviewForm" onsubmit="handleCandidateScheduleInterviewSubmit(event)">
+                <input type="hidden" id="candSchedAppId" name="ApplicationId" />
+
+                <div class="modal-body py-3">
+                    <!-- Thông tin ứng viên & vị trí -->
+                    <div class="p-2.5 mb-3 rounded-2" style="background:#F8FAFC; border:1px solid #E2E8F0;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-bold text-dark" id="candSchedCandidateName" style="font-size: 0.92rem;">@Model.FullName</span>
+                                <span class="text-muted small mx-1.5">•</span>
+                                <span class="text-secondary small" id="candSchedJobTitle">Vị trí ứng tuyển</span>
+                            </div>
+                            <span class="badge rounded-2 bg-light text-dark border px-2 py-1" style="font-size: 0.72rem;">
+                                <i class="bi bi-shield-check text-success me-1"></i>Hệ thống ATS
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Vòng phỏng vấn & Tiêu đề -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold text-dark">
+                                Vòng phỏng vấn <span class="text-danger">*</span>
+                            </label>
+                            <select id="candSchedRoundNumber" name="RoundNumber" class="form-select form-select-sm rounded-2" onchange="onCandidateRoundChange(this.value)">
+                                <option value="1">Vòng 1: Phỏng vấn sơ loại (HR)</option>
+                                <option value="2">Vòng 2: Phỏng vấn chuyên môn (Technical)</option>
+                                <option value="3">Vòng 3: Phỏng vấn Văn hóa &amp; Lãnh đạo</option>
+                                <option value="4">Vòng 4: Đánh giá thực chiến / Bài tập</option>
+                                <option value="5">Vòng 5: Thương thảo đãi ngộ (Offer)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold text-dark">
+                                Tiêu đề buổi phỏng vấn <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" id="candSchedRoundTitle" name="RoundTitle" class="form-control form-control-sm rounded-2" 
+                                   placeholder="Vd: Phỏng vấn chuyên môn .NET &amp; Kiến trúc hệ thống" required />
+                        </div>
+                    </div>
+
+                    <!-- Ngày giờ, Thời lượng & Hình thức -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold text-dark">
+                                Ngày &amp; Giờ bắt đầu <span class="text-danger">*</span>
+                            </label>
+                            <input type="datetime-local" id="candSchedStartTime" name="StartTime" class="form-control form-control-sm rounded-2" required onchange="validateCandidateScheduleDateTime()" />
+                            <div id="candSchedPastError" class="text-danger small mt-1 d-none" style="font-size: 0.75rem;">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>Không thể đặt lịch trong quá khứ. Vui lòng chọn ngày giờ trong tương lai.
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold text-dark">
+                                Thời lượng <span class="text-danger">*</span>
+                            </label>
+                            <select id="candSchedDuration" name="DurationMinutes" class="form-select form-select-sm rounded-2">
+                                <option value="30">30 phút</option>
+                                <option value="45">45 phút</option>
+                                <option value="60" selected>60 phút (Chuẩn)</option>
+                                <option value="90">90 phút</option>
+                                <option value="120">120 phút (2 tiếng)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-dark">
+                                Hình thức <span class="text-danger">*</span>
+                            </label>
+                            <select id="candSchedInterviewType" name="InterviewType" class="form-select form-select-sm rounded-2" onchange="onCandidateInterviewTypeChange(this.value)">
+                                <option value="ONLINE_MEET">Trực tuyến (Meet / Teams)</option>
+                                <option value="OFFLINE_OFFICE">Trực tiếp tại văn phòng</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Địa điểm hoặc Link họp -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark" id="candSchedLocationLabel">
+                            Liên kết họp trực tuyến (Google Meet / MS Teams / Zoom) <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light rounded-start-2 border-end-0" id="candSchedLocationIcon">
+                                <i class="bi bi-link-45deg text-primary"></i>
+                            </span>
+                            <input type="text" id="candSchedLocationOrLink" name="LocationOrLink" class="form-control form-control-sm rounded-end-2" 
+                                   placeholder="https://meet.google.com/nov-interview-room" required />
+                        </div>
+                    </div>
+
+                    <!-- Chọn Hội đồng phỏng vấn (Interviewer Panelists) -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1.5">
+                            <label class="form-label small fw-semibold text-dark mb-0">
+                                Người phỏng vấn tham gia (Panelists) <span class="text-danger">*</span>
+                            </label>
+                            <small class="text-muted" style="font-size: 0.74rem;">Chọn một hoặc nhiều người phỏng vấn để đồng bộ lịch</small>
+                        </div>
+                        <div id="candSchedPanelistsContainer" class="border rounded-2 p-2.5 bg-light" style="max-height: 160px; overflow-y: auto; border-color: #E2E8F0 !important;">
+                            <div class="text-muted small py-2 text-center" id="candSchedPanelistsLoading">
+                                <span class="spinner-border spinner-border-sm me-1 text-primary"></span>Đang tải danh sách người phỏng vấn...
+                            </div>
+                        </div>
+                        <div id="candSchedPanelistError" class="text-danger small mt-1 d-none" style="font-size: 0.75rem;">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>Vui lòng chọn ít nhất một người phỏng vấn cho buổi họp.
+                        </div>
+                    </div>
+
+                    <!-- Ghi chú / Lời nhắn ứng viên -->
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold text-dark">
+                            Ghi chú chuẩn bị &amp; Lời dặn dò gửi ứng viên
+                        </label>
+                        <textarea id="candSchedNotes" name="Notes" class="form-control form-control-sm rounded-2" rows="2" 
+                                  placeholder="Vui lòng mang theo laptop cá nhân và bản cứng CV hoặc chuẩn bị sẵn slide demo..."></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-sm btn-light rounded-2 px-3" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" id="btnCandidateSchedSubmit" class="btn btn-sm btn-primary rounded-2 px-4 fw-semibold text-white" style="background:#059669; border-color:#059669;">
+                        <span class="spinner-border spinner-border-sm me-1 d-none" id="candSchedSpinner"></span>
+                        <i class="bi bi-calendar-check me-1"></i>Xác nhận &amp; Đặt lịch phỏng vấn
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
     const candidateId = '@Model.CandidateId';
@@ -963,6 +1133,297 @@
     function escapeHtml(text) {
         const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
         return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // 7. SCRUM - SỐ 51: ĐẶT LỊCH PHỎNG VẤN ỨNG VIÊN
+    let cachedInterviewersList = null;
+
+    async function loadCandidateInterviewers() {
+        const container = document.getElementById('candSchedPanelistsContainer');
+        if (!container) return;
+
+        if (cachedInterviewersList && cachedInterviewersList.length > 0) {
+            renderCandidateInterviewers(cachedInterviewersList);
+            return;
+        }
+
+        try {
+            const res = await fetch('/Workspace/GetInterviewers', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const result = await res.json();
+            const list = result.interviewers || result.data || [];
+            cachedInterviewersList = list;
+            renderCandidateInterviewers(list);
+        } catch (e) {
+            container.innerHTML = '<div class="text-danger small py-1">Không thể tải danh sách người phỏng vấn. Vui lòng thử lại sau.</div>';
+        }
+    }
+
+    function renderCandidateInterviewers(list) {
+        const container = document.getElementById('candSchedPanelistsContainer');
+        if (!container) return;
+
+        if (!list || list.length === 0) {
+            container.innerHTML = '<div class="text-muted small py-1">Chưa có tài khoản người phỏng vấn nào khả dụng trong hệ thống.</div>';
+            return;
+        }
+
+        container.innerHTML = list.map((u, idx) => {
+            const uId = u.id || u.Id;
+            const uName = u.fullName || u.name || u.FullName || 'Nhân sự';
+            const uEmail = u.email || u.Email || '';
+            const uRole = u.role || u.Role || 'Interviewer';
+            const initial = (uName.trim()[0] || 'U').toUpperCase();
+
+            return `
+                <div class="form-check d-flex align-items-center justify-content-between py-1 px-1 border-bottom last-border-0" style="font-size: 0.8rem;">
+                    <div class="d-flex align-items-center gap-2">
+                        <input class="form-check-input mt-0 cand-interviewer-checkbox" type="checkbox" value="${uId}" id="cand_iv_${uId}" ${idx === 0 ? 'checked' : ''} onchange="validateCandidatePanelists()">
+                        <label class="form-check-label d-flex align-items-center gap-2 cursor-pointer mb-0" for="cand_iv_${uId}">
+                            <div class="d-flex align-items-center justify-content-center text-white fw-bold rounded-circle" style="width:24px; height:24px; background:#059669; font-size:0.7rem;">
+                                ${initial}
+                            </div>
+                            <div>
+                                <span class="fw-semibold text-dark">${escapeHtml(uName)}</span>
+                                <span class="text-muted" style="font-size:0.72rem;">(${escapeHtml(uEmail)})</span>
+                            </div>
+                        </label>
+                    </div>
+                    <span class="badge rounded-2 bg-light text-secondary border px-2 py-0.5" style="font-size:0.68rem;">${escapeHtml(uRole)}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function onCandidateRoundChange(roundVal) {
+        const titleInput = document.getElementById('candSchedRoundTitle');
+        if (!titleInput) return;
+        const titles = {
+            '1': 'Phỏng vấn sơ loại (HR Screening)',
+            '2': 'Phỏng vấn chuyên môn kỹ thuật (Technical)',
+            '3': 'Phỏng vấn Văn hóa & Ban Giám đốc',
+            '4': 'Đánh giá thực chiến / Bài tập tình huống',
+            '5': 'Thương thảo chế độ đãi ngộ (Offer Negotiation)'
+        };
+        titleInput.value = titles[roundVal] || `Phỏng vấn Vòng ${roundVal}`;
+    }
+
+    function onCandidateInterviewTypeChange(typeVal) {
+        const label = document.getElementById('candSchedLocationLabel');
+        const icon = document.getElementById('candSchedLocationIcon');
+        const input = document.getElementById('candSchedLocationOrLink');
+        if (!label || !input) return;
+
+        if (typeVal === 'ONLINE_MEET') {
+            label.innerHTML = 'Liên kết họp trực tuyến (Google Meet / MS Teams / Zoom) <span class="text-danger">*</span>';
+            icon.innerHTML = '<i class="bi bi-link-45deg text-primary"></i>';
+            input.placeholder = 'https://meet.google.com/nov-interview-room';
+            if (!input.value || input.value.startsWith('Phòng')) {
+                input.value = 'https://meet.google.com/nov-' + Math.random().toString(36).substring(2, 6) + '-' + Math.random().toString(36).substring(2, 5);
+            }
+        } else {
+            label.innerHTML = 'Phòng họp & Địa điểm phỏng vấn trực tiếp <span class="text-danger">*</span>';
+            icon.innerHTML = '<i class="bi bi-building text-info"></i>';
+            input.placeholder = 'Phòng Họp Tầng 12 - Tòa nhà NoveraTech, Cầu Giấy, Hà Nội';
+            if (!input.value || input.value.startsWith('https://')) {
+                input.value = 'Phòng Hội nghị Tầng 12 - Trụ sở NoveraTech';
+            }
+        }
+    }
+
+    function validateCandidateScheduleDateTime() {
+        const timeInput = document.getElementById('candSchedStartTime');
+        const errEl = document.getElementById('candSchedPastError');
+        const submitBtn = document.getElementById('btnCandidateSchedSubmit');
+        if (!timeInput) return true;
+
+        const val = timeInput.value;
+        if (!val) return false;
+
+        const selectedDate = new Date(val);
+        const now = new Date();
+
+        if (selectedDate <= now) {
+            if (errEl) errEl.classList.remove('d-none');
+            timeInput.classList.add('is-invalid');
+            if (submitBtn) submitBtn.disabled = true;
+            return false;
+        } else {
+            if (errEl) errEl.classList.add('d-none');
+            timeInput.classList.remove('is-invalid');
+            if (submitBtn) submitBtn.disabled = false;
+            return true;
+        }
+    }
+
+    function validateCandidatePanelists() {
+        const checkboxes = document.querySelectorAll('.cand-interviewer-checkbox:checked');
+        const errEl = document.getElementById('candSchedPanelistError');
+        const submitBtn = document.getElementById('btnCandidateSchedSubmit');
+
+        if (checkboxes.length === 0) {
+            if (errEl) errEl.classList.remove('d-none');
+            if (submitBtn) submitBtn.disabled = true;
+            return false;
+        } else {
+            if (errEl) errEl.classList.add('d-none');
+            // Re-check date validity before enabling submit
+            const isDateValid = validateCandidateScheduleDateTime();
+            if (submitBtn) submitBtn.disabled = !isDateValid;
+            return true;
+        }
+    }
+
+    function openCandidateScheduleInterviewModal(applicationId, candidateName, jobTitle, nextRound) {
+        document.getElementById('candSchedAppId').value = applicationId;
+        document.getElementById('candSchedCandidateName').textContent = candidateName || 'Ứng viên';
+        document.getElementById('candSchedJobTitle').textContent = jobTitle || 'Vị trí ứng tuyển';
+
+        const roundSelect = document.getElementById('candSchedRoundNumber');
+        const round = nextRound && nextRound <= 5 ? nextRound : 1;
+        if (roundSelect) {
+            roundSelect.value = round.toString();
+            onCandidateRoundChange(round.toString());
+        }
+
+        // Set min to current ISO datetime (local timezone)
+        const now = new Date();
+        const localNowIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        const timeInput = document.getElementById('candSchedStartTime');
+        if (timeInput) {
+            timeInput.min = localNowIso;
+
+            // Default to tomorrow 09:00 AM
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(9, 0, 0, 0);
+            const defaultIso = new Date(tomorrow.getTime() - tomorrow.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            timeInput.value = defaultIso;
+        }
+
+        // Default location
+        onCandidateInterviewTypeChange('ONLINE_MEET');
+
+        // Clear errors
+        document.getElementById('candSchedPastError')?.classList.add('d-none');
+        document.getElementById('candSchedPanelistError')?.classList.add('d-none');
+        timeInput?.classList.remove('is-invalid');
+
+        // Load interviewers
+        loadCandidateInterviewers();
+
+        const modalEl = document.getElementById('candidateScheduleInterviewModal');
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+
+    async function handleCandidateScheduleInterviewSubmit(e) {
+        e.preventDefault();
+
+        if (!validateCandidateScheduleDateTime()) {
+            return;
+        }
+
+        if (!validateCandidatePanelists()) {
+            return;
+        }
+
+        const submitBtn = document.getElementById('btnCandidateSchedSubmit');
+        const spinner = document.getElementById('candSchedSpinner');
+        submitBtn.disabled = true;
+        spinner.classList.remove('d-none');
+
+        const checkboxes = document.querySelectorAll('.cand-interviewer-checkbox:checked');
+        const interviewerIds = Array.from(checkboxes).map(cb => cb.value);
+
+        const appId = document.getElementById('candSchedAppId').value;
+        const roundNum = parseInt(document.getElementById('candSchedRoundNumber').value, 10) || 1;
+        const roundTitle = document.getElementById('candSchedRoundTitle').value.trim();
+        const startTime = document.getElementById('candSchedStartTime').value;
+        const durationMin = parseInt(document.getElementById('candSchedDuration').value, 10) || 60;
+        const interviewType = document.getElementById('candSchedInterviewType').value;
+        const locationOrLink = document.getElementById('candSchedLocationOrLink').value.trim();
+        const notes = document.getElementById('candSchedNotes').value.trim();
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+        const payload = {
+            applicationId: appId,
+            roundNumber: roundNum,
+            roundTitle: roundTitle,
+            startTime: startTime,
+            scheduledDate: startTime,
+            durationMinutes: durationMin,
+            interviewType: interviewType,
+            locationOrLink: locationOrLink,
+            interviewerIds: interviewerIds,
+            panelistIds: interviewerIds,
+            notes: notes,
+            note: notes
+        };
+
+        try {
+            const res = await fetch('/Workspace/ScheduleInterview', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('candidateScheduleInterviewModal')).hide();
+
+                // Dynamic UI insertion
+                const container = document.getElementById(`interviews-list-${appId}`);
+                const emptyState = document.getElementById(`no-interviews-${appId}`);
+                if (emptyState) emptyState.remove();
+
+                if (container) {
+                    const card = document.createElement('div');
+                    card.className = 'p-2.5 bg-white border rounded-2 shadow-xs';
+                    card.style.borderColor = '#059669';
+                    const typeText = interviewType === 'ONLINE_MEET' ? 'Trực tuyến' : 'Trực tiếp';
+                    const panelistsText = interviewerIds.length + ' người phỏng vấn';
+
+                    card.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-dark">
+                                Vòng ${roundNum}: ${escapeHtml(roundTitle)}
+                            </span>
+                            <span class="badge bg-primary rounded-2" style="font-size: 0.68rem;">
+                                Đã lên lịch mới
+                            </span>
+                        </div>
+                        <div class="text-muted small">
+                            <span>Thời gian: <b>${new Date(startTime).toLocaleString('vi-VN')} (${durationMin} phút)</b></span>
+                            <span class="mx-1">•</span>
+                            <span>Hình thức: <b>${typeText}</b> (${escapeHtml(locationOrLink)})</span>
+                        </div>
+                        <div class="text-secondary small mt-1" style="font-size: 0.74rem;">
+                            <i class="bi bi-people me-1 text-muted"></i>Người phỏng vấn: <b>${panelistsText}</b>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                }
+
+                alert(data.message || 'Lên lịch phỏng vấn thành công!');
+                // Auto reload after brief moment to refresh server-side badges
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                alert(data.message || 'Lỗi khi lên lịch phỏng vấn.');
+            }
+        } catch (err) {
+            alert('Lỗi kết nối: ' + err.message);
+        } finally {
+            submitBtn.disabled = false;
+            spinner.classList.add('d-none');
+        }
     }
 </script>
 }
