@@ -326,7 +326,8 @@ public class WorkspaceController : Controller
                 AppliedAt = DateTimeOffset.UtcNow,
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow,
-                WithdrawToken = withdrawToken
+                WithdrawToken = withdrawToken,
+                CoverLetter = coverLetter?.Trim()
             };
 
             await _dbContext.Applications.AddAsync(application);

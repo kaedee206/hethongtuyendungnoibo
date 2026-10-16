@@ -58,6 +58,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<DepartmentHeadcountBudget> DepartmentHeadcountBudgets { get; set; }
     public DbSet<RequisitionRecruiter> RequisitionRecruiters { get; set; }
     public DbSet<RequisitionHandoverHistory> RequisitionHandoverHistories { get; set; }
+    public DbSet<SavedCandidateFilter> SavedCandidateFilters { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -475,6 +476,20 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
             entity.HasIndex(e => e.TargetJobTitle);
             entity.HasIndex(e => e.Status);
+        });
+
+        // SavedCandidateFilter mapping (SCRUM-44)
+        modelBuilder.Entity<SavedCandidateFilter>(entity =>
+        {
+            entity.ToTable("saved_candidate_filters");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => new { e.UserId, e.Name });
         });
     }
 }

@@ -1,3 +1,4 @@
+using Ats.Web.Models.DTOs;
 using Ats.Web.Models.ViewModels.Candidates;
 
 namespace Ats.Web.Services.Interfaces;
@@ -74,5 +75,37 @@ public interface ICandidateService
         Guid resumeId, 
         Guid currentUserId, 
         string currentUserRole, 
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Tìm kiếm và lọc danh sách hồ sơ ứng viên theo nhiều điều kiện động và phân trang (SCRUM-44).
+    /// </summary>
+    Task<CandidateSearchIndexViewModel> GetFilteredCandidatesAsync(
+        CandidateFilterCriteria criteria,
+        Guid currentUserId,
+        string currentUserRole,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lưu lại tổ hợp điều kiện lọc hay dùng của Recruiter (SCRUM-44).
+    /// </summary>
+    Task<SavedCandidateFilterDto> SaveFilterAsync(
+        Guid currentUserId,
+        SaveCandidateFilterInputModel model,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lấy danh sách các bộ lọc đã lưu của Recruiter hiện tại (SCRUM-44).
+    /// </summary>
+    Task<IReadOnlyList<SavedCandidateFilterDto>> GetSavedFiltersAsync(
+        Guid currentUserId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Xóa bộ lọc đã lưu của Recruiter (SCRUM-44).
+    /// </summary>
+    Task<bool> DeleteSavedFilterAsync(
+        Guid filterId,
+        Guid currentUserId,
         CancellationToken cancellationToken = default);
 }

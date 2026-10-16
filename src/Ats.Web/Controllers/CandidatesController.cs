@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Ats.Web.Common;
 using Ats.Web.Constants;
+using Ats.Web.Models.DTOs;
 using Ats.Web.Models.ViewModels.Candidates;
 using Ats.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -42,15 +43,125 @@ public class CandidatesController(
     // SCRUM-39: HỒ SƠ ỨNG VIÊN HỢP NHẤT & QUẢN LÝ
     // ==========================================
 
+    // ==========================================
+    // SCRUM-44: TÌM KIẾM & LỌC ỨNG VIÊN ĐA ĐIỀU KIỆN
+    // ==========================================
+
     // GET: /ung-vien hoặc /Candidates
     [HttpGet]
     [HttpGet("")]
     [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager}")]
-    public async Task<IActionResult> Index([FromQuery] string? search, CancellationToken cancellationToken)
+    public async Task<IActionResult> Index([FromQuery] CandidateFilterCriteria criteria, CancellationToken cancellationToken)
     {
-        var candidates = await _candidateService.GetAllAsync(search, cancellationToken);
-        ViewBag.SearchQuery = search ?? string.Empty;
-        return View(candidates); // Views/Candidates/Index.cshtml
+        var currentUserId = GetCurrentUserId();
+        var currentUserRole = GetCurrentUserRole();
+
+        var model = await _candidateService.GetFilteredCandidatesAsync(criteria, currentUserId, currentUserRole, cancellationToken);
+        return View(model); // Views/Candidates/Index.cshtml
+    }
+
+    /// <summary>
+    /// POST: /ung-vien/bo-loc/luu hoặc /candidates/saved-filters/save
+    /// Lưu bộ lọc tìm kiếm hồ sơ ứng viên hay dùng (SCRUM-44).
+    /// </summary>
+    [HttpPost("bo-loc/luu")]
+    [HttpPost("saved-filters/save")]
+    [HttpPost("/ung-vien/bo-loc/luu")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager}")]
+    public async Task<IActionResult> SaveFilter(
+        [FromBody] SaveCandidateFilterInputModel model,
+        CancellationToken cancellationToken = default)
+    {
+        if (model == null || string.IsNullOrWhiteSpace(model.Name))
+        {
+            return Json(new { success = false, message = "Vui lòng nhập tên cho bộ lọc." });
+        }
+
+        var currentUserId = GetCurrentUserId();
+        if (currentUserId == Guid.Empty)
+        {
+            return Json(new { success = false, message = "Phiên làm việc hết hạn. Vui lòng đăng nhập lại." });
+        }
+
+        try
+        {
+            var savedFilter = await _candidateService.SaveFilterAsync(currentUserId, model, cancellationToken);
+            return Json(new
+            {
+                success = true,
+                message = $"Đã lưu bộ lọc '{savedFilter.Name}' thành công!",
+                data = savedFilter
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi lưu bộ lọc tìm kiếm cho user {UserId}", currentUserId);
+            return Json(new { success = false, message = "Không thể lưu bộ lọc: " + ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// GET: /ung-vien/bo-loc/danh-sach hoặc /candidates/saved-filters/list
+    /// Lấy danh sách bộ lọc đã lưu của Recruiter hiện tại (SCRUM-44).
+    /// </summary>
+    [HttpGet("bo-loc/danh-sach")]
+    [HttpGet("saved-filters/list")]
+    [HttpGet("/ung-vien/bo-loc/danh-sach")]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager}")]
+    public async Task<IActionResult> GetSavedFilters(CancellationToken cancellationToken = default)
+    {
+        var currentUserId = GetCurrentUserId();
+        if (currentUserId == Guid.Empty)
+        {
+            return Json(new { success = false, message = "Chưa xác thực." });
+        }
+
+        try
+        {
+            var filters = await _candidateService.GetSavedFiltersAsync(currentUserId, cancellationToken);
+            return Json(new { success = true, data = filters });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi lấy danh sách bộ lọc đã lưu của user {UserId}", currentUserId);
+            return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// POST: /ung-vien/bo-loc/xoa hoặc /candidates/saved-filters/delete
+    /// Xóa bộ lọc đã lưu của Recruiter (SCRUM-44).
+    /// </summary>
+    [HttpPost("bo-loc/xoa")]
+    [HttpPost("saved-filters/delete")]
+    [HttpPost("/ung-vien/bo-loc/xoa")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager}")]
+    public async Task<IActionResult> DeleteSavedFilter(
+        [FromForm] Guid filterId,
+        CancellationToken cancellationToken = default)
+    {
+        if (filterId == Guid.Empty)
+        {
+            return Json(new { success = false, message = "Mã bộ lọc không hợp lệ." });
+        }
+
+        var currentUserId = GetCurrentUserId();
+        try
+        {
+            var result = await _candidateService.DeleteSavedFilterAsync(filterId, currentUserId, cancellationToken);
+            return Json(new
+            {
+                success = result,
+                message = result ? "Đã xóa bộ lọc thành công." : "Không tìm thấy bộ lọc cần xóa."
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi xóa bộ lọc {FilterId}", filterId);
+            return Json(new { success = false, message = "Lỗi khi xóa bộ lọc: " + ex.Message });
+        }
     }
 
     // GET: /ung-vien/{id} hoặc /Candidates/Details/{id}

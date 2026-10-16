@@ -1,163 +1,488 @@
-@model IReadOnlyList<Ats.Web.Models.ViewModels.Candidates.CandidateListViewModel>
+@model Ats.Web.Models.ViewModels.Candidates.CandidateSearchIndexViewModel
+@using Ats.Web.Models.Enums
 @{
-    ViewData["Title"] = "Hồ Sơ Ứng Viên Hợp Nhất — NoveraTech ATS";
+    ViewData["Title"] = "Hồ Sơ & Tìm Kiếm Ứng Viên — NoveraTech ATS";
     Layout = "_Layout";
-    var searchQuery = ViewBag.SearchQuery as string ?? string.Empty;
-    var totalCandidates = Model.Count;
-    var multiAppCandidates = Model.Count(c => c.ApplicationCount > 1);
-    var taggedCandidates = Model.Count(c => c.Tags.Any());
+    var c = Model.Criteria;
 }
 
 @* ══════════════════════════════════════════════════════════
-   NOVERATECH ATS — MÀN HÌNH DANH SÁCH ỨNG VIÊN HỢP NHẤT (SCRUM-39)
-   Quy chuẩn thiết kế: Coding Convention | Bootstrap 5 | 8px Radius | Cấm rounded-pill
+   NOVERATECH ATS — MÀN HÌNH TÌM KIẾM & LỌC ỨNG VIÊN ĐA ĐIỀU KIỆN (SCRUM-44)
+   Quy chuẩn thiết kế: RULE.md | Bootstrap 5 | 8px Radius | Cấm rounded-pill
    ══════════════════════════════════════════════════════════ *@
 
-<div class="container-fluid px-3 px-lg-4 py-4">
+<div class="container-fluid px-3 px-lg-4 py-4" style="background-color: #F8FAFC; min-height: 100vh;">
 
-    <!-- ── Breadcrumb & Top Controls ── -->
+    <!-- ── AntiForgery Form ngầm để phục vụ AJAX RequestVerificationToken ── -->
+    <form id="antiForgeryForm" class="d-none">
+        @Html.AntiForgeryToken()
+    </form>
+
+    <!-- ── Breadcrumb & Tiêu đề trang ── -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
         <div>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-1" style="font-size: 0.85rem;">
                     <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted"><i class="bi bi-house-door me-1"></i>Bàn làm việc</a></li>
-                    <li class="breadcrumb-item active fw-semibold text-dark" aria-current="page">Danh sách ứng viên</li>
+                    <li class="breadcrumb-item active fw-semibold text-dark" aria-current="page">Danh sách & Tra cứu ứng viên</li>
                 </ol>
             </nav>
             <h3 class="fw-bold text-dark mb-0" style="letter-spacing: -0.5px;">
-                <i class="bi bi-person-lines-fill me-2" style="color: #059669;"></i>Hồ Sơ Ứng Viên Hợp Nhất
+                <i class="bi bi-search-heart me-2" style="color: #059669;"></i>Tra Cứu & Lọc Hồ Sơ Ứng Viên
             </h3>
             <p class="text-muted small mb-0 mt-1">
-                Quản lý thông tin tập trung, tra cứu nhanh lịch sử ứng tuyển nhiều vị trí, nhãn phân loại và CV của từng ứng viên.
+                Tìm kiếm đa điều kiện theo vị trí, giai đoạn, nguồn, đánh giá, từ khóa trong thư giới thiệu và phục hồi hồ sơ đã xem tháng trước khi mở vị trí mới.
             </p>
         </div>
         <div class="d-flex align-items-center gap-2">
+            @if (c.HasActiveFilters)
+            {
+                <button type="button" class="btn btn-sm btn-outline-success rounded-2 fw-semibold" data-bs-toggle="modal" data-bs-target="#saveFilterModal">
+                    <i class="bi bi-bookmark-plus me-1"></i>Lưu bộ lọc này
+                </button>
+                <a href="/ung-vien" class="btn btn-sm btn-outline-secondary rounded-2">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Đặt lại
+                </a>
+            }
+            <a href="/Jobs" class="btn btn-sm btn-outline-secondary rounded-2">
+                <i class="bi bi-briefcase me-1"></i>Tin tuyển dụng
+            </a>
             <a href="/" class="btn btn-sm btn-outline-secondary rounded-2">
                 <i class="bi bi-arrow-left me-1"></i>Về Trang chủ
-            </a>
-            <a href="/Jobs" class="btn btn-sm btn-outline-success rounded-2">
-                <i class="bi bi-briefcase me-1"></i>Tin tuyển dụng
             </a>
         </div>
     </div>
 
-    <!-- ── KPI / Metric Cards ── -->
+    <!-- ── KPI Metric Cards ── -->
     <div class="row g-3 mb-4">
-        <div class="col-12 col-sm-6 col-xl-4">
+        <!-- Tổng số ứng viên -->
+        <div class="col-12 col-sm-6 col-xl-3">
             <div class="card border-0 shadow-sm bg-white p-3.5 h-100" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em; font-size: 0.72rem;">Tổng số ứng viên</div>
-                        <h3 class="fw-bold text-dark mb-0 mt-1" style="font-family: 'JetBrains Mono', monospace;">@totalCandidates</h3>
+                        <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em; font-size: 0.72rem;">Tổng số kết quả</div>
+                        <h3 class="fw-bold text-dark mb-0 mt-1" style="font-family: 'JetBrains Mono', monospace;">@Model.TotalCandidates</h3>
                     </div>
                     <div class="d-flex align-items-center justify-content-center text-primary" style="width: 44px; height: 44px; background: #EFF6FF; border-radius: 10px;">
                         <i class="bi bi-people-fill fs-5"></i>
                     </div>
                 </div>
                 <div class="mt-2 text-muted small" style="font-size: 0.78rem;">
-                    Dữ liệu ứng viên đã lưu trữ trong cơ sở dữ liệu
+                    @(c.HasActiveFilters ? "Hồ sơ khớp với tiêu chí lọc" : "Toàn bộ ứng viên trong hệ thống")
                 </div>
             </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-xl-4">
+        <!-- Ứng viên tháng trước (Scrum 44 User Story Key Requirement) -->
+        <div class="col-12 col-sm-6 col-xl-3">
             <div class="card border-0 shadow-sm bg-white p-3.5 h-100" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em; font-size: 0.72rem;">Ứng tuyển nhiều đợt (>= 2)</div>
-                        <h3 class="fw-bold text-dark mb-0 mt-1" style="font-family: 'JetBrains Mono', monospace; color: #059669;">@multiAppCandidates</h3>
+                        <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em; font-size: 0.72rem;">Nộp trong tháng trước</div>
+                        <h3 class="fw-bold text-dark mb-0 mt-1" style="font-family: 'JetBrains Mono', monospace; color: #0284C7;">@Model.LastMonthCandidatesCount</h3>
                     </div>
-                    <div class="d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; background: #ECFDF5; color: #059669; border-radius: 10px;">
-                        <i class="bi bi-clock-history fs-5"></i>
+                    <div class="d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; background: #E0F2FE; color: #0284C7; border-radius: 10px;">
+                        <i class="bi bi-calendar2-month fs-5"></i>
                     </div>
                 </div>
-                <div class="mt-2 text-muted small" style="font-size: 0.78rem;">
-                    Ứng viên có lịch sử nộp hồ sơ nhiều vị trí
+                <div class="mt-2 d-flex align-items-center justify-content-between" style="font-size: 0.78rem;">
+                    <span class="text-muted">Hồ sơ xem xét tái tuyển dụng</span>
+                    <a href="/ung-vien?DatePreset=last_month" class="text-decoration-none fw-semibold" style="color: #0284C7;">
+                        Lọc ngay <i class="bi bi-arrow-right"></i>
+                    </a>
                 </div>
             </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-xl-4">
+        <!-- Ứng viên đánh giá cao (>= 4 sao) -->
+        <div class="col-12 col-sm-6 col-xl-3">
             <div class="card border-0 shadow-sm bg-white p-3.5 h-100" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em; font-size: 0.72rem;">Đã gắn nhãn đánh giá</div>
-                        <h3 class="fw-bold text-dark mb-0 mt-1" style="font-family: 'JetBrains Mono', monospace; color: #D97706;">@taggedCandidates</h3>
+                        <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em; font-size: 0.72rem;">Đánh giá cao (≥ 4⭐)</div>
+                        <h3 class="fw-bold text-dark mb-0 mt-1" style="font-family: 'JetBrains Mono', monospace; color: #D97706;">@Model.HighRatingCandidatesCount</h3>
                     </div>
                     <div class="d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; background: #FFFBEB; color: #D97706; border-radius: 10px;">
-                        <i class="bi bi-tags-fill fs-5"></i>
+                        <i class="bi bi-star-fill fs-5"></i>
+                    </div>
+                </div>
+                <div class="mt-2 d-flex align-items-center justify-content-between" style="font-size: 0.78rem;">
+                    <span class="text-muted">Tiềm năng phỏng vấn cao</span>
+                    <a href="/ung-vien?MinRating=4" class="text-decoration-none fw-semibold" style="color: #D97706;">
+                        Lọc ngay <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ứng tuyển nhiều đợt -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm bg-white p-3.5 h-100" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em; font-size: 0.72rem;">Ứng tuyển nhiều đợt</div>
+                        <h3 class="fw-bold text-dark mb-0 mt-1" style="font-family: 'JetBrains Mono', monospace; color: #059669;">@Model.MultiAppCandidatesCount</h3>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; background: #ECFDF5; color: #059669; border-radius: 10px;">
+                        <i class="bi bi-layers-fill fs-5"></i>
                     </div>
                 </div>
                 <div class="mt-2 text-muted small" style="font-size: 0.78rem;">
-                    Hồ sơ đã được Recruiter phân loại chuyên môn
+                    Ứng viên có lịch sử nộp ≥ 2 vị trí
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ── Search & Filter Section ── -->
+    <!-- ── Thanh Bộ Lọc Đã Lưu (Saved Filters Bar) ── -->
+    @if (Model.SavedFilters.Any())
+    {
+        <div class="card border-0 shadow-sm bg-white mb-3" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+            <div class="card-body py-2.5 px-3 px-lg-4 d-flex flex-wrap align-items-center gap-2">
+                <span class="text-muted small fw-semibold d-flex align-items-center me-1" style="font-size: 0.8rem;">
+                    <i class="bi bi-bookmark-star-fill text-warning me-1.5"></i>Bộ lọc đã lưu:
+                </span>
+                @foreach (var sf in Model.SavedFilters)
+                {
+                    var crit = sf.Criteria;
+                    var qParams = new List<string>();
+                    if (!string.IsNullOrWhiteSpace(crit.Search)) qParams.Add($"Search={Uri.EscapeDataString(crit.Search)}");
+                    if (!string.IsNullOrWhiteSpace(crit.CoverLetterKeyword)) qParams.Add($"CoverLetterKeyword={Uri.EscapeDataString(crit.CoverLetterKeyword)}");
+                    if (crit.JobPostingId.HasValue) qParams.Add($"JobPostingId={crit.JobPostingId.Value}");
+                    if (crit.Stage.HasValue) qParams.Add($"Stage={crit.Stage.Value}");
+                    if (crit.Source.HasValue) qParams.Add($"Source={crit.Source.Value}");
+                    if (!string.IsNullOrWhiteSpace(crit.Tag)) qParams.Add($"Tag={Uri.EscapeDataString(crit.Tag)}");
+                    if (!string.IsNullOrWhiteSpace(crit.DatePreset)) qParams.Add($"DatePreset={crit.DatePreset}");
+                    if (crit.FromDate.HasValue) qParams.Add($"FromDate={crit.FromDate.Value:yyyy-MM-dd}");
+                    if (crit.ToDate.HasValue) qParams.Add($"ToDate={crit.ToDate.Value:yyyy-MM-dd}");
+                    if (crit.MinRating.HasValue) qParams.Add($"MinRating={crit.MinRating.Value}");
+                    var filterUrl = "/ung-vien?" + string.Join("&", qParams);
+
+                    <div class="btn-group btn-group-sm" role="group" id="savedFilter_@sf.Id">
+                        <a href="@filterUrl" class="btn btn-outline-secondary rounded-start-2 d-flex align-items-center gap-1.5 py-1 px-2.5" 
+                           style="font-size: 0.8rem; background: #F8FAFC;"
+                           title="@sf.Description">
+                            @if (sf.IsDefault)
+                            {
+                                <i class="bi bi-star-fill text-warning" style="font-size: 0.72rem;"></i>
+                            }
+                            <span class="fw-semibold text-dark">@sf.Name</span>
+                        </a>
+                        <button type="button" class="btn btn-outline-secondary rounded-end-2 px-2 py-1 text-muted" 
+                                onclick="deleteSavedFilter('@sf.Id', '@sf.Name')"
+                                title="Xóa bộ lọc này">
+                            <i class="bi bi-x" style="font-size: 0.9rem;"></i>
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- ── Advanced Filter Form Panel ── -->
     <div class="card border-0 shadow-sm bg-white mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+        <div class="card-header bg-white py-3 px-3 px-lg-4 d-flex justify-content-between align-items-center" style="border-bottom: 1px solid #F1F5F9;">
+            <div class="d-flex align-items-center gap-2">
+                <span class="d-inline-flex align-items-center justify-content-center text-white" style="width: 26px; height: 26px; border-radius: 6px; background: #059669; font-size: 0.8rem;">
+                    <i class="bi bi-funnel-fill"></i>
+                </span>
+                <h6 class="fw-bold text-dark mb-0" style="font-size: 0.92rem;">Bộ Lọc & Tra Cứu Đa Chiều</h6>
+            </div>
+            @if (c.HasActiveFilters)
+            {
+                <span class="badge rounded-2" style="background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; font-size: 0.75rem;">
+                    Đang kích hoạt bộ lọc
+                </span>
+            }
+        </div>
         <div class="card-body p-3 p-lg-4">
-            <form method="get" action="/ung-vien" class="row g-2 align-items-center">
-                <div class="col-12 col-md-8 col-lg-9">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0" style="border-color: #E2E8F0; border-radius: 8px 0 0 8px;">
-                            <i class="bi bi-search text-muted"></i>
-                        </span>
-                        <input type="text" name="search" class="form-control border-start-0" 
-                               placeholder="Tìm theo họ tên, email, số điện thoại hoặc chức danh..." 
-                               value="@searchQuery"
-                               style="border-color: #E2E8F0; border-radius: 0 8px 8px 0; font-size: 0.9rem;" />
+            <form method="get" action="/ung-vien" id="filterForm">
+                
+                <!-- Hàng 1: Từ khóa tìm kiếm chính & Từ khóa trong Thư giới thiệu -->
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label text-muted small fw-semibold mb-1">
+                            <i class="bi bi-person-bounding-box me-1"></i>Họ tên, Email, Số điện thoại hoặc Chức danh
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0" style="border-color: #CBD5E1; border-radius: 8px 0 0 8px;">
+                                <i class="bi bi-search text-muted"></i>
+                            </span>
+                            <input type="text" name="Search" class="form-control border-start-0"
+                                   placeholder="Ví dụ: Nguyễn Văn A, a.nguyen@example.com, 0901234567..."
+                                   value="@c.Search"
+                                   style="border-color: #CBD5E1; border-radius: 0 8px 8px 0; font-size: 0.88rem;" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label text-muted small fw-semibold mb-1">
+                            <i class="bi bi-chat-left-quote me-1 text-primary"></i>Từ khóa trong Thư giới thiệu (Cover Letter)
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0" style="border-color: #CBD5E1; border-radius: 8px 0 0 8px;">
+                                <i class="bi bi-file-earmark-text text-primary"></i>
+                            </span>
+                            <input type="text" name="CoverLetterKeyword" class="form-control border-start-0"
+                                   placeholder="Ví dụ: leader, microservices, react, tiếng anh, nhiệt huyết..."
+                                   value="@c.CoverLetterKeyword"
+                                   style="border-color: #CBD5E1; border-radius: 0 8px 8px 0; font-size: 0.88rem;" />
+                        </div>
                     </div>
                 </div>
-                <div class="col-12 col-md-4 col-lg-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-success flex-grow-1 fw-semibold rounded-2 py-2" style="font-size: 0.88rem;">
-                        <i class="bi bi-funnel me-1"></i>Tìm kiếm
-                    </button>
-                    @if (!string.IsNullOrWhiteSpace(searchQuery))
-                    {
-                        <a href="/ung-vien" class="btn btn-outline-secondary rounded-2 py-2" title="Xóa bộ lọc">
-                            <i class="bi bi-x-lg"></i>
-                        </a>
-                    }
+
+                <!-- Hàng 2: Vị trí tuyển dụng, Giai đoạn, Nguồn & Mức đánh giá -->
+                <div class="row g-3 mb-3">
+                    <!-- Vị trí tuyển dụng -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="form-label text-muted small fw-semibold mb-1">
+                            <i class="bi bi-briefcase me-1"></i>Vị trí ứng tuyển
+                        </label>
+                        <select name="JobPostingId" class="form-select" style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.88rem;">
+                            <option value="">— Tất cả vị trí —</option>
+                            @foreach (var item in Model.AvailableJobPostings)
+                            {
+                                <option value="@item.Value" selected="@(item.Selected ? "selected" : null)">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Giai đoạn tuyển dụng -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="form-label text-muted small fw-semibold mb-1">
+                            <i class="bi bi-diagram-3 me-1"></i>Giai đoạn tuyển dụng
+                        </label>
+                        <select name="Stage" class="form-select" style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.88rem;">
+                            <option value="">— Tất cả giai đoạn —</option>
+                            @foreach (var item in Model.AvailableStages)
+                            {
+                                <option value="@item.Value" selected="@(item.Selected ? "selected" : null)">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Kênh nguồn -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="form-label text-muted small fw-semibold mb-1">
+                            <i class="bi bi-compass me-1"></i>Nguồn ứng viên
+                        </label>
+                        <select name="Source" class="form-select" style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.88rem;">
+                            <option value="">— Tất cả nguồn —</option>
+                            @foreach (var item in Model.AvailableSources)
+                            {
+                                <option value="@item.Value" selected="@(item.Selected ? "selected" : null)">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Mức đánh giá (MinRating) -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="form-label text-muted small fw-semibold mb-1">
+                            <i class="bi bi-star me-1 text-warning"></i>Mức đánh giá tối thiểu
+                        </label>
+                        <select name="MinRating" class="form-select" style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.88rem;">
+                            <option value="">— Mọi mức đánh giá —</option>
+                            <option value="5" selected="@(c.MinRating == 5 ? "selected" : null)">⭐⭐⭐⭐⭐ 5 sao (Xuất sắc)</option>
+                            <option value="4" selected="@(c.MinRating == 4 ? "selected" : null)">⭐⭐⭐⭐ Từ 4 sao trở lên</option>
+                            <option value="3" selected="@(c.MinRating == 3 ? "selected" : null)">⭐⭐⭐ Từ 3 sao trở lên</option>
+                            <option value="2" selected="@(c.MinRating == 2 ? "selected" : null)">⭐⭐ Từ 2 sao trở lên</option>
+                            <option value="1" selected="@(c.MinRating == 1 ? "selected" : null)">⭐ Từ 1 sao trở lên</option>
+                        </select>
+                    </div>
                 </div>
+
+                <!-- Hàng 3: Nhãn chuyên môn & Khoảng thời gian nộp hồ sơ -->
+                <div class="row g-3 align-items-end">
+                    <!-- Nhãn (Tags) -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="form-label text-muted small fw-semibold mb-1">
+                            <i class="bi bi-tags me-1"></i>Nhãn chuyên môn
+                        </label>
+                        <input list="tagsList" name="Tag" class="form-control"
+                               placeholder="Chọn hoặc nhập tên nhãn..."
+                               value="@c.Tag"
+                               style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.88rem;" />
+                        <datalist id="tagsList">
+                            @foreach (var t in Model.AvailableTags)
+                            {
+                                <option value="@t"></option>
+                            }
+                        </datalist>
+                    </div>
+
+                    <!-- Preset thời gian (Tháng trước, tháng này,...) -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="form-label text-muted small fw-semibold mb-1">
+                            <i class="bi bi-calendar3 me-1"></i>Khoảng thời gian nộp
+                        </label>
+                        <select name="DatePreset" id="datePresetSelect" class="form-select" onchange="toggleCustomDates(this.value)" style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.88rem;">
+                            <option value="all" selected="@(string.IsNullOrEmpty(c.DatePreset) || c.DatePreset == "all" ? "selected" : null)">Tất cả thời gian</option>
+                            <option value="last_month" selected="@(c.DatePreset == "last_month" ? "selected" : null)">⭐ Tháng trước (Recruiter ưu tiên)</option>
+                            <option value="this_month" selected="@(c.DatePreset == "this_month" ? "selected" : null)">Tháng này</option>
+                            <option value="last_30_days" selected="@(c.DatePreset == "last_30_days" ? "selected" : null)">30 ngày gần nhất</option>
+                            <option value="last_7_days" selected="@(c.DatePreset == "last_7_days" ? "selected" : null)">7 ngày gần nhất</option>
+                            <option value="custom" selected="@(c.DatePreset == "custom" || (c.FromDate.HasValue || c.ToDate.HasValue) ? "selected" : null)">Tùy chọn khoảng ngày...</option>
+                        </select>
+                    </div>
+
+                    <!-- Từ ngày -->
+                    <div class="col-6 col-lg-2" id="fromDateCol" style="@(c.DatePreset == "custom" || (c.FromDate.HasValue || c.ToDate.HasValue) ? "" : "display: none;")">
+                        <label class="form-label text-muted small fw-semibold mb-1">Từ ngày</label>
+                        <input type="date" name="FromDate" class="form-control"
+                               value="@(c.FromDate.HasValue ? c.FromDate.Value.ToString("yyyy-MM-dd") : "")"
+                               style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.88rem;" />
+                    </div>
+
+                    <!-- Đến ngày -->
+                    <div class="col-6 col-lg-2" id="toDateCol" style="@(c.DatePreset == "custom" || (c.FromDate.HasValue || c.ToDate.HasValue) ? "" : "display: none;")">
+                        <label class="form-label text-muted small fw-semibold mb-1">Đến ngày</label>
+                        <input type="date" name="ToDate" class="form-control"
+                               value="@(c.ToDate.HasValue ? c.ToDate.Value.ToString("yyyy-MM-dd") : "")"
+                               style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.88rem;" />
+                    </div>
+
+                    <!-- Nút thao tác Tìm kiếm & Reset -->
+                    <div class="col-12 @(c.DatePreset == "custom" || (c.FromDate.HasValue || c.ToDate.HasValue) ? "col-lg-2" : "col-lg-6") d-flex gap-2">
+                        <button type="submit" class="btn btn-success fw-semibold rounded-2 flex-grow-1 py-2" style="background-color: #059669; border-color: #059669; font-size: 0.88rem;">
+                            <i class="bi bi-funnel me-1"></i>Lọc ứng viên
+                        </button>
+                        <a href="/ung-vien" class="btn btn-outline-secondary rounded-2 py-2 px-3" title="Đặt lại bộ lọc">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    </div>
+                </div>
+
             </form>
         </div>
     </div>
 
+    <!-- ── Active Filter Badges (Tóm tắt điều kiện lọc đang chạy) ── -->
+    @if (c.HasActiveFilters)
+    {
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <span class="text-muted small fw-semibold" style="font-size: 0.8rem;">
+                <i class="bi bi-filter-circle me-1"></i>Điều kiện đang lọc:
+            </span>
+
+            @if (!string.IsNullOrWhiteSpace(c.Search))
+            {
+                <span class="badge bg-white text-dark border rounded-2 px-2.5 py-1.5 d-inline-flex align-items-center gap-1.5 small shadow-2xs">
+                    <span>Từ khóa: <strong>@c.Search</strong></span>
+                    <a href="@RemoveQueryParam("Search")" class="text-secondary text-decoration-none"><i class="bi bi-x"></i></a>
+                </span>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(c.CoverLetterKeyword))
+            {
+                <span class="badge bg-white text-dark border rounded-2 px-2.5 py-1.5 d-inline-flex align-items-center gap-1.5 small shadow-2xs">
+                    <span>Thư giới thiệu chứa: <strong class="text-primary">@c.CoverLetterKeyword</strong></span>
+                    <a href="@RemoveQueryParam("CoverLetterKeyword")" class="text-secondary text-decoration-none"><i class="bi bi-x"></i></a>
+                </span>
+            }
+
+            @if (c.JobPostingId.HasValue)
+            {
+                var jpText = Model.AvailableJobPostings.FirstOrDefault(j => j.Value == c.JobPostingId.Value.ToString())?.Text ?? "Vị trí đã chọn";
+                <span class="badge bg-white text-dark border rounded-2 px-2.5 py-1.5 d-inline-flex align-items-center gap-1.5 small shadow-2xs">
+                    <span>Vị trí: <strong>@jpText</strong></span>
+                    <a href="@RemoveQueryParam("JobPostingId")" class="text-secondary text-decoration-none"><i class="bi bi-x"></i></a>
+                </span>
+            }
+
+            @if (c.Stage.HasValue)
+            {
+                <span class="badge bg-white text-dark border rounded-2 px-2.5 py-1.5 d-inline-flex align-items-center gap-1.5 small shadow-2xs">
+                    <span>Giai đoạn: <strong>@c.Stage.Value.GetDisplayName()</strong></span>
+                    <a href="@RemoveQueryParam("Stage")" class="text-secondary text-decoration-none"><i class="bi bi-x"></i></a>
+                </span>
+            }
+
+            @if (c.Source.HasValue)
+            {
+                var srcText = Model.AvailableSources.FirstOrDefault(s => s.Value == c.Source.Value.ToString())?.Text ?? "Nguồn";
+                <span class="badge bg-white text-dark border rounded-2 px-2.5 py-1.5 d-inline-flex align-items-center gap-1.5 small shadow-2xs">
+                    <span>Nguồn: <strong>@srcText</strong></span>
+                    <a href="@RemoveQueryParam("Source")" class="text-secondary text-decoration-none"><i class="bi bi-x"></i></a>
+                </span>
+            }
+
+            @if (c.MinRating.HasValue)
+            {
+                <span class="badge bg-white text-dark border rounded-2 px-2.5 py-1.5 d-inline-flex align-items-center gap-1.5 small shadow-2xs">
+                    <span>Đánh giá: <strong class="text-warning">≥ @c.MinRating.Value ⭐</strong></span>
+                    <a href="@RemoveQueryParam("MinRating")" class="text-secondary text-decoration-none"><i class="bi bi-x"></i></a>
+                </span>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(c.Tag))
+            {
+                <span class="badge bg-white text-dark border rounded-2 px-2.5 py-1.5 d-inline-flex align-items-center gap-1.5 small shadow-2xs">
+                    <span>Nhãn: <strong>@c.Tag</strong></span>
+                    <a href="@RemoveQueryParam("Tag")" class="text-secondary text-decoration-none"><i class="bi bi-x"></i></a>
+                </span>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(c.DatePreset) && c.DatePreset != "all")
+            {
+                var presetLabel = c.DatePreset switch
+                {
+                    "last_month" => "Tháng trước",
+                    "this_month" => "Tháng này",
+                    "last_30_days" => "30 ngày qua",
+                    "last_7_days" => "7 ngày qua",
+                    _ => c.DatePreset
+                };
+                <span class="badge bg-white text-dark border rounded-2 px-2.5 py-1.5 d-inline-flex align-items-center gap-1.5 small shadow-2xs">
+                    <span>Thời gian: <strong style="color: #0284C7;">@presetLabel</strong></span>
+                    <a href="@RemoveQueryParam("DatePreset")" class="text-secondary text-decoration-none"><i class="bi bi-x"></i></a>
+                </span>
+            }
+
+            @if (c.FromDate.HasValue || c.ToDate.HasValue)
+            {
+                <span class="badge bg-white text-dark border rounded-2 px-2.5 py-1.5 d-inline-flex align-items-center gap-1.5 small shadow-2xs">
+                    <span style="font-family: 'JetBrains Mono', monospace;">@(c.FromDate?.ToString("dd/MM/yyyy") ?? "...") - @(c.ToDate?.ToString("dd/MM/yyyy") ?? "...")</span>
+                    <a href="@RemoveQueryParam("FromDate", "ToDate")" class="text-secondary text-decoration-none"><i class="bi bi-x"></i></a>
+                </span>
+            }
+
+            <a href="/ung-vien" class="badge bg-light text-danger border rounded-2 px-2 py-1.5 text-decoration-none small">
+                <i class="bi bi-trash3 me-1"></i>Xóa tất cả bộ lọc
+            </a>
+        </div>
+    }
+
     <!-- ── Candidates Table List ── -->
     <div class="card border-0 shadow-sm bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px; overflow: hidden;">
-        <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center" style="border-bottom: 1px solid #F1F5F9;">
+        <div class="card-header bg-white py-3 px-3 px-lg-4 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2" style="border-bottom: 1px solid #F1F5F9;">
             <div class="d-flex align-items-center gap-2">
                 <h6 class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">
-                    Danh Sách Ứng Viên (@Model.Count)
+                    Danh Sách Ứng Viên Khớp Bộ Lọc
                 </h6>
-                @if (!string.IsNullOrWhiteSpace(searchQuery))
-                {
-                    <span class="badge bg-light text-secondary border rounded-2 small">
-                        Từ khóa: "@searchQuery"
-                    </span>
-                }
+                <span class="badge bg-light text-secondary border rounded-2" style="font-family: 'JetBrains Mono', monospace;">
+                    @Model.PagedResult.TotalCount hồ sơ
+                </span>
             </div>
-            <div class="text-muted small">
-                Hiển thị dữ liệu hồ sơ hợp nhất
+            <div class="d-flex align-items-center gap-3 text-muted small">
+                <span>Trang <strong style="font-family: 'JetBrains Mono', monospace;">@Model.PagedResult.Page</strong> / <strong style="font-family: 'JetBrains Mono', monospace;">@(Math.Max(1, Model.PagedResult.TotalPages))</strong></span>
             </div>
         </div>
 
-        @if (!Model.Any())
+        @if (!Model.Candidates.Any())
         {
             <div class="text-center py-5 px-3">
                 <div class="d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 64px; height: 64px; background: #F8FAFC; border-radius: 16px; border: 1px solid #E2E8F0;">
                     <i class="bi bi-person-x fs-2 text-muted"></i>
                 </div>
-                <h6 class="fw-bold text-dark mb-1">Không tìm thấy ứng viên nào</h6>
-                <p class="text-muted small mb-3">
-                    @(string.IsNullOrWhiteSpace(searchQuery) ? "Chưa có ứng viên nào trong hệ thống." : $"Không có kết quả nào khớp với từ khóa \"{searchQuery}\".")
+                <h6 class="fw-bold text-dark mb-1">Không tìm thấy ứng viên nào phù hợp</h6>
+                <p class="text-muted small mb-3" style="max-width: 500px; margin: 0 auto;">
+                    @(c.HasActiveFilters 
+                        ? "Không có hồ sơ nào khớp với toàn bộ tiêu chí lọc hiện tại. Hãy thử nới lỏng từ khóa hoặc khoảng thời gian." 
+                        : "Chưa có dữ liệu ứng viên nào trong hệ thống.")
                 </p>
-                @if (!string.IsNullOrWhiteSpace(searchQuery))
+                @if (c.HasActiveFilters)
                 {
-                    <a href="/ung-vien" class="btn btn-sm btn-outline-secondary rounded-2">
-                        <i class="bi bi-arrow-clockwise me-1"></i>Xóa tìm kiếm
+                    <a href="/ung-vien" class="btn btn-sm btn-outline-success rounded-2 fw-semibold px-3 py-1.5">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Đặt lại toàn bộ bộ lọc
                     </a>
                 }
             </div>
@@ -165,19 +490,20 @@
         else
         {
             <div class="table-responsive">
-                <table class="table align-middle mb-0" style="min-width: 950px; font-size: 0.85rem;">
+                <table class="table align-middle mb-0" style="min-width: 1050px; font-size: 0.85rem;">
                     <thead style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0; color: #64748B; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">
                         <tr>
-                            <th class="py-3 px-4 fw-semibold">Ứng viên</th>
-                            <th class="py-3 px-3 fw-semibold">Vị trí gần nhất</th>
-                            <th class="py-3 px-3 fw-semibold text-center">Số lần nộp đơn</th>
-                            <th class="py-3 px-3 fw-semibold">Nhãn chuyên môn</th>
-                            <th class="py-3 px-3 fw-semibold">Ngày nộp gần nhất</th>
+                            <th class="py-3 px-4 fw-semibold" style="width: 320px;">Ứng viên</th>
+                            <th class="py-3 px-3 fw-semibold">Vị trí & Giai đoạn</th>
+                            <th class="py-3 px-3 fw-semibold text-center">Nguồn & Đánh giá</th>
+                            <th class="py-3 px-3 fw-semibold">Thư giới thiệu (Cover Letter)</th>
+                            <th class="py-3 px-3 fw-semibold">Số lần & Nhãn</th>
+                            <th class="py-3 px-3 fw-semibold">Ngày nộp</th>
                             <th class="py-3 px-4 fw-semibold text-end">Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var cand in Model)
+                        @foreach (var cand in Model.Candidates)
                         {
                             var initial = string.IsNullOrWhiteSpace(cand.FullName) ? "?" : cand.FullName[..1].ToUpper();
                             <tr style="border-bottom: 1px solid #F1F5F9; transition: background .15s;"
@@ -207,7 +533,7 @@
                                                 @if (!string.IsNullOrEmpty(cand.Phone))
                                                 {
                                                     <span>•</span>
-                                                    <span>@cand.Phone</span>
+                                                    <span style="font-family: 'JetBrains Mono', monospace;">@cand.Phone</span>
                                                 }
                                             </div>
                                             @if (!string.IsNullOrEmpty(cand.CurrentTitle))
@@ -220,11 +546,13 @@
                                     </div>
                                 </td>
 
-                                <!-- Cột 2: Vị trí gần nhất -->
+                                <!-- Cột 2: Vị trí & Giai đoạn -->
                                 <td class="py-3 px-3">
                                     @if (!string.IsNullOrEmpty(cand.LatestJobTitle))
                                     {
-                                        <div class="fw-semibold text-dark" style="font-size: 0.88rem;">@cand.LatestJobTitle</div>
+                                        <div class="fw-semibold text-dark text-truncate" style="max-width: 220px; font-size: 0.88rem;" title="@cand.LatestJobTitle">
+                                            @cand.LatestJobTitle
+                                        </div>
                                         @if (!string.IsNullOrEmpty(cand.LatestStageName))
                                         {
                                             <span class="badge mt-1 rounded-2 fw-semibold" 
@@ -239,64 +567,90 @@
                                     }
                                 </td>
 
-                                <!-- Cột 3: Số lần nộp đơn -->
+                                <!-- Cột 3: Nguồn & Đánh giá -->
                                 <td class="py-3 px-3 text-center">
-                                    @if (cand.ApplicationCount > 1)
-                                    {
-                                        <span class="badge rounded-2 px-2.5 py-1.5 fw-bold" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 0.75rem;" title="Ứng viên đã nộp nhiều vị trí khác nhau">
-                                            <i class="bi bi-layers-fill me-1"></i>@cand.ApplicationCount lần nộp
+                                    <div>
+                                        <span class="badge bg-light text-secondary border rounded-2 px-2 py-1" style="font-size: 0.72rem;">
+                                            @cand.SourceDisplayName
                                         </span>
-                                    }
-                                    else if (cand.ApplicationCount == 1)
-                                    {
-                                        <span class="badge bg-light text-secondary border rounded-2 px-2.5 py-1.5" style="font-size: 0.75rem;">
-                                            1 lần nộp
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted small">0</span>
-                                    }
-                                </td>
-
-                                <!-- Cột 4: Nhãn (Tags) -->
-                                <td class="py-3 px-3">
-                                    <div class="d-flex flex-wrap gap-1" style="max-width: 250px;">
-                                        @if (cand.Tags.Any())
+                                    </div>
+                                    <div class="mt-1" style="font-size: 0.8rem; letter-spacing: 1px;" title="@(cand.Rating.HasValue ? $"Đánh giá: {cand.Rating}/5 sao" : "Chưa có đánh giá")">
+                                        @if (cand.Rating.HasValue && cand.Rating.Value > 0)
                                         {
-                                            @foreach (var tag in cand.Tags.Take(3))
-                                            {
-                                                <span class="badge rounded-2" 
-                                                      style="background: @(tag.ColorCode)15; color: @tag.ColorCode; border: 1px solid @(tag.ColorCode)40; font-size: 0.72rem; font-weight: 600;">
-                                                    @tag.TagName
-                                                </span>
-                                            }
-                                            @if (cand.Tags.Count > 3)
-                                            {
-                                                <span class="badge bg-light text-muted border rounded-2" style="font-size: 0.68rem;">
-                                                    +@(cand.Tags.Count - 3)
-                                                </span>
-                                            }
+                                            <span class="text-warning fw-bold">@cand.RatingStars</span>
                                         }
                                         else
                                         {
-                                            <span class="text-muted small" style="font-size: 0.72rem;">Chưa có nhãn</span>
+                                            <span class="text-muted small">—</span>
                                         }
                                     </div>
                                 </td>
 
-                                <!-- Cột 5: Ngày nộp gần nhất -->
+                                <!-- Cột 4: Thư giới thiệu (Cover Letter Snippet) -->
+                                <td class="py-3 px-3" style="max-width: 220px;">
+                                    @if (cand.HasCoverLetter)
+                                    {
+                                        <div class="d-flex align-items-start gap-1.5" title="@cand.CoverLetterSnippet">
+                                            <i class="bi bi-quote text-primary flex-shrink-0" style="font-size: 1rem; line-height: 1;"></i>
+                                            <span class="text-muted small text-truncate d-inline-block" style="font-size: 0.75rem; max-width: 190px;">
+                                                @cand.CoverLetterSnippet
+                                            </span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
+                                </td>
+
+                                <!-- Cột 5: Số lần nộp & Nhãn -->
+                                <td class="py-3 px-3">
+                                    <div class="mb-1">
+                                        @if (cand.ApplicationCount > 1)
+                                        {
+                                            <span class="badge rounded-2 px-2 py-1 fw-bold" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 0.72rem;">
+                                                <i class="bi bi-layers-fill me-1"></i>@cand.ApplicationCount lần nộp
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-light text-muted border rounded-2 px-2 py-1" style="font-size: 0.72rem;">
+                                                1 lần nộp
+                                            </span>
+                                        }
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-1" style="max-width: 200px;">
+                                        @if (cand.Tags.Any())
+                                        {
+                                            @foreach (var tag in cand.Tags.Take(2))
+                                            {
+                                                <span class="badge rounded-2" 
+                                                      style="background: @(tag.ColorCode)15; color: @tag.ColorCode; border: 1px solid @(tag.ColorCode)40; font-size: 0.7rem; font-weight: 600;">
+                                                    @tag.TagName
+                                                </span>
+                                            }
+                                            @if (cand.Tags.Count > 2)
+                                            {
+                                                <span class="badge bg-light text-muted border rounded-2" style="font-size: 0.65rem;">
+                                                    +@(cand.Tags.Count - 2)
+                                                </span>
+                                            }
+                                        }
+                                    </div>
+                                </td>
+
+                                <!-- Cột 6: Ngày nộp gần nhất -->
                                 <td class="py-3 px-3 text-muted" style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;">
                                     @cand.FormattedLatestAppliedAt
                                 </td>
 
-                                <!-- Cột 6: Hành động -->
+                                <!-- Cột 7: Hành động -->
                                 <td class="py-3 px-4 text-end">
                                     <a href="/ung-vien/@cand.Id" 
-                                       class="btn btn-sm btn-outline-success fw-semibold rounded-2 px-3 py-1.5" 
-                                       style="font-size: 0.8rem;"
+                                       class="btn btn-sm btn-outline-success fw-semibold rounded-2 px-2.5 py-1.5" 
+                                       style="font-size: 0.78rem;"
                                        title="Mở hồ sơ hợp nhất và lịch sử ứng tuyển">
-                                        <i class="bi bi-person-lines-fill me-1"></i>Hồ sơ hợp nhất
+                                        <i class="bi bi-person-lines-fill me-1"></i>Xem hồ sơ
                                     </a>
                                 </td>
                             </tr>
@@ -304,6 +658,284 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- ── Phân Trang (Pagination) ── -->
+            @if (Model.PagedResult.TotalPages > 1)
+            {
+                <div class="card-footer bg-white py-3 px-4 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2" style="border-top: 1px solid #F1F5F9;">
+                    <div class="text-muted small">
+                        Hiển thị từ <strong style="font-family: 'JetBrains Mono', monospace;">@((Model.PagedResult.Page - 1) * Model.PagedResult.PageSize + 1)</strong> 
+                        đến <strong style="font-family: 'JetBrains Mono', monospace;">@(Math.Min(Model.PagedResult.Page * Model.PagedResult.PageSize, Model.PagedResult.TotalCount))</strong> 
+                        trong tổng số <strong style="font-family: 'JetBrains Mono', monospace;">@Model.PagedResult.TotalCount</strong> ứng viên
+                    </div>
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm mb-0">
+                            <!-- Nút Trước -->
+                            <li class="page-item @(Model.PagedResult.HasPreviousPage ? "" : "disabled")">
+                                <a class="page-link rounded-start-2" href="@BuildPageUrl(Model.PagedResult.Page - 1)">
+                                    <i class="bi bi-chevron-left me-1"></i>Trước
+                                </a>
+                            </li>
+
+                            <!-- Danh sách số trang -->
+                            @for (var p = 1; p <= Model.PagedResult.TotalPages; p++)
+                            {
+                                if (p == 1 || p == Model.PagedResult.TotalPages || (p >= Model.PagedResult.Page - 2 && p <= Model.PagedResult.Page + 2))
+                                {
+                                    <li class="page-item @(p == Model.PagedResult.Page ? "active" : "")">
+                                        <a class="page-link" href="@BuildPageUrl(p)">@p</a>
+                                    </li>
+                                }
+                                else if (p == Model.PagedResult.Page - 3 || p == Model.PagedResult.Page + 3)
+                                {
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                }
+                            }
+
+                            <!-- Nút Tiếp -->
+                            <li class="page-item @(Model.PagedResult.HasNextPage ? "" : "disabled")">
+                                <a class="page-link rounded-end-2" href="@BuildPageUrl(Model.PagedResult.Page + 1)">
+                                    Tiếp<i class="bi bi-chevron-right ms-1"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
         }
     </div>
+
 </div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL LƯU BỘ LỌC (SCRUM-44)
+     ══════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="saveFilterModal" tabindex="-1" aria-labelledby="saveFilterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-white py-3 px-4" style="border-bottom: 1px solid #E2E8F0;">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="d-inline-flex align-items-center justify-content-center text-white" style="width: 28px; height: 28px; border-radius: 6px; background: #059669; font-size: 0.85rem;">
+                        <i class="bi bi-bookmark-plus-fill"></i>
+                    </span>
+                    <h6 class="modal-title fw-bold text-dark mb-0" id="saveFilterModalLabel">Lưu Bộ Lọc Tìm Kiếm Hay Dùng</h6>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-3">
+                    Lưu các tiêu chí lọc đang chọn thành một phím tắt để nhanh chóng tìm lại hồ sơ mà không cần cấu hình lại nhiều bước.
+                </p>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-dark small">Tên bộ lọc <span class="text-danger">*</span></label>
+                    <input type="text" id="savedFilterName" class="form-control" 
+                           placeholder="Ví dụ: Ứng viên Backend nộp tháng trước, Ứng viên 5 sao..."
+                           style="border-radius: 8px; font-size: 0.88rem;" />
+                    <div class="invalid-feedback" id="savedFilterNameError">Vui lòng nhập tên cho bộ lọc.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-dark small">Mô tả / Ghi chú mục đích (tùy chọn)</label>
+                    <textarea id="savedFilterDesc" class="form-control" rows="2"
+                              placeholder="Ghi chú thêm về mục đích dùng bộ lọc này..."
+                              style="border-radius: 8px; font-size: 0.88rem;"></textarea>
+                </div>
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="savedFilterIsDefault">
+                    <label class="form-check-label small text-dark" for="savedFilterIsDefault">
+                        Đặt làm bộ lọc ưa thích (hiển thị nổi bật đầu danh sách)
+                    </label>
+                </div>
+
+                <div class="p-3 bg-light rounded-2 border small">
+                    <div class="fw-semibold text-muted mb-1" style="font-size: 0.75rem; text-transform: uppercase;">Tóm tắt tiêu chí sẽ được lưu:</div>
+                    <ul class="mb-0 ps-3 text-secondary" style="font-size: 0.8rem;">
+                        @if (!string.IsNullOrWhiteSpace(c.Search)) { <li>Từ khóa: <strong>@c.Search</strong></li> }
+                        @if (!string.IsNullOrWhiteSpace(c.CoverLetterKeyword)) { <li>Từ khóa thư: <strong>@c.CoverLetterKeyword</strong></li> }
+                        @if (c.JobPostingId.HasValue) { <li>Vị trí: <strong>@(Model.AvailableJobPostings.FirstOrDefault(j => j.Value == c.JobPostingId.Value.ToString())?.Text ?? "Vị trí đã chọn")</strong></li> }
+                        @if (c.Stage.HasValue) { <li>Giai đoạn: <strong>@c.Stage.Value.GetDisplayName()</strong></li> }
+                        @if (c.Source.HasValue) { <li>Nguồn: <strong>@c.Source.Value</strong></li> }
+                        @if (c.MinRating.HasValue) { <li>Mức đánh giá: <strong>≥ @c.MinRating.Value ⭐</strong></li> }
+                        @if (!string.IsNullOrWhiteSpace(c.Tag)) { <li>Nhãn: <strong>@c.Tag</strong></li> }
+                        @if (!string.IsNullOrWhiteSpace(c.DatePreset)) { <li>Thời gian: <strong>@c.DatePreset</strong></li> }
+                        @if (!c.HasActiveFilters) { <li class="text-muted">Tất cả ứng viên (chưa áp dụng điều kiện lọc cụ thể)</li> }
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer bg-white py-2.5 px-4" style="border-top: 1px solid #E2E8F0;">
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-2 px-3" data-bs-dismiss="modal">Hủy bỏ</button>
+                <button type="button" class="btn btn-sm btn-success fw-semibold rounded-2 px-3" id="btnSaveFilterSubmit" onclick="saveCurrentFilter()">
+                    <i class="bi bi-check2 me-1"></i>Lưu bộ lọc
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCRIPTS & CLIENT LOGIC
+     ══════════════════════════════════════════════════════════ -->
+@section Scripts {
+    <script>
+        function toggleCustomDates(val) {
+            const fromCol = document.getElementById('fromDateCol');
+            const toCol = document.getElementById('toDateCol');
+            if (val === 'custom') {
+                fromCol.style.display = 'block';
+                toCol.style.display = 'block';
+            } else {
+                fromCol.style.display = 'none';
+                toCol.style.display = 'none';
+            }
+        }
+
+        // Lấy AntiForgeryToken từ form ẩn
+        function getCsrfToken() {
+            return document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]')?.value || '';
+        }
+
+        // Lưu bộ lọc hiện tại qua AJAX POST /ung-vien/bo-loc/luu
+        async function saveCurrentFilter() {
+            const nameInput = document.getElementById('savedFilterName');
+            const name = nameInput.value.trim();
+            if (!name) {
+                nameInput.classList.add('is-invalid');
+                return;
+            }
+            nameInput.classList.remove('is-invalid');
+
+            const desc = document.getElementById('savedFilterDesc').value.trim();
+            const isDefault = document.getElementById('savedFilterIsDefault').checked;
+
+            const criteria = {
+                search: '@Html.Raw(c.Search)',
+                coverLetterKeyword: '@Html.Raw(c.CoverLetterKeyword)',
+                jobPostingId: @(c.JobPostingId.HasValue ? $"'{c.JobPostingId.Value}'" : "null"),
+                stage: @(c.Stage.HasValue ? $"{(int)c.Stage.Value}" : "null"),
+                source: @(c.Source.HasValue ? $"{(int)c.Source.Value}" : "null"),
+                tag: '@Html.Raw(c.Tag)',
+                datePreset: '@Html.Raw(c.DatePreset)',
+                fromDate: @(c.FromDate.HasValue ? $"'{c.FromDate.Value:yyyy-MM-dd}'" : "null"),
+                toDate: @(c.ToDate.HasValue ? $"'{c.ToDate.Value:yyyy-MM-dd}'" : "null"),
+                minRating: @(c.MinRating.HasValue ? c.MinRating.Value.ToString() : "null")
+            };
+
+            const payload = {
+                name: name,
+                description: desc,
+                isDefault: isDefault,
+                criteria: criteria
+            };
+
+            const submitBtn = document.getElementById('btnSaveFilterSubmit');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Đang lưu...';
+
+            try {
+                const response = await fetch('/ung-vien/bo-loc/luu', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getCsrfToken()
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message || 'Lưu bộ lọc thành công!');
+                    location.reload();
+                } else {
+                    alert(result.message || 'Không thể lưu bộ lọc.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="bi bi-check2 me-1"></i>Lưu bộ lọc';
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Có lỗi xảy ra khi lưu bộ lọc. Vui lòng thử lại.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-check2 me-1"></i>Lưu bộ lọc';
+            }
+        }
+
+        // Xóa bộ lọc đã lưu qua AJAX POST /ung-vien/bo-loc/xoa
+        async function deleteSavedFilter(filterId, filterName) {
+            if (!confirm(`Bạn có chắc chắn muốn xóa bộ lọc "${filterName}" không?`)) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('filterId', filterId);
+            formData.append('__RequestVerificationToken', getCsrfToken());
+
+            try {
+                const response = await fetch('/ung-vien/bo-loc/xoa', {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': getCsrfToken()
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    const el = document.getElementById('savedFilter_' + filterId);
+                    if (el) el.remove();
+                } else {
+                    alert(result.message || 'Không thể xóa bộ lọc.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Có lỗi xảy ra khi xóa bộ lọc.');
+            }
+        }
+    </script>
+}
+
+@* ══════════════════════════════════════════════════════════
+   HÀM BỔ TRỢ TẠO URL TRUY VẤN
+   ══════════════════════════════════════════════════════════ *@
+@functions {
+    public string BuildPageUrl(int pageNumber)
+    {
+        var q = new List<string> { $"Page={pageNumber}" };
+        var c = Model.Criteria;
+        if (!string.IsNullOrWhiteSpace(c.Search)) q.Add($"Search={Uri.EscapeDataString(c.Search)}");
+        if (!string.IsNullOrWhiteSpace(c.CoverLetterKeyword)) q.Add($"CoverLetterKeyword={Uri.EscapeDataString(c.CoverLetterKeyword)}");
+        if (c.JobPostingId.HasValue) q.Add($"JobPostingId={c.JobPostingId.Value}");
+        if (c.Stage.HasValue) q.Add($"Stage={c.Stage.Value}");
+        if (c.Source.HasValue) q.Add($"Source={c.Source.Value}");
+        if (!string.IsNullOrWhiteSpace(c.Tag)) q.Add($"Tag={Uri.EscapeDataString(c.Tag)}");
+        if (!string.IsNullOrWhiteSpace(c.DatePreset)) q.Add($"DatePreset={c.DatePreset}");
+        if (c.FromDate.HasValue) q.Add($"FromDate={c.FromDate.Value:yyyy-MM-dd}");
+        if (c.ToDate.HasValue) q.Add($"ToDate={c.ToDate.Value:yyyy-MM-dd}");
+        if (c.MinRating.HasValue) q.Add($"MinRating={c.MinRating.Value}");
+        return "/ung-vien?" + string.Join("&", q);
+    }
+
+    public string RemoveQueryParam(params string[] keysToRemove)
+    {
+        var dict = new Dictionary<string, string>();
+        var c = Model.Criteria;
+        if (!string.IsNullOrWhiteSpace(c.Search)) dict["Search"] = c.Search;
+        if (!string.IsNullOrWhiteSpace(c.CoverLetterKeyword)) dict["CoverLetterKeyword"] = c.CoverLetterKeyword;
+        if (c.JobPostingId.HasValue) dict["JobPostingId"] = c.JobPostingId.Value.ToString();
+        if (c.Stage.HasValue) dict["Stage"] = c.Stage.Value.ToString();
+        if (c.Source.HasValue) dict["Source"] = c.Source.Value.ToString();
+        if (!string.IsNullOrWhiteSpace(c.Tag)) dict["Tag"] = c.Tag;
+        if (!string.IsNullOrWhiteSpace(c.DatePreset)) dict["DatePreset"] = c.DatePreset;
+        if (c.FromDate.HasValue) dict["FromDate"] = c.FromDate.Value.ToString("yyyy-MM-dd");
+        if (c.ToDate.HasValue) dict["ToDate"] = c.ToDate.Value.ToString("yyyy-MM-dd");
+        if (c.MinRating.HasValue) dict["MinRating"] = c.MinRating.Value.ToString();
+
+        foreach (var k in keysToRemove)
+        {
+            dict.Remove(k);
+        }
+
+        if (dict.Count == 0) return "/ung-vien";
+        return "/ung-vien?" + string.Join("&", dict.Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value)}"));
+    }
+}
