@@ -825,6 +825,9 @@ public static class DatabaseSeeder
             await context.SaveChangesAsync();
         }
 
+        // SCRUM-336 / Scrum - Số 58: Seed dữ liệu so sánh ứng viên theo điểm đánh giá cho vị trí Senior .NET Developer
+        await SeedCandidateEvaluationComparisonDataAsync(context, dotnetJob.Id, adminUser.Id, interviewerUser.Id);
+
         // 11. Seed JobOffer chờ duyệt (Dành cho chức năng Phê duyệt Offer của Ban Giám Đốc / Approver)
         var approverUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "bod@noveratech.vn" || u.Email == "minh.tran@noveratech.digital")
             ?? adminUser;
@@ -1200,4 +1203,179 @@ public static class DatabaseSeeder
 
         await context.SaveChangesAsync();
     }
+
+    private static async Task SeedCandidateEvaluationComparisonDataAsync(
+        ApplicationDbContext context,
+        Guid dotnetJobId,
+        Guid adminUserId,
+        Guid interviewerUserId)
+    {
+        var crit1Id = new Guid("a0000000-0000-0000-0000-000000000001");
+        var crit2Id = new Guid("a0000000-0000-0000-0000-000000000002");
+        var crit3Id = new Guid("a0000000-0000-0000-0000-000000000003");
+        var crit4Id = new Guid("a0000000-0000-0000-0000-000000000004");
+        var crit5Id = new Guid("a0000000-0000-0000-0000-000000000005");
+        var crit6Id = new Guid("a0000000-0000-0000-0000-000000000006");
+
+        // 1. Đảm bảo 6 tiêu chí đánh giá chuẩn hóa đã được seed
+        if (!await context.EvaluationCriterias.AnyAsync())
+        {
+            var now = DateTimeOffset.UtcNow;
+            context.EvaluationCriterias.AddRange(
+                new EvaluationCriteria { Id = crit1Id, Name = "Kiến trúc hệ thống & Clean Architecture", CriteriaType = "HARD_SKILL", Weight = 1.5m, CreatedAt = now, UpdatedAt = now },
+                new EvaluationCriteria { Id = crit2Id, Name = "Lập trình C# .NET & Xử lý bất đồng bộ (Async Concurrency)", CriteriaType = "HARD_SKILL", Weight = 1.5m, CreatedAt = now, UpdatedAt = now },
+                new EvaluationCriteria { Id = crit3Id, Name = "Thiết kế Cơ sở dữ liệu & Tối ưu hóa SQL", CriteriaType = "HARD_SKILL", Weight = 1.2m, CreatedAt = now, UpdatedAt = now },
+                new EvaluationCriteria { Id = crit4Id, Name = "Tư duy giải quyết vấn đề & Phân tích thuật toán", CriteriaType = "SOFT_SKILL", Weight = 1.0m, CreatedAt = now, UpdatedAt = now },
+                new EvaluationCriteria { Id = crit5Id, Name = "Giao tiếp chuyên môn & Phối hợp đội ngũ", CriteriaType = "SOFT_SKILL", Weight = 1.0m, CreatedAt = now, UpdatedAt = now },
+                new EvaluationCriteria { Id = crit6Id, Name = "Văn hóa Engineering-First & Tinh thần trách nhiệm (Ownership)", CriteriaType = "CULTURE", Weight = 1.0m, CreatedAt = now, UpdatedAt = now }
+            );
+            await context.SaveChangesAsync();
+        }
+
+        // 2. Tìm các ứng viên cùng ứng tuyển vị trí dotnetJobId
+        var dotnetApps = await context.Applications
+            .Include(a => a.Candidate)
+            .Include(a => a.Interviews)
+                .ThenInclude(i => i.Evaluations)
+                    .ThenInclude(e => e.Scores)
+            .Where(a => a.JobPostingId == dotnetJobId && !a.IsDeleted)
+            .ToListAsync();
+
+        var appTuan = dotnetApps.FirstOrDefault(a => a.Candidate.Email == "tuan.le@gmail.com");
+        var appHai = dotnetApps.FirstOrDefault(a => a.Candidate.Email == "hai.phan@gmail.com");
+        var appNga = dotnetApps.FirstOrDefault(a => a.Candidate.Email == "nga.dinh@gmail.com");
+
+        // 3. Bổ sung EvaluationScores cho Tuấn (nếu đã có phiếu đánh giá nhưng chưa có điểm chi tiết từng tiêu chí)
+        if (appTuan != null)
+        {
+            var tuanInterview = appTuan.Interviews.FirstOrDefault();
+            if (tuanInterview != null)
+            {
+                var tuanEval = tuanInterview.Evaluations.FirstOrDefault(e => e.IsSubmitted);
+                if (tuanEval != null && !await context.EvaluationScores.AnyAsync(s => s.EvaluationId == tuanEval.Id))
+                {
+                    context.EvaluationScores.AddRange(
+                        new EvaluationScore { Id = Guid.NewGuid(), EvaluationId = tuanEval.Id, CriteriaId = crit1Id, Score = 5, Comment = "Kiến trúc hệ thống rất tốt" },
+                        new EvaluationScore { Id = Guid.NewGuid(), EvaluationId = tuanEval.Id, CriteriaId = crit2Id, Score = 5, Comment = "Lập trình C# .NET 9 xuất sắc" },
+                        new EvaluationScore { Id = Guid.NewGuid(), EvaluationId = tuanEval.Id, CriteriaId = crit3Id, Score = 4, Comment = "SQL và EF Core vững" },
+                        new EvaluationScore { Id = Guid.NewGuid(), EvaluationId = tuanEval.Id, CriteriaId = crit4Id, Score = 4, Comment = "Tư duy giải quyết bài toán nhanh" },
+                        new EvaluationScore { Id = Guid.NewGuid(), EvaluationId = tuanEval.Id, CriteriaId = crit5Id, Score = 4, Comment = "Giao tiếp rõ ràng" },
+                        new EvaluationScore { Id = Guid.NewGuid(), EvaluationId = tuanEval.Id, CriteriaId = crit6Id, Score = 5, Comment = "Tinh thần trách nhiệm cao" }
+                    );
+                    await context.SaveChangesAsync();
+                }
+            }
+        }
+
+        // 4. Seed buổi phỏng vấn & đánh giá cho Hải (candHai)
+        if (appHai != null && !appHai.Interviews.Any())
+        {
+            var interviewHai = new Interview
+            {
+                Id = Guid.NewGuid(),
+                ApplicationId = appHai.Id,
+                RoundNumber = 2,
+                Title = "Phỏng vấn Chuyên môn Vòng cuối (.NET & SQL Optimization)",
+                InterviewType = InterviewType.ONLINE_MEET,
+                LocationOrLink = "https://meet.google.com/nov-dotnet-hai",
+                StartTime = DateTimeOffset.UtcNow.AddDays(-3).AddHours(10),
+                EndTime = DateTimeOffset.UtcNow.AddDays(-3).AddHours(11).AddMinutes(30),
+                CandidateConfirmed = CandidateConfirmStatus.ACCEPTED,
+                Status = InterviewStatus.COMPLETED,
+                CreatedAt = DateTimeOffset.UtcNow.AddDays(-5),
+                UpdatedAt = DateTimeOffset.UtcNow.AddDays(-3)
+            };
+            await context.Interviews.AddAsync(interviewHai);
+            await context.SaveChangesAsync();
+
+            await context.InterviewPanelists.AddRangeAsync(
+                new InterviewPanelist { Id = Guid.NewGuid(), InterviewId = interviewHai.Id, InterviewerId = adminUserId, IsLead = true },
+                new InterviewPanelist { Id = Guid.NewGuid(), InterviewId = interviewHai.Id, InterviewerId = interviewerUserId, IsLead = false }
+            );
+
+            var evalHai = new InterviewEvaluation
+            {
+                Id = Guid.NewGuid(),
+                InterviewId = interviewHai.Id,
+                InterviewerId = adminUserId,
+                OverallScore = 4.2m,
+                Recommendation = RecommendationType.HIRE,
+                Strengths = "Thiết kế cơ sở dữ liệu và tối ưu truy vấn SQL xuất sắc, xử lý indexing rất chuyên sâu.",
+                Weaknesses = "Kinh nghiệm microservices event-driven cần hoàn thiện thêm.",
+                DetailedFeedback = "Ứng viên có nền tảng vững, phù hợp với tiêu chí tuyển dụng kỹ thuật của team.",
+                IsSubmitted = true,
+                SubmittedAt = DateTimeOffset.UtcNow.AddDays(-3),
+                CreatedAt = DateTimeOffset.UtcNow.AddDays(-3),
+                UpdatedAt = DateTimeOffset.UtcNow.AddDays(-3)
+            };
+            await context.InterviewEvaluations.AddAsync(evalHai);
+            await context.SaveChangesAsync();
+
+            context.EvaluationScores.AddRange(
+                new EvaluationScore { Id = Guid.NewGuid(), EvaluationId = evalHai.Id, CriteriaId = crit1Id, Score = 4, Comment = "Kiến trúc hệ thống tốt" },
+                new EvaluationScore { Id = Guid.NewGuid(), EvaluationId = evalHai.Id, CriteriaId = crit2Id, Score = 4, Comment = "C# .NET đạt yêu cầu" },
+                new EvaluationScore { Id = Guid.NewGuid(), EvaluationId = evalHai.Id, CriteriaId = crit3Id, Score = 5, Comment = "SQL & Indexing xuất sắc" },
+                new EvaluationScore { Id = Guid.NewGuid(), EvaluationId = evalHai.Id, CriteriaId = crit4Id, Score = 4, Comment = "Giải quyết vấn đề tốt" },
+                new EvaluationScore { Id = Guid.NewGuid(), EvaluationId = evalHai.Id, CriteriaId = crit5Id, Score = 4, Comment = "Hòa nhập nhóm nhanh" },
+                new EvaluationScore { Id = Guid.NewGuid(), EvaluationId = evalHai.Id, CriteriaId = crit6Id, Score = 4, Comment = "Văn hóa phù hợp" }
+            );
+            await context.SaveChangesAsync();
+        }
+
+        // 5. Seed buổi phỏng vấn & đánh giá cho Nga (candNga)
+        if (appNga != null && !appNga.Interviews.Any())
+        {
+            var interviewNga = new Interview
+            {
+                Id = Guid.NewGuid(),
+                ApplicationId = appNga.Id,
+                RoundNumber = 2,
+                Title = "Phỏng vấn Đánh giá Năng lực Vòng cuối",
+                InterviewType = InterviewType.ONLINE_MEET,
+                LocationOrLink = "https://meet.google.com/nov-dotnet-nga",
+                StartTime = DateTimeOffset.UtcNow.AddDays(-4).AddHours(14),
+                EndTime = DateTimeOffset.UtcNow.AddDays(-4).AddHours(15).AddMinutes(30),
+                CandidateConfirmed = CandidateConfirmStatus.ACCEPTED,
+                Status = InterviewStatus.COMPLETED,
+                CreatedAt = DateTimeOffset.UtcNow.AddDays(-6),
+                UpdatedAt = DateTimeOffset.UtcNow.AddDays(-4)
+            };
+            await context.Interviews.AddAsync(interviewNga);
+            await context.SaveChangesAsync();
+
+            await context.InterviewPanelists.AddRangeAsync(
+                new InterviewPanelist { Id = Guid.NewGuid(), InterviewId = interviewNga.Id, InterviewerId = adminUserId, IsLead = true },
+                new InterviewPanelist { Id = Guid.NewGuid(), InterviewId = interviewNga.Id, InterviewerId = interviewerUserId, IsLead = false }
+            );
+
+            var evalNga = new InterviewEvaluation
+            {
+                Id = Guid.NewGuid(),
+                InterviewId = interviewNga.Id,
+                InterviewerId = adminUserId,
+                OverallScore = 3.8m,
+                Recommendation = RecommendationType.CONSIDER,
+                Strengths = "Tư duy thuật toán sáng sủa, giao tiếp cởi mở và nhiệt tình.",
+                Weaknesses = "Kinh nghiệm thực chiến xử lý bài toán chịu tải cao còn hạn chế.",
+                DetailedFeedback = "Đạt mức khá, đề xuất cân nhắc tuyển dụng kèm lộ trình đào tạo mentor chuyên sâu.",
+                IsSubmitted = true,
+                SubmittedAt = DateTimeOffset.UtcNow.AddDays(-4),
+                CreatedAt = DateTimeOffset.UtcNow.AddDays(-4),
+                UpdatedAt = DateTimeOffset.UtcNow.AddDays(-4)
+            };
+            await context.InterviewEvaluations.AddAsync(evalNga);
+            await context.SaveChangesAsync();
+
+            context.EvaluationScores.AddRange(
+                new EvaluationScore { Id = Guid.NewGuid(), EvaluationId = evalNga.Id, CriteriaId = crit1Id, Score = 4, Comment = "Hiểu biết kiến trúc cơ bản" },
+                new EvaluationScore { Id = Guid.NewGuid(), EvaluationId = evalNga.Id, CriteriaId = crit2Id, Score = 4, Comment = "Lập trình C# khá" },
+                new EvaluationScore { Id = Guid.NewGuid(), EvaluationId = evalNga.Id, CriteriaId = crit3Id, Score = 3, Comment = "SQL ở mức khá" },
+                new EvaluationScore { Id = Guid.NewGuid(), EvaluationId = evalNga.Id, CriteriaId = crit4Id, Score = 4, Comment = "Tư duy thuật toán tốt" },
+                new EvaluationScore { Id = Guid.NewGuid(), EvaluationId = evalNga.Id, CriteriaId = crit5Id, Score = 4, Comment = "Giao tiếp rất tốt" },
+                new EvaluationScore { Id = Guid.NewGuid(), EvaluationId = evalNga.Id, CriteriaId = crit6Id, Score = 4, Comment = "Thái độ tích cực" }
+            );
+            await context.SaveChangesAsync();
+        }
+    }
 }
+

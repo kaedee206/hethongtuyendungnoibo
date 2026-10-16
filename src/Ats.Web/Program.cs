@@ -86,6 +86,7 @@ builder.Services.AddScoped<ISlaService, SlaService>();
 builder.Services.AddHostedService<SlaOverdueBackgroundService>();
 builder.Services.AddScoped<ITalentPoolService, TalentPoolService>();
 builder.Services.AddScoped<IInterviewEvaluationService, InterviewEvaluationService>();
+builder.Services.AddScoped<ICandidateEvaluationComparisonService, CandidateEvaluationComparisonService>();
 builder.Services.AddSingleton<IJobExpirationService, JobExpirationService>();
 builder.Services.AddHostedService<JobExpirationBackgroundService>();
 
