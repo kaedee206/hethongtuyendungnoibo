@@ -168,6 +168,15 @@ public class UpcomingInterviewDto
     public string? CandidateNotes { get; set; }
     public InterviewStatus Status { get; set; }
     public string? EvaluationResult { get; set; }
+
+    // Scrum - Số 57: Quyền hạn và trạng thái phiếu đánh giá
+    public bool IsCurrentUserPanelist { get; set; }
+    public bool HasCurrentUserSubmitted { get; set; }
+    public bool CanCurrentUserEvaluate { get; set; }
+    public bool CanRecruiterReopen { get; set; }
+    public Guid? CurrentUserEvaluationId { get; set; }
+    public Guid? FirstEvaluationId { get; set; }
+    public bool IsReopened { get; set; }
 }
 
 public class PendingOfferDto

@@ -736,6 +736,24 @@ public static class DatabaseSeeder
                 new InterviewPanelist { Id = Guid.NewGuid(), InterviewId = interviewTuan.Id, InterviewerId = interviewerUser.Id, IsLead = false }
             );
             await context.SaveChangesAsync();
+
+            // Seed phiếu đánh giá của Giám khảo 1 (Admin) nộp cách đây 2 giờ (< 24h) để kiểm thử Blind Review & Reopen (Scrum - Số 57)
+            await context.InterviewEvaluations.AddAsync(new InterviewEvaluation
+            {
+                Id = Guid.NewGuid(),
+                InterviewId = interviewTuan.Id,
+                InterviewerId = adminUser.Id,
+                OverallScore = 4.5m,
+                Recommendation = RecommendationType.HIRE,
+                Strengths = "Kiến trúc hệ thống tốt, nắm vững C# .NET 9 và CQRS pattern.",
+                Weaknesses = "Cần củng cố kinh nghiệm Kubernetes production.",
+                DetailedFeedback = "Ứng viên trả lời rành mạch, tư duy hệ thống vững. Đề xuất: Nên tuyển.",
+                IsSubmitted = true,
+                SubmittedAt = DateTimeOffset.UtcNow.AddHours(-2),
+                CreatedAt = DateTimeOffset.UtcNow.AddHours(-3),
+                UpdatedAt = DateTimeOffset.UtcNow.AddHours(-2)
+            });
+            await context.SaveChangesAsync();
         }
 
         if (appDuc != null && !await context.Interviews.AnyAsync(i => i.ApplicationId == appDuc.Id))

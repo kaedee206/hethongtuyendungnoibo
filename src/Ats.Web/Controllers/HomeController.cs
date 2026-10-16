@@ -5,6 +5,7 @@ using Ats.Web.Data;
 using Ats.Web.Models;
 using Ats.Web.Models.Enums;
 using Ats.Web.Models.ViewModels.Workspace;
+using Ats.Web.Services;
 using Ats.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -366,6 +367,13 @@ public class HomeController : Controller
                 .Take(10)
                 .ToListAsync();
 
+            var isStaffManager = User.IsInRole(UserRoles.Admin) || 
+                                 User.IsInRole(UserRoles.HRManager) || 
+                                 User.IsInRole(UserRoles.Recruiter) ||
+                                 User.IsInRole("Quản trị viên") ||
+                                 User.IsInRole("Trưởng phòng nhân sự") ||
+                                 User.IsInRole("Chuyên viên tuyển dụng");
+
             model.UpcomingInterviews = dbInterviews.Select(i =>
             {
                 var cand = i.Application?.Candidate;
@@ -391,8 +399,41 @@ public class HomeController : Controller
                     _ => i.CandidateConfirmed == CandidateConfirmStatus.ACCEPTED ? "bg-info-subtle text-info-emphasis" : "bg-warning-subtle text-warning-emphasis"
                 };
 
-                var eval = i.Evaluations.FirstOrDefault();
-                string? evalResult = eval != null ? $"Đã chấm: {eval.OverallScore}/5 sao ({eval.Recommendation})." : null;
+                // Scrum - Số 57: Kiểm tra quyền hạn và trạng thái phiếu đánh giá
+                var isInvited = i.Panelists.Any(p => p.InterviewerId == userId && !p.IsDeleted);
+                var myEval = i.Evaluations.FirstOrDefault(e => e.InterviewerId == userId && !e.IsDeleted);
+                var hasSubmitted = myEval != null && myEval.IsSubmitted;
+                var isReopened = myEval != null && myEval.IsReopened;
+                var canEvaluate = isInvited && (!hasSubmitted || isReopened);
+
+                // Recruiter có thể mở lại phiếu nếu có phiếu đã nộp trong vòng 24 giờ
+                var anySubEvalWithin24h = i.Evaluations.FirstOrDefault(e => e.IsSubmitted && !e.IsDeleted && e.SubmittedAt.HasValue && (DateTimeOffset.UtcNow - e.SubmittedAt.Value) <= TimeSpan.FromHours(24));
+                var canRecruiterReopen = isStaffManager && anySubEvalWithin24h != null;
+
+                // Quy tắc 4: Không nhìn thấy đánh giá của người khác trước khi nộp phiếu của mình
+                string? evalResult;
+                if (isInvited)
+                {
+                    if (hasSubmitted)
+                    {
+                        var (recDisp, _) = InterviewEvaluationService.FormatRecommendation(myEval!.Recommendation);
+                        evalResult = $"Bạn đã chấm: {myEval.OverallScore:0.0}/5 ({recDisp})";
+                    }
+                    else
+                    {
+                        evalResult = "Chưa nộp phiếu đánh giá";
+                    }
+                }
+                else if (isStaffManager)
+                {
+                    var submittedCount = i.Evaluations.Count(e => e.IsSubmitted && !e.IsDeleted);
+                    var totalInvited = i.Panelists.Count(p => !p.IsDeleted);
+                    evalResult = $"{submittedCount}/{totalInvited} giám khảo đã nộp";
+                }
+                else
+                {
+                    evalResult = null;
+                }
 
                 return new UpcomingInterviewDto
                 {
@@ -416,7 +457,14 @@ public class HomeController : Controller
                     CandidateConfirmed = i.CandidateConfirmed,
                     CandidateNotes = i.CandidateNotes,
                     Status = i.Status,
-                    EvaluationResult = evalResult
+                    EvaluationResult = evalResult,
+                    IsCurrentUserPanelist = isInvited,
+                    HasCurrentUserSubmitted = hasSubmitted,
+                    CanCurrentUserEvaluate = canEvaluate,
+                    CanRecruiterReopen = canRecruiterReopen,
+                    CurrentUserEvaluationId = myEval?.Id,
+                    FirstEvaluationId = anySubEvalWithin24h?.Id ?? i.Evaluations.FirstOrDefault(e => e.IsSubmitted)?.Id,
+                    IsReopened = isReopened
                 };
             }).ToList();
 
@@ -458,13 +506,24 @@ public class HomeController : Controller
             }).ToList();
 
             // Danh sách ứng viên cho modal chấm điểm phỏng vấn
-            model.EvaluationCandidates = dbInterviews
-                .Where(i => i.Status != InterviewStatus.COMPLETED)
-                .Select(i => new InterviewEvaluationCandidateDto
+            // Quy tắc 1: Chỉ người phỏng vấn được mời mới mở được phiếu của buổi đó
+            var evalCandidatesQuery = dbInterviews.AsEnumerable();
+            if (User.IsInRole(UserRoles.Interviewer) && !isStaffManager)
+            {
+                evalCandidatesQuery = evalCandidatesQuery.Where(i => i.Panelists.Any(p => p.InterviewerId == userId && !p.IsDeleted));
+            }
+
+            model.EvaluationCandidates = evalCandidatesQuery
+                .Select(i =>
                 {
-                    InterviewId = i.Id,
-                    CandidateName = i.Application?.Candidate != null ? $"{i.Application.Candidate.FirstName} {i.Application.Candidate.LastName}".Trim() : "Ứng viên",
-                    JobTitle = i.Application?.JobPosting?.Title ?? "Vị trí tuyển dụng"
+                    var myEval = i.Evaluations.FirstOrDefault(e => e.InterviewerId == userId && !e.IsDeleted);
+                    var statusNote = myEval != null && myEval.IsSubmitted ? " [Đã nộp]" : (myEval != null && myEval.IsReopened ? " [Đã mở lại]" : "");
+                    return new InterviewEvaluationCandidateDto
+                    {
+                        InterviewId = i.Id,
+                        CandidateName = (i.Application?.Candidate != null ? $"{i.Application.Candidate.FirstName} {i.Application.Candidate.LastName}".Trim() : "Ứng viên") + statusNote,
+                        JobTitle = i.Application?.JobPosting?.Title ?? "Vị trí tuyển dụng"
+                    };
                 })
                 .ToList();
 
