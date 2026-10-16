@@ -328,11 +328,41 @@ public class EmailService : IEmailService
         DateTimeOffset endTime,
         string locationOrLink,
         string panelists,
+        string? preparationGuide = null,
+        string? confirmationUrl = null,
         CancellationToken cancellationToken = default)
     {
         var subject = $"📅 [Thư mời phỏng vấn] Vị trí {jobTitle} — NoveraTech";
         var dateStr = startTime.ToOffset(TimeSpan.FromHours(7)).ToString("dddd, dd/MM/yyyy");
         var timeStr = $"{startTime.ToOffset(TimeSpan.FromHours(7)):HH:mm} - {endTime.ToOffset(TimeSpan.FromHours(7)):HH:mm} (GMT+7)";
+
+        var effectiveGuide = string.IsNullOrWhiteSpace(preparationGuide)
+            ? @"• Kiểm tra camera, micro và đường truyền internet ổn định trước giờ hẹn 5 - 10 phút.
+• Chuẩn bị sẵn CV, Portfolio hoặc source code dự án tiêu biểu để sẵn sàng trao đổi cùng Hội đồng.
+• Trang phục lịch sự, chuyên nghiệp; lựa chọn không gian yên tĩnh."
+            : preparationGuide.Trim();
+
+        var guideHtml = effectiveGuide.Replace("\n", "<br/>");
+
+        var confirmButtonHtml = string.IsNullOrWhiteSpace(confirmationUrl)
+            ? ""
+            : $@"
+            <div style=""margin: 24px 0 16px 0; text-align: center;"">
+                <a href=""{confirmationUrl}?action=confirm"" style=""display: inline-block; background: #059669; color: #FFFFFF; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 0.95rem; margin-right: 8px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);"">
+                    ✓ Xác nhận tham dự
+                </a>
+                <a href=""{confirmationUrl}?action=reschedule"" style=""display: inline-block; background: #F8FAFC; color: #D97706; text-decoration: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; border: 1px solid #FCD34D;"">
+                    📅 Đề nghị đổi lịch
+                </a>
+            </div>
+            <div style=""text-align: center; margin-bottom: 20px;"">
+                <a href=""{confirmationUrl}"" style=""color: #2563EB; font-size: 0.85rem; text-decoration: underline;"">
+                    Xem chi tiết buổi phỏng vấn & Hướng dẫn chuẩn bị trực tuyến
+                </a>
+            </div>
+            <div style=""background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.78rem; color: #64748B; text-align: center;"">
+                🔒 <strong>Lưu ý bảo mật:</strong> Liên kết trên được tạo riêng cho buổi phỏng vấn này của bạn và chỉ áp dụng cho đúng lịch hẹn được mời.
+            </div>";
 
         var body = $@"
         <div style=""font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden;"">
@@ -348,7 +378,11 @@ public class EmailService : IEmailService
                 <div style=""background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 0.88rem;"">
                     <table style=""width: 100%; border-collapse: collapse;"">
                         <tr>
-                            <td style=""padding: 6px 0; color: #64748B; width: 140px;"">Vòng phỏng vấn:</td>
+                            <td style=""padding: 6px 0; color: #64748B; width: 140px;"">Vị trí ứng tuyển:</td>
+                            <td style=""padding: 6px 0; color: #0F172A; font-weight: 700;"">{jobTitle}</td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Vòng phỏng vấn:</td>
                             <td style=""padding: 6px 0; color: #0F172A; font-weight: 700;"">{roundTitle}</td>
                         </tr>
                         <tr>
@@ -364,15 +398,27 @@ public class EmailService : IEmailService
                             <td style=""padding: 6px 0; color: #0F172A; font-weight: 600;"">{panelists}</td>
                         </tr>
                         <tr>
-                            <td style=""padding: 6px 0; color: #64748B;"">Hình thức / Đường dẫn:</td>
+                            <td style=""padding: 6px 0; color: #64748B;"">Hình thức / Địa điểm:</td>
                             <td style=""padding: 6px 0;"">
                                 <a href=""{locationOrLink}"" style=""color: #2563EB; font-weight: 600; text-decoration: underline;"">{locationOrLink}</a>
                             </td>
                         </tr>
                     </table>
                 </div>
-                <p style=""color: #475569; font-size: 0.88rem; line-height: 1.6;"">
-                    Vui lòng đăng nhập vào Cổng ứng viên để bấm <strong>Xác nhận tham gia</strong> hoặc gửi yêu cầu đổi lịch nếu khung giờ trên chưa thuận tiện.
+
+                <div style=""background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px;"">
+                    <div style=""color: #166534; font-weight: 700; font-size: 0.88rem; margin-bottom: 6px;"">
+                        📋 Hướng dẫn chuẩn bị cho buổi phỏng vấn:
+                    </div>
+                    <div style=""color: #14532D; font-size: 0.84rem; line-height: 1.6;"">
+                        {guideHtml}
+                    </div>
+                </div>
+
+                {confirmButtonHtml}
+
+                <p style=""color: #475569; font-size: 0.86rem; line-height: 1.6;"">
+                    Vui lòng bấm vào nút <strong>Xác nhận tham dự</strong> hoặc gửi <strong>Đề nghị đổi lịch</strong> trước 24 giờ để Hội đồng phỏng vấn chuẩn bị chu đáo nhất.
                 </p>
             </div>
             <div style=""background: #F1F5F9; padding: 16px; text-align: center; font-size: 0.75rem; color: #64748B; border-top: 1px solid #E2E8F0;"">

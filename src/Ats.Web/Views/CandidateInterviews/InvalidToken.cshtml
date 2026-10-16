@@ -1,0 +1,33 @@
+@model string
+@{
+    ViewData["Title"] = "Liên kết không hợp lệ — NoveraTech ATS";
+    Layout = "_Layout";
+}
+
+<div class="container py-5 text-center" style="max-width: 600px;">
+    <div class="card border-0 shadow-sm p-4 p-md-5" style="border-radius: 16px; background: #FFFFFF; border: 1px solid #E2E8F0;">
+        <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 68px; height: 68px; background: #FEF2F2; color: #EF4444; font-size: 2rem;">
+            <i class="bi bi-shield-x"></i>
+        </div>
+
+        <h1 class="h4 fw-bold text-dark mb-2">Liên kết không hợp lệ</h1>
+        <p class="text-secondary small mb-4" style="line-height: 1.6;">
+            @(string.IsNullOrWhiteSpace(Model) ? "Liên kết xác nhận buổi phỏng vấn này không hợp lệ, đã bị hủy hoặc chỉ áp dụng duy nhất cho buổi phỏng vấn được mời." : Model)
+        </p>
+
+        <div class="p-3 mb-4 text-start" style="background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 10px; font-size: 0.85rem;">
+            <div class="fw-semibold text-dark mb-1"><i class="bi bi-info-circle me-1 text-primary"></i>Lưu ý:</div>
+            <ul class="text-muted ps-3 mb-0" style="font-size: 0.82rem;">
+                <li>Mỗi thư mời phỏng vấn có một liên kết bảo mật riêng biệt và không thể dùng chung cho buổi phỏng vấn khác.</li>
+                <li>Vui lòng kiểm tra lại hòm thư email chính xác mà bạn đã dùng khi ứng tuyển vào NoveraTech.</li>
+                <li>Nếu cần hỗ trợ thêm, bạn có thể liên hệ trực tiếp với Phòng Tuyển dụng qua email: <strong>tuyendung@noveratech.com</strong>.</li>
+            </ul>
+        </div>
+
+        <div>
+            <a href="/" class="btn btn-outline-primary px-4 fw-semibold" style="border-radius: 10px; font-size: 0.88rem;">
+                <i class="bi bi-arrow-left me-1"></i> Quay về Trang chủ
+            </a>
+        </div>
+    </div>
+</div>

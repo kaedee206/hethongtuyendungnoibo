@@ -30,6 +30,7 @@ public class WorkspaceController : Controller
     private readonly ICandidateTimelineService _timelineService;
     private readonly IRequisitionAssignmentService? _assignmentService;
     private readonly IInterviewEvaluationService? _interviewEvaluationService;
+    private readonly ICandidateInterviewService? _candidateInterviewService;
 
     [ActivatorUtilitiesConstructor]
     public WorkspaceController(
@@ -44,7 +45,8 @@ public class WorkspaceController : Controller
         ICandidateMergeService mergeService,
         ICandidateTimelineService timelineService,
         IRequisitionAssignmentService? assignmentService = null,
-        IInterviewEvaluationService? interviewEvaluationService = null)
+        IInterviewEvaluationService? interviewEvaluationService = null,
+        ICandidateInterviewService? candidateInterviewService = null)
     {
         _dbContext = dbContext;
         _env = env;
@@ -58,6 +60,7 @@ public class WorkspaceController : Controller
         _timelineService = timelineService;
         _assignmentService = assignmentService;
         _interviewEvaluationService = interviewEvaluationService;
+        _candidateInterviewService = candidateInterviewService;
     }
 
     public WorkspaceController(
@@ -65,7 +68,7 @@ public class WorkspaceController : Controller
         IWebHostEnvironment env,
         IEmailService emailService,
         ILogger<WorkspaceController> logger)
-        : this(dbContext, env, emailService, null!, null!, logger, null!, null!, null!, null!, null!, null!)
+        : this(dbContext, env, emailService, null!, null!, logger, null!, null!, null!, null!, null!, null!, null!)
     {
     }
 
@@ -1038,6 +1041,38 @@ public class WorkspaceController : Controller
     {
         try
         {
+            if (applicationId == Guid.Empty && Request.ContentType != null && Request.ContentType.Contains("application/json"))
+            {
+                using var reader = new StreamReader(Request.Body);
+                var bodyText = await reader.ReadToEndAsync();
+                if (!string.IsNullOrWhiteSpace(bodyText))
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(bodyText);
+                    var root = doc.RootElement;
+                    if (root.TryGetProperty("applicationId", out var appProp) && Guid.TryParse(appProp.GetString(), out var aId))
+                        applicationId = aId;
+                    if (root.TryGetProperty("scheduledDate", out var dProp) && DateTime.TryParse(dProp.GetString(), out var sDate))
+                        startTime = sDate;
+                    if (root.TryGetProperty("roundTitle", out var rProp))
+                        roundTitle = rProp.GetString();
+                    if (root.TryGetProperty("locationOrLink", out var locProp))
+                        locationOrLink = locProp.GetString();
+                    if (root.TryGetProperty("notes", out var nProp))
+                        note = nProp.GetString();
+                    else if (root.TryGetProperty("note", out var nProp2))
+                        note = nProp2.GetString();
+                    if (root.TryGetProperty("panelistIds", out var pProp) && pProp.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        interviewerIds ??= new List<Guid>();
+                        foreach (var elem in pProp.EnumerateArray())
+                        {
+                            if (Guid.TryParse(elem.GetString(), out var g))
+                                interviewerIds.Add(g);
+                        }
+                    }
+                }
+            }
+
             var application = await _dbContext.Applications
                 .Include(a => a.Candidate)
                 .Include(a => a.JobPosting)
@@ -1147,9 +1182,21 @@ public class WorkspaceController : Controller
 
             await _dbContext.SaveChangesAsync();
 
-            // Gửi email thư mời phỏng vấn cho ứng viên
+            // Sinh link xác nhận và gửi email thư mời phỏng vấn cho ứng viên
             var candFullName = $"{application.Candidate.FirstName} {application.Candidate.LastName}".Trim();
             var panelistStr = string.Join(", ", panelistNames);
+            string? confirmUrl = null;
+            if (_candidateInterviewService != null)
+            {
+                confirmUrl = _candidateInterviewService.BuildConfirmationUrl(Request, interview.Id, application.Candidate.Email);
+            }
+            else
+            {
+                var scheme = Request.Scheme ?? "https";
+                var host = Request.Host.Value;
+                confirmUrl = $"{scheme}://{host}/xac-nhan-phong-van";
+            }
+
             _ = Task.Run(async () =>
             {
                 try
@@ -1162,7 +1209,9 @@ public class WorkspaceController : Controller
                         startDto,
                         endDto,
                         meetLocation,
-                        panelistStr);
+                        panelistStr,
+                        note,
+                        confirmUrl);
                 }
                 catch (Exception ex)
                 {
@@ -1175,6 +1224,7 @@ public class WorkspaceController : Controller
                 success = true,
                 message = $"📅 Đã lên lịch phỏng vấn và gửi thư mời tới ứng viên {candFullName} thành công!",
                 interviewId = interview.Id,
+                confirmationUrl = confirmUrl,
                 startTime = startDto.ToString("dd/MM/yyyy HH:mm"),
                 panelists = panelistStr
             });

@@ -1,0 +1,271 @@
+@model Ats.Web.Models.ViewModels.CandidateInterviews.CandidateInterviewConfirmationViewModel
+@{
+    ViewData["Title"] = $"Xác nhận lịch phỏng vấn — {Model.JobTitle}";
+    Layout = "_Layout";
+    var openRescheduleModal = ViewBag.OpenReschedule as bool? == true;
+}
+
+<div class="container py-4 py-md-5" style="max-width: 860px;">
+    <!-- Breadcrumb & Brand Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1.5 fw-semibold" style="font-size: 0.78rem;">
+                <i class="bi bi-calendar-event me-1"></i>Thư mời phỏng vấn chính thức
+            </span>
+            <h1 class="h3 fw-bold text-dark mt-2 mb-1">Xác nhận tham gia buổi phỏng vấn</h1>
+            <p class="text-muted small mb-0">Hệ thống Tuyển dụng Nhân tài Công nghệ NoveraTech</p>
+        </div>
+        <div class="d-none d-sm-block text-end">
+            <span class="text-secondary small fw-medium">Ứng viên</span>
+            <div class="fw-bold text-dark">@Model.CandidateName</div>
+        </div>
+    </div>
+
+    <!-- Alert / Feedback Notification -->
+    @if (!string.IsNullOrWhiteSpace(Model.FeedbackMessage) || TempData["SuccessMessage"] != null)
+    {
+        var msg = Model.FeedbackMessage ?? TempData["SuccessMessage"]?.ToString();
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm d-flex align-items-center gap-3 p-3 mb-4" role="alert" style="border-radius: 12px; background: #ECFDF5; border-left: 5px solid #10B981 !important;">
+            <i class="bi bi-check-circle-fill text-success fs-4 flex-shrink-0"></i>
+            <div>
+                <strong class="d-block text-success fw-bold">Thông báo từ hệ thống</strong>
+                <span class="text-dark small">@msg</span>
+            </div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm d-flex align-items-center gap-3 p-3 mb-4" role="alert" style="border-radius: 12px; background: #FEF2F2; border-left: 5px solid #EF4444 !important;">
+            <i class="bi bi-exclamation-triangle-fill text-danger fs-4 flex-shrink-0"></i>
+            <div>
+                <strong class="d-block text-danger fw-bold">Đã có lỗi xảy ra</strong>
+                <span class="text-dark small">@TempData["ErrorMessage"]</span>
+            </div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Status Banner -->
+    <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 16px; background: #FFFFFF; border: 1px solid #E2E8F0;">
+        <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 pb-3" style="border-bottom: 1px solid #F1F5F9;">
+            <div>
+                <span class="text-uppercase text-muted fw-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Trạng thái phản hồi của bạn</span>
+                <div class="d-flex align-items-center gap-2 mt-1">
+                    <span class="badge @Model.StatusBadgeClass px-3 py-1.5 fw-bold" style="font-size: 0.88rem; border-radius: 8px;">
+                        @if (Model.CandidateConfirmed == Ats.Web.Models.Enums.CandidateConfirmStatus.ACCEPTED)
+                        {
+                            <i class="bi bi-check2-circle me-1.5"></i>
+                        }
+                        else if (Model.CandidateConfirmed == Ats.Web.Models.Enums.CandidateConfirmStatus.DECLINED)
+                        {
+                            <i class="bi bi-clock-history me-1.5"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-hourglass-split me-1.5"></i>
+                        }
+                        @Model.StatusDisplay
+                    </span>
+                    @if (Model.IsExpired)
+                    {
+                        <span class="badge bg-secondary text-white px-2.5 py-1" style="font-size: 0.75rem; border-radius: 6px;">Đã kết thúc</span>
+                    }
+                </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 w-100 w-md-auto">
+                @if (Model.CanRespond)
+                {
+                    @if (Model.CandidateConfirmed != Ats.Web.Models.Enums.CandidateConfirmStatus.ACCEPTED)
+                    {
+                        <form asp-controller="CandidateInterviews" asp-action="Confirm" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="Token" value="@Model.Token" />
+                            <button type="submit" class="btn btn-success fw-bold text-white px-3.5 py-2 shadow-sm d-flex align-items-center gap-2" style="border-radius: 10px; font-size: 0.9rem;">
+                                <i class="bi bi-check-lg fs-6"></i>
+                                <span>Xác nhận tham dự</span>
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <span class="text-success small fw-semibold d-flex align-items-center gap-1.5">
+                            <i class="bi bi-check-all fs-5"></i> Bạn đã xác nhận lịch hẹn này
+                        </span>
+                    }
+
+                    <button type="button" class="btn btn-outline-secondary fw-semibold px-3.5 py-2 d-flex align-items-center gap-2" style="border-radius: 10px; font-size: 0.9rem;" data-bs-toggle="modal" data-bs-target="#rescheduleModal">
+                        <i class="bi bi-calendar-x"></i>
+                        <span>Đề nghị đổi lịch hẹn</span>
+                    </button>
+                }
+                else
+                {
+                    <span class="text-muted small">Buổi phỏng vấn đã đóng tiếp nhận phản hồi trực tuyến.</span>
+                }
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.CandidateNotes))
+        {
+            <div class="mt-3 p-3" style="background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 10px; font-size: 0.85rem;">
+                <div class="fw-semibold text-secondary mb-1">
+                    <i class="bi bi-chat-left-text me-1 text-primary"></i>Phản hồi đã gửi gần nhất:
+                </div>
+                <div class="text-dark">@Model.CandidateNotes</div>
+            </div>
+        }
+    </div>
+
+    <!-- Interview Information Card -->
+    <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 16px; background: #FFFFFF; border: 1px solid #E2E8F0;">
+        <h2 class="h5 fw-bold text-dark mb-3 pb-2 d-flex align-items-center gap-2" style="border-bottom: 1px solid #F1F5F9;">
+            <i class="bi bi-info-circle-fill text-primary"></i>
+            Thông tin chi tiết buổi phỏng vấn
+        </h2>
+
+        <div class="row g-3">
+            <div class="col-12 col-md-6">
+                <div class="p-3 h-100" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px;">
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Vị trí tuyển dụng</div>
+                    <div class="h6 fw-bold text-dark mt-1 mb-0">@Model.JobTitle</div>
+                    <div class="text-muted small mt-0.5">Phòng ban: @Model.DepartmentName</div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <div class="p-3 h-100" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px;">
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Vòng phỏng vấn</div>
+                    <div class="h6 fw-bold text-dark mt-1 mb-0">@Model.RoundTitle</div>
+                    <div class="text-muted small mt-0.5">Vòng số: @Model.RoundNumber</div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <div class="p-3 h-100" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px;">
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Thời gian diễn ra (Giờ Việt Nam)</div>
+                    <div class="fw-bold text-primary mt-1" style="font-family: 'JetBrains Mono', monospace; font-size: 1.05rem;">
+                        <i class="bi bi-clock me-1"></i>@Model.TimeDisplay
+                    </div>
+                    <div class="text-dark small fw-semibold mt-0.5">
+                        <i class="bi bi-calendar3 me-1 text-muted"></i>@Model.DateDisplay
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <div class="p-3 h-100" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px;">
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Hình thức & Địa điểm / Liên kết</div>
+                    <div class="fw-bold text-dark mt-1">
+                        @if (Model.InterviewType == Ats.Web.Models.Enums.InterviewType.ONLINE_MEET)
+                        {
+                            <span class="text-success"><i class="bi bi-camera-video-fill me-1"></i>Trực tuyến (Online)</span>
+                        }
+                        else
+                        {
+                            <span class="text-primary"><i class="bi bi-building me-1"></i>Trực tiếp tại Văn phòng</span>
+                        }
+                    </div>
+                    <div class="mt-1 text-truncate">
+                        @if (Model.LocationOrLink.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <a href="@Model.LocationOrLink" target="_blank" class="btn btn-sm btn-outline-primary mt-1 text-truncate" style="border-radius: 8px; font-size: 0.8rem; max-width: 100%;">
+                                <i class="bi bi-box-arrow-up-right me-1"></i> Mở phòng họp: @Model.LocationOrLink
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="text-dark small fw-medium">@Model.LocationOrLink</span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="p-3" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px;">
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Hội đồng phỏng vấn</div>
+                    <div class="text-dark fw-bold mt-1">
+                        <i class="bi bi-people-fill text-muted me-1.5"></i>@Model.PanelistNames
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preparation Guide Section (Hướng dẫn chuẩn bị) -->
+    <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 16px; background: #FFFFFF; border: 1px solid #E2E8F0;">
+        <h2 class="h5 fw-bold text-dark mb-3 pb-2 d-flex align-items-center gap-2" style="border-bottom: 1px solid #F1F5F9;">
+            <i class="bi bi-card-checklist text-success"></i>
+            Hướng dẫn chuẩn bị cho buổi phỏng vấn
+        </h2>
+
+        <div class="p-3.5 mb-3" style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 12px;">
+            <div class="text-dark" style="font-size: 0.9rem; line-height: 1.7; white-space: pre-line;">
+                @Model.PreparationGuide
+            </div>
+        </div>
+
+        <div class="small text-muted d-flex align-items-center gap-2">
+            <i class="bi bi-shield-lock-fill text-secondary"></i>
+            <span>Liên kết xác nhận này được mã hóa bảo mật và chỉ sử dụng cho đúng buổi phỏng vấn của bạn.</span>
+        </div>
+    </div>
+
+    <!-- Footer Support Info -->
+    <div class="text-center text-muted small py-3">
+        Nếu có bất kỳ thắc mắc nào, vui lòng phản hồi email này hoặc liên hệ Hotline Nhân sự NoveraTech: <strong>024.3999.8888</strong>.
+    </div>
+</div>
+
+<!-- Modal Đề nghị Đổi lịch phỏng vấn -->
+<div class="modal fade" id="rescheduleModal" tabindex="-1" aria-labelledby="rescheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header border-0 pb-0 pt-4 px-4">
+                <h5 class="modal-title fw-bold text-dark" id="rescheduleModalLabel">
+                    <i class="bi bi-calendar-x text-warning me-2"></i>Đề nghị đổi lịch hẹn phỏng vấn
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-controller="CandidateInterviews" asp-action="Reschedule" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Token" value="@Model.Token" />
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">
+                        NoveraTech luôn tạo điều kiện thuận lợi nhất để ứng viên thể hiện tốt nhất năng lực. Vui lòng chia sẻ lý do và khung giờ bạn có thể tham gia để Bộ phận Tuyển dụng sắp xếp lại lịch hẹn phù hợp.
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Lý do không thể tham dự đúng hẹn <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="Reason" rows="3" required placeholder="Ví dụ: Tôi có lịch thi tốt nghiệp / lịch công tác đột xuất tại cơ quan hiện tại..." style="border-radius: 10px; font-size: 0.88rem;"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Khung thời gian bạn có thể tham gia phỏng vấn (Đề xuất)</label>
+                        <input type="text" class="form-control" name="ProposedTime" placeholder="Ví dụ: Chiều Thứ Năm (22/10) sau 14:00 hoặc sáng Thứ Sáu (23/10)" style="border-radius: 10px; font-size: 0.88rem;" />
+                        <small class="text-muted" style="font-size: 0.75rem;">Nhà tuyển dụng sẽ cân nhắc lịch trống của hội đồng và gửi lại thư mời mới cho bạn.</small>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0 px-4 pb-4">
+                    <button type="button" class="btn btn-light px-3 py-2 fw-semibold" style="border-radius: 10px;" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-warning px-4 py-2 fw-bold text-dark" style="border-radius: 10px;">
+                        <i class="bi bi-send me-1"></i> Gửi đề nghị đổi lịch
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@if (openRescheduleModal)
+{
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var modalEl = document.getElementById('rescheduleModal');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+                new bootstrap.Modal(modalEl).show();
+            }
+        });
+    </script>
+}

@@ -55,6 +55,8 @@ public interface IEmailService
         DateTimeOffset endTime,
         string locationOrLink,
         string panelists,
+        string? preparationGuide = null,
+        string? confirmationUrl = null,
         CancellationToken cancellationToken = default);
 
     Task<bool> SendOfferLetterNotificationAsync(

@@ -168,6 +168,8 @@ public class UpcomingInterviewDto
     public string? CandidateNotes { get; set; }
     public InterviewStatus Status { get; set; }
     public string? EvaluationResult { get; set; }
+    public string? InvitationToken { get; set; }
+    public string? ConfirmationUrl { get; set; }
 
     // Scrum - Số 57: Quyền hạn và trạng thái phiếu đánh giá
     public bool IsCurrentUserPanelist { get; set; }

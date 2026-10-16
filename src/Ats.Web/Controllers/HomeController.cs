@@ -20,6 +20,7 @@ public class HomeController : Controller
     private readonly ICandidateReferralService _referralService;
     private readonly ICandidateMergeService _mergeService;
     private readonly IRequisitionAssignmentService _assignmentService;
+    private readonly ICandidateInterviewService? _candidateInterviewService;
     private readonly ILogger<HomeController> _logger;
 
     [ActivatorUtilitiesConstructor]
@@ -29,7 +30,8 @@ public class HomeController : Controller
         ICandidateReferralService referralService,
         ICandidateMergeService mergeService,
         IRequisitionAssignmentService assignmentService,
-        ILogger<HomeController> logger)
+        ILogger<HomeController> logger,
+        ICandidateInterviewService? candidateInterviewService = null)
     {
         _dbContext = dbContext;
         _jobService = jobService;
@@ -37,6 +39,7 @@ public class HomeController : Controller
         _mergeService = mergeService;
         _assignmentService = assignmentService;
         _logger = logger;
+        _candidateInterviewService = candidateInterviewService;
     }
 
     public HomeController(
@@ -51,7 +54,8 @@ public class HomeController : Controller
             referralService,
             mergeService,
             new Ats.Web.Services.RequisitionAssignmentService(dbContext, Microsoft.Extensions.Logging.Abstractions.NullLogger<Ats.Web.Services.RequisitionAssignmentService>.Instance),
-            logger)
+            logger,
+            null)
     {
     }
 
@@ -224,7 +228,14 @@ public class HomeController : Controller
                             LocationOrLink = string.IsNullOrWhiteSpace(interview.LocationOrLink) ? "https://meet.google.com/nov-interview-089" : interview.LocationOrLink,
                             PanelistNames = "Lường Minh Hiếu (CEO), Ngô Quang Huy (Tech Lead)",
                             CandidateConfirmed = interview.CandidateConfirmed,
-                            StatusDisplay = interview.CandidateConfirmed == CandidateConfirmStatus.ACCEPTED ? "Đã xác nhận tham gia" : (interview.CandidateConfirmed == CandidateConfirmStatus.DECLINED ? "Đã gửi yêu cầu đổi lịch" : "Chờ xác nhận")
+                            CandidateNotes = interview.CandidateNotes,
+                            StatusDisplay = interview.CandidateConfirmed == CandidateConfirmStatus.ACCEPTED ? "Đã xác nhận tham gia" : (interview.CandidateConfirmed == CandidateConfirmStatus.DECLINED ? "Đã gửi yêu cầu đổi lịch" : "Chờ xác nhận"),
+                            InvitationToken = _candidateInterviewService != null && !string.IsNullOrWhiteSpace(activeApp.Candidate?.Email)
+                                ? _candidateInterviewService.GenerateInvitationToken(interview.Id, activeApp.Candidate.Email)
+                                : null,
+                            ConfirmationUrl = _candidateInterviewService != null && !string.IsNullOrWhiteSpace(activeApp.Candidate?.Email)
+                                ? $"{Request.Scheme}://{Request.Host}/xac-nhan-phong-van/{_candidateInterviewService.GenerateInvitationToken(interview.Id, activeApp.Candidate.Email)}"
+                                : null
                         };
                     }
                 }
@@ -435,6 +446,16 @@ public class HomeController : Controller
                     evalResult = null;
                 }
 
+                string? token = null;
+                string? confirmUrl = null;
+                if (_candidateInterviewService != null && !string.IsNullOrWhiteSpace(cand?.Email))
+                {
+                    token = _candidateInterviewService.GenerateInvitationToken(i.Id, cand.Email);
+                    var scheme = Request.Scheme ?? "https";
+                    var host = Request.Host.Value;
+                    confirmUrl = $"{scheme}://{host}/xac-nhan-phong-van/{token}";
+                }
+
                 return new UpcomingInterviewDto
                 {
                     InterviewId = i.Id,
@@ -464,7 +485,9 @@ public class HomeController : Controller
                     CanRecruiterReopen = canRecruiterReopen,
                     CurrentUserEvaluationId = myEval?.Id,
                     FirstEvaluationId = anySubEvalWithin24h?.Id ?? i.Evaluations.FirstOrDefault(e => e.IsSubmitted)?.Id,
-                    IsReopened = isReopened
+                    IsReopened = isReopened,
+                    InvitationToken = token,
+                    ConfirmationUrl = confirmUrl
                 };
             }).ToList();
 
