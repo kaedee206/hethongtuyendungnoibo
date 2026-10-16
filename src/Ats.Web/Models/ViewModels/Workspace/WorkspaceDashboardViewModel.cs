@@ -51,6 +51,11 @@ public class WorkspaceDashboardViewModel
     public bool IsRecruiterScoped { get; set; } = false;
     public int AssignedPositionsCount { get; set; } = 0;
     public List<Ats.Web.Models.ViewModels.RequisitionAssignments.RecruiterOptionViewModel> RecruitersFilterList { get; set; } = new();
+
+    // SCRUM-51: Pham vi va so luong lich phong van danh cho hoi dong
+    public string InterviewScope { get; set; } = "all";
+    public int MyUpcomingInterviewsCount { get; set; }
+    public bool IsInterviewer { get; set; }
 }
 
 public class JobPostingFilterOptionDto
