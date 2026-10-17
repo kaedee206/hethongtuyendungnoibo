@@ -426,6 +426,12 @@
                             <a href="/gioi-thieu-ung-vien?jobId=@job.Id" class="btn btn-outline-success fw-semibold w-100 w-sm-auto d-inline-flex align-items-center justify-content-center gap-1.5" style="border-radius: var(--radius-button); padding: 0.7rem 1.25rem;">
                                 <i class="bi bi-person-plus-fill"></i> Giới thiệu ứng viên
                             </a>
+                            @if (isRecruiterOrHr)
+                            {
+                                <a href="/ung-vien/them-thu-cong/@job.Id" class="btn btn-primary fw-semibold w-100 w-sm-auto d-inline-flex align-items-center justify-content-center gap-1.5 shadow-sm" style="border-radius: var(--radius-button); padding: 0.7rem 1.25rem; background: #0A66C2; border-color: #0A66C2;" title="Thêm ứng viên tìm từ LinkedIn vào vị trí này">
+                                    <i class="bi bi-linkedin"></i> Thêm từ LinkedIn
+                                </a>
+                            }
                         }
                     }
                     <div class="d-flex gap-2 w-100 justify-content-lg-end">

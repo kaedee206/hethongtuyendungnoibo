@@ -399,4 +399,16 @@ public class JobPostingService(
         var suffix = Guid.NewGuid().ToString("N")[..6];
         return $"{cleanString}-{suffix}";
     }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<JobPosting>> GetPublishedJobPostingsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.JobPostings
+            .AsNoTracking()
+            .Include(j => j.Requisition)
+                .ThenInclude(r => r.Department)
+            .Where(j => !j.IsDeleted && j.Status == JobPostingStatus.PUBLISHED && (!j.ExpiredAt.HasValue || j.ExpiredAt.Value > DateTimeOffset.UtcNow))
+            .OrderByDescending(j => j.PublishedAt ?? j.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
 }

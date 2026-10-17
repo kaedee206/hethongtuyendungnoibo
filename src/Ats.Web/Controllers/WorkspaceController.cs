@@ -983,7 +983,7 @@ public class WorkspaceController : Controller
                 ToStageId = targetStage.Id,
                 ChangedByUserId = effectiveUserId,
                 Comment = string.IsNullOrWhiteSpace(comment)
-                    ? $"Chuyển giai đoạn từ '{currentStage.Name}' sang '{targetStage.Name}' bởi {User.Identity?.Name}."
+                    ? $"Chuyển giai đoạn từ '{currentStage?.Name ?? "ban đầu"}' sang '{targetStage.Name}' bởi {User?.Identity?.Name}."
                     : comment.Trim(),
                 CreatedAt = DateTimeOffset.UtcNow
             };
@@ -991,7 +991,7 @@ public class WorkspaceController : Controller
             await _dbContext.SaveChangesAsync();
 
             // Nếu vượt qua sơ loại (Screening Passed), gửi email chúc mừng cho ứng viên
-            if (targetStage.StageOrder == 2 || targetStage.Name.Contains("Phỏng vấn", StringComparison.OrdinalIgnoreCase) || targetStage.Name.Contains("Sơ loại", StringComparison.OrdinalIgnoreCase))
+            if (targetStage!.StageOrder == 2 || targetStage.Name.Contains("Phỏng vấn", StringComparison.OrdinalIgnoreCase) || targetStage.Name.Contains("Sơ loại", StringComparison.OrdinalIgnoreCase))
             {
                 _ = Task.Run(async () =>
                 {

@@ -29,4 +29,9 @@ public interface IJobPostingService
     /// Lấy chi tiết tin tuyển dụng theo ID.
     /// </summary>
     Task<JobPosting?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lấy danh sách các tin tuyển dụng đang mở tiếp nhận hồ sơ (PUBLISHED) phục vụ chọn vị trí khi thêm ứng viên thủ công.
+    /// </summary>
+    Task<IReadOnlyList<JobPosting>> GetPublishedJobPostingsAsync(CancellationToken cancellationToken = default);
 }

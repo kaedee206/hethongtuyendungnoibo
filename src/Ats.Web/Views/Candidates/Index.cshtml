@@ -34,7 +34,14 @@
                 Tìm kiếm đa điều kiện theo vị trí, giai đoạn, nguồn, đánh giá, từ khóa trong thư giới thiệu và phục hồi hồ sơ đã xem tháng trước khi mở vị trí mới.
             </p>
         </div>
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            @if (User.IsInRole(UserRoles.Recruiter) || User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager))
+            {
+                <a asp-controller="Candidates" asp-action="CreateManual" class="btn btn-sm btn-success rounded-2 shadow-sm d-flex align-items-center gap-1.5 fw-semibold" style="background: #059669; border-color: #059669;">
+                    <i class="bi bi-person-plus-fill"></i>
+                    <span>Thêm ứng viên (LinkedIn)</span>
+                </a>
+            }
             <a href="/ung-vien/import-template" download="Mau_Nhap_Ung_Vien.xlsx" class="btn btn-sm btn-outline-primary rounded-2 shadow-sm">
                 <i class="bi bi-file-earmark-excel me-1"></i>Tải mẫu Excel
             </a>
