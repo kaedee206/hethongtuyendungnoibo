@@ -17,6 +17,8 @@ public interface ICandidateEvaluationComparisonService
         Guid? jobPostingId,
         string? stageFilter = null,
         string? sortBy = null,
+        bool thresholdOnly = false,
+        decimal? minScore = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

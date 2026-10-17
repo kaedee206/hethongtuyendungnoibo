@@ -192,9 +192,17 @@ public class InterviewsController(
         [FromQuery] Guid? jobId,
         [FromQuery] string? stage,
         [FromQuery] string? sortBy,
+        [FromQuery] bool? thresholdOnly,
+        [FromQuery] decimal? minScore,
         CancellationToken cancellationToken = default)
     {
-        var model = await _comparisonService.GetEvaluationComparisonAsync(jobId, stage, sortBy, cancellationToken);
+        var model = await _comparisonService.GetEvaluationComparisonAsync(
+            jobId,
+            stage,
+            sortBy,
+            thresholdOnly ?? false,
+            minScore,
+            cancellationToken);
         return View(model);
     }
 
@@ -207,9 +215,17 @@ public class InterviewsController(
         [FromQuery] Guid? jobId,
         [FromQuery] string? stage,
         [FromQuery] string? sortBy,
+        [FromQuery] bool? thresholdOnly,
+        [FromQuery] decimal? minScore,
         CancellationToken cancellationToken = default)
     {
-        var model = await _comparisonService.GetEvaluationComparisonAsync(jobId, stage, sortBy, cancellationToken);
+        var model = await _comparisonService.GetEvaluationComparisonAsync(
+            jobId,
+            stage,
+            sortBy,
+            thresholdOnly ?? false,
+            minScore,
+            cancellationToken);
         return Json(new { success = true, data = model });
     }
 
