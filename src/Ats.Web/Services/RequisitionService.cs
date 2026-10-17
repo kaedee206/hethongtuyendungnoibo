@@ -39,6 +39,14 @@ public class RequisitionService : IRequisitionService
     {
     }
 
+    public RequisitionService(
+        ApplicationDbContext dbContext,
+        IDepartmentBudgetService departmentBudgetService,
+        ILogger<RequisitionService> logger)
+        : this(dbContext, new ApprovalRuleService(dbContext), departmentBudgetService, logger)
+    {
+    }
+
     public async Task<RequisitionCreateViewModel> PrepareCreateViewModelAsync(Guid currentUserId, CancellationToken cancellationToken = default)
     {
         var model = new RequisitionCreateViewModel

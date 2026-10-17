@@ -239,4 +239,18 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="/js/cv-autofill.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.CvAutoFill) {
+                window.CvAutoFill.init({
+                    fileInput: 'input[name="CvFile"]',
+                    nameInput: 'input[name="CandidateName"]',
+                    emailInput: 'input[name="CandidateEmail"]',
+                    phoneInput: 'input[name="CandidatePhone"]',
+                    linkedInInput: 'input[name="LinkedinUrl"]'
+                });
+            }
+        });
+    </script>
 }

@@ -50,6 +50,38 @@
         .scroll-margin-nav {
             scroll-margin-top: 90px;
         }
+        .job-card-modern {
+            border: 1px solid #E2E8F0;
+            border-radius: 14px;
+            background: #FFFFFF;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .job-card-modern:hover {
+            border-color: #A7F3D0 !important;
+            transform: translateY(-3px);
+            box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(5, 150, 105, 0.06);
+        }
+        .job-card-modern:hover .job-title-link {
+            color: #059669 !important;
+        }
+        .job-card-modern:hover .job-icon-box {
+            transform: scale(1.05);
+        }
+        .job-icon-box {
+            transition: transform 0.2s ease;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.2rem;
+        }
     </style>
 }
 
@@ -180,16 +212,25 @@
                                             <span class="badge bg-light text-secondary border mb-1" style="font-family:'JetBrains Mono',monospace;">@Model.ActiveApplication.ApplicationCode</span>
                                             <h6 class="fw-bold text-dark mb-0">@Model.ActiveApplication.JobTitle</h6>
                                         </div>
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle py-1.5 px-2.5">
-                                            @Model.ActiveApplication.CurrentStageName
-                                        </span>
+                                        @if (Model.ActiveApplication.IsWithdrawn || (Model.ActiveApplication.CurrentStageName ?? "").Contains("rút", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle py-1.5 px-2.5">
+                                                @Model.ActiveApplication.CurrentStageName
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle py-1.5 px-2.5">
+                                                @Model.ActiveApplication.CurrentStageName
+                                            </span>
+                                        }
                                     </div>
                                     <div class="progress mb-2" style="height: 6px; border-radius: 999px;">
-                                        <div class="progress-bar bg-success" style="width: @(Model.ActiveApplication.ProgressPercentage)%;"></div>
+                                        <div class="progress-bar @(Model.ActiveApplication.IsWithdrawn ? "bg-secondary" : "bg-success")" style="width: @(Model.ActiveApplication.ProgressPercentage)%;"></div>
                                     </div>
                                     <div class="d-flex justify-content-between text-muted small mb-3">
                                         <span>Tiến độ tuyển chọn</span>
-                                        <span class="fw-bold text-success" style="font-family:'JetBrains Mono',monospace;">@(Model.ActiveApplication.ProgressPercentage)%</span>
+                                        <span class="fw-bold @(Model.ActiveApplication.IsWithdrawn ? "text-secondary" : "text-success")" style="font-family:'JetBrains Mono',monospace;">@(Model.ActiveApplication.ProgressPercentage)%</span>
                                     </div>
 
                                     @if (Model.CandidateInterview != null)
@@ -393,12 +434,12 @@
                                     <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748B;">
                                         Tiến độ xét tuyển hồ sơ
                                     </span>
-                                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700; color: #059669;">
+                                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700; color: @(Model.ActiveApplication.IsWithdrawn ? "#64748B" : "#059669");">
                                         @(Model.ActiveApplication.ProgressPercentage)% Hoàn thành
                                     </span>
                                 </div>
                                 <div class="progress" style="height: 6px; background-color: #E2E8F0; border-radius: 999px;">
-                                    <div class="progress-bar" role="progressbar" style="width: @(Model.ActiveApplication.ProgressPercentage)%; background-color: #059669; border-radius: 999px;" aria-valuenow="@Model.ActiveApplication.ProgressPercentage" aria-valuemin="0" aria-valuemax="100"></div>
+                                    <div class="progress-bar" role="progressbar" style="width: @(Model.ActiveApplication.ProgressPercentage)%; background-color: @(Model.ActiveApplication.IsWithdrawn ? "#94A3B8" : "#059669"); border-radius: 999px;" aria-valuenow="@Model.ActiveApplication.ProgressPercentage" aria-valuemin="0" aria-valuemax="100"></div>
                                 </div>
 
                                 <!-- Step Nodes Grid -->
@@ -487,10 +528,20 @@
                             }
                             else
                             {
-                                <div class="p-3 mb-0 mt-auto" style="background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 8px; font-size: 0.82rem; color: #475569;">
-                                    <i class="bi bi-info-circle me-1.5" style="color: #059669;"></i>
-                                    Hồ sơ của bạn đang được bộ phận chuyên môn xem xét. Lịch phỏng vấn chi tiết sẽ được cập nhật tại đây và gửi qua email ngay khi hội đồng hoàn tất xếp lịch.
-                                </div>
+                                @if (Model.ActiveApplication.IsWithdrawn)
+                                {
+                                    <div class="p-3 mb-0 mt-auto bg-light border border-secondary-subtle rounded-2 text-secondary" style="font-size: 0.82rem;">
+                                        <i class="bi bi-info-circle me-1.5 text-secondary"></i>
+                                        Quy trình xét tuyển cho vị trí này đã kết thúc. Bạn có thể tiếp tục khám phá và nộp hồ sơ ứng tuyển các cơ hội việc làm khác tại NoveraTech bất kỳ lúc nào.
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="p-3 mb-0 mt-auto" style="background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 8px; font-size: 0.82rem; color: #475569;">
+                                        <i class="bi bi-info-circle me-1.5" style="color: #059669;"></i>
+                                        Hồ sơ của bạn đang được bộ phận chuyên môn xem xét. Lịch phỏng vấn chi tiết sẽ được cập nhật tại đây và gửi qua email ngay khi hội đồng hoàn tất xếp lịch.
+                                    </div>
+                                }
                             }
                         }
                         else
@@ -511,53 +562,123 @@
 
                 <!-- 4. TÍNH NĂNG KHÁM PHÁ VIỆC LÀM (VIEC-LAM) -->
                 <div class="candidate-feature-panel @(activeFeature == "viec-lam" ? "" : "d-none")" data-feature-panel="viec-lam">
-                    <div id="feature-section-candidate-viec-lam" class="card border-0 shadow-sm p-4 bg-white mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
-                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-2 pb-3" style="border-bottom: 1px solid #F1F5F9;">
-                            <div>
-                                <h5 class="fw-bold text-dark mb-0" style="font-size: 1.1rem;">
-                                    Các Vị Trí Đang Tuyển Dụng Tại NoveraTech
-                                </h5>
-                                <div class="text-muted small mt-0.5">Môi trường công nghệ tiêu chuẩn cao, chế độ đãi ngộ cạnh tranh hàng đầu thị trường</div>
+                    <div id="feature-section-candidate-viec-lam" class="card border-0 shadow-sm p-4 bg-white mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 14px;">
+                        <!-- Header Section -->
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3 pb-3" style="border-bottom: 1px solid #F1F5F9;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; background: #ECFDF5; color: #059669; border-radius: 12px; font-size: 1.25rem;">
+                                    <i class="bi bi-briefcase-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.15rem; letter-spacing: -0.01em;">
+                                            Cơ Hội Nghề Nghiệp Đang Tuyển Dụng
+                                        </h5>
+                                        <span class="badge rounded-pill" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 0.72rem; font-weight: 600; padding: 3px 9px;">
+                                            @Model.CandidateOpenJobs.Count vị trí mở tuyển
+                                        </span>
+                                    </div>
+                                    <div class="text-muted small mt-0.5">Môi trường công nghệ tiêu chuẩn cao, chế độ đãi ngộ cạnh tranh hàng đầu thị trường</div>
+                                </div>
                             </div>
-                            <a href="/Jobs" class="btn btn-outline-success btn-sm fw-semibold px-3 py-1.5" style="border-radius: 8px; font-size: 0.8rem;">
-                                <i class="bi bi-grid me-1"></i> Xem tất cả @Model.CandidateOpenJobs.Count vị trí
+                            <a href="/Jobs" class="btn btn-outline-success btn-sm fw-semibold px-3 py-2 text-nowrap rounded-3 d-inline-flex align-items-center gap-1.5 shadow-none" style="font-size: 0.82rem; transition: all .2s ease;">
+                                <span>Khám phá toàn bộ việc làm</span>
+                                <i class="bi bi-arrow-right"></i>
                             </a>
                         </div>
 
+                        <!-- Job Cards Grid (2x2 cân đối, tự động co giãn) -->
                         <div class="row g-3">
                             @foreach (var job in Model.CandidateOpenJobs)
                             {
-                                <div class="col-12 col-md-6">
-                                    <div class="card h-100 p-3.5 bg-white d-flex flex-column" style="border: 1px solid #E2E8F0; border-radius: 10px; transition: border-color .2s, box-shadow .2s;"
-                                         onmouseover="this.style.borderColor='#A7F3D0'; this.style.boxShadow='0 4px 12px rgba(15,23,42,0.06)';"
-                                         onmouseout="this.style.borderColor='#E2E8F0'; this.style.boxShadow='none';">
-                                        <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <span style="font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 6px;
-                                                         @(job.IsHot ? "background:#FEF3C7; color:#92400E; border:1px solid #FDE68A;" : "background:#F1F5F9; color:#475569; border:1px solid #E2E8F0;")">
-                                                @(job.IsHot ? "Hot Role" : job.EmploymentType)
-                                            </span>
-                                            <span class="fw-bold small" style="color: #059669; font-family: 'JetBrains Mono', monospace;">
-                                                @job.SalaryDisplay
-                                            </span>
+                                var titleLower = job.Title.ToLower();
+                                var (iconClass, iconBg, iconColor) =
+                                    (titleLower.Contains("ai") || titleLower.Contains("llm") || titleLower.Contains("data")) ? ("bi-cpu-fill", "#EEF2FF", "#4F46E5") :
+                                    (titleLower.Contains("design") || titleLower.Contains("ui/ux")) ? ("bi-palette-fill", "#FDF2F8", "#DB2777") :
+                                    (titleLower.Contains("product") || titleLower.Contains("owner")) ? ("bi-kanban-fill", "#FFFBEB", "#D97706") :
+                                    (titleLower.Contains("architect") || titleLower.Contains("solution") || titleLower.Contains("devops")) ? ("bi-layers-half", "#F0FDF4", "#059669") :
+                                    ("bi-briefcase-fill", "#F8FAFC", "#0284C7");
+
+                                var detailUrl = $"/Jobs/Detail/{(string.IsNullOrWhiteSpace(job.Slug) ? job.Id : job.Slug)}";
+
+                                <div class="col-12 col-lg-6">
+                                    <div class="job-card-modern p-3.5 p-sm-4 d-flex flex-column justify-content-between">
+                                        <div>
+                                            <!-- Top Header: Icon + Category Badge + Salary Pill -->
+                                            <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                                                <div class="d-flex align-items-center gap-2.5">
+                                                    <div class="job-icon-box" style="background: @iconBg; color: @iconColor;">
+                                                        <i class="bi @iconClass"></i>
+                                                    </div>
+                                                    <div>
+                                                        <span class="badge fw-semibold rounded-pill px-2.5 py-1"
+                                                              style="font-size: 0.72rem; @(job.IsHot ? "background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;" : "background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0;")">
+                                                            @(job.IsHot ? "🔥 Tuyển gấp" : job.EmploymentType)
+                                                        </span>
+                                                        <div class="text-muted text-xs mt-0.5">
+                                                            <i class="bi bi-building me-1"></i>@job.Department
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Mức lương Pill tinh tế, sang trọng -->
+                                                <div class="text-end flex-shrink-0">
+                                                    <span class="badge rounded-pill fw-bold"
+                                                          style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 0.82rem; padding: 5px 12px; letter-spacing: -0.01em;"
+                                                          title="@job.SalaryDisplay">
+                                                        <i class="bi bi-cash-stack me-1"></i>@job.SalaryDisplay
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Job Title -->
+                                            <h6 class="fw-bold mb-1.5" style="font-size: 1rem; line-height: 1.4;">
+                                                <a href="@detailUrl" class="job-title-link text-dark text-decoration-none" style="transition: color 0.15s ease;">
+                                                    @job.Title
+                                                </a>
+                                            </h6>
+
+                                            <!-- Location & Work model -->
+                                            <div class="text-secondary small d-flex align-items-center gap-2 mb-2" style="font-size: 0.8rem;">
+                                                <span><i class="bi bi-geo-alt text-muted me-1"></i>@job.WorkLocation</span>
+                                                <span class="text-muted">·</span>
+                                                <span><i class="bi bi-briefcase text-muted me-1"></i>@(string.IsNullOrWhiteSpace(job.ExperienceLevel) ? "Senior" : job.ExperienceLevel)</span>
+                                            </div>
+
+                                            <!-- Short Summary -->
+                                            <p class="text-muted small mb-3" style="font-size: 0.82rem; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                                @job.ShortSummary
+                                            </p>
+
+                                            <!-- Tech Stack / Skill Pills -->
+                                            @if (job.TechStack != null && job.TechStack.Any())
+                                            {
+                                                <div class="d-flex flex-wrap align-items-center gap-1.5 mb-3">
+                                                    @foreach (var tech in job.TechStack.Take(3))
+                                                    {
+                                                        <span class="badge bg-light text-secondary border fw-medium px-2 py-1" style="font-size: 0.72rem; border-radius: 6px; border-color: #E2E8F0 !important;">
+                                                            @tech
+                                                        </span>
+                                                    }
+                                                    @if (job.TechStack.Count > 3)
+                                                    {
+                                                        <span class="badge bg-light text-muted border px-1.5 py-1" style="font-size: 0.7rem; border-radius: 6px; border-color: #E2E8F0 !important;">
+                                                            +@(job.TechStack.Count - 3)
+                                                        </span>
+                                                    }
+                                                </div>
+                                            }
                                         </div>
-                                        <h6 class="fw-bold text-dark mb-1" style="font-size: 0.95rem; line-height: 1.35;">
-                                            <a href="/Jobs/Detail/@(string.IsNullOrWhiteSpace(job.Slug) ? job.Id : job.Slug)" class="text-dark text-decoration-none"
-                                               onmouseover="this.style.color='#059669';" onmouseout="this.style.color='#0F172A';">
-                                                @job.Title
+
+                                        <!-- Card Footer Actions -->
+                                        <div class="d-flex align-items-center justify-content-between pt-3 mt-1 gap-2" style="border-top: 1px solid #F1F5F9;">
+                                            <a href="@detailUrl" class="btn btn-sm btn-outline-secondary fw-semibold px-3 py-1.5 rounded-3 d-inline-flex align-items-center gap-1" style="font-size: 0.8rem; border-color: #CBD5E1;">
+                                                <span>Chi tiết</span>
+                                                <i class="bi bi-arrow-up-right small"></i>
                                             </a>
-                                        </h6>
-                                        <div class="text-muted text-xs mb-2">
-                                            <i class="bi bi-geo-alt me-1"></i>@job.WorkLocation · <span class="fw-semibold">@job.Department</span>
-                                        </div>
-                                        <p class="text-muted text-xs flex-grow-1 mb-3" style="line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-                                            @job.ShortSummary
-                                        </p>
-                                        <div class="d-flex gap-2 pt-2" style="border-top: 1px solid #F1F5F9;">
-                                            <a href="/Jobs/Detail/@(string.IsNullOrWhiteSpace(job.Slug) ? job.Id : job.Slug)" class="btn btn-sm btn-outline-secondary flex-grow-1" style="border-radius: 8px; font-size: 0.8rem;">
-                                                Chi tiết
-                                            </a>
-                                            <button type="button" class="btn btn-sm btn-success fw-semibold px-3" style="border-radius: 8px; font-size: 0.8rem;" onclick="openApplyJobModal('@job.Id', '@job.Title', '@job.Department')">
-                                                <i class="bi bi-send me-1"></i> Ứng tuyển
+                                            <button type="button" class="btn btn-sm btn-success fw-semibold px-3.5 py-1.5 rounded-3 d-inline-flex align-items-center gap-1.5 shadow-sm" style="font-size: 0.8rem;" onclick="openApplyJobModal('@job.Id', '@job.Title', '@job.Department')">
+                                                <i class="bi bi-send-fill" style="font-size: 0.75rem;"></i>
+                                                <span>Ứng tuyển ngay</span>
                                             </button>
                                         </div>
                                     </div>
@@ -574,83 +695,6 @@
             <!-- PHÂN HỆ 2: WORKSPACE DÀNH CHO NỘI BỘ (HR / LEAD / ADMIN) -->
             <!-- ========================================== -->
             <div id="staff-workspace">
-                <!-- ── SUB-NAVIGATION PILL TABS BAR (RULE.MD Compliant) ── -->
-                <div class="dashboard-nav-container mb-4">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 p-1.5 bg-white border"
-                         style="border-color: #E2E8F0 !important; border-radius: 12px; box-shadow: 0 1px 3px rgba(15,23,42,0.04);">
-                        <nav class="d-flex align-items-center gap-1.5 flex-wrap" id="dashboardFeatureTabsNav" role="tablist" aria-label="Phân hệ chức năng Dashboard">
-                            <button type="button" class="dashboard-feature-tab @(activeFeature == "tong-quan" ? "active" : "")"
-                                    data-feature="tong-quan"
-                                    onclick="switchDashboardFeature('tong-quan', event)">
-                                <i class="bi bi-grid-1x2"></i> Tổng quan
-                            </button>
-                            <button type="button" class="dashboard-feature-tab @(activeFeature == "ung-vien" ? "active" : "")"
-                                    data-feature="ung-vien"
-                                    onclick="switchDashboardFeature('ung-vien', event)">
-                                <i class="bi bi-people"></i> Hồ sơ ứng viên
-                                <span class="tab-counter-badge ms-1">@Model.CandidatePipelineItems.Count</span>
-                            </button>
-                            <button type="button" class="dashboard-feature-tab @(activeFeature == "lich-phong-van" ? "active" : "")"
-                                    data-feature="lich-phong-van"
-                                    onclick="switchDashboardFeature('lich-phong-van', event)">
-                                <i class="bi bi-calendar3"></i> Lịch phỏng vấn
-                                <span class="tab-counter-badge ms-1">@Model.UpcomingInterviews.Count</span>
-                            </button>
-                            <button type="button" class="dashboard-feature-tab @(activeFeature == "phe-duyet" ? "active" : "")"
-                                    data-feature="phe-duyet"
-                                    onclick="switchDashboardFeature('phe-duyet', event)">
-                                <i class="bi bi-patch-check"></i> Phê duyệt Offer
-                                <span class="tab-counter-badge ms-1 @(Model.PendingOffers.Any() ? "badge-warning-highlight" : "")">@Model.PendingOffers.Count</span>
-                            </button>
-                            <button type="button" class="dashboard-feature-tab @(activeFeature == "tac-vu" ? "active" : "")"
-                                    data-feature="tac-vu"
-                                    onclick="switchDashboardFeature('tac-vu', event)">
-                                <i class="bi bi-lightning-charge"></i> Tác vụ nhanh
-                            </button>
-                            <button type="button" class="dashboard-feature-tab @(activeFeature == "gioi-thieu" ? "active" : "")"
-                                    data-feature="gioi-thieu"
-                                    onclick="switchDashboardFeature('gioi-thieu', event)">
-                                <i class="bi bi-person-heart"></i> Giới thiệu nội bộ
-                                <span class="tab-counter-badge ms-1">@(Model.MyReferrals?.TotalReferrals ?? 0)</span>
-                            </button>
-                            @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
-                            {
-                                <a href="/dashboard/trung-lap" class="dashboard-feature-tab text-decoration-none"
-                                   title="Phát hiện và xử lý hồ sơ trùng lặp">
-                                    <i class="bi bi-intersect @(Model.DuplicateCandidatesCount > 0 ? "text-warning" : "")"></i> Trùng lặp
-                                    @if (Model.DuplicateCandidatesCount > 0)
-                                    {
-                                        <span class="tab-counter-badge ms-1 badge-warning-highlight">@Model.DuplicateCandidatesCount</span>
-                                    }
-                                </a>
-                            }
-                        </nav>
-
-                        <!-- Quick Role Action Buttons -->
-                        <div class="d-flex align-items-center gap-2 ms-auto">
-                            <a href="/gioi-thieu-ung-vien" class="btn btn-sm btn-outline-success fw-semibold d-inline-flex align-items-center gap-1.5"
-                               style="border-radius: 8px; font-size: 0.8rem; padding: 0.38rem 0.85rem;" title="Giới thiệu ứng viên quen biết">
-                                <i class="bi bi-person-plus-fill"></i> Giới thiệu ứng viên
-                            </a>
-                            @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
-                            {
-                                <a href="/Jobs/Create" class="btn btn-sm btn-success fw-semibold d-inline-flex align-items-center gap-1.5"
-                                   style="border-radius: 8px; font-size: 0.8rem; padding: 0.38rem 0.85rem; background: #059669; border-color: #059669;">
-                                    <i class="bi bi-plus-lg"></i> Đăng tin mới
-                                </a>
-                            }
-                            @if (User.IsInRole(UserRoles.HiringManager) || User.IsInRole(UserRoles.Admin))
-                            {
-                                <button type="button" class="btn btn-sm btn-light border fw-semibold d-inline-flex align-items-center gap-1.5"
-                                        style="border-radius: 8px; font-size: 0.8rem; padding: 0.38rem 0.85rem; border-color: #E2E8F0; color: #334155;"
-                                        data-bs-toggle="modal" data-bs-target="#createRequisitionModal">
-                                    <i class="bi bi-file-earmark-plus text-warning"></i> Đề xuất nhân sự
-                                </button>
-                            }
-                        </div>
-                    </div>
-                </div>
-
                 <!-- ============================================================== -->
                 <!-- 1. TÍNH NĂNG TỔNG QUAN (TONG-QUAN): KPI + EXECUTIVE OVERVIEW -->
                 <!-- ============================================================== -->
@@ -744,9 +788,9 @@
                         </div>
                     </div>
 
-                    <!-- BỐ CỤC EXECUTIVE OVERVIEW (8 Cột Phễu + Ứng viên mới, 4 Cột Hàng đợi duyệt + Tác vụ) -->
+                    <!-- BỐ CỤC EXECUTIVE OVERVIEW (Full-Width: Phễu Tuyển Dụng Tuyến Tính & Bảng Hồ Sơ Ứng Tuyển) -->
                     <div class="row g-4 mb-4">
-                        <div class="col-12 col-xl-8 d-flex flex-column gap-4">
+                        <div class="col-12 d-flex flex-column gap-4">
                             <!-- Phễu Tuyển Dụng Tuyến Tính (Linear Pipeline & Funnel Distribution) -->
                             <div class="card border-0 shadow-sm p-4 pipeline-funnel-card">
                                 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 pb-2 gap-2" style="border-bottom: 1px solid #F1F5F9;">
@@ -846,7 +890,7 @@
                                     </button>
                                 </div>
                                 <div class="dashboard-table-responsive">
-                                    <table class="table align-middle mb-0" style="min-width: 700px; font-size: 0.85rem;">
+                                    <table class="table align-middle mb-0" style="width: 100%; font-size: 0.85rem;">
                                         <thead>
                                             <tr style="border-bottom: 1px solid #E2E8F0; color: #64748B; font-size: 0.72rem; text-transform: uppercase;">
                                                 <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Ứng viên</th>
@@ -898,92 +942,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div class="col-12 col-xl-4 d-flex flex-column gap-4">
-                            <!-- Pending Approvals Alert Card -->
-                            <div class="card border-0 shadow-sm p-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
-                                <div class="d-flex align-items-center justify-content-between mb-3 pb-2" style="border-bottom: 1px solid #F1F5F9;">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <i class="bi bi-patch-check" style="color: #059669; font-size: 1.15rem;"></i>
-                                        <h6 class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">Hàng Đợi Phê Duyệt</h6>
-                                    </div>
-                                    <button type="button" class="btn btn-sm btn-link text-success p-0 text-decoration-none fw-semibold" style="font-size: 0.78rem;" onclick="switchDashboardFeature('phe-duyet', event)">
-                                        Xem tất cả (@Model.PendingOffers.Count) &rarr;
-                                    </button>
-                                </div>
-                                @if (Model.PendingOffers.Any())
-                                {
-                                    <div class="d-flex flex-column gap-2 mb-2">
-                                        @foreach (var offer in Model.PendingOffers.Take(3))
-                                        {
-                                            <div class="p-2.5" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-left: 3px solid #D97706; border-radius: 8px;">
-                                                <div class="d-flex justify-content-between align-items-start">
-                                                    <span class="fw-bold text-dark" style="font-size: 0.85rem;">@offer.CandidateName</span>
-                                                    <span class="fw-bold text-success font-mono" style="font-size: 0.75rem;">@offer.SalaryDisplay</span>
-                                                </div>
-                                                <div class="text-muted" style="font-size: 0.75rem;">Vị trí: <b class="text-dark">@offer.JobTitle</b></div>
-                                            </div>
-                                        }
-                                    </div>
-                                    <button type="button" class="btn btn-sm btn-warning w-100 fw-semibold text-dark mt-2" style="border-radius: 8px; font-size: 0.78rem;" onclick="switchDashboardFeature('phe-duyet', event)">
-                                        <i class="bi bi-patch-check me-1"></i> Xử lý @Model.PendingOffers.Count thư mời đang chờ
-                                    </button>
-                                }
-                                else
-                                {
-                                    <div class="p-3 text-center" style="background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 8px;">
-                                        <i class="bi bi-check2-circle text-success fs-5 d-block mb-1"></i>
-                                        <div class="fw-semibold text-dark small">Không có hồ sơ tồn đọng</div>
-                                        <div style="font-size: 0.72rem; color: #64748B;">Mọi đề xuất đã được giải quyết.</div>
-                                    </div>
-                                }
-                            </div>
-
-                            <!-- Tác vụ nhanh Shortcuts -->
-                            <div class="card border-0 shadow-sm p-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
-                                <div class="d-flex align-items-center justify-content-between mb-3 pb-2" style="border-bottom: 1px solid #F1F5F9;">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <i class="bi bi-lightning-charge" style="color: #059669; font-size: 1.15rem;"></i>
-                                        <h6 class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">Lối Tắt Tác Vụ</h6>
-                                    </div>
-                                    <button type="button" class="btn btn-sm btn-link text-success p-0 text-decoration-none fw-semibold" style="font-size: 0.78rem;" onclick="switchDashboardFeature('tac-vu', event)">
-                                        Xem tất cả &rarr;
-                                    </button>
-                                </div>
-                                <div class="d-flex flex-column gap-2">
-                                    <a href="/Jobs/Create" class="btn w-100 text-start p-2 d-flex align-items-center justify-content-between text-decoration-none" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;">
-                                        <span class="small fw-semibold text-dark"><i class="bi bi-megaphone-fill text-success me-2"></i>Đăng tin tuyển dụng mới</span>
-                                        <i class="bi bi-chevron-right text-muted small"></i>
-                                    </a>
-                                    <button type="button" class="btn w-100 text-start p-2 d-flex align-items-center justify-content-between" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;" data-bs-toggle="modal" data-bs-target="#createRequisitionModal">
-                                        <span class="small fw-semibold text-dark"><i class="bi bi-file-earmark-plus-fill text-warning me-2"></i>Đề xuất nhân sự phòng ban</span>
-                                        <i class="bi bi-chevron-right text-muted small"></i>
-                                    </button>
-                                    <button type="button" class="btn w-100 text-start p-2 d-flex align-items-center justify-content-between" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;" data-bs-toggle="modal" data-bs-target="#interviewEvaluationModal">
-                                        <span class="small fw-semibold text-dark"><i class="bi bi-clipboard2-check-fill text-success me-2"></i>Nhập phiếu đánh giá ứng viên</span>
-                                        <i class="bi bi-chevron-right text-muted small"></i>
-                                    </button>
-                                    @if (User.IsInRole(UserRoles.Admin))
-                                    {
-                                        <a asp-controller="Users" asp-action="Index" class="btn w-100 text-start p-2 d-flex align-items-center justify-content-between text-decoration-none" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;">
-                                            <span class="small fw-semibold text-dark"><i class="bi bi-people-fill text-danger me-2"></i>Quản trị tài khoản hệ thống</span>
-                                            <i class="bi bi-chevron-right text-muted small"></i>
-                                        </a>
-                                    }
-                                </div>
-                            </div>
-
-                            <!-- Quy chuẩn bảo mật -->
-                            <div class="card border-0 shadow-sm p-3 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
-                                <div class="d-flex align-items-center gap-2 mb-1.5 pb-1.5 border-bottom">
-                                    <i class="bi bi-shield-lock text-success"></i>
-                                    <h6 class="fw-bold text-dark mb-0" style="font-size: 0.85rem;">Quy Chuẩn An Toàn & Bảo Mật</h6>
-                                </div>
-                                <p class="text-muted mb-0" style="font-size: 0.72rem; line-height: 1.5;">
-                                    Mọi hành động chuyển giai đoạn, xếp lịch và duyệt offer đều được ghi nhận Audit Log. Dữ liệu ứng viên được bảo mật tuyệt đối.
-                                </p>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -994,15 +952,30 @@
                     <div id="feature-section-staff-ung-vien" class="card border-0 shadow-sm p-2 p-md-3 p-xl-4 bg-white mb-4 scroll-margin-nav" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                         <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-3 pb-2 gap-2" style="border-bottom: 1px solid #F1F5F9;">
                             <div>
-                                <h5 class="fw-bold text-dark mb-0" style="font-size: 1.15rem;">
-                                    <i class="bi bi-kanban me-2" style="color: #059669;"></i>Điều Phối Hồ Sơ &amp; Pipeline Tuyển Dụng
+                                <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2" style="font-size: 1.15rem;">
+                                    <span class="d-inline-flex align-items-center justify-content-center text-success bg-success-subtle rounded-3" style="width: 30px; height: 30px;">
+                                        <i class="bi bi-kanban fs-5"></i>
+                                    </span>
+                                    <span>Điều Phối Hồ Sơ &amp; Pipeline Tuyển Dụng</span>
+                                    <span class="badge bg-light text-dark border font-mono ms-1" style="font-size: 0.75rem;">@Model.CandidatePipelineItems.Count</span>
                                 </h5>
-                                <small class="text-muted">Kéo thả điều phối ứng viên dạng Kanban 6 giai đoạn, bao quát toàn bộ quy trình trên 1 màn hình</small>
                             </div>
                             <div class="d-flex flex-wrap align-items-center gap-2 w-100 w-lg-auto">
-                                <!-- Bộ lọc vị trí tuyển dụng (SCRUM-319: Mặc định vị trí Recruiter đang phụ trách) -->
-                                <div class="d-flex align-items-center gap-1.5">
-                                    <select id="kanbanJobFilter" class="form-select form-select-sm fw-semibold shadow-none" style="min-width: 200px; max-width: 280px; border-color: #CBD5E1; border-radius: 8px; font-size: 0.82rem;" onchange="onPipelineJobFilterChanged(this.value)">
+                                <!-- 1. Tìm kiếm nhanh -->
+                                <div class="input-group input-group-sm position-relative" style="max-width: 220px;">
+                                    <span class="input-group-text bg-light border-end-0" style="border-color: #E2E8F0;"><i class="bi bi-search text-muted"></i></span>
+                                    <input type="text" id="candidateSearchInput" class="form-control border-start-0 pe-4" placeholder="Tìm kiếm ứng viên... (/)" style="border-color: #E2E8F0; font-size: 0.82rem;" autocomplete="off" />
+                                    <button type="button" id="candidateSearchClearBtn" class="btn btn-sm btn-link position-absolute top-50 end-0 translate-middle-y me-1 text-muted d-none" style="text-decoration:none; z-index: 5;" title="Xóa từ khóa">
+                                        <i class="bi bi-x-circle-fill"></i>
+                                    </button>
+                                    <div id="candSearchHint" class="text-warning d-none position-absolute" style="top: 100%; left: 0; font-size: 0.72rem; white-space: nowrap; z-index: 10; padding-top: 2px;">
+                                        <i class="bi bi-info-circle me-1"></i>Nhập tối thiểu 3 ký tự để tìm kiếm
+                                    </div>
+                                </div>
+
+                                <!-- 2. Bộ lọc vị trí tuyển dụng (Mặc định vị trí Recruiter đang phụ trách) -->
+                                <div class="d-flex align-items-center gap-1.5" style="min-width: 200px;">
+                                    <select id="kanbanJobFilter" class="form-select form-select-sm fw-semibold shadow-none" style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.82rem;" onchange="onPipelineJobFilterChanged(this.value)">
                                         <option value="ALL">📋 Tất cả vị trí (@Model.CandidatePipelineItems.Count)</option>
                                         @foreach (var job in Model.JobPostingFilterOptions)
                                         {
@@ -1022,163 +995,135 @@
                                     </select>
                                 </div>
 
-                                <!-- Bộ lọc Cột / Giai đoạn Kanban (Gộp thành 1 menu gọn gàng & hiển thị cột đang chọn) -->
-                                <div class="dropdown" id="kanbanStageFilterDropdownWrapper">
-                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-1.5 fw-semibold shadow-none"
-                                            type="button" id="btnKanbanStageFilter" data-bs-toggle="dropdown" aria-expanded="false"
-                                            style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.82rem; height: 31px; background: #FFFFFF; transition: all .2s ease;"
-                                            title="Lọc hiển thị theo cột Kanban">
-                                        <i class="bi bi-funnel text-muted" id="kanbanStageFilterIcon"></i>
-                                        <span id="kanbanStageFilterLabel">Tất cả cột</span>
-                                        <span id="kanbanStageFilterBadge" class="badge bg-light text-dark border ms-1" style="font-size: 0.72rem; font-family:'JetBrains Mono',monospace;">@Model.CandidatePipelineItems.Count</span>
+                                <!-- 3. Lọc Hồ sơ Quá hạn SLA -->
+                                <button type="button" id="btnFilterSlaOverdue" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1.5 fw-semibold" style="border-radius: 8px; font-size: 0.82rem;" onclick="toggleKanbanSlaOverdueFilter(event)" title="Lọc hồ sơ quá hạn SLA cần nhân viên tuyển dụng xử lý ngay">
+                                    <i class="bi bi-clock-history"></i>
+                                    <span>Quá hạn SLA</span>
+                                    <span class="badge bg-danger text-white rounded-pill ms-1" id="overdueSlaFilterBadge">@Model.OverdueSlaCandidateCount</span>
+                                </button>
+
+                                <div class="vr mx-1 d-none d-sm-block text-muted opacity-25" style="height: 22px;"></div>
+
+                                <!-- 4. Chuyển đổi Kanban / Bảng -->
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" id="btnPipelineTableView" class="btn btn-outline-secondary pipeline-view-btn" onclick="switchPipelineView('table')" title="Danh Sách Dạng Bảng">
+                                        <i class="bi bi-table me-1"></i> Bảng
                                     </button>
-                                    <ul class="dropdown-menu shadow-sm border py-1" id="kanbanStageFilterMenu" aria-labelledby="btnKanbanStageFilter" style="border-radius: 10px; font-size: 0.82rem; min-width: 230px; z-index: 1050;">
+                                    <button type="button" id="btnPipelineKanbanView" class="btn btn-outline-success pipeline-view-btn active" onclick="switchPipelineView('kanban')" title="Bảng Kanban Kéo Thả">
+                                        <i class="bi bi-kanban-fill me-1"></i> Kanban
+                                    </button>
+                                </div>
+
+                                <!-- 5. Chế độ xem thẻ Kanban: Thu gọn vs Chi tiết (Chỉ hiển thị khi ở Kanban) -->
+                                <div class="btn-group btn-group-sm d-none" role="group" id="kanbanDetailModeGroup">
+                                    <button type="button" id="btnKanbanModeCompact" class="btn btn-secondary text-white pipeline-view-btn active" onclick="setKanbanCardDetailMode('compact')" title="Xem thu gọn (Ẩn SĐT/Email, thẻ tinh gọn)">
+                                        <i class="bi bi-card-heading"></i>
+                                    </button>
+                                    <button type="button" id="btnKanbanModeDetailed" class="btn btn-outline-secondary pipeline-view-btn" onclick="setKanbanCardDetailMode('detailed')" title="Xem chi tiết (Hiển thị đầy đủ SĐT & Email)">
+                                        <i class="bi bi-card-text"></i>
+                                    </button>
+                                </div>
+
+                                <!-- 6. Menu Tiện ích & Nhập xuất (Gom gọn các nút phụ vào 1 dropdown) -->
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 fw-semibold shadow-none"
+                                            type="button" id="btnPipelineMoreTools" data-bs-toggle="dropdown" aria-expanded="false"
+                                            style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.82rem; height: 31px; background: #FFFFFF;"
+                                            title="Tiện ích mở rộng &amp; Thao tác dữ liệu">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                        <span class="d-none d-md-inline">Tiện ích</span>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" style="border-radius: 10px; font-size: 0.82rem; min-width: 220px; z-index: 1050;">
+                                        <li><h6 class="dropdown-header text-uppercase text-muted" style="font-size: 0.7rem;">Nhập / Xuất Excel</h6></li>
                                         <li>
-                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 active kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('ALL', 'Tất cả cột', event)">
-                                                <span><i class="bi bi-grid-fill me-2 text-muted"></i>Tất cả các cột</span>
-                                                <span class="badge rounded-pill bg-light text-dark border font-mono" id="stageMenuCount-ALL">@Model.CandidatePipelineItems.Count</span>
+                                            <a class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-2" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#importCandidateModal">
+                                                <i class="bi bi-cloud-arrow-up text-success"></i> Nhập ứng viên từ Excel
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-2" href="/ung-vien/import-template" download="Mau_Nhap_Ung_Vien.xlsx">
+                                                <i class="bi bi-file-earmark-arrow-down text-primary"></i> Tải file mẫu Excel
                                             </a>
                                         </li>
                                         <li><hr class="dropdown-divider my-1"></li>
+                                        <li><h6 class="dropdown-header text-uppercase text-muted" style="font-size: 0.7rem;">Quản trị &amp; Cấu hình</h6></li>
                                         <li>
-                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('1', 'Hồ sơ mới', event)">
-                                                <span><i class="bi bi-circle-fill me-2" style="color: #2563EB; font-size: 0.65rem;"></i>01. Hồ sơ mới</span>
-                                                <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle font-mono" id="stageMenuCount-1">0</span>
+                                            <a class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-2" href="/ung-vien">
+                                                <i class="bi bi-person-lines-fill text-muted"></i> Danh sách Hồ sơ hợp nhất
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('2', 'Sàng lọc', event)">
-                                                <span><i class="bi bi-circle-fill me-2" style="color: #0284C7; font-size: 0.65rem;"></i>02. Sàng lọc</span>
-                                                <span class="badge rounded-pill bg-info-subtle text-info border border-info-subtle font-mono" id="stageMenuCount-2">0</span>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('3', 'Phỏng vấn', event)">
-                                                <span><i class="bi bi-circle-fill me-2" style="color: #7C3AED; font-size: 0.65rem;"></i>03. Phỏng vấn</span>
-                                                <span class="badge rounded-pill bg-purple-subtle text-purple border border-purple-subtle font-mono" id="stageMenuCount-3">0</span>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('5', 'Offer', event)">
-                                                <span><i class="bi bi-circle-fill me-2" style="color: #D97706; font-size: 0.65rem;"></i>05. Đề xuất Offer</span>
-                                                <span class="badge rounded-pill bg-warning-subtle text-warning border border-warning-subtle font-mono" id="stageMenuCount-5">0</span>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('6', 'Nhận việc', event)">
-                                                <span><i class="bi bi-circle-fill me-2" style="color: #059669; font-size: 0.65rem;"></i>06. Nhận việc</span>
-                                                <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle font-mono" id="stageMenuCount-6">0</span>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item d-flex justify-content-between align-items-center py-1.5 px-3 kanban-stage-menu-item" href="javascript:void(0)" onclick="selectKanbanStageFilter('7', 'Loại hồ sơ', event)">
-                                                <span><i class="bi bi-circle-fill me-2" style="color: #E11D48; font-size: 0.65rem;"></i>07. Loại / Từ chối</span>
-                                                <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle font-mono" id="stageMenuCount-7">0</span>
+                                            <a class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-2" href="/cai-dat-sla">
+                                                <i class="bi bi-sliders text-muted"></i> Cấu hình thời gian SLA
                                             </a>
                                         </li>
                                     </ul>
-                                </div>
-
-                                <!-- Nút Hồ sơ hợp nhất (SCRUM-39) -->
-                                <a href="/ung-vien" class="btn btn-sm btn-outline-success fw-semibold text-nowrap rounded-2" style="font-size: 0.8rem;">
-                                    <i class="bi bi-person-lines-fill me-1"></i>Hồ sơ hợp nhất
-                                </a>
-
-                                <!-- Tìm kiếm nhanh -->
-                                <div class="input-group input-group-sm position-relative" style="max-width: 210px;">
-                                    <span class="input-group-text bg-light border-end-0" style="border-color: #E2E8F0;"><i class="bi bi-search text-muted"></i></span>
-                                    <input type="text" id="candidateSearchInput" class="form-control border-start-0 pe-4" placeholder="Tìm kiếm... (≥ 3 ký tự)" style="border-color: #E2E8F0; font-size: 0.82rem;" autocomplete="off" />
-                                    <button type="button" id="candidateSearchClearBtn" class="btn btn-sm btn-link position-absolute top-50 end-0 translate-middle-y me-1 text-muted d-none" style="text-decoration:none; z-index: 5;" title="Xóa từ khóa">
-                                        <i class="bi bi-x-circle-fill"></i>
-                                    </button>
-                                    <div id="candSearchHint" class="text-warning d-none position-absolute" style="top: 100%; left: 0; font-size: 0.72rem; white-space: nowrap; z-index: 10; padding-top: 2px;">
-                                        <i class="bi bi-info-circle me-1"></i>Nhập tối thiểu 3 ký tự để tìm kiếm
-                                    </div>
-                                </div>
-
-                                <!-- Chuyển đổi Kanban / Bảng & Chế độ Xem Thu gọn vs Chi tiết -->
-                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                                    <!-- SCRUM-327: Lọc Hồ sơ Quá hạn SLA & Cấu hình SLA -->
-                                    <button type="button" id="btnFilterSlaOverdue" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1.5" onclick="toggleKanbanSlaOverdueFilter(event)" title="Lọc hồ sơ quá hạn SLA cần nhân viên tuyển dụng xử lý ngay">
-                                        <i class="bi bi-clock-history"></i>
-                                        <span>Quá hạn SLA</span>
-                                        <span class="badge bg-danger text-white rounded-pill ms-1" id="overdueSlaFilterBadge">@Model.OverdueSlaCandidateCount</span>
-                                    </button>
-                                    <a href="/cai-dat-sla" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 text-decoration-none" title="Cấu hình ngưỡng thời gian xử lý SLA theo từng giai đoạn">
-                                        <i class="bi bi-sliders"></i>
-                                        <span class="d-none d-sm-inline">Cài SLA</span>
-                                    </a>
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <button type="button" id="btnPipelineKanbanView" class="btn btn-outline-success pipeline-view-btn active" onclick="switchPipelineView('kanban')" title="Bảng Kanban Kéo Thả">
-                                            <i class="bi bi-kanban-fill me-1"></i> Kanban
-                                        </button>
-                                        <button type="button" id="btnPipelineTableView" class="btn btn-outline-secondary pipeline-view-btn" onclick="switchPipelineView('table')" title="Danh Sách Dạng Bảng">
-                                            <i class="bi bi-table me-1"></i> Bảng
-                                        </button>
-                                    </div>
-                                    <div class="btn-group btn-group-sm" role="group" id="kanbanDetailModeGroup">
-                                        <button type="button" id="btnKanbanModeCompact" class="btn btn-secondary text-white pipeline-view-btn active" onclick="setKanbanCardDetailMode('compact')" title="Xem thu gọn (Ẩn SĐT/Email, thẻ tinh gọn)">
-                                            <i class="bi bi-card-heading me-1"></i>Thu gọn
-                                        </button>
-                                        <button type="button" id="btnKanbanModeDetailed" class="btn btn-outline-secondary pipeline-view-btn" onclick="setKanbanCardDetailMode('detailed')" title="Xem chi tiết (Hiển thị đầy đủ SĐT & Email)">
-                                            <i class="bi bi-card-text me-1"></i>Chi tiết
-                                        </button>
-                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         @if (Model.DuplicateCandidatesCount > 0)
                         {
-                            <div class="alert d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between p-3 mb-3 border-0 shadow-sm gap-2"
-                                 style="background: #FFFBEB; border: 1px solid #FDE68A !important; border-radius: 8px; color: #92400E;">
-                                <div class="d-flex align-items-center gap-2.5">
-                                    <i class="bi bi-exclamation-triangle-fill text-warning fs-5 flex-shrink-0"></i>
-                                    <div>
-                                        <div class="fw-bold" style="font-size: 0.88rem;">Phát hiện @Model.DuplicateCandidatesCount hồ sơ có nguy cơ trùng lặp thông tin!</div>
-                                        <div class="small" style="color: #78350F;">Hệ thống phát hiện các ứng viên có cùng email hoặc số điện thoại. Hãy so sánh và gộp hồ sơ để tránh gọi phỏng vấn hai lần.</div>
-                                    </div>
+                            <div id="duplicateAlertBanner" class="alert d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between p-2.5 px-3 mb-3 border-0 shadow-sm gap-2"
+                                 style="background: #FFFBEB; border: 1px solid #FDE68A !important; border-radius: 8px; color: #92400E; font-size: 0.83rem;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-exclamation-triangle-fill text-warning fs-6 flex-shrink-0"></i>
+                                    <span><strong>Phát hiện @Model.DuplicateCandidatesCount hồ sơ có nguy cơ trùng lặp thông tin!</strong></span>
                                 </div>
                                 <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                                    <button type="button" class="btn btn-sm btn-outline-warning text-dark fw-semibold"
-                                            style="border-radius: 6px; font-size: 0.78rem;"
+                                    <button type="button" class="btn btn-sm btn-outline-warning text-dark fw-semibold py-0.5 px-2"
+                                            style="border-radius: 6px; font-size: 0.75rem;"
                                             onclick="filterPipelineCandidates('DUPLICATE')">
                                         <i class="bi bi-funnel me-1"></i>Lọc danh sách trùng
                                     </button>
-                                    <a href="/dashboard/trung-lap" class="btn btn-sm btn-warning text-dark fw-semibold"
-                                       style="border-radius: 6px; font-size: 0.78rem;">
-                                        <i class="bi bi-intersect me-1"></i>Quản lý gộp hồ sơ &rarr;
+                                    <a href="/dashboard/trung-lap" class="btn btn-sm btn-warning text-dark fw-semibold py-0.5 px-2"
+                                       style="border-radius: 6px; font-size: 0.75rem;">
+                                        <i class="bi bi-intersect me-1"></i>Quản lý gộp &rarr;
                                     </a>
+                                    <button type="button" class="btn btn-link text-muted p-0 ms-1" onclick="document.getElementById('duplicateAlertBanner').classList.add('d-none')" title="Ẩn thông báo này">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
                                 </div>
                             </div>
                         }
 
-                        <!-- Filter Stage Pills (Segmented Chips - 8px radius) -->
-                        <div class="d-flex flex-wrap gap-2 mb-3" id="candidateStageFilterGroup">
-                            <button type="button" class="candidate-stage-pill active" onclick="filterPipelineCandidates('ALL', this)">
-                                Tất cả <span class="pill-count">@Model.CandidatePipelineItems.Count</span>
-                            </button>
-                            <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('REFERRAL', this)">
-                                <i class="bi bi-person-heart text-danger me-1"></i>Giới thiệu nội bộ <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.IsReferral)</span>
-                            </button>
-                            @if (Model.DuplicateCandidatesCount > 0)
-                            {
-                                <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('DUPLICATE', this)">
-                                    <i class="bi bi-intersect text-warning me-1"></i>Cảnh báo trùng <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.HasDuplicateWarning)</span>
+                        <!-- Filter Stage Pills (Pipeline Funnel Stepper + Trạng thái đặc biệt) -->
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 p-2 rounded-3 bg-light border" id="candidateStageFilterGroup" style="border-color: #E2E8F0 !important;">
+                            <!-- Nhóm các giai đoạn quy trình 6 bước chính -->
+                            <div class="d-flex flex-wrap align-items-center gap-1.5">
+                                <button type="button" class="candidate-stage-pill active" onclick="filterPipelineCandidates('ALL', this)">
+                                    Tất cả <span class="pill-count">@Model.CandidatePipelineItems.Count</span>
                                 </button>
-                            }
-                            @foreach (var stage in Model.PipelineFunnel.Where(s => !s.IsTerminal))
-                            {
-                                <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('@stage.StageOrder', this)">
-                                    @stage.StageOrder.ToString("D2"). @(string.IsNullOrWhiteSpace(stage.ShortName) ? stage.StageName : stage.ShortName) <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == stage.StageOrder)</span>
+                                <div class="vr my-auto mx-1 text-muted opacity-25 d-none d-sm-block" style="height: 18px;"></div>
+                                @foreach (var stage in Model.PipelineFunnel.Where(s => !s.IsTerminal))
+                                {
+                                    var count = Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == stage.StageOrder);
+                                    <button type="button" class="candidate-stage-pill @(count == 0 ? "opacity-75" : "")" onclick="filterPipelineCandidates('@stage.StageOrder', this)">
+                                        <span class="opacity-75 font-mono" style="font-size: 0.7rem;">@stage.StageOrder.ToString("D2").</span>
+                                        <span>@(string.IsNullOrWhiteSpace(stage.ShortName) ? stage.StageName : stage.ShortName)</span>
+                                        <span class="pill-count">@count</span>
+                                    </button>
+                                }
+                            </div>
+
+                            <!-- Nhóm trạng thái đặc biệt / phân loại phụ -->
+                            <div class="d-flex flex-wrap align-items-center gap-1.5 ms-auto">
+                                @if (Model.DuplicateCandidatesCount > 0)
+                                {
+                                    <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('DUPLICATE', this)" title="Lọc hồ sơ nghi ngờ trùng lặp">
+                                        <i class="bi bi-intersect text-warning"></i>Cảnh báo trùng <span class="pill-count text-warning fw-bold">@Model.CandidatePipelineItems.Count(x => x.HasDuplicateWarning)</span>
+                                    </button>
+                                }
+                                <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('REFERRAL', this)" title="Hồ sơ được nhân sự nội bộ giới thiệu">
+                                    <i class="bi bi-person-heart text-danger"></i>Giới thiệu <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.IsReferral)</span>
                                 </button>
-                            }
-                            <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('REJECTED', this)">
-                                Đã từ chối <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.Status == "REJECTED")</span>
-                            </button>
-                            <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('WITHDRAWN', this)">
-                                Ứng viên rút <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.Status == "WITHDRAWN")</span>
-                            </button>
+                                <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('REJECTED', this)" title="Ứng viên đã từ chối">
+                                    <i class="bi bi-x-circle text-danger"></i>Từ chối <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.Status == "REJECTED")</span>
+                                </button>
+                                <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('WITHDRAWN', this)" title="Ứng viên chủ động rút">
+                                    <i class="bi bi-box-arrow-left text-secondary"></i>Rút hồ sơ <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.Status == "WITHDRAWN")</span>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Mobile Column Dots Indicator (Chỉ hiển thị trên thiết bị di động để vuốt nhanh) -->
@@ -1454,34 +1399,15 @@
                         <!-- TABLE VIEW CONTAINER (Ẩn mặc định, hiển thị khi chọn chế độ Bảng) -->
                         <!-- ============================================================== -->
                         <div id="candidateTableViewContainer" class="d-none mt-2">
-                            <!-- Filter Stage Pills (Đã được gộp vào Dropdown trên thanh công cụ chính) -->
-                            <div class="d-none" id="candidateStageFilterGroup">
-                                <button type="button" class="candidate-stage-pill active" onclick="filterPipelineCandidates('ALL', this)">
-                                    Tất cả <span class="pill-count">@Model.CandidatePipelineItems.Count</span>
-                                </button>
-                                @foreach (var stage in Model.PipelineFunnel.Where(s => !s.IsTerminal))
-                                {
-                                    <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('@stage.StageOrder', this)">
-                                        @stage.StageOrder.ToString("D2"). @(string.IsNullOrWhiteSpace(stage.ShortName) ? stage.StageName : stage.ShortName) <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == stage.StageOrder)</span>
-                                    </button>
-                                }
-                                <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('REJECTED', this)">
-                                    Đã từ chối <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.Status == "REJECTED")</span>
-                                </button>
-                                <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('WITHDRAWN', this)">
-                                    Ứng viên rút <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.Status == "WITHDRAWN")</span>
-                                </button>
-                            </div>
-
                             <div class="dashboard-table-responsive">
                                 <table class="table align-middle mb-0" style="min-width: 900px; font-size: 0.85rem;">
                                     <thead>
                                         <tr style="border-bottom: 1px solid #E2E8F0; color: #64748B; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">
-                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold" style="border-top-left-radius: 8px; border-bottom-left-radius: 8px;">Ứng viên</th>
-                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Vị trí ứng tuyển</th>
-                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Giai đoạn hiện tại</th>
-                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Ngày nộp</th>
-                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-end" style="border-top-right-radius: 8px; border-bottom-right-radius: 8px;">Thao tác xử lý quy trình</th>
+                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold" style="width: 32%; border-top-left-radius: 8px; border-bottom-left-radius: 8px;">Ứng viên</th>
+                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold" style="width: 25%;">Vị trí ứng tuyển</th>
+                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold" style="width: 20%;">Giai đoạn &amp; SLA</th>
+                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold" style="width: 11%;">Ngày nộp</th>
+                                            <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-end" style="width: 12%; border-top-right-radius: 8px; border-bottom-right-radius: 8px;">Thao tác</th>
                                         </tr>
                                     </thead>
                                     <tbody id="candidatePipelineTableBody">
@@ -2217,9 +2143,8 @@
     }
 </div>
 
-<!-- ======================================================== -->
-<!-- MODALS DÀNH CHO CẢ ỨNG VIÊN VÀ NHÂN SỰ (THỰC THI THẬT) -->
-<!-- ======================================================== -->
+<!-- Modal Nhập danh sách Ứng viên từ Excel & Tải mẫu (SCRUM-34 & Excel) -->
+<partial name="_CandidateExcelImportModal" />
 
 <!-- Modal 1: Cập nhật CV Ứng Viên -->
 <div class="modal fade" id="updateCvModal" tabindex="-1" aria-labelledby="updateCvModalLabel" aria-hidden="true">
@@ -3846,6 +3771,15 @@
             const tableContainer = document.getElementById('candidateTableViewContainer');
             const btnKanban = document.getElementById('btnPipelineKanbanView');
             const btnTable = document.getElementById('btnPipelineTableView');
+
+            const detailModeGroup = document.getElementById('kanbanDetailModeGroup');
+            if (detailModeGroup) {
+                if (mode === 'kanban') {
+                    detailModeGroup.classList.remove('d-none');
+                } else {
+                    detailModeGroup.classList.add('d-none');
+                }
+            }
 
             if (mode === 'kanban') {
                 if (kanbanContainer) kanbanContainer.classList.remove('d-none');

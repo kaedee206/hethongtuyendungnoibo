@@ -339,7 +339,7 @@ public class AccountController(
     /// </summary>
     [HttpGet]
     [AllowAnonymous]
-    public IActionResult StaffLogin(string? returnUrl, bool expired = false, bool revoked = false)
+    public IActionResult StaffLogin(string? returnUrl, bool expired = false, bool revoked = false, string? remoteError = null)
     {
         if (User.Identity?.IsAuthenticated == true)
         {
@@ -353,7 +353,11 @@ public class AccountController(
             ActivePanel = "login"
         };
 
-        if (expired)
+        if (!string.IsNullOrWhiteSpace(remoteError))
+        {
+            ModelState.AddModelError(string.Empty, remoteError);
+        }
+        else if (expired)
         {
             ModelState.AddModelError(string.Empty, "Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.");
         }

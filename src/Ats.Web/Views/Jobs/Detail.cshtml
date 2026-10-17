@@ -1125,5 +1125,18 @@
             }
         }
     </script>
+    <script src="/js/cv-autofill.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.CvAutoFill) {
+                window.CvAutoFill.init({
+                    fileInput: 'input[name="cvFile"]',
+                    nameInput: 'input[name="candidateName"]',
+                    emailInput: 'input[name="candidateEmail"]',
+                    phoneInput: 'input[name="candidatePhone"]'
+                });
+            }
+        });
+    </script>
 }
 

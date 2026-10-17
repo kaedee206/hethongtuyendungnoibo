@@ -9,6 +9,8 @@ using Ats.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ClosedXML.Excel;
+using System.Text.RegularExpressions;
 
 namespace Ats.Web.Services;
 
@@ -1052,5 +1054,445 @@ public class CandidateService(
         await _dbContext.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Đã xóa bộ lọc tìm kiếm {FilterId} của Recruiter {UserId}", filterId, currentUserId);
         return true;
+    }
+
+    public async Task<byte[]> GenerateCandidateExcelTemplateAsync(CancellationToken cancellationToken = default)
+    {
+        using var workbook = new XLWorkbook();
+
+        var openJobs = await _dbContext.JobPostings
+            .Where(j => !j.IsDeleted && j.Status == JobPostingStatus.PUBLISHED)
+            .OrderBy(j => j.Title)
+            .Select(j => j.Title)
+            .ToListAsync(cancellationToken);
+        if (!openJobs.Any())
+        {
+            openJobs = new List<string> { "Senior Software Engineer (.NET & React)", "AI Engineer / MLOps", "Product Owner", "QA Automation Engineer" };
+        }
+
+        var departments = await _dbContext.Departments
+            .Where(d => d.IsActive)
+            .OrderBy(d => d.Name)
+            .Select(d => d.Name)
+            .ToListAsync(cancellationToken);
+        if (!departments.Any())
+        {
+            departments = new List<string> { "Phòng Công Nghệ Thông Tin", "Phòng Nhân Sự", "Phòng Kinh Doanh" };
+        }
+
+        var headerBgColor = XLColor.FromArgb(5, 150, 105); // #059669 (Emerald Green NoveraTech)
+        var borderColor = XLColor.FromArgb(209, 213, 219);
+
+        // Sheet 1: Hướng dẫn & Quy định
+        var instructionSheet = workbook.Worksheets.Add("Hướng dẫn & Quy định");
+        instructionSheet.ShowGridLines = true;
+
+        instructionSheet.Cell(1, 1).Value = "HƯỚNG DẪN NHẬP DANH SÁCH ỨNG VIÊN HÀNG LOẠT (HỆ THỐNG ATS NOVERATECH)";
+        instructionSheet.Cell(1, 1).Style.Font.Bold = true;
+        instructionSheet.Cell(1, 1).Style.Font.FontSize = 14;
+        instructionSheet.Cell(1, 1).Style.Font.FontColor = headerBgColor;
+
+        instructionSheet.Cell(3, 1).Value = "Cột dữ liệu";
+        instructionSheet.Cell(3, 2).Value = "Bắt buộc?";
+        instructionSheet.Cell(3, 3).Value = "Quy cách chuẩn";
+        instructionSheet.Cell(3, 4).Value = "Ví dụ mẫu";
+
+        var ruleHeaders = instructionSheet.Range(3, 1, 3, 4);
+        ruleHeaders.Style.Font.Bold = true;
+        ruleHeaders.Style.Fill.BackgroundColor = headerBgColor;
+        ruleHeaders.Style.Font.FontColor = XLColor.White;
+        ruleHeaders.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        instructionSheet.Row(3).Height = 24;
+
+        var rules = new[]
+        {
+            ("Họ và tên (*)", "Bắt buộc (*)", "Độ dài từ 2 đến 100 ký tự. Tên đầy đủ ứng viên.", "Nguyễn Văn An"),
+            ("Email (*)", "Bắt buộc (*)", "Email liên hệ của ứng viên. Không được trùng lặp trong tệp.", "an.nguyen.candidate@gmail.com"),
+            ("Số điện thoại (*)", "Bắt buộc (*)", "Định dạng 10 số điện thoại di động Việt Nam (vd: 0912345678 hoặc +84912345678).", "0912345678"),
+            ("Vị trí ứng tuyển", "Tùy chọn", "Tên vị trí tuyển dụng có trong hệ thống (Xem sheet 'Danh mục tham chiếu').", openJobs.First()),
+            ("Năm kinh nghiệm", "Tùy chọn", "Số nguyên từ 0 đến 40.", "3"),
+            ("Kỹ năng chính", "Tùy chọn", "Các từ khóa kỹ năng cách nhau dấu phẩy.", "C#, .NET 9, Docker, PostgreSQL"),
+            ("Ghi chú", "Tùy chọn", "Ghi chú chuyên môn hoặc nguồn ứng viên.", "Ứng viên có kinh nghiệm thực chiến tốt")
+        };
+
+        for (int r = 0; r < rules.Length; r++)
+        {
+            int rowIdx = 4 + r;
+            instructionSheet.Cell(rowIdx, 1).Value = rules[r].Item1;
+            instructionSheet.Cell(rowIdx, 1).Style.Font.Bold = true;
+            instructionSheet.Cell(rowIdx, 2).Value = rules[r].Item2;
+            instructionSheet.Cell(rowIdx, 2).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            if (rules[r].Item2.Contains('*')) instructionSheet.Cell(rowIdx, 2).Style.Font.FontColor = XLColor.Red;
+            instructionSheet.Cell(rowIdx, 3).Value = rules[r].Item3;
+            instructionSheet.Cell(rowIdx, 4).Value = rules[r].Item4;
+        }
+
+        var ruleRange = instructionSheet.Range(3, 1, 3 + rules.Length, 4);
+        ruleRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+        ruleRange.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
+        ruleRange.Style.Border.InsideBorderColor = borderColor;
+        instructionSheet.Columns().AdjustToContents();
+
+        // Sheet 2: Dữ liệu mẫu & nhập liệu
+        var dataSheet = workbook.Worksheets.Add("Dữ liệu");
+        dataSheet.ShowGridLines = true;
+
+        var headers = new string[] { "Họ và tên (*)", "Email (*)", "Số điện thoại (*)", "Vị trí ứng tuyển", "Năm kinh nghiệm", "Kỹ năng chính", "Ghi chú" };
+        for (int i = 0; i < headers.Length; i++)
+        {
+            var cell = dataSheet.Cell(1, i + 1);
+            cell.Value = headers[i];
+            cell.Style.Font.Bold = true;
+            cell.Style.Font.FontColor = XLColor.White;
+            cell.Style.Fill.BackgroundColor = headerBgColor;
+            cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            cell.Style.Border.OutsideBorderColor = borderColor;
+        }
+        dataSheet.Row(1).Height = 28;
+
+        dataSheet.Column(3).Style.NumberFormat.Format = "@"; // SĐT dạng Text
+
+        var sampleRows = new[]
+        {
+            new { Name = "Nguyễn Văn An", Email = "an.nguyen.candidate@gmail.com", Phone = "0912345678", Job = openJobs.ElementAtOrDefault(0) ?? "Senior Software Engineer", Exp = "4", Skills = ".NET, C#, SQL, Azure", Notes = "Kinh nghiệm 4 năm fintech" },
+            new { Name = "Trần Thị Mai", Email = "mai.tran.dev@gmail.com", Phone = "0987654321", Job = openJobs.ElementAtOrDefault(1) ?? "AI Engineer", Exp = "2", Skills = "Python, PyTorch, FastAPI", Notes = "Tốt nghiệp ĐHBK" },
+            new { Name = "Lê Hoàng Nam", Email = "nam.le.candidate@outlook.com", Phone = "0933445566", Job = openJobs.ElementAtOrDefault(0) ?? "QA Engineer", Exp = "3", Skills = "Selenium, Playwright, C#", Notes = "Tiếng Anh giao tiếp tốt" }
+        };
+
+        for (int i = 0; i < sampleRows.Length; i++)
+        {
+            var row = sampleRows[i];
+            int r = i + 2;
+            dataSheet.Cell(r, 1).Value = row.Name;
+            dataSheet.Cell(r, 2).Value = row.Email;
+            dataSheet.Cell(r, 3).SetValue(row.Phone);
+            dataSheet.Cell(r, 4).Value = row.Job;
+            dataSheet.Cell(r, 5).Value = row.Exp;
+            dataSheet.Cell(r, 6).Value = row.Skills;
+            dataSheet.Cell(r, 7).Value = row.Notes;
+
+            for (int c = 1; c <= headers.Length; c++)
+            {
+                dataSheet.Cell(r, c).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                dataSheet.Cell(r, c).Style.Border.OutsideBorderColor = borderColor;
+            }
+        }
+
+        dataSheet.Columns().AdjustToContents();
+
+        // Sheet 3: Danh mục tham chiếu
+        var refSheet = workbook.Worksheets.Add("Danh mục tham chiếu");
+        refSheet.ShowGridLines = true;
+        refSheet.Cell(1, 1).Value = "Vị trí tuyển dụng đang mở";
+        refSheet.Cell(1, 2).Value = "Phòng ban";
+        var refHeaders = refSheet.Range(1, 1, 1, 2);
+        refHeaders.Style.Font.Bold = true;
+        refHeaders.Style.Fill.BackgroundColor = headerBgColor;
+        refHeaders.Style.Font.FontColor = XLColor.White;
+
+        for (int i = 0; i < openJobs.Count; i++)
+        {
+            refSheet.Cell(i + 2, 1).Value = openJobs[i];
+        }
+        for (int i = 0; i < departments.Count; i++)
+        {
+            refSheet.Cell(i + 2, 2).Value = departments[i];
+        }
+        refSheet.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        var fileBytes = stream.ToArray();
+
+        // Best effort lưu bản sao tĩnh vào wwwroot/templates/Mau_Nhap_Ung_Vien.xlsx
+        try
+        {
+            var contentRoot = Directory.GetCurrentDirectory();
+            var templatesDir = Path.Combine(contentRoot, "wwwroot", "templates");
+            if (!Directory.Exists(templatesDir))
+            {
+                templatesDir = Path.Combine(contentRoot, "src", "Ats.Web", "wwwroot", "templates");
+            }
+            if (Directory.Exists(templatesDir))
+            {
+                var physicalFilePath = Path.Combine(templatesDir, "Mau_Nhap_Ung_Vien.xlsx");
+                File.WriteAllBytes(physicalFilePath, fileBytes);
+            }
+        }
+        catch { /* best effort */ }
+
+        return fileBytes;
+    }
+
+    public async Task<ImportCandidateResultDto> ValidateCandidateExcelImportAsync(Stream excelStream, CancellationToken cancellationToken = default)
+    {
+        await Task.Yield();
+        var result = new ImportCandidateResultDto();
+
+        using var workbook = new XLWorkbook(excelStream);
+        var worksheet = workbook.Worksheets.FirstOrDefault(ws => ws.Name == "Dữ liệu") ?? workbook.Worksheet(1);
+
+        static string NormalizeHeader(string header) => header.Replace("(*)", "").Replace("*", "").Trim().ToLowerInvariant();
+
+        var expectedHeaders = new[] { "Họ và tên (*)", "Email (*)", "Số điện thoại (*)" };
+        var expectedNormalized = new[] { "họ và tên", "email", "số điện thoại" };
+        var headerRow = worksheet.Row(1);
+        for (int i = 0; i < expectedNormalized.Length; i++)
+        {
+            var cellValue = headerRow.Cell(i + 1).GetString().Trim();
+            var normalizedVal = NormalizeHeader(cellValue);
+            if (!normalizedVal.Equals(expectedNormalized[i], StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException($"Cấu trúc cột không hợp lệ. Cột thứ {i + 1} phải là '{expectedHeaders[i]}' (Tìm thấy '{cellValue}'). Vui lòng sử dụng tệp mẫu chuẩn.");
+            }
+        }
+
+        var rows = worksheet.RowsUsed().Skip(1); // Bỏ qua header
+        var emailRegex = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase);
+        var phoneRegex = new Regex(@"^(?:\+?84|0)(?:3|5|7|8|9)\d{8}$");
+
+        var emailsInFile = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var row in rows)
+        {
+            int rowIndex = row.RowNumber();
+            var errors = new List<ImportCandidateErrorDetailDto>();
+
+            var name = row.Cell(1).GetString().Trim();
+            var email = row.Cell(2).GetString().Trim();
+            var phone = row.Cell(3).GetString().Trim();
+            var jobTitle = row.Cell(4).GetString().Trim();
+            var expStr = row.Cell(5).GetString().Trim();
+            var skills = row.Cell(6).GetString().Trim();
+            var notes = row.Cell(7).GetString().Trim();
+
+            // Nếu toàn bộ dòng rỗng thì bỏ qua
+            if (string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(phone))
+            {
+                continue;
+            }
+
+            // 1. Kiểm tra Họ và tên
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                errors.Add(new ImportCandidateErrorDetailDto { ColumnName = "Họ và tên", ErrorMessage = "Họ và tên không được để trống." });
+            }
+            else if (name.Length < 2 || name.Length > 100)
+            {
+                errors.Add(new ImportCandidateErrorDetailDto { ColumnName = "Họ và tên", ErrorMessage = "Độ dài họ và tên phải từ 2 đến 100 ký tự." });
+            }
+
+            // 2. Kiểm tra Email
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                errors.Add(new ImportCandidateErrorDetailDto { ColumnName = "Email", ErrorMessage = "Email không được để trống." });
+            }
+            else if (!emailRegex.IsMatch(email))
+            {
+                errors.Add(new ImportCandidateErrorDetailDto { ColumnName = "Email", ErrorMessage = "Email không đúng định dạng." });
+            }
+            else if (emailsInFile.TryGetValue(email, out var duplicateRowIndex))
+            {
+                errors.Add(new ImportCandidateErrorDetailDto { ColumnName = "Email", ErrorMessage = $"Email bị trùng lặp với dòng số {duplicateRowIndex} trong tệp." });
+            }
+            else
+            {
+                emailsInFile[email] = rowIndex;
+            }
+
+            // 3. Kiểm tra Số điện thoại
+            var cleanedPhone = new string(phone.Where(char.IsDigit).ToArray());
+            if (cleanedPhone.StartsWith("84") && cleanedPhone.Length == 11)
+            {
+                cleanedPhone = "0" + cleanedPhone[2..];
+            }
+
+            if (string.IsNullOrWhiteSpace(phone))
+            {
+                errors.Add(new ImportCandidateErrorDetailDto { ColumnName = "Số điện thoại", ErrorMessage = "Số điện thoại không được để trống." });
+            }
+            else if (!phoneRegex.IsMatch(cleanedPhone))
+            {
+                errors.Add(new ImportCandidateErrorDetailDto { ColumnName = "Số điện thoại", ErrorMessage = "Số điện thoại không đúng định dạng di động Việt Nam (10 chữ số, đầu số 03, 05, 07, 08, 09)." });
+            }
+
+            // 4. Kiểm tra Năm kinh nghiệm
+            int? expYears = null;
+            if (!string.IsNullOrWhiteSpace(expStr))
+            {
+                if (int.TryParse(expStr, out var parsedExp) && parsedExp is >= 0 and <= 40)
+                {
+                    expYears = parsedExp;
+                }
+                else
+                {
+                    errors.Add(new ImportCandidateErrorDetailDto { ColumnName = "Năm kinh nghiệm", ErrorMessage = "Năm kinh nghiệm phải là số nguyên từ 0 đến 40." });
+                }
+            }
+
+            if (errors.Any())
+            {
+                result.ErrorRows.Add(new ImportCandidateErrorRowDto { RowIndex = rowIndex, Errors = errors });
+            }
+            else
+            {
+                result.ValidRows.Add(new ImportCandidateRowDto
+                {
+                    RowIndex = rowIndex,
+                    FullName = name,
+                    Email = email,
+                    PhoneNumber = cleanedPhone,
+                    TargetJobTitle = string.IsNullOrWhiteSpace(jobTitle) ? null : jobTitle,
+                    ExperienceYears = expYears,
+                    Skills = string.IsNullOrWhiteSpace(skills) ? null : skills,
+                    Notes = string.IsNullOrWhiteSpace(notes) ? null : notes
+                });
+            }
+        }
+
+        return result;
+    }
+
+    public async Task<int> ExecuteCandidateImportAsync(ExecuteCandidateImportRequestDto request, Guid currentUserId, CancellationToken cancellationToken = default)
+    {
+        if (request.ValidRows == null || !request.ValidRows.Any())
+        {
+            return 0;
+        }
+
+        var successCount = 0;
+        var initialStage = await _dbContext.PipelineStages.OrderBy(s => s.StageOrder).FirstOrDefaultAsync(cancellationToken);
+
+        foreach (var r in request.ValidRows)
+        {
+            var emailClean = r.Email.Trim().ToLowerInvariant();
+            var candidate = await _dbContext.Candidates
+                .Include(c => c.Applications)
+                .FirstOrDefaultAsync(c => c.Email.ToLower() == emailClean && !c.IsDeleted, cancellationToken);
+
+            if (candidate == null)
+            {
+                candidate = new Candidate
+                {
+                    Id = Guid.NewGuid(),
+                    FirstName = r.FullName.Trim(),
+                    LastName = string.Empty,
+                    Email = emailClean,
+                    Phone = r.PhoneNumber.Trim(),
+                    Source = CandidateSource.OTHER,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
+                await _dbContext.Candidates.AddAsync(candidate, cancellationToken);
+            }
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(r.PhoneNumber)) candidate.Phone = r.PhoneNumber.Trim();
+                candidate.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+
+            // Gán vào vị trí tuyển dụng nếu có
+            Guid? targetJobId = request.JobPostingId;
+            if (!targetJobId.HasValue && !string.IsNullOrWhiteSpace(r.TargetJobTitle))
+            {
+                var matchedJob = await _dbContext.JobPostings
+                    .FirstOrDefaultAsync(j => j.Title.ToLower() == r.TargetJobTitle.ToLower().Trim() && !j.IsDeleted, cancellationToken);
+                targetJobId = matchedJob?.Id;
+            }
+
+            if (targetJobId.HasValue && initialStage != null)
+            {
+                var hasApp = await _dbContext.Applications
+                    .AnyAsync(a => a.CandidateId == candidate.Id && a.JobPostingId == targetJobId.Value && !a.IsDeleted, cancellationToken);
+
+                if (!hasApp)
+                {
+                    var resume = await _dbContext.Resumes.FirstOrDefaultAsync(rm => rm.CandidateId == candidate.Id && !rm.IsDeleted, cancellationToken);
+                    if (resume == null)
+                    {
+                        resume = new Resume
+                        {
+                            Id = Guid.NewGuid(),
+                            CandidateId = candidate.Id,
+                            FileName = "ho_so_excel.txt",
+                            FilePath = "uploads/resumes/excel_import.txt",
+                            FileSize = 0,
+                            MimeType = "text/plain",
+                            ParsedText = $"Dữ liệu ứng viên nhập từ tệp Excel: {r.FullName} - {r.Email} - {r.PhoneNumber}. Kỹ năng: {r.Skills}. Ghi chú: {r.Notes}",
+                            IsPrimary = true,
+                            CreatedAt = DateTimeOffset.UtcNow,
+                            UpdatedAt = DateTimeOffset.UtcNow
+                        };
+                        await _dbContext.Resumes.AddAsync(resume, cancellationToken);
+                    }
+
+                    var application = new Application
+                    {
+                        Id = Guid.NewGuid(),
+                        CandidateId = candidate.Id,
+                        JobPostingId = targetJobId.Value,
+                        ResumeId = resume.Id,
+                        CurrentStageId = initialStage.Id,
+                        Status = ApplicationStatus.IN_PROCESS,
+                        Stage = CandidateStage.APPLIED,
+                        TrackingCode = $"#EXCEL-{Guid.NewGuid().ToString("N")[..6].ToUpper()}",
+                        ReferralNote = r.Notes,
+                        AppliedAt = DateTimeOffset.UtcNow,
+                        CreatedAt = DateTimeOffset.UtcNow,
+                        UpdatedAt = DateTimeOffset.UtcNow
+                    };
+                    await _dbContext.Applications.AddAsync(application, cancellationToken);
+                }
+            }
+
+            // Thêm tags kỹ năng
+            if (!string.IsNullOrWhiteSpace(r.Skills))
+            {
+                var skillsList = r.Skills.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var sk in skillsList.Take(3))
+                {
+                    var tagClean = sk.Trim();
+                    if (tagClean.Length > 0 && tagClean.Length <= 30)
+                    {
+                        var hasTag = await _dbContext.CandidateTags
+                            .AnyAsync(t => t.CandidateId == candidate.Id && t.TagName.ToLower() == tagClean.ToLower(), cancellationToken);
+                        if (!hasTag)
+                        {
+                            await _dbContext.CandidateTags.AddAsync(new CandidateTag
+                            {
+                                Id = Guid.NewGuid(),
+                                CandidateId = candidate.Id,
+                                TagName = tagClean,
+                                ColorCode = "#059669",
+                                CreatedByUserId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstAsync(cancellationToken)),
+                                CreatedAt = DateTimeOffset.UtcNow
+                            }, cancellationToken);
+                        }
+                    }
+                }
+            }
+
+            // Thêm ghi chú
+            if (!string.IsNullOrWhiteSpace(r.Notes))
+            {
+                await _dbContext.CandidateNotes.AddAsync(new CandidateNote
+                {
+                    Id = Guid.NewGuid(),
+                    CandidateId = candidate.Id,
+                    AuthorUserId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstAsync(cancellationToken)),
+                    Content = $"[Nhập Excel]: {r.Notes.Trim()}",
+                    NoteType = "GENERAL",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                }, cancellationToken);
+            }
+
+            successCount++;
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return successCount;
     }
 }

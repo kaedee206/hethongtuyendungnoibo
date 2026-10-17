@@ -48,7 +48,6 @@ public class CandidatesController(
     // ==========================================
 
     // GET: /ung-vien hoặc /Candidates
-    [HttpGet]
     [HttpGet("")]
     [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager}")]
     public async Task<IActionResult> Index([FromQuery] CandidateFilterCriteria criteria, CancellationToken cancellationToken)
@@ -167,7 +166,6 @@ public class CandidatesController(
     // GET: /ung-vien/{id} hoặc /Candidates/Details/{id}
     [HttpGet("{id:guid}")]
     [HttpGet("Details/{id:guid}")]
-    [HttpGet("/ung-vien/{id:guid}")]
     public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
     {
         var currentUserId = GetCurrentUserId();
@@ -373,7 +371,6 @@ public class CandidatesController(
 
     // GET: /ung-vien/PreviewCv/{resumeId} hoặc /Candidates/PreviewCv/{resumeId}
     [HttpGet("PreviewCv/{resumeId:guid}")]
-    [HttpGet("/ung-vien/PreviewCv/{resumeId:guid}")]
     public async Task<IActionResult> PreviewCv(Guid resumeId, CancellationToken cancellationToken)
     {
         var currentUserId = GetCurrentUserId();
@@ -398,7 +395,6 @@ public class CandidatesController(
 
     // GET: /ung-vien/DownloadCv/{resumeId} hoặc /Candidates/DownloadCv/{resumeId}
     [HttpGet("DownloadCv/{resumeId:guid}")]
-    [HttpGet("/ung-vien/DownloadCv/{resumeId:guid}")]
     public async Task<IActionResult> DownloadCv(Guid resumeId, CancellationToken cancellationToken)
     {
         var currentUserId = GetCurrentUserId();
@@ -636,4 +632,112 @@ public class CandidatesController(
             });
         }
     }
+
+    /// <summary>
+    /// SCRUM-34 & Excel: Tải tệp mẫu Excel nhập ứng viên
+    /// </summary>
+    [HttpGet("import-template")]
+    [HttpHead("import-template")]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin}")]
+    public async Task<IActionResult> DownloadImportTemplate(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var fileContents = await _candidateService.GenerateCandidateExcelTemplateAsync(cancellationToken);
+            return File(fileContents, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Mau_Nhap_Ung_Vien.xlsx");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Không thể sinh template Excel ứng viên động qua ClosedXML, chuyển sang dùng file mẫu tĩnh.");
+            var fallbackPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "templates", "Mau_Nhap_Ung_Vien.xlsx");
+            if (!System.IO.File.Exists(fallbackPath))
+            {
+                fallbackPath = Path.Combine(Directory.GetCurrentDirectory(), "src", "Ats.Web", "wwwroot", "templates", "Mau_Nhap_Ung_Vien.xlsx");
+            }
+
+            if (System.IO.File.Exists(fallbackPath))
+            {
+                return PhysicalFile(fallbackPath, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Mau_Nhap_Ung_Vien.xlsx");
+            }
+            return StatusCode(500, "Không tìm thấy tệp Excel mẫu ứng viên trên hệ thống.");
+        }
+    }
+
+    /// <summary>
+    /// SCRUM-34 & Excel: Xử lý đọc và validate dữ liệu từng dòng trong tệp Excel ứng viên
+    /// </summary>
+    [HttpPost("import-excel")]
+    [IgnoreAntiforgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin}")]
+    public async Task<IActionResult> ImportExcel(IFormFile? file, CancellationToken cancellationToken)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest("Vui lòng tải lên một tệp Excel hợp lệ.");
+        }
+
+        var ext = Path.GetExtension(file.FileName).ToLower();
+        if (ext != ".xlsx" && ext != ".xls")
+        {
+            return BadRequest("Chỉ hỗ trợ định dạng tệp Excel (.xlsx, .xls).");
+        }
+
+        const long maxFileSize = 5 * 1024 * 1024;
+        if (file.Length > maxFileSize)
+        {
+            return BadRequest("Dung lượng tệp vượt quá giới hạn cho phép (tối đa 5MB).");
+        }
+
+        using var stream = file.OpenReadStream();
+        try
+        {
+            var result = await _candidateService.ValidateCandidateExcelImportAsync(stream, cancellationToken);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi xử lý tệp Excel nhập ứng viên");
+            return BadRequest("Tệp Excel không đúng định dạng hoặc bị lỗi.");
+        }
+    }
+
+    /// <summary>
+    /// SCRUM-34 & Excel: Thực thi nhập dữ liệu ứng viên hàng loạt từ danh sách dòng hợp lệ
+    /// </summary>
+    [HttpPost("execute-import")]
+    [IgnoreAntiforgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin}")]
+    public async Task<IActionResult> ExecuteImport([FromBody] ExecuteCandidateImportRequestDto request, CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        if (request.ValidRows == null || request.ValidRows.Count == 0)
+        {
+            return BadRequest("Danh sách nhập dữ liệu trống.");
+        }
+
+        try
+        {
+            var currentUserId = GetCurrentUserId();
+            var count = await _candidateService.ExecuteCandidateImportAsync(request, currentUserId, cancellationToken);
+            return Ok(new { success = true, importedCount = count, message = $"Nhập thành công {count} ứng viên vào hệ thống." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi thực thi nhập dữ liệu ứng viên hàng loạt");
+            return StatusCode(500, "Đã xảy ra lỗi hệ thống trong quá trình nhập dữ liệu ứng viên.");
+        }
+    }
 }
+

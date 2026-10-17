@@ -58,7 +58,8 @@ var connectionString = $"Host={dbHost};Port={dbPort};Database={dbName};Username=
 // 3. Đăng ký DbContext với chuỗi kết nối từ .env
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString)
-           .UseSnakeCaseNamingConvention());
+           .UseSnakeCaseNamingConvention()
+           .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
 // Đăng ký Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -87,6 +88,7 @@ builder.Services.AddHostedService<SlaOverdueBackgroundService>();
 builder.Services.AddScoped<ITalentPoolService, TalentPoolService>();
 builder.Services.AddScoped<IInterviewEvaluationService, InterviewEvaluationService>();
 builder.Services.AddScoped<IInterviewService, InterviewService>();
+builder.Services.AddScoped<ICvParserService, CvParserService>();
 builder.Services.AddSingleton<IJobExpirationService, JobExpirationService>();
 builder.Services.AddHostedService<JobExpirationBackgroundService>();
 
@@ -220,14 +222,35 @@ if (hasValidOidcConfig)
         options.ResponseMode = "query";
         options.CallbackPath = "/signin-oidc";
         options.SignedOutCallbackPath = "/signout-callback-oidc";
-        options.SaveTokens = true;
+        options.SaveTokens = false;
         options.GetClaimsFromUserInfoEndpoint = true;
         options.RequireHttpsMetadata = !builder.Environment.IsDevelopment() && (oidcAuthority?.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ?? false);
+        options.PushedAuthorizationBehavior = Microsoft.AspNetCore.Authentication.OpenIdConnect.PushedAuthorizationBehavior.Disable;
         options.Scope.Clear();
         options.Scope.Add("openid");
         options.Scope.Add("profile");
         options.Scope.Add("email");
         options.Scope.Add("groups");
+
+        options.Events = new Microsoft.AspNetCore.Authentication.OpenIdConnect.OpenIdConnectEvents
+        {
+            OnRemoteFailure = context =>
+            {
+                var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("OpenIdConnect");
+                logger.LogWarning(context.Failure, "OIDC remote failure: {Message}", context.Failure?.Message);
+
+                var errorMsg = context.Failure?.Message ?? "Quá trình xác thực SSO thất bại hoặc đã bị hủy.";
+                if (errorMsg.Contains("invalid_request_uri", StringComparison.OrdinalIgnoreCase) ||
+                    errorMsg.Contains("expired", StringComparison.OrdinalIgnoreCase))
+                {
+                    errorMsg = "Phiên làm việc SSO đã hết hạn hoặc không hợp lệ. Vui lòng thử đăng nhập lại.";
+                }
+
+                context.Response.Redirect($"/Account/StaffLogin?remoteError={Uri.EscapeDataString(errorMsg)}");
+                context.HandleResponse();
+                return Task.CompletedTask;
+            }
+        };
     });
 }
 
@@ -269,8 +292,19 @@ app.UseMiddleware<Ats.Web.Middlewares.SessionActivityMiddleware>();
 // Bảo vệ tài liệu nhạy cảm của ứng viên (CV/Resume) - Nghị định 13/2023/NĐ-CP & OWASP Top 10 A01 (Broken Access Control)
 app.UseMiddleware<Ats.Web.Middlewares.CandidateDocumentsProtectionMiddleware>();
 
-// Phục vụ tệp tĩnh (bao gồm tệp người dùng tải lên trong wwwroot/uploads)
-app.UseStaticFiles();
+// Phục vụ tệp tĩnh (bao gồm tệp người dùng tải lên trong wwwroot/uploads & tệp Excel mẫu đính kèm)
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var path = ctx.Context.Request.Path.Value ?? "";
+        if (path.StartsWith("/templates/", StringComparison.OrdinalIgnoreCase) && path.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
+        {
+            var fileName = System.IO.Path.GetFileName(path);
+            ctx.Context.Response.Headers.Append("Content-Disposition", $"attachment; filename=\"{fileName}\"");
+        }
+    }
+});
 app.MapStaticAssets();
 
 app.MapControllerRoute(
@@ -306,6 +340,7 @@ using (var scope = app.Services.CreateScope())
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS department_id uuid;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS job_position_id uuid;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS stage integer NOT NULL DEFAULT 0;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS tracking_code text;");
         await dbContext.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS ix_applications_tracking_code ON applications (tracking_code);");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE applications ADD COLUMN IF NOT EXISTS referrer_user_id uuid;");
@@ -548,9 +583,13 @@ using (var scope = app.Services.CreateScope())
                 created_by_user_id UUID,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
                 is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
                 deleted_at TIMESTAMPTZ
             );
+            ALTER TABLE candidate_tags ADD COLUMN IF NOT EXISTS created_by_id UUID;
+            ALTER TABLE candidate_tags ADD COLUMN IF NOT EXISTS updated_by_id UUID;
 
             CREATE TABLE IF NOT EXISTS candidate_notes (
                 id UUID PRIMARY KEY,
@@ -560,9 +599,13 @@ using (var scope = app.Services.CreateScope())
                 note_type TEXT DEFAULT 'GENERAL',
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
                 is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
                 deleted_at TIMESTAMPTZ
             );
+            ALTER TABLE candidate_notes ADD COLUMN IF NOT EXISTS created_by_id UUID;
+            ALTER TABLE candidate_notes ADD COLUMN IF NOT EXISTS updated_by_id UUID;
 
             -- Scrum #24: Định biên và ngân sách tuyển dụng theo phòng ban
             ALTER TABLE job_requisitions ADD COLUMN IF NOT EXISTS is_over_quota BOOLEAN NOT NULL DEFAULT FALSE;

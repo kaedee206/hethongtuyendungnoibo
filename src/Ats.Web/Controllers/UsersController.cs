@@ -11,7 +11,7 @@ namespace Ats.Web.Controllers;
 /// <summary>
 /// Controller Quản trị người dùng & Phân quyền nội bộ dành cho Admin (S1-06, S1-07, S1-08, S1-09, S1-10).
 /// </summary>
-[Authorize(Roles = UserRoles.Admin)]
+[Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager}")]
 [Route("users")]
 public class UsersController(
     IUserService userService,
@@ -204,16 +204,40 @@ public class UsersController(
     /// SCRUM-176: Tải tệp mẫu Excel nhập nhân sự
     /// </summary>
     [HttpGet("import-template")]
+    [HttpHead("import-template")]
+    [HttpGet("/nhan-su/import-template")]
+    [HttpHead("/nhan-su/import-template")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager}")]
     public async Task<IActionResult> DownloadImportTemplate(CancellationToken cancellationToken)
     {
-        var fileContents = await _userService.GenerateExcelTemplateAsync(cancellationToken);
-        return File(fileContents, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Mau_Nhap_Nhan_Su.xlsx");
+        try
+        {
+            var fileContents = await _userService.GenerateExcelTemplateAsync(cancellationToken);
+            return File(fileContents, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Mau_Nhap_Nhan_Su.xlsx");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Không thể sinh template Excel động qua ClosedXML, chuyển sang dùng file mẫu tĩnh.");
+            var fallbackPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "templates", "Mau_Nhap_Nhan_Su.xlsx");
+            if (!System.IO.File.Exists(fallbackPath))
+            {
+                fallbackPath = Path.Combine(Directory.GetCurrentDirectory(), "src", "Ats.Web", "wwwroot", "templates", "Mau_Nhap_Nhan_Su.xlsx");
+            }
+
+            if (System.IO.File.Exists(fallbackPath))
+            {
+                return PhysicalFile(fallbackPath, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Mau_Nhap_Nhan_Su.xlsx");
+            }
+            return StatusCode(500, "Không tìm thấy tệp Excel mẫu trên hệ thống.");
+        }
     }
 
     /// <summary>
     /// SCRUM-178: Xử lý đọc và validate dữ liệu từng dòng trong tệp Excel
     /// </summary>
     [HttpPost("import-excel")]
+    [IgnoreAntiforgeryToken]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager}")]
     public async Task<IActionResult> ImportExcel(IFormFile file, CancellationToken cancellationToken)
     {
         if (file == null || file.Length == 0)
@@ -259,6 +283,8 @@ public class UsersController(
     /// SCRUM-180: Thực thi nhập dữ liệu hàng loạt từ danh sách dòng hợp lệ
     /// </summary>
     [HttpPost("execute-import")]
+    [IgnoreAntiforgeryToken]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager}")]
     public async Task<IActionResult> ExecuteImport([FromBody] ExecuteImportRequestDto request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)

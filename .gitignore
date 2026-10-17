@@ -11,6 +11,10 @@
 !*.env.example
 !.env.*.example
 
+# UI/UX Screenshots
+screenshots/
+docs/screenshots/
+
 # User-specific files
 *.rsuser
 *.suo
@@ -725,5 +729,10 @@ update_passwords.sh
 deploy/update_passwords.sh
 *.sh.secret
 *.secret.sh
+
+# UI/UX & E2E Testing Artifacts
+screenshots/
+.playwright-mcp/
+
 
 

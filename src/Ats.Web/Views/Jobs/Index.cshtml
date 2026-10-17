@@ -75,6 +75,7 @@
         padding: 0.6rem 0.85rem;
         font-size: 0.9rem;
         color: var(--color-text-main);
+        min-height: 44px;
         transition: all .15s ease-in-out;
     }
 
@@ -93,6 +94,7 @@
         padding: 0.6rem 1.25rem;
         font-weight: 600;
         font-size: 0.9rem;
+        min-height: 44px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -114,6 +116,7 @@
         padding: 0.6rem 1.25rem;
         font-weight: 600;
         font-size: 0.9rem;
+        min-height: 44px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -158,10 +161,20 @@
     }
 
     .salary-text {
-        font-family: 'JetBrains Mono', ui-monospace, monospace;
         font-weight: 700;
-        font-size: 0.95rem;
+        font-size: 0.92rem;
         color: var(--color-accent);
+        white-space: nowrap;
+    }
+    .salary-text.is-numeric {
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+        font-size: 0.95rem;
+    }
+    .salary-text.is-negotiated {
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 0.85rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
     }
 
     .badge-dept {
@@ -387,7 +400,7 @@
                                     <span class="badge-hot"><i class="bi bi-fire me-0.5"></i>HOT</span>
                                 }
                             </div>
-                            <span class="salary-text flex-shrink-0">@job.SalaryDisplay</span>
+                            <span class="salary-text @(System.Text.RegularExpressions.Regex.IsMatch(job.SalaryDisplay ?? "", @"\d") ? "is-numeric" : "is-negotiated") flex-shrink-0">@job.SalaryDisplay</span>
                         </div>
 
                         <!-- Title Link -->

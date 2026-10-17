@@ -142,7 +142,11 @@ public class HomeController : Controller
                 model.CandidateProfile = new CandidateProfileDto
                 {
                     Id = candidate.Id,
-                    FullName = candidate.FirstName + (string.IsNullOrWhiteSpace(candidate.LastName) ? "" : " " + candidate.LastName),
+                    FullName = string.IsNullOrWhiteSpace(candidate.LastName) 
+                        ? candidate.FirstName 
+                        : (candidate.FirstName.Trim().EndsWith(candidate.LastName.Trim(), StringComparison.OrdinalIgnoreCase) 
+                            ? candidate.FirstName.Trim() 
+                            : $"{candidate.FirstName.Trim()} {candidate.LastName.Trim()}"),
                     Email = candidate.Email,
                     Phone = candidate.Phone,
                     ResumeFileName = primaryResume?.FileName ?? "Chưa có CV đính kèm",

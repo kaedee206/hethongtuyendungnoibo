@@ -691,49 +691,46 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
     {
         var result = new ImportExcelResultDto();
 
-        var validDepartments = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var validJobPositions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        
-        var conn = _dbContext.Database.GetDbConnection();
-        bool wasClosed = conn.State == System.Data.ConnectionState.Closed;
-        if (wasClosed) await conn.OpenAsync(cancellationToken);
+        HashSet<string> validDepartments;
+        HashSet<string> validJobPositions;
         try
         {
-            using var cmd1 = conn.CreateCommand();
-            cmd1.CommandText = "SELECT name FROM departments";
-            using var reader1 = await cmd1.ExecuteReaderAsync(cancellationToken);
-            while (await reader1.ReadAsync(cancellationToken))
-            {
-                validDepartments.Add(reader1.GetString(0));
-            }
-        }
-        catch { /* ignore if table not exists */ }
+            validDepartments = (await _dbContext.Departments
+                .AsNoTracking()
+                .Where(d => d.IsActive)
+                .Select(d => d.Name)
+                .ToListAsync(cancellationToken))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        try
-        {
-            using var cmd2 = conn.CreateCommand();
-            cmd2.CommandText = "SELECT name FROM job_positions";
-            using var reader2 = await cmd2.ExecuteReaderAsync(cancellationToken);
-            while (await reader2.ReadAsync(cancellationToken))
-            {
-                validJobPositions.Add(reader2.GetString(0));
-            }
+            validJobPositions = (await _dbContext.JobPositions
+                .AsNoTracking()
+                .Where(j => j.IsActive)
+                .Select(j => j.Title)
+                .ToListAsync(cancellationToken))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
         }
-        catch { /* ignore if table not exists */ }
-        
-        if (wasClosed) await conn.CloseAsync();
+        catch
+        {
+            validDepartments = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            validJobPositions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
 
         using var workbook = new XLWorkbook(excelStream);
         var worksheet = workbook.Worksheets.FirstOrDefault(ws => ws.Name == "Dữ liệu") ?? workbook.Worksheet(1);
         
-        // SCRUM-183: Validate headers
+        // SCRUM-183: Validate headers linh hoạt (chấp nhận cả có (*) hoặc không có (*))
+        static string NormalizeHeader(string header) => header.Replace("(*)", "").Replace("*", "").Trim().ToLowerInvariant();
+
         var expectedHeaders = new string[] { "Họ và tên (*)", "Email (*)", "Số điện thoại", "Phòng ban", "Chức vụ", "Vai trò (*)" };
+        var expectedNormalized = new string[] { "họ và tên", "email", "số điện thoại", "phòng ban", "chức vụ", "vai trò" };
         var headerRow = worksheet.Row(1);
-        for (int i = 0; i < expectedHeaders.Length; i++)
+        for (int i = 0; i < expectedNormalized.Length; i++)
         {
-            if (!string.Equals(headerRow.Cell(i + 1).GetString().Trim(), expectedHeaders[i], StringComparison.OrdinalIgnoreCase))
+            var cellRaw = headerRow.Cell(i + 1).GetString().Trim();
+            var cellNormalized = NormalizeHeader(cellRaw);
+            if (!cellNormalized.Equals(expectedNormalized[i], StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException("Cấu trúc tệp không hợp lệ. Vui lòng sử dụng tệp mẫu được cung cấp (sai hoặc thiếu tên cột).");
+                throw new InvalidOperationException($"Cấu trúc tệp không hợp lệ tại cột thứ {i + 1}. Kỳ vọng '{expectedHeaders[i]}', thực tế nhận được '{cellRaw}'. Vui lòng sử dụng tệp mẫu được cung cấp.");
             }
         }
 

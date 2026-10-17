@@ -54,6 +54,8 @@ public class JobsController : Controller
     // GET: /Jobs or /jobs
     [HttpGet("")]
     [HttpGet("Index")]
+    [HttpGet("/tin-tuyen-dung")]
+    [HttpGet("/co-hoi-viec-lam")]
     public async Task<IActionResult> Index(
         [FromQuery] string? search,
         [FromQuery] string? department,

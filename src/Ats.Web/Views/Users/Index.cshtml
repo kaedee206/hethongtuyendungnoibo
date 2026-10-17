@@ -11,6 +11,10 @@
             <p class="text-muted small mb-0">Quản lý danh sách tài khoản nội bộ NoveraTech, phân quyền đa vai trò và kiểm soát bảo mật.</p>
         </div>
         <div class="d-flex gap-2">
+            <a href="/users/import-template" download="Mau_Nhap_Nhan_Su.xlsx" class="btn btn-outline-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" style="border-radius: 8px;" title="Tải file mẫu Excel nhập nhân sự">
+                <i class="bi bi-file-earmark-arrow-down"></i>
+                <span class="fw-semibold">Tải file mẫu</span>
+            </a>
             <button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#importUserModal" style="border-radius: 8px;">
                 <i class="bi bi-file-earmark-arrow-up"></i>
                 <span class="fw-semibold">Nhập Excel</span>
@@ -339,6 +343,8 @@
             </form>
         </div>
     </div>
+</div>
+
 <!-- Modal Nhập Danh Sách Nhân Sự Bằng Excel (S2-01) -->
 <div class="modal fade" id="importUserModal" tabindex="-1" aria-labelledby="importUserModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -360,9 +366,14 @@
                                 <p class="text-muted small mb-0">Bao gồm 3 Sheet: <strong>Hướng dẫn</strong>, <strong>Dữ liệu mẫu</strong> và <strong>Danh mục tham chiếu</strong> (Phòng ban, Chức vụ, Vai trò).</p>
                             </div>
                         </div>
-                        <a href="/users/import-template" class="btn btn-success fw-semibold shadow-sm px-3" style="border-radius: 8px;">
-                            <i class="bi bi-download me-1"></i> Tải file mẫu (.xlsx)
-                        </a>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="/users/import-template" download="Mau_Nhap_Nhan_Su.xlsx" class="btn btn-success fw-semibold shadow-sm px-3" style="border-radius: 8px;">
+                                <i class="bi bi-download me-1"></i> Tải file mẫu (.xlsx)
+                            </a>
+                            <a href="/templates/Mau_Nhap_Nhan_Su.xlsx" download="Mau_Nhap_Nhan_Su.xlsx" class="btn btn-outline-success btn-sm fw-semibold shadow-sm px-2.5 py-1.5" style="border-radius: 8px;" title="Tải file mẫu dự phòng trực tiếp">
+                                <i class="bi bi-file-earmark-arrow-down"></i> Tải dự phòng
+                            </a>
+                        </div>
                     </div>
                     <div class="mt-2 pt-2 border-top text-secondary small d-flex flex-wrap gap-3">
                         <span><i class="bi bi-check-circle text-success me-1"></i>Email bắt buộc: <code>@@noveratech.digital</code></span>
@@ -447,13 +458,23 @@
                 const file = excelFileInput.files[0];
                 const formData = new FormData();
                 formData.append('file', file);
+                const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+                if (tokenEl && tokenEl.value) {
+                    formData.append('__RequestVerificationToken', tokenEl.value);
+                }
 
                 btnUploadAndValidate.disabled = true;
                 btnUploadAndValidate.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang kiểm tra...';
 
                 try {
+                    const fetchHeaders = {};
+                    if (tokenEl && tokenEl.value) {
+                        fetchHeaders['RequestVerificationToken'] = tokenEl.value;
+                    }
+
                     const response = await fetch('/users/import-excel', {
                         method: 'POST',
+                        headers: fetchHeaders,
                         body: formData
                     });
 
@@ -529,11 +550,17 @@
                 btnExecuteImport.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang nhập...';
 
                 try {
+                    const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+                    const headers = {
+                        'Content-Type': 'application/json'
+                    };
+                    if (tokenEl && tokenEl.value) {
+                        headers['RequestVerificationToken'] = tokenEl.value;
+                    }
+
                     const response = await fetch('/users/execute-import', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
+                        headers: headers,
                         body: JSON.stringify({ validRows: cachedValidRows })
                     });
 
@@ -553,6 +580,27 @@
                     btnExecuteImport.disabled = false;
                     btnExecuteImport.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-1"></i> Thử lại';
                 }
+            });
+        }
+
+        // Reset Excel Import Form on file change or modal close
+        if (excelFileInput) {
+            excelFileInput.addEventListener('change', function () {
+                if (importPreviewArea) importPreviewArea.classList.add('d-none');
+                if (btnExecuteImport) btnExecuteImport.classList.add('d-none');
+                if (importErrorAlert) importErrorAlert.classList.add('d-none');
+                cachedValidRows = [];
+            });
+        }
+
+        const importUserModalEl = document.getElementById('importUserModal');
+        if (importUserModalEl) {
+            importUserModalEl.addEventListener('hidden.bs.modal', function () {
+                if (excelFileInput) excelFileInput.value = '';
+                if (importPreviewArea) importPreviewArea.classList.add('d-none');
+                if (btnExecuteImport) btnExecuteImport.classList.add('d-none');
+                if (importErrorAlert) importErrorAlert.classList.add('d-none');
+                cachedValidRows = [];
             });
         }
 

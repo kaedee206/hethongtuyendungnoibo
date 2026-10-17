@@ -16,13 +16,33 @@
             Đường dẫn bạn vừa truy cập có thể đã bị di chuyển, xóa bỏ hoặc không tồn tại trên hệ thống ATS NoveraTech.
         </p>
 
-        <div class="d-flex justify-content-center gap-2">
-            <a asp-controller="Home" asp-action="Index" class="btn btn-primary px-4 py-2" style="border-radius: 8px;">
+        <div class="d-flex justify-content-center gap-2 mb-4">
+            <a asp-controller="Home" asp-action="Index" class="btn btn-success px-4 py-2 fw-semibold" style="border-radius: 8px;">
                 <i class="bi bi-house-door me-1"></i> Về trang chủ
             </a>
-            <button onclick="window.history.back()" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 8px;">
+            <button onclick="window.history.back()" class="btn btn-outline-secondary px-4 py-2 fw-semibold" style="border-radius: 8px;">
                 <i class="bi bi-arrow-left me-1"></i> Quay lại
             </button>
+        </div>
+
+        <div class="pt-3 border-top border-light-subtle text-start">
+            <div class="text-uppercase small fw-semibold text-muted mb-2.5" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+                Gợi ý truy cập nhanh:
+            </div>
+            <div class="d-flex flex-column gap-2 small">
+                <a asp-controller="Jobs" asp-action="Index" class="text-decoration-none text-dark d-flex align-items-center justify-content-between p-2.5 rounded-2 bg-light border border-light-subtle">
+                    <span><i class="bi bi-briefcase me-2 text-success"></i>Khám phá danh sách việc làm đang mở</span>
+                    <i class="bi bi-chevron-right text-muted" style="font-size: 0.75rem;"></i>
+                </a>
+                <a asp-controller="Tracking" asp-action="Index" class="text-decoration-none text-dark d-flex align-items-center justify-content-between p-2.5 rounded-2 bg-light border border-light-subtle">
+                    <span><i class="bi bi-search me-2 text-primary"></i>Tra cứu kết quả &amp; tiến độ hồ sơ</span>
+                    <i class="bi bi-chevron-right text-muted" style="font-size: 0.75rem;"></i>
+                </a>
+                <a asp-controller="Account" asp-action="CandidateAuth" class="text-decoration-none text-dark d-flex align-items-center justify-content-between p-2.5 rounded-2 bg-light border border-light-subtle">
+                    <span><i class="bi bi-person-circle me-2 text-warning"></i>Cổng thông tin &amp; tài khoản ứng viên</span>
+                    <i class="bi bi-chevron-right text-muted" style="font-size: 0.75rem;"></i>
+                </a>
+            </div>
         </div>
     </div>
 </div>

@@ -195,6 +195,10 @@
                                            tabindex="@(activePanel == "forgot" ? "-1" : "0")"
                                            class="w-full px-3 py-2 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0B0F17] text-[#0F172A] dark:text-[#F8FAFC] text-sm font-sans placeholder-[#94A3B8] dark:placeholder-[#475569] rounded-none focus:outline-none focus:ring-1 focus:ring-[#0D5C4D] focus:border-[#0D5C4D] focus:ring-offset-0 transition-colors" />
                                 </div>
+                                <p class="font-sans text-[11px] text-[#64748B] dark:text-[#94A3B8] mt-1 flex items-center gap-1">
+                                    <span class="inline-block w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+                                    <span>Hỗ trợ tài khoản định danh nội bộ <strong>@@noveratech.digital</strong></span>
+                                </p>
                                 <span asp-validation-for="LoginInput.Email"
                                       class="block mt-1 text-xs text-red-600 dark:text-red-400 font-mono"></span>
                             </div>
@@ -262,18 +266,18 @@
                             @* Submit Button *@
                             <button type="submit"
                                     tabindex="@(activePanel == "forgot" ? "-1" : "0")"
-                                    class="w-full py-2.5 px-4 bg-[#0D5C4D] hover:bg-[#047857] text-white text-sm font-medium tracking-wide rounded-none border border-[#0D5C4D] hover:border-[#047857] transition-colors active:translate-y-[1px] active:shadow-none duration-100 flex items-center justify-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                    class="w-full py-2.5 px-4 bg-[#0D5C4D] hover:bg-[#047857] text-white text-sm font-semibold tracking-wide rounded-none border border-[#0D5C4D] hover:border-[#047857] transition-all active:translate-y-[1px] active:shadow-none duration-100 flex items-center justify-center gap-2 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <path stroke-linecap="square" d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
                                 </svg>
-                                Sign In to Portal
+                                <span>Đăng Nhập Cổng Nội Bộ</span>
                             </button>
 
                             @* SSO Divider *@
                             <div class="flex items-center gap-3 my-2">
                                 <div class="flex-1 h-px bg-[#E2E8F0] dark:bg-[#1E293B]"></div>
-                                <span class="font-mono text-[9px] tracking-[0.2em] uppercase text-[#94A3B8] dark:text-[#475569] whitespace-nowrap">
-                                    OR CONTINUE WITH ENTERPRISE SSO
+                                <span class="font-mono text-[9px] tracking-[0.15em] uppercase text-[#64748B] dark:text-[#94A3B8] whitespace-nowrap">
+                                    HOẶC ĐĂNG NHẬP NHANH VỚI SSO DOANH NGHIỆP
                                 </span>
                                 <div class="flex-1 h-px bg-[#E2E8F0] dark:bg-[#1E293B]"></div>
                             </div>

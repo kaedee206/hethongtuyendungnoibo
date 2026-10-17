@@ -1,0 +1,268 @@
+@* ══════════════════════════════════════════════════════════
+   NOVERATECH ATS — MODAL NHẬP ỨNG VIÊN TỪ EXCEL & TẢI MẪU (SCRUM-34 & Excel)
+   Chuẩn mực thiết kế: Emerald Green #059669 | Bootstrap 5 | 8px Radius
+   ══════════════════════════════════════════════════════════ *@
+
+<div class="modal fade" id="importCandidateModal" tabindex="-1" aria-labelledby="importCandidateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header text-white" style="background: #059669;">
+                <h5 class="modal-title fw-bold" id="importCandidateModalLabel">
+                    <i class="bi bi-file-earmark-spreadsheet-fill me-2"></i> Nhập danh sách ứng viên từ Excel
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Khối tải tệp mẫu chuẩn Excel có Data mẫu -->
+                <div class="card bg-light border-0 mb-4 p-3 shadow-sm" style="border-radius: 10px; border-left: 4px solid #059669 !important;">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-file-earmark-excel-fill text-success fs-2 me-3"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1 text-dark">Tệp Excel mẫu nhập hồ sơ ứng viên (Có sẵn data mẫu)</h6>
+                                <p class="text-muted small mb-0">Bao gồm 3 Sheet: <strong>Hướng dẫn &amp; Quy định</strong>, <strong>Dữ liệu mẫu điền sẵn</strong> và <strong>Danh mục vị trí đang mở</strong>.</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="/ung-vien/import-template" download="Mau_Nhap_Ung_Vien.xlsx" class="btn btn-success fw-semibold shadow-sm px-3" style="border-radius: 8px;">
+                                <i class="bi bi-download me-1"></i> Tải file mẫu (.xlsx)
+                            </a>
+                            <a href="/templates/Mau_Nhap_Ung_Vien.xlsx" download="Mau_Nhap_Ung_Vien.xlsx" class="btn btn-outline-success btn-sm fw-semibold shadow-sm px-2.5 py-1.5" style="border-radius: 8px;" title="Tải file mẫu dự phòng trực tiếp">
+                                <i class="bi bi-file-earmark-arrow-down"></i> Tải dự phòng
+                            </a>
+                        </div>
+                    </div>
+                    <div class="mt-2 pt-2 border-top text-secondary small d-flex flex-wrap gap-3">
+                        <span><i class="bi bi-check-circle text-success me-1"></i>Cột bắt buộc: Họ và tên (*), Email (*), Số điện thoại (*)</span>
+                        <span><i class="bi bi-info-circle text-primary me-1"></i>Hệ thống tự động liên kết vị trí tuyển dụng nếu tên vị trí khớp tin đang mở</span>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold text-dark">Chọn tệp Excel danh sách ứng viên (.xlsx, .xls - tối đa 5MB)</label>
+                    <input type="file" id="excelCandidateFileInput" class="form-control" accept=".xlsx, .xls" style="border-radius: 8px;" />
+                </div>
+
+                <!-- Preview Area -->
+                <div id="candidateImportPreviewArea" class="d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold mb-0 text-dark">Kết quả kiểm tra dữ liệu</h6>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-success" id="candidateBadgeValidCount" style="border-radius: 6px;">0 dòng hợp lệ</span>
+                            <span class="badge bg-danger" id="candidateBadgeErrorCount" style="border-radius: 6px;">0 dòng lỗi</span>
+                        </div>
+                    </div>
+
+                    <!-- Error details if any -->
+                    <div id="candidateImportErrorAlert" class="alert alert-warning p-2 small mb-3 d-none" style="border-radius: 8px; max-height: 140px; overflow-y: auto;">
+                        <ul id="candidateImportErrorList" class="mb-0 ps-3"></ul>
+                    </div>
+
+                    <div class="table-responsive border rounded mb-3" style="max-height: 260px; overflow-y: auto;">
+                        <table class="table table-sm table-hover mb-0" style="font-size: 0.85rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Họ và tên</th>
+                                    <th>Email</th>
+                                    <th>Số điện thoại</th>
+                                    <th>Vị trí ứng tuyển</th>
+                                    <th>Kinh nghiệm</th>
+                                    <th>Kỹ năng</th>
+                                </tr>
+                            </thead>
+                            <tbody id="candidateImportPreviewTbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy</button>
+                <button type="button" id="btnUploadAndValidateCandidate" class="btn btn-primary" style="border-radius: 8px; background-color: #2563EB; border-color: #2563EB;">
+                    <i class="bi bi-check2-circle me-1"></i> Kiểm tra tệp
+                </button>
+                <button type="button" id="btnExecuteCandidateImport" class="btn btn-success d-none" style="border-radius: 8px; background-color: #059669; border-color: #059669;">
+                    <i class="bi bi-cloud-arrow-up-fill me-1"></i> <span id="executeCandidateImportBtnText">Nhập vào hệ thống</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // Tránh gắn listener trùng lặp nếu partial được include
+        if (window.__candidateImportModalInitialized) return;
+        window.__candidateImportModalInitialized = true;
+
+        let cachedCandidateValidRows = [];
+
+        function initCandidateImportHandlers() {
+            const fileInput = document.getElementById('excelCandidateFileInput');
+            const btnValidate = document.getElementById('btnUploadAndValidateCandidate');
+            const btnExecute = document.getElementById('btnExecuteCandidateImport');
+            const previewArea = document.getElementById('candidateImportPreviewArea');
+            const tbody = document.getElementById('candidateImportPreviewTbody');
+            const badgeValid = document.getElementById('candidateBadgeValidCount');
+            const badgeError = document.getElementById('candidateBadgeErrorCount');
+            const errorAlert = document.getElementById('candidateImportErrorAlert');
+            const errorList = document.getElementById('candidateImportErrorList');
+            const btnExecuteText = document.getElementById('executeCandidateImportBtnText');
+
+            if (!btnValidate) return;
+
+            btnValidate.addEventListener('click', async function () {
+                if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                    if (window.NoveraToast) window.NoveraToast.show('Vui lòng chọn tệp Excel trước khi kiểm tra.', 'warning');
+                    else alert('Vui lòng chọn tệp Excel.');
+                    return;
+                }
+
+                const file = fileInput.files[0];
+                if (file.size > 5 * 1024 * 1024) {
+                    if (window.NoveraToast) window.NoveraToast.show('Dung lượng tệp vượt quá 5MB.', 'error');
+                    else alert('Dung lượng tệp vượt quá 5MB.');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                btnValidate.disabled = true;
+                btnValidate.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang phân tích...';
+
+                try {
+                    const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+                    const headers = {};
+                    if (tokenEl) headers['RequestVerificationToken'] = tokenEl.value;
+
+                    const response = await fetch('/ung-vien/import-excel', {
+                        method: 'POST',
+                        headers: headers,
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const errText = await response.text();
+                        throw new Error(errText || 'Có lỗi xảy ra khi kiểm tra tệp Excel.');
+                    }
+
+                    const data = await response.json();
+                    renderPreview(data);
+                } catch (err) {
+                    if (window.NoveraToast) window.NoveraToast.show(err.message, 'error');
+                    else alert(err.message);
+                } finally {
+                    btnValidate.disabled = false;
+                    btnValidate.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Kiểm tra lại tệp';
+                }
+            });
+
+            function renderPreview(data) {
+                cachedCandidateValidRows = data.validRows || [];
+                const errorRows = data.errorRows || [];
+
+                if (previewArea) previewArea.classList.remove('d-none');
+                if (badgeValid) badgeValid.textContent = cachedCandidateValidRows.length + ' dòng hợp lệ';
+                if (badgeError) badgeError.textContent = errorRows.length + ' dòng lỗi';
+
+                if (errorRows.length > 0) {
+                    if (errorAlert) errorAlert.classList.remove('d-none');
+                    if (errorList) {
+                        errorList.innerHTML = errorRows.map(function(err) {
+                            const desc = err.errors.map(function(e) { return e.columnName + ': ' + e.errorMessage; }).join('; ');
+                            return '<li><strong>Dòng ' + err.rowIndex + ':</strong> ' + desc + '</li>';
+                        }).join('');
+                    }
+                } else {
+                    if (errorAlert) errorAlert.classList.add('d-none');
+                    if (errorList) errorList.innerHTML = '';
+                }
+
+                if (tbody) {
+                    tbody.innerHTML = '';
+                    if (cachedCandidateValidRows.length > 0) {
+                        cachedCandidateValidRows.forEach(function(row) {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = '<td>' + row.rowIndex + '</td>' +
+                                '<td class="fw-semibold text-dark">' + escapeHtml(row.fullName) + '</td>' +
+                                '<td><code>' + escapeHtml(row.email) + '</code></td>' +
+                                '<td>' + escapeHtml(row.phoneNumber || '—') + '</td>' +
+                                '<td><span class="badge bg-light text-dark border">' + escapeHtml(row.targetJobTitle || 'Tự do') + '</span></td>' +
+                                '<td>' + (row.experienceYears != null ? row.experienceYears + ' năm' : '—') + '</td>' +
+                                '<td class="small text-muted">' + escapeHtml(row.skills || '—') + '</td>';
+                            tbody.appendChild(tr);
+                        });
+
+                        if (btnExecute) btnExecute.classList.remove('d-none');
+                        if (btnExecuteText) btnExecuteText.textContent = 'Nhập ' + cachedCandidateValidRows.length + ' ứng viên hợp lệ';
+                    } else {
+                        if (btnExecute) btnExecute.classList.add('d-none');
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Không có dòng dữ liệu nào hợp lệ để nhập.</td></tr>';
+                    }
+                }
+            }
+
+            if (btnExecute) {
+                btnExecute.addEventListener('click', async function () {
+                    if (cachedCandidateValidRows.length === 0) return;
+
+                    if (!confirm('Bạn có chắc chắn muốn nhập ' + cachedCandidateValidRows.length + ' ứng viên hợp lệ này vào hệ thống?')) {
+                        return;
+                    }
+
+                    btnExecute.disabled = true;
+                    btnExecute.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang lưu...';
+
+                    try {
+                        const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+                        const headers = { 'Content-Type': 'application/json' };
+                        if (tokenEl) headers['RequestVerificationToken'] = tokenEl.value;
+
+                        const response = await fetch('/ung-vien/execute-import', {
+                            method: 'POST',
+                            headers: headers,
+                            body: JSON.stringify({ validRows: cachedCandidateValidRows })
+                        });
+
+                        if (!response.ok) {
+                            const errText = await response.text();
+                            throw new Error(errText || 'Có lỗi xảy ra khi lưu dữ liệu ứng viên.');
+                        }
+
+                        const result = await response.json();
+                        if (window.NoveraToast) {
+                            window.NoveraToast.show(result.message || 'Đã nhập ứng viên thành công!', 'success');
+                        } else {
+                            alert(result.message || 'Đã nhập ứng viên thành công!');
+                        }
+
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 1200);
+                    } catch (err) {
+                        if (window.NoveraToast) window.NoveraToast.show(err.message, 'error');
+                        else alert(err.message);
+                        btnExecute.disabled = false;
+                        btnExecute.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-1"></i> <span>Thử lại nhập</span>';
+                    }
+                });
+            }
+
+            function escapeHtml(text) {
+                if (!text) return '';
+                return text.replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initCandidateImportHandlers);
+        } else {
+            initCandidateImportHandlers();
+        }
+    })();
+</script>

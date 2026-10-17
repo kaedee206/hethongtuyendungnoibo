@@ -108,4 +108,19 @@ public interface ICandidateService
         Guid filterId,
         Guid currentUserId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sinh tệp mẫu Excel nhập danh sách ứng viên hàng loạt (ClosedXML)
+    /// </summary>
+    Task<byte[]> GenerateCandidateExcelTemplateAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Đọc và kiểm tra tính hợp lệ dữ liệu từng dòng ứng viên từ tệp Excel
+    /// </summary>
+    Task<Ats.Web.Models.DTOs.ImportCandidateResultDto> ValidateCandidateExcelImportAsync(Stream excelStream, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Thực thi lưu danh sách ứng viên hợp lệ từ Excel vào cơ sở dữ liệu
+    /// </summary>
+    Task<int> ExecuteCandidateImportAsync(Ats.Web.Models.DTOs.ExecuteCandidateImportRequestDto request, Guid currentUserId, CancellationToken cancellationToken = default);
 }

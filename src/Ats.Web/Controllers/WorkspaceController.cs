@@ -1673,11 +1673,13 @@ public class WorkspaceController : Controller
     #region Candidate Merge & Duplicate Detection (Scrum #40)
 
     /// <summary>
-    /// GET: /dashboard/trung-lap hoặc /Workspace/HoSoTrungLap
+    /// <summary>
+    /// GET: /dashboard/trung-lap hoặc /Workspace/HoSoTrungLap hoặc /Workspace/CandidateDuplicates
     /// Màn hình quản lý và cảnh báo hồ sơ ứng viên trùng lặp (Scrum #40)
     /// </summary>
     [HttpGet("/dashboard/trung-lap")]
     [HttpGet("HoSoTrungLap")]
+    [HttpGet("CandidateDuplicates")]
     public async Task<IActionResult> CandidateDuplicates([FromQuery] string tab = "duplicates")
     {
         var model = await _mergeService.GetDuplicateOverviewAsync();
@@ -1686,33 +1688,53 @@ public class WorkspaceController : Controller
     }
 
     /// <summary>
-    /// GET: /Workspace/SoSanhHoSo?primaryId={guid}&secondaryId={guid}
-    /// Màn hình so sánh cạnh nhau 2 hồ sơ ứng viên trước khi gộp
+    /// GET: /Workspace/SoSanhHoSo hoặc /Workspace/CompareCandidates?primaryId={guid}&secondaryId={guid}
+    /// Màn hình so sánh cạnh nhau 2 hồ sơ ứng viên trước khi gộp (Scrum #40)
     /// </summary>
     [HttpGet("SoSanhHoSo")]
-    public async Task<IActionResult> CompareCandidates([FromQuery] Guid primaryId, [FromQuery] Guid secondaryId)
+    [HttpGet("CompareCandidates")]
+    [HttpGet("/dashboard/so-sanh-ung-vien")]
+    public async Task<IActionResult> CompareCandidates([FromQuery] Guid primaryId, [FromQuery] Guid? secondaryId)
     {
-        if (primaryId == Guid.Empty || secondaryId == Guid.Empty || primaryId == secondaryId)
+        if (primaryId == Guid.Empty)
+        {
+            TempData["ErrorMessage"] = "Vui lòng chọn hồ sơ hợp lệ để thực hiện so sánh.";
+            return RedirectToAction(nameof(CandidateDuplicates));
+        }
+
+        var actualSecondaryId = secondaryId.GetValueOrDefault();
+        if (actualSecondaryId == Guid.Empty)
+        {
+            // Tự động tìm ứng viên có nguy cơ trùng lặp nếu chưa chỉ định secondaryId
+            var duplicates = await _mergeService.FindDuplicatesForCandidateAsync(primaryId);
+            if (duplicates != null && duplicates.Count > 0)
+            {
+                actualSecondaryId = duplicates[0].CandidateId;
+            }
+        }
+
+        if (actualSecondaryId == Guid.Empty || primaryId == actualSecondaryId)
         {
             TempData["ErrorMessage"] = "Vui lòng chọn 2 hồ sơ hợp lệ để thực hiện so sánh.";
             return RedirectToAction(nameof(CandidateDuplicates));
         }
 
-        var model = await _mergeService.GetComparisonAsync(primaryId, secondaryId);
+        var model = await _mergeService.GetComparisonAsync(primaryId, actualSecondaryId);
         if (model == null)
         {
             TempData["ErrorMessage"] = "Không tìm thấy hồ sơ ứng viên cần so sánh.";
             return RedirectToAction(nameof(CandidateDuplicates));
         }
 
-        return View(model);
+        return View("CompareCandidates", model);
     }
 
     /// <summary>
-    /// POST: /Workspace/GopHoSo
+    /// POST: /Workspace/GopHoSo hoặc /Workspace/MergeCandidates
     /// Thực hiện gộp hồ sơ: chuyển toàn bộ lịch sử ứng tuyển và CV sang hồ sơ chính
     /// </summary>
     [HttpPost("GopHoSo")]
+    [HttpPost("MergeCandidates")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> MergeCandidates([FromForm] MergeCandidatesRequestModel model)
     {
@@ -1746,10 +1768,11 @@ public class WorkspaceController : Controller
     }
 
     /// <summary>
-    /// POST: /Workspace/HoanTacGop
+    /// POST: /Workspace/HoanTacGop hoặc /Workspace/UndoMerge
     /// Hoàn tác gộp hồ sơ nếu còn trong thời hạn 24 giờ
     /// </summary>
     [HttpPost("HoanTacGop")]
+    [HttpPost("UndoMerge")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UndoMerge([FromForm] Guid historyId)
     {
