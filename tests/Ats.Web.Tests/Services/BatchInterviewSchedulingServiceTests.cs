@@ -90,18 +90,17 @@ public class BatchInterviewSchedulingServiceTests
         var requisition = new JobRequisition
         {
             Id = Guid.NewGuid(),
+            Code = $"REQ_{Guid.NewGuid():N}"[..8],
             DepartmentId = department.Id,
-            Title = "Senior .NET Developer",
-            RequisitionCode = $"REQ_{Guid.NewGuid():N}"[..8],
-            Status = JobRequisitionStatus.APPROVED
+            HiringManagerId = recruiter.Id
         };
 
         var jobPosting = new JobPosting
         {
             Id = Guid.NewGuid(),
-            JobRequisitionId = requisition.Id,
-            DepartmentId = department.Id,
             Title = "Senior .NET Developer",
+            Slug = $"senior-net-{Guid.NewGuid():N}"[..20],
+            RequisitionId = requisition.Id,
             Status = JobPostingStatus.PUBLISHED
         };
 
@@ -170,7 +169,7 @@ public class BatchInterviewSchedulingServiceTests
         };
 
         // Act
-        var result = await service.PreviewBatchScheduleAsync(input);
+        var result = await service.PreviewBatchScheduleAsync(input, recruiter.Id, isRecruiterOnly: false);
 
         // Assert
         result.Success.Should().BeTrue();
@@ -194,7 +193,7 @@ public class BatchInterviewSchedulingServiceTests
     {
         // Arrange
         using var context = CreateInMemoryDbContext();
-        var (apps, interviewer1, _, _) = await SeedBatchTestDataAsync(context, 3);
+        var (apps, interviewer1, _, recruiter) = await SeedBatchTestDataAsync(context, 3);
         var mockEmail = new Mock<IEmailService>();
         var service = new InterviewService(context, mockEmail.Object, null, NullLogger<InterviewService>.Instance);
 
@@ -208,7 +207,7 @@ public class BatchInterviewSchedulingServiceTests
         };
 
         // Act
-        var result = await service.PreviewBatchScheduleAsync(input);
+        var result = await service.PreviewBatchScheduleAsync(input, recruiter.Id, isRecruiterOnly: false);
 
         // Assert
         result.Success.Should().BeFalse();
@@ -231,7 +230,7 @@ public class BatchInterviewSchedulingServiceTests
         };
 
         // Act
-        var result = await service.PreviewBatchScheduleAsync(input);
+        var result = await service.PreviewBatchScheduleAsync(input, Guid.NewGuid(), isRecruiterOnly: false);
 
         // Assert
         result.Success.Should().BeFalse();
@@ -309,7 +308,7 @@ public class BatchInterviewSchedulingServiceTests
             interview.InterviewType.Should().Be(InterviewType.ONLINE_MEET);
             interview.LocationOrLink.Should().Be("https://meet.google.com/abc-xyz");
             interview.Panelists.Should().HaveCount(2);
-            interview.Panelists.Select(p => p.UserId).Should().Contain(new[] { interviewer1.Id, interviewer2.Id });
+            interview.Panelists.Select(p => p.InterviewerId).Should().Contain(new[] { interviewer1.Id, interviewer2.Id });
         }
 
         // Kiểm tra giai đoạn ứng viên được cập nhật sang Phỏng vấn (StageOrder = 3)
