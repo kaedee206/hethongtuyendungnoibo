@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Ats.Web.Constants;
+using Ats.Web.Models.ViewModels.CandidateComparison;
 using Ats.Web.Models.ViewModels.Interviews;
 using Ats.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -8,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Ats.Web.Controllers;
 
 /// <summary>
-/// Controller điều phối nghiệp vụ Phỏng vấn & Đánh giá ứng viên (EP-06_InterviewEvaluation / Scrum - Số 57)
+/// Controller điều phối nghiệp vụ Phỏng vấn & Đánh giá ứng viên (EP-06_InterviewEvaluation / Scrum - Số 57 & SCRUM-336 / Scrum - Số 58)
 /// Tuân thủ quy chuẩn: Primary Constructor, kebab-case routing, ValidateAntiForgeryToken, phân tách Service layer.
 /// </summary>
 [Authorize]
@@ -16,9 +17,11 @@ namespace Ats.Web.Controllers;
 [Route("phong-van")]
 public class InterviewsController(
     IInterviewEvaluationService evaluationService,
+    ICandidateEvaluationComparisonService comparisonService,
     ILogger<InterviewsController> logger) : Controller
 {
     private readonly IInterviewEvaluationService _evaluationService = evaluationService;
+    private readonly ICandidateEvaluationComparisonService _comparisonService = comparisonService;
     private readonly ILogger<InterviewsController> _logger = logger;
 
     /// <summary>
@@ -176,6 +179,38 @@ public class InterviewsController(
             success = true,
             data = evaluations
         });
+    }
+
+    /// <summary>
+    /// GET: /interviews/so-sanh-ung-vien hoặc /phong-van/so-sanh-ung-vien hoặc /interviews/comparison
+    /// SCRUM-336 / Scrum - Số 58: Là Trưởng bộ phận, tôi muốn so sánh các ứng viên của cùng một vị trí theo điểm đánh giá, để chọn người dựa trên tiêu chí thay vì ấn tượng cá nhân.
+    /// </summary>
+    [HttpGet("so-sanh-ung-vien")]
+    [HttpGet("comparison")]
+    [Authorize(Roles = $"{UserRoles.HiringManager},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.Recruiter},Quản lý tuyển dụng,Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng")]
+    public async Task<IActionResult> CandidateComparison(
+        [FromQuery] Guid? jobId,
+        [FromQuery] string? stage,
+        [FromQuery] string? sortBy,
+        CancellationToken cancellationToken = default)
+    {
+        var model = await _comparisonService.GetEvaluationComparisonAsync(jobId, stage, sortBy, cancellationToken);
+        return View(model);
+    }
+
+    /// <summary>
+    /// GET: /interviews/api/comparison-data
+    /// API trả về dữ liệu so sánh ứng viên dạng JSON phục vụ lọc động qua AJAX
+    /// </summary>
+    [HttpGet("api/comparison-data")]
+    public async Task<IActionResult> GetComparisonDataJson(
+        [FromQuery] Guid? jobId,
+        [FromQuery] string? stage,
+        [FromQuery] string? sortBy,
+        CancellationToken cancellationToken = default)
+    {
+        var model = await _comparisonService.GetEvaluationComparisonAsync(jobId, stage, sortBy, cancellationToken);
+        return Json(new { success = true, data = model });
     }
 
     private Guid GetCurrentUserId()
