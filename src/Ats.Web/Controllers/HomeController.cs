@@ -601,6 +601,20 @@ public class HomeController : Controller
             model.JobPostingFilterOptions = filterOptions;
             model.DefaultJobPostingId = defaultJobId;
 
+            // Danh sách vị trí tuyển dụng cho bộ lọc ứng viên (Filter & Export SCRUM-328)
+            var availableJobs = await _dbContext.JobPostings
+                .Include(j => j.Requisition)
+                .Where(j => j.Status == JobPostingStatus.PUBLISHED || _dbContext.Applications.Any(a => a.JobPostingId == j.Id))
+                .OrderBy(j => j.Title)
+                .Select(j => new JobFilterOptionDto
+                {
+                    Id = j.Id,
+                    Code = j.Requisition != null ? j.Requisition.Code : "",
+                    Title = j.Title
+                })
+                .ToListAsync();
+            model.AvailableJobsForFilter = availableJobs;
+
             // Toàn bộ ứng viên cho Bảng Quản Lý Ứng Viên & Tiến Trình Tuyển Dụng (Kanban & Table)
             // Mặc định hiển thị pipeline đang hoạt động (loại trừ hồ sơ đã rút)
             var allAppsQuery = _dbContext.Applications
@@ -610,6 +624,7 @@ public class HomeController : Controller
                     .ThenInclude(c => c.ReferrerUser)
                 .Include(a => a.ReferrerUser)
                 .Include(a => a.JobPosting)
+                    .ThenInclude(j => j.Requisition)
                 .Include(a => a.CurrentStage)
                 .Where(a => !a.IsDeleted && a.Status != ApplicationStatus.WITHDRAWN)
                 .AsQueryable();
@@ -645,6 +660,7 @@ public class HomeController : Controller
             {
                 var candName = $"{a.Candidate.FirstName} {a.Candidate.LastName}".Trim();
                 var primaryResume = a.Candidate.Resumes.FirstOrDefault(r => r.IsPrimary) ?? a.Candidate.Resumes.FirstOrDefault();
+                var jobCode = a.JobPosting?.Requisition?.Code ?? "";
                 var isRef = a.ReferrerUserId != null || a.Candidate.Source == CandidateSource.REFERRAL;
                 var refUser = a.ReferrerUser ?? a.Candidate.ReferrerUser;
                 var hasDup = dupLookup.TryGetValue(a.CandidateId, out var dupInfo);
@@ -663,16 +679,16 @@ public class HomeController : Controller
                         overdueDays = Math.Max(1, daysInStage - slaDays);
                     }
                 }
-
                 return new CandidatePipelineItemDto
                 {
                     ApplicationId = a.Id,
                     CandidateId = a.CandidateId,
                     JobPostingId = a.JobPostingId,
+                    JobCode = jobCode,
                     CandidateName = candName,
                     CandidateEmail = a.Candidate.Email,
                     CandidatePhone = a.Candidate.Phone ?? "Chưa có",
-                    JobTitle = a.JobPosting.Title,
+                    JobTitle = a.JobPosting?.Title ?? "Vị trí tuyển dụng",
                     CurrentStageId = a.CurrentStageId,
                     CurrentStageName = a.CurrentStage?.Name ?? "Chưa phân loại",
                     CurrentStageOrder = a.CurrentStage?.StageOrder ?? 1,

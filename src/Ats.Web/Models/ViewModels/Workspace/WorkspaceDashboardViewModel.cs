@@ -56,6 +56,9 @@ public class WorkspaceDashboardViewModel
     public string InterviewScope { get; set; } = "all";
     public int MyUpcomingInterviewsCount { get; set; }
     public bool IsInterviewer { get; set; }
+
+    // SCRUM-328: Bộ lọc vị trí tuyển dụng phục vụ xuất Excel rút gọn
+    public List<JobFilterOptionDto> AvailableJobsForFilter { get; set; } = new();
 }
 
 public class JobPostingFilterOptionDto
@@ -65,6 +68,14 @@ public class JobPostingFilterOptionDto
     public string DepartmentName { get; set; } = string.Empty;
     public bool IsAssignedToCurrentUser { get; set; }
     public int ActiveCandidateCount { get; set; }
+}
+
+public class JobFilterOptionDto
+{
+    public Guid Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string DisplayText => string.IsNullOrWhiteSpace(Code) ? Title : $"[{Code}] {Title}";
 }
 
 public class NotificationDto
@@ -82,6 +93,7 @@ public class CandidatePipelineItemDto
     public Guid ApplicationId { get; set; }
     public Guid CandidateId { get; set; }
     public Guid JobPostingId { get; set; }
+    public string JobCode { get; set; } = string.Empty;
     public string CandidateName { get; set; } = string.Empty;
     public string CandidateEmail { get; set; } = string.Empty;
     public string CandidatePhone { get; set; } = string.Empty;

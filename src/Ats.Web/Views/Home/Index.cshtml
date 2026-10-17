@@ -960,7 +960,7 @@
                                     <span class="badge bg-light text-dark border font-mono ms-1" style="font-size: 0.75rem;">@Model.CandidatePipelineItems.Count</span>
                                 </h5>
                             </div>
-                            <div class="d-flex flex-wrap align-items-center gap-2 w-100 w-lg-auto">
+                            <div class="d-flex flex-wrap align-items-center gap-2 w-100 w-lg-auto justify-content-start justify-content-lg-end">
                                 <!-- 1. Tìm kiếm nhanh -->
                                 <div class="input-group input-group-sm position-relative" style="max-width: 220px;">
                                     <span class="input-group-text bg-light border-end-0" style="border-color: #E2E8F0;"><i class="bi bi-search text-muted"></i></span>
@@ -1024,6 +1024,12 @@
                                     </button>
                                 </div>
 
+                                <!-- SCRUM-328: Nút xuất Excel danh sách ứng viên rút gọn -->
+                                <button type="button" id="btnExportCandidateExcel" class="btn btn-sm btn-outline-success fw-semibold d-inline-flex align-items-center gap-1.5" style="border-radius: 8px; font-size: 0.82rem; padding: 0.35rem 0.75rem; border-color: #059669; color: #059669; white-space: nowrap;" onclick="exportCandidateShortlistExcel()" title="Xuất danh sách ứng viên theo bộ lọc hiện tại ra file Excel để gửi Trưởng bộ phận (SCRUM-328)">
+                                    <i class="bi bi-file-earmark-excel-fill" style="font-size: 0.95rem; color: #059669;"></i>
+                                    <span>Xuất Excel</span>
+                                </button>
+
                                 <!-- 6. Menu Tiện ích & Nhập xuất (Gom gọn các nút phụ vào 1 dropdown) -->
                                 <div class="dropdown">
                                     <button class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 fw-semibold shadow-none"
@@ -1035,6 +1041,11 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" style="border-radius: 10px; font-size: 0.82rem; min-width: 220px; z-index: 1050;">
                                         <li><h6 class="dropdown-header text-uppercase text-muted" style="font-size: 0.7rem;">Nhập / Xuất Excel</h6></li>
+                                        <li>
+                                            <a class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-2" href="javascript:void(0)" onclick="exportCandidateShortlistExcel()">
+                                                <i class="bi bi-file-earmark-excel-fill text-success"></i> Xuất danh sách Excel (Rút gọn)
+                                            </a>
+                                        </li>
                                         <li>
                                             <a class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-2" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#importCandidateModal">
                                                 <i class="bi bi-cloud-arrow-up text-success"></i> Nhập ứng viên từ Excel
@@ -1421,6 +1432,7 @@
                                                     data-is-referral="@(cand.IsReferral ? "true" : "false")"
                                                     data-has-duplicate="@(cand.HasDuplicateWarning ? "true" : "false")"
                                                     data-job-id="@cand.JobPostingId"
+                                                    data-job-code="@cand.JobCode"
                                                     data-name="@cand.CandidateName.ToLower()"
                                                     data-email="@cand.CandidateEmail.ToLower()"
                                                     data-job="@cand.JobTitle.ToLower()"
@@ -4460,11 +4472,11 @@
                 window.candCurrentPage = 1;
             }
             const input = document.getElementById('candidateSearchInput');
+            const jobSelect = document.getElementById('candidateJobFilter');
             const clearBtn = document.getElementById('candidateSearchClearBtn');
             const hint = document.getElementById('candSearchHint');
             const query = (input ? input.value : '').trim();
-            const stageOrder = window.currentPipelineStage || 'ALL';
-            const selectedJob = window.currentPipelineJob || 'ALL';
+            const selectedJob = window.currentPipelineJob || (jobSelect ? jobSelect.value : '') || 'ALL';
 
             if (clearBtn) {
                 if (query.length > 0) clearBtn.classList.remove('d-none');
@@ -4488,7 +4500,7 @@
                 const job = r.getAttribute('data-job') || '';
 
                 // Job match
-                const jobMatch = (selectedJob === 'ALL' || rowJobId.toLowerCase() === selectedJob.toLowerCase());
+                const jobMatch = (selectedJob === 'ALL' || !selectedJob || rowJobId.toLowerCase() === selectedJob.toLowerCase());
 
                 // SLA match
                 const isOverdue = r.getAttribute('data-is-overdue') === 'true';
@@ -4575,6 +4587,7 @@
                 window.NoveraInstantSearch.syncUrlParams({
                     cand_search: query || null,
                     cand_stage: stageOrder !== 'ALL' ? stageOrder : null,
+                    cand_job: selectedJobId || null,
                     cand_page: window.candCurrentPage > 1 ? window.candCurrentPage : null
                 });
             }
@@ -4677,14 +4690,40 @@
             applyPipelineFilters(true, true);
         }
 
+        function filterPipelineByJob(jobId) {
+            window.currentPipelineJobId = jobId || '';
+            window.candCurrentPage = 1;
+            applyPipelineFilters(true, true);
+        }
+
         function searchPipelineCandidates(query) {
             applyPipelineFilters(true, true);
+        }
+
+        // SCRUM-328: Xuất danh sách ứng viên rút gọn ra file Excel cho Trưởng bộ phận theo bộ lọc đang áp dụng
+        function exportCandidateShortlistExcel() {
+            const stageOrder = window.currentPipelineStage || 'ALL';
+            const jobSelect = document.getElementById('candidateJobFilter');
+            const jobId = (jobSelect ? jobSelect.value : '') || (window.currentPipelineJobId || '');
+            const searchInput = document.getElementById('candidateSearchInput');
+            const search = (searchInput ? searchInput.value : '').trim();
+
+            showToast('Đang khởi tạo tệp Excel danh sách rút gọn ứng viên...', true);
+
+            const params = new URLSearchParams();
+            if (jobId) params.append('jobId', jobId);
+            if (stageOrder && stageOrder !== 'ALL') params.append('stage', stageOrder);
+            if (search && search.length >= 3) params.append('search', search);
+
+            const exportUrl = '/Workspace/ExportCandidates?' + params.toString();
+            window.location.href = exportUrl;
         }
 
         // Initialize candidate pipeline search events & URL hydration
         document.addEventListener('DOMContentLoaded', function () {
             const candInput = document.getElementById('candidateSearchInput');
             const candClearBtn = document.getElementById('candidateSearchClearBtn');
+            const candJobSelect = document.getElementById('candidateJobFilter');
 
             if (candInput) {
                 const debouncedSearch = window.NoveraInstantSearch
@@ -4718,6 +4757,10 @@
                 const params = window.NoveraInstantSearch.getUrlParams();
                 if (candInput && params.cand_search !== undefined) {
                     candInput.value = params.cand_search;
+                }
+                if (candJobSelect && params.cand_job !== undefined) {
+                    candJobSelect.value = params.cand_job;
+                    window.currentPipelineJobId = params.cand_job;
                 }
                 if (params.cand_page !== undefined) {
                     window.candCurrentPage = parseInt(params.cand_page, 10) || 1;

@@ -24,6 +24,7 @@ public class WorkspaceController : Controller
     private readonly IEmailService _emailService;
     private readonly IFileStorageService _fileStorageService;
     private readonly ITalentPoolService _talentPoolService;
+    private readonly ICandidateExportService _candidateExportService;
     private readonly ILogger<WorkspaceController> _logger;
     private readonly IApplicationTrackingService _trackingService;
     private readonly ICandidateReferralService _referralService;
@@ -40,6 +41,7 @@ public class WorkspaceController : Controller
         IEmailService emailService,
         IFileStorageService fileStorageService,
         ITalentPoolService talentPoolService,
+        ICandidateExportService candidateExportService,
         ILogger<WorkspaceController> logger,
         IApplicationTrackingService trackingService,
         ICandidateReferralService referralService,
@@ -54,6 +56,7 @@ public class WorkspaceController : Controller
         _emailService = emailService;
         _fileStorageService = fileStorageService;
         _talentPoolService = talentPoolService;
+        _candidateExportService = candidateExportService;
         _logger = logger;
         _trackingService = trackingService;
         _referralService = referralService;
@@ -69,7 +72,7 @@ public class WorkspaceController : Controller
         IWebHostEnvironment env,
         IEmailService emailService,
         ILogger<WorkspaceController> logger)
-        : this(dbContext, env, emailService, null!, null!, logger, null!, null!, null!, null!, null!, null!, null!)
+        : this(dbContext, env, emailService, null!, null!, null!, logger, null!, null!, null!, null!, null!, null!, null!)
     {
     }
 
@@ -1580,6 +1583,40 @@ public class WorkspaceController : Controller
         catch (Exception ex)
         {
             return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// SCRUM-328: Xuất danh sách ứng viên rút gọn ra file Excel cho Trưởng bộ phận theo các bộ lọc đang áp dụng
+    /// </summary>
+    [HttpGet("ExportCandidates")]
+    public async Task<IActionResult> ExportCandidates(
+        [FromQuery] Guid? jobId,
+        [FromQuery] string? stage,
+        [FromQuery] string? search,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var exporterName = User.FindFirstValue(ClaimTypes.Name)
+                ?? User.FindFirstValue("name")
+                ?? User.FindFirstValue(ClaimTypes.Email)
+                ?? "Nhân viên tuyển dụng";
+
+            var (fileBytes, fileName, contentType) = await _candidateExportService.ExportCandidatesShortlistAsync(
+                jobId,
+                stage,
+                search,
+                exporterName,
+                cancellationToken);
+
+            return File(fileBytes, contentType, fileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi xuất danh sách ứng viên ra Excel (SCRUM-328)");
+            TempData["ErrorMessage"] = "Không thể xuất danh sách ứng viên ra Excel: " + ex.Message;
+            return RedirectToAction("Index", "Home", new { tab = "ung-vien" });
         }
     }
 

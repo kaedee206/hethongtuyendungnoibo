@@ -89,6 +89,7 @@ builder.Services.AddScoped<ITalentPoolService, TalentPoolService>();
 builder.Services.AddScoped<IInterviewEvaluationService, InterviewEvaluationService>();
 builder.Services.AddScoped<IInterviewService, InterviewService>();
 builder.Services.AddScoped<ICvParserService, CvParserService>();
+builder.Services.AddScoped<ICandidateExportService, CandidateExportService>();
 builder.Services.AddSingleton<IJobExpirationService, JobExpirationService>();
 builder.Services.AddHostedService<JobExpirationBackgroundService>();
 
