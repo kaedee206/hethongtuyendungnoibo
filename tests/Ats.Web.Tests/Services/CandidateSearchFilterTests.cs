@@ -35,6 +35,16 @@ public class CandidateSearchFilterTests
         public void EnsureStorageDirectories() { }
     }
 
+    private class FakeApplicationTrackingService : IApplicationTrackingService
+    {
+        public Task<Ats.Web.Models.ViewModels.Tracking.ApplicationTrackingResultViewModel> TrackApplicationAsync(
+            Ats.Web.Models.ViewModels.Tracking.ApplicationTrackingInputModel input, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new Ats.Web.Models.ViewModels.Tracking.ApplicationTrackingResultViewModel());
+
+        public Task<string> GenerateUniqueTrackingCodeAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult("NOV-APP-TEST");
+    }
+
     private static ApplicationDbContext CreateInMemoryDbContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -230,6 +240,7 @@ public class CandidateSearchFilterTests
             context,
             new FakeFileStorageService(),
             new FakeSecurityAuditService(),
+            new FakeApplicationTrackingService(),
             NullLogger<CandidateService>.Instance);
     }
 

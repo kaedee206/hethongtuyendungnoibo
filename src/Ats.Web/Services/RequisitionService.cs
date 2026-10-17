@@ -1416,7 +1416,7 @@ public class RequisitionService : IRequisitionService
 
         var approvalSteps = new List<RequisitionApproval>();
 
-        if (applicableStepsResponse.IsSuccess && applicableStepsResponse.Data != null && applicableStepsResponse.Data.Count > 0)
+        if (applicableStepsResponse?.IsSuccess == true && applicableStepsResponse.Data != null && applicableStepsResponse.Data.Count > 0)
         {
             int order = 1;
             foreach (var ruleStep in applicableStepsResponse.Data.OrderBy(s => s.StepOrder))

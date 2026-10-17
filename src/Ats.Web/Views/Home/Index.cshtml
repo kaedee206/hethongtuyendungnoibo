@@ -238,14 +238,24 @@
                                         <div class="p-3 bg-light border border-success-subtle rounded-3" style="border-left: 4px solid #059669 !important;">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <span class="fw-bold text-dark"><i class="bi bi-camera-video text-success me-1"></i>@Model.CandidateInterview.RoundTitle</span>
-                                                <span class="badge bg-success-subtle text-success">@Model.CandidateInterview.StatusDisplay</span>
+                                                <span class="badge @(Model.CandidateInterview.CandidateConfirmed == Ats.Web.Models.Enums.CandidateConfirmStatus.ACCEPTED ? "bg-success-subtle text-success" : (Model.CandidateInterview.CandidateConfirmed == Ats.Web.Models.Enums.CandidateConfirmStatus.DECLINED ? "bg-warning-subtle text-warning-emphasis" : "bg-secondary-subtle text-secondary"))">
+                                                    @Model.CandidateInterview.StatusDisplay
+                                                </span>
                                             </div>
                                             <div class="small text-muted mb-2">
                                                 Thời gian: <b>@Model.CandidateInterview.TimeDisplay, @Model.CandidateInterview.DateDisplay</b>
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-success fw-semibold" onclick="switchDashboardFeature('tien-do', event)">
-                                                <i class="bi bi-arrow-up-right-square me-1"></i> Vào phòng họp Google Meet
-                                            </button>
+                                            <div class="d-flex gap-2">
+                                                <button type="button" class="btn btn-sm btn-success fw-semibold" onclick="switchDashboardFeature('tien-do', event)">
+                                                    <i class="bi bi-arrow-up-right-square me-1"></i> Vào phòng họp Google Meet
+                                                </button>
+                                                @if (!string.IsNullOrWhiteSpace(Model.CandidateInterview.ConfirmationUrl))
+                                                {
+                                                    <a href="@Model.CandidateInterview.ConfirmationUrl" class="btn btn-sm btn-outline-success fw-semibold" target="_blank">
+                                                        <i class="bi bi-envelope-check me-1"></i> Thư mời &amp; Phản hồi
+                                                    </a>
+                                                }
+                                            </div>
                                         </div>
                                     }
                                 }
@@ -517,6 +527,12 @@
                                         <a href="@Model.CandidateInterview.LocationOrLink" target="_blank" class="btn btn-sm fw-semibold text-white px-3" style="background: #059669; border-radius: 8px; font-size: 0.8rem;">
                                             <i class="bi bi-box-arrow-up-right me-1"></i> Vào phòng họp Google Meet
                                         </a>
+                                        @if (!string.IsNullOrWhiteSpace(Model.CandidateInterview.ConfirmationUrl))
+                                        {
+                                            <a href="@Model.CandidateInterview.ConfirmationUrl" class="btn btn-sm btn-outline-primary px-3 fw-semibold" style="border-radius: 8px; font-size: 0.8rem;" target="_blank">
+                                                <i class="bi bi-envelope-paper me-1"></i> Mở trang Thư mời &amp; Xác nhận
+                                            </a>
+                                        }
                                         <button type="button" class="btn btn-sm btn-outline-success px-3 fw-semibold" style="border-radius: 8px; font-size: 0.8rem;" onclick="confirmCandidateInterview('@Model.CandidateInterview.InterviewId')">
                                             <i class="bi bi-check2-circle me-1"></i> Xác nhận tham gia
                                         </button>
@@ -1737,12 +1753,43 @@
                                                     </span>
                                                 </td>
                                                 <td class="py-3 px-3">
-                                                    <span class="badge @interview.StatusBadgeClass" style="border-radius: 6px; font-weight: 600; font-size: 0.72rem;">
-                                                        @interview.StatusDisplay
-                                                    </span>
+                                                    <div class="d-flex flex-column gap-1">
+                                                        <span class="badge @interview.StatusBadgeClass" style="border-radius: 6px; font-weight: 600; font-size: 0.72rem; width: fit-content;">
+                                                            @interview.StatusDisplay
+                                                        </span>
+                                                        @if (interview.CandidateConfirmed == Ats.Web.Models.Enums.CandidateConfirmStatus.ACCEPTED)
+                                                        {
+                                                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.68rem; font-weight: 600; width: fit-content;" title="Ứng viên đã bấm xác nhận tham dự qua thư mời">
+                                                                <i class="bi bi-check2-circle me-1"></i>UV đã xác nhận
+                                                            </span>
+                                                        }
+                                                        else if (interview.CandidateConfirmed == Ats.Web.Models.Enums.CandidateConfirmStatus.DECLINED)
+                                                        {
+                                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size: 0.68rem; font-weight: 600; width: fit-content; cursor: pointer;"
+                                                                  onclick="showCandidateRescheduleModal('@interview.CandidateName', '@Html.Raw(Html.Encode(interview.CandidateNotes ?? "Ứng viên yêu cầu đổi lịch phỏng vấn"))')"
+                                                                  title="Bấm để xem lý do &amp; đề xuất đổi lịch của ứng viên">
+                                                                <i class="bi bi-clock-history me-1"></i>UV xin đổi lịch <i class="bi bi-info-circle ms-0.5"></i>
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="font-size: 0.68rem; font-weight: 500; width: fit-content;" title="Đang chờ ứng viên phản hồi email thư mời">
+                                                                <i class="bi bi-envelope me-1"></i>UV chờ phản hồi
+                                                            </span>
+                                                        }
+                                                    </div>
                                                 </td>
                                                 <td class="py-3 px-3 text-end">
-                                                    <div class="d-flex justify-content-end gap-1.5">
+                                                    <div class="d-flex justify-content-end gap-1.5 flex-wrap">
+                                                        @if (!string.IsNullOrWhiteSpace(interview.ConfirmationUrl))
+                                                        {
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                                    style="border-radius:8px; font-size:0.75rem; font-weight:600; padding: 0.25rem 0.65rem;"
+                                                                    onclick="copyCandidateInviteUrl('@interview.ConfirmationUrl')"
+                                                                    title="Sao chép liên kết thư mời phỏng vấn dành riêng cho ứng viên này">
+                                                                <i class="bi bi-link-45deg me-1"></i> Link mời
+                                                            </button>
+                                                        }
                                                         @if (!string.IsNullOrWhiteSpace(interview.LocationOrLink))
                                                         {
                                                             <a href="@interview.LocationOrLink" target="_blank" class="btn btn-sm btn-outline-primary"
@@ -2736,6 +2783,33 @@
     </div>
 </div>
 
+<!-- Modal 7.1: Xem lý do & đề xuất đổi lịch của Ứng viên (Scrum 54) -->
+<div class="modal fade" id="candidateRescheduleNoteModal" tabindex="-1" aria-labelledby="candidateRescheduleNoteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="candidateRescheduleNoteModalLabel" style="font-size: 1.05rem;">
+                    <i class="bi bi-calendar-event text-warning me-2"></i>Đề nghị đổi lịch từ Ứng viên
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="mb-2">
+                    <span class="text-muted small">Ứng viên:</span>
+                    <span class="fw-bold text-dark" id="modalRescheduleCandidateName">-</span>
+                </div>
+                <div class="p-3 bg-light rounded-3 border" style="border-left: 4px solid #f59e0b !important;">
+                    <div class="small fw-semibold text-secondary mb-1">Lý do &amp; Thời gian đề xuất mới:</div>
+                    <div class="text-dark" id="modalRescheduleCandidateNotes" style="white-space: pre-wrap; font-size: 0.9rem;">-</div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-secondary btn-sm px-3" style="border-radius: 8px;" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal 8: Khởi tạo đề xuất Offer -->
 <div class="modal fade" id="createOfferModal" tabindex="-1" aria-labelledby="createOfferModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -3701,6 +3775,29 @@
                 }
             } catch (err) {
                 showToast('Lỗi: ' + err.message, false);
+            }
+        }
+
+        // Scrum - Số 54: Hiển thị modal xem lý do đổi lịch & Copy link mời
+        function showCandidateRescheduleModal(candidateName, notes) {
+            var nameEl = document.getElementById('modalRescheduleCandidateName');
+            var noteEl = document.getElementById('modalRescheduleCandidateNotes');
+            if (nameEl) nameEl.textContent = candidateName || 'Ứng viên';
+            if (noteEl) noteEl.textContent = notes || 'Không có ghi chú thêm.';
+            var modal = new bootstrap.Modal(document.getElementById('candidateRescheduleNoteModal'));
+            modal.show();
+        }
+
+        function copyCandidateInviteUrl(url) {
+            if (!url) return;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(function () {
+                    showToast('Đã sao chép liên kết thư mời ứng viên!', true);
+                }).catch(function () {
+                    prompt('Sao chép liên kết mời ứng viên bên dưới:', url);
+                });
+            } else {
+                prompt('Sao chép liên kết mời ứng viên bên dưới:', url);
             }
         }
 

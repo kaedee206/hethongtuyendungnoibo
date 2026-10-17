@@ -33,6 +33,7 @@ public class WorkspaceController : Controller
     private readonly IRequisitionAssignmentService? _assignmentService;
     private readonly IInterviewEvaluationService? _interviewEvaluationService;
     private readonly IInterviewService? _interviewService;
+    private readonly ICandidateInterviewService? _candidateInterviewService;
 
     [ActivatorUtilitiesConstructor]
     public WorkspaceController(
@@ -49,7 +50,8 @@ public class WorkspaceController : Controller
         ICandidateTimelineService timelineService,
         IRequisitionAssignmentService? assignmentService = null,
         IInterviewEvaluationService? interviewEvaluationService = null,
-        IInterviewService? interviewService = null)
+        IInterviewService? interviewService = null,
+        ICandidateInterviewService? candidateInterviewService = null)
     {
         _dbContext = dbContext;
         _env = env;
@@ -65,6 +67,7 @@ public class WorkspaceController : Controller
         _assignmentService = assignmentService;
         _interviewEvaluationService = interviewEvaluationService;
         _interviewService = interviewService;
+        _candidateInterviewService = candidateInterviewService;
     }
 
     public WorkspaceController(
@@ -72,7 +75,7 @@ public class WorkspaceController : Controller
         IWebHostEnvironment env,
         IEmailService emailService,
         ILogger<WorkspaceController> logger)
-        : this(dbContext, env, emailService, null!, null!, null!, logger, null!, null!, null!, null!, null!, null!, null!)
+        : this(dbContext, env, emailService, null!, null!, null!, logger, null!, null!, null!, null!, null!, null!, null!, null!)
     {
     }
 
@@ -1045,7 +1048,7 @@ public class WorkspaceController : Controller
         try
         {
             ScheduleInterviewInputModel? model = formInput;
-            if (Request.HasJsonContentType())
+            if (Request.HasJsonContentType() || (Request.ContentType != null && Request.ContentType.Contains("application/json")))
             {
                 try
                 {
@@ -1084,11 +1087,25 @@ public class WorkspaceController : Controller
             if (_interviewService != null)
             {
                 var result = await _interviewService.ScheduleInterviewAsync(model, currentUserId, isRecruiterOnly, cancellationToken);
+                string? confirmUrl = null;
+                if (result.Success && _candidateInterviewService != null && result.InterviewId.HasValue)
+                {
+                    var candEmail = await _dbContext.Applications
+                        .Where(a => a.Id == model.ApplicationId)
+                        .Select(a => a.Candidate.Email)
+                        .FirstOrDefaultAsync(cancellationToken);
+                    if (!string.IsNullOrWhiteSpace(candEmail))
+                    {
+                        confirmUrl = _candidateInterviewService.BuildConfirmationUrl(Request, result.InterviewId.Value, candEmail);
+                    }
+                }
+
                 return Json(new
                 {
                     success = result.Success,
                     message = result.Message,
                     interviewId = result.InterviewId,
+                    confirmationUrl = confirmUrl,
                     roundNumber = result.RoundNumber,
                     title = result.Title,
                     startTime = result.StartTimeDisplay,
@@ -1100,7 +1117,152 @@ public class WorkspaceController : Controller
                 });
             }
 
-            return Json(new { success = false, message = "Dịch vụ xếp lịch phỏng vấn tạm thời không khả dụng." });
+            var application = await _dbContext.Applications
+                .Include(a => a.Candidate)
+                .Include(a => a.JobPosting)
+                .Include(a => a.CurrentStage)
+                .FirstOrDefaultAsync(a => a.Id == model.ApplicationId, cancellationToken);
+
+            if (application == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy hồ sơ ứng viên." });
+            }
+
+            if (isRecruiterOnly && _assignmentService != null && currentUserId != Guid.Empty)
+            {
+                var canAccess = await _assignmentService.CanRecruiterAccessApplicationAsync(currentUserId, model.ApplicationId);
+                if (!canAccess)
+                {
+                    return Json(new { success = false, message = "Bạn không có quyền lên lịch phỏng vấn cho hồ sơ này do không phụ trách vị trí tuyển dụng tương ứng." });
+                }
+            }
+
+            var normalizedStart = model.GetNormalizedStartTime();
+            var startDto = normalizedStart.HasValue
+                ? new DateTimeOffset(DateTime.SpecifyKind(normalizedStart.Value, DateTimeKind.Utc))
+                : DateTimeOffset.UtcNow.AddDays(2).Date.AddHours(9);
+            var endDto = model.EndTime.HasValue
+                ? new DateTimeOffset(DateTime.SpecifyKind(model.EndTime.Value, DateTimeKind.Utc))
+                : startDto.AddMinutes(model.DurationMinutes > 0 ? model.DurationMinutes : 60);
+
+            var title = string.IsNullOrWhiteSpace(model.RoundTitle) ? "Phỏng vấn Chuyên môn & Văn hóa NoveraTech" : model.RoundTitle.Trim();
+            var meetLocation = string.IsNullOrWhiteSpace(model.LocationOrLink) ? "Google Meet (Link phòng họp gửi qua lịch hẹn)" : model.LocationOrLink.Trim();
+
+            var interview = new Interview
+            {
+                Id = Guid.NewGuid(),
+                ApplicationId = application.Id,
+                RoundNumber = model.RoundNumber >= 1 ? model.RoundNumber : 1,
+                Title = title,
+                InterviewType = meetLocation.Contains("http", StringComparison.OrdinalIgnoreCase) ? InterviewType.ONLINE_MEET : InterviewType.OFFLINE_OFFICE,
+                LocationOrLink = meetLocation,
+                StartTime = startDto,
+                EndTime = endDto,
+                Status = InterviewStatus.SCHEDULED,
+                CandidateConfirmed = CandidateConfirmStatus.PENDING,
+                CandidateNotes = model.Note ?? model.Notes,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await _dbContext.Interviews.AddAsync(interview, cancellationToken);
+
+            var interviewerIds = model.GetNormalizedInterviewerIds();
+            var panelistNames = new List<string>();
+            if (interviewerIds.Any())
+            {
+                var interviewers = await _dbContext.Users.Where(u => interviewerIds.Contains(u.Id)).ToListAsync(cancellationToken);
+                foreach (var inv in interviewers)
+                {
+                    await _dbContext.InterviewPanelists.AddAsync(new InterviewPanelist
+                    {
+                        Id = Guid.NewGuid(),
+                        InterviewId = interview.Id,
+                        InterviewerId = inv.Id,
+                        IsLead = panelistNames.Count == 0,
+                        CreatedAt = DateTimeOffset.UtcNow,
+                        UpdatedAt = DateTimeOffset.UtcNow
+                    }, cancellationToken);
+                    panelistNames.Add($"{inv.FullName} ({inv.Role})");
+                }
+            }
+            if (!panelistNames.Any())
+            {
+                panelistNames.Add("Ban Tuyển Dụng NoveraTech");
+            }
+
+            var interviewStage = await _dbContext.PipelineStages.FirstOrDefaultAsync(s => s.StageOrder == 3 || s.Name.Contains("Phỏng vấn"), cancellationToken)
+                ?? await _dbContext.PipelineStages.FirstOrDefaultAsync(s => s.StageOrder == 2, cancellationToken);
+
+            if (interviewStage != null && application.CurrentStageId != interviewStage.Id)
+            {
+                var prev = application.CurrentStageId;
+                application.CurrentStageId = interviewStage.Id;
+                application.StageEnteredAt = DateTimeOffset.UtcNow;
+                application.IsSlaOverdue = false;
+                application.SlaOverdueAlertedAt = null;
+                application.UpdatedAt = DateTimeOffset.UtcNow;
+
+                var effectiveUserId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync(cancellationToken));
+
+                await _dbContext.ApplicationStageHistories.AddAsync(new ApplicationStageHistory
+                {
+                    Id = Guid.NewGuid(),
+                    ApplicationId = application.Id,
+                    FromStageId = prev,
+                    ToStageId = interviewStage.Id,
+                    ChangedByUserId = effectiveUserId,
+                    Comment = $"Đã lên lịch phỏng vấn: {title} ({startDto:dd/MM/yyyy HH:mm}).",
+                    CreatedAt = DateTimeOffset.UtcNow
+                }, cancellationToken);
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            var candFullName = $"{application.Candidate.FirstName} {application.Candidate.LastName}".Trim();
+            var panelistStr = string.Join(", ", panelistNames);
+            string? confirmUrlFallback = null;
+            if (_candidateInterviewService != null)
+            {
+                confirmUrlFallback = _candidateInterviewService.BuildConfirmationUrl(Request, interview.Id, application.Candidate.Email);
+            }
+            else
+            {
+                var scheme = Request.Scheme ?? "https";
+                var host = Request.Host.Value;
+                confirmUrlFallback = $"{scheme}://{host}/xac-nhan-phong-van";
+            }
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _emailService.SendInterviewInvitationAsync(
+                        application.Candidate.Email,
+                        candFullName,
+                        application.JobPosting.Title,
+                        title,
+                        startDto,
+                        endDto,
+                        meetLocation,
+                        panelistStr,
+                        model.Note ?? model.Notes,
+                        confirmUrlFallback);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Không thể gửi email thư mời phỏng vấn: {Msg}", ex.Message);
+                }
+            });
+
+            return Json(new
+            {
+                success = true,
+                message = $"📅 Đã lên lịch phỏng vấn và gửi thư mời tới ứng viên {candFullName} thành công!",
+                interviewId = interview.Id,
+                confirmationUrl = confirmUrlFallback,
+                startTime = startDto.ToString("dd/MM/yyyy HH:mm"),
+                panelists = panelistStr
+            });
         }
         catch (Exception ex)
         {

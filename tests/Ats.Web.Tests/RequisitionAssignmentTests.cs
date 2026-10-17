@@ -75,7 +75,12 @@ public class RequisitionAssignmentTests
         db.Users.AddRange(hrManager, leadUser, supportUser);
 
         // Assign Recruiter role in UserRoles table
-        var recRole = db.Roles.First(r => r.Code == RoleCode.RECRUITER);
+        var recRole = db.Roles.FirstOrDefault(r => r.Code == RoleCode.RECRUITER);
+        if (recRole == null)
+        {
+            recRole = new Role { Id = Guid.NewGuid(), Code = RoleCode.RECRUITER, Name = "Recruiter" };
+            db.Roles.Add(recRole);
+        }
         db.UserRoles.AddRange(
             new UserRole { UserId = leadUser.Id, RoleId = recRole.Id },
             new UserRole { UserId = supportUser.Id, RoleId = recRole.Id }

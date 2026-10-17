@@ -180,7 +180,7 @@ public class InterviewSchedulingServiceTests
         mockEmail.Setup(e => e.SendInterviewInvitationAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<DateTimeOffset>(), It.IsAny<DateTimeOffset>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<CancellationToken>())).ReturnsAsync(true);
+            It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
         var service = new InterviewService(context, mockEmail.Object, null, NullLogger<InterviewService>.Instance);
 
@@ -226,7 +226,7 @@ public class InterviewSchedulingServiceTests
         mockEmail.Verify(e => e.SendInterviewInvitationAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<DateTimeOffset>(), It.IsAny<DateTimeOffset>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<CancellationToken>()), Times.Once);
+            It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
