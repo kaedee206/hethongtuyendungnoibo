@@ -1,0 +1,320 @@
+@* ══════════════════════════════════════════════════════════
+   NOVERATECH ATS — MODAL ĐẶT LỊCH PHỎNG VẤN TẬP TRUNG HÀNG LOẠT (SCRUM-52)
+   Quy chuẩn thiết kế: RULE.md | Bootstrap 5 | 8px Radius | Cấm rounded-pill | JetBrains Mono
+   ══════════════════════════════════════════════════════════ *@
+
+<div class="modal fade" id="batchScheduleInterviewModal" tabindex="-1" aria-labelledby="batchScheduleModalTitle" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden; background: #FFFFFF;">
+            
+            <!-- ── Modal Header ── -->
+            <div class="modal-header py-3 px-4" style="background: #0F172A; border-bottom: 1px solid #1E293B;">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center justify-content-center text-white flex-shrink-0" 
+                         style="width: 40px; height: 40px; background: linear-gradient(135deg, #059669 0%, #047857 100%); border-radius: 8px;">
+                        <i class="bi bi-calendar-range fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-white mb-0" id="batchScheduleModalTitle" style="letter-spacing: -0.02em;">
+                            Đặt Lịch Phỏng Vấn Tập Trung Hàng Loạt
+                        </h5>
+                        <p class="text-secondary small mb-0 mt-0.5" style="color: #94A3B8 !important; font-size: 0.8rem;">
+                            Tự động chia khe thời gian liên tiếp cho nhiều ứng viên trong cùng một buổi phỏng vấn (Scrum - Số 52)
+                        </p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+
+            <!-- ── Wizard Stepper Bar ── -->
+            <div class="px-4 py-2.5 d-flex align-items-center justify-content-between" style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0;">
+                <div class="d-flex align-items-center gap-2" id="batchWizardIndicator">
+                    <span id="badgeStep1" class="badge px-3 py-2 fw-semibold text-white" style="background: #059669; border-radius: 8px; font-size: 0.82rem;">
+                        <i class="bi bi-1-circle-fill me-1"></i>1. Chọn ứng viên & Cấu hình ca
+                    </span>
+                    <i class="bi bi-chevron-right text-muted small"></i>
+                    <span id="badgeStep2" class="badge px-3 py-2 fw-semibold text-muted bg-white border" style="border-radius: 8px; font-size: 0.82rem; border-color: #CBD5E1 !important;">
+                        <i class="bi bi-2-circle me-1"></i>2. Xem trước khe giờ & Xác nhận
+                    </span>
+                </div>
+                <div class="text-muted small d-none d-sm-block">
+                    <i class="bi bi-shield-check text-success me-1"></i>Tự động gửi email với đúng khung giờ cho từng người
+                </div>
+            </div>
+
+            <!-- ── Modal Body ── -->
+            <div class="modal-body p-4" style="background: #FFFFFF;">
+                
+                <!-- BƯỚC 1: CHỌN ỨNG VIÊN & CẤU HÌNH BUỔI PHỎNG VẤN -->
+                <div id="batchSchedStep1">
+                    <div class="row g-4">
+                        
+                        <!-- Cột Trái: Chọn ứng viên -->
+                        <div class="col-12 col-lg-6">
+                            <div class="p-3 border rounded-3 h-100" style="background: #F8FAFC; border-color: #E2E8F0 !important;">
+                                <div class="d-flex justify-content-between align-items-center mb-2.5">
+                                    <label class="form-label fw-bold text-dark mb-0" style="font-size: 0.88rem;">
+                                        <i class="bi bi-people-fill text-primary me-1"></i>1. Danh sách ứng viên tham gia
+                                    </label>
+                                    <span class="badge bg-white text-dark border px-2 py-1 fw-bold" style="border-radius: 6px; font-size: 0.78rem;">
+                                        Đã chọn: <span id="batchSelectedCount" class="text-success" style="font-family: 'JetBrains Mono', monospace;">0</span> ứng viên
+                                    </span>
+                                </div>
+
+                                <!-- Bộ lọc vị trí & tìm kiếm ứng viên -->
+                                <div class="row g-2 mb-2.5">
+                                    <div class="col-7">
+                                        <select id="batchFilterJob" class="form-select form-select-sm" style="border-radius: 8px; font-size: 0.82rem;" onchange="loadBatchCandidateList()">
+                                            <option value="">Tất cả vị trí tuyển dụng</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-5">
+                                        <select id="batchFilterStage" class="form-select form-select-sm" style="border-radius: 8px; font-size: 0.82rem;" onchange="loadBatchCandidateList()">
+                                            <option value="2">Giai đoạn: Sàng lọc (02)</option>
+                                            <option value="3">Giai đoạn: Phỏng vấn (03)</option>
+                                            <option value="1">Giai đoạn: Hồ sơ mới (01)</option>
+                                            <option value="">Tất cả giai đoạn</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-white border-end-0" style="border-color: #CBD5E1; border-radius: 8px 0 0 8px;">
+                                                <i class="bi bi-search text-muted"></i>
+                                            </span>
+                                            <input type="text" id="batchCandidateSearch" class="form-control border-start-0" 
+                                                   placeholder="Tìm nhanh theo tên, email..." 
+                                                   style="border-color: #CBD5E1; border-radius: 0 8px 8px 0; font-size: 0.82rem;"
+                                                   oninput="filterBatchCandidatesInList()" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Check All toolbar -->
+                                <div class="d-flex justify-content-between align-items-center py-1.5 px-2 mb-2 bg-white border rounded-2" style="border-color: #E2E8F0 !important;">
+                                    <div class="form-check mb-0">
+                                        <input class="form-check-input" type="checkbox" id="batchCheckAll" onchange="toggleBatchSelectAll(this.checked)" style="cursor: pointer;">
+                                        <label class="form-check-label small fw-semibold text-dark" for="batchCheckAll" style="cursor: pointer; font-size: 0.8rem;">
+                                            Chọn tất cả hiển thị
+                                        </label>
+                                    </div>
+                                    <button type="button" class="btn btn-link btn-sm text-decoration-none text-muted p-0" style="font-size: 0.75rem;" onclick="clearBatchSelection()">
+                                        <i class="bi bi-x-circle me-1"></i>Bỏ chọn tất cả
+                                    </button>
+                                </div>
+
+                                <!-- Danh sách ứng viên scrollable -->
+                                <div id="batchCandidateListContainer" class="border rounded-2 bg-white p-1" style="max-height: 320px; min-height: 200px; overflow-y: auto; border-color: #E2E8F0 !important;">
+                                    <div class="text-center py-4 text-muted small" id="batchCandidateLoading">
+                                        <div class="spinner-border spinner-border-sm text-success mb-2" role="status"></div>
+                                        <div>Đang nạp danh sách ứng viên...</div>
+                                    </div>
+                                    <div id="batchCandidateItems"></div>
+                                </div>
+                                <div class="text-danger small mt-1 d-none" id="batchCandidateError">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Vui lòng chọn ít nhất 1 ứng viên để đặt lịch.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cột Phải: Cấu hình thông số buổi phỏng vấn -->
+                        <div class="col-12 col-lg-6">
+                            <div class="p-3 border rounded-3 h-100" style="background: #FFFFFF; border-color: #E2E8F0 !important;">
+                                <label class="form-label fw-bold text-dark mb-2.5" style="font-size: 0.88rem;">
+                                    <i class="bi bi-sliders text-success me-1"></i>2. Cấu hình khung giờ & Thông tin phỏng vấn
+                                </label>
+
+                                <!-- Vòng phỏng vấn & Tiêu đề -->
+                                <div class="row g-2 mb-2.5">
+                                    <div class="col-4">
+                                        <label class="form-label small fw-semibold text-muted mb-1">Vòng PV <span class="text-danger">*</span></label>
+                                        <select id="batchRoundNumber" class="form-select form-select-sm" style="border-radius: 8px; font-size: 0.82rem;" onchange="updateBatchRoundTitleDefault()">
+                                            <option value="1" selected>Vòng 1</option>
+                                            <option value="2">Vòng 2</option>
+                                            <option value="3">Vòng 3</option>
+                                            <option value="4">Vòng 4</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-8">
+                                        <label class="form-label small fw-semibold text-muted mb-1">Tiêu đề buổi phỏng vấn <span class="text-danger">*</span></label>
+                                        <input type="text" id="batchRoundTitle" class="form-control form-control-sm" 
+                                               value="Phỏng vấn chuyên môn tập trung - Vòng 1" 
+                                               style="border-radius: 8px; font-size: 0.82rem;" />
+                                    </div>
+                                </div>
+
+                                <!-- Ngày giờ bắt đầu ca đầu tiên -->
+                                <div class="mb-2.5">
+                                    <label class="form-label small fw-semibold text-muted mb-1">
+                                        Thời điểm bắt đầu ca đầu tiên <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="datetime-local" id="batchStartTime" class="form-control form-control-sm" 
+                                           style="border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;" 
+                                           onchange="validateBatchStartTime()" />
+                                    <div class="text-danger small mt-1 d-none" id="batchPastDateError">
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>Không thể chọn thời gian trong quá khứ.
+                                    </div>
+                                </div>
+
+                                <!-- Thời lượng ca & Thời gian nghỉ giữa các ca -->
+                                <div class="row g-2 mb-2.5">
+                                    <div class="col-6">
+                                        <label class="form-label small fw-semibold text-muted mb-1">
+                                            Thời lượng mỗi ca <span class="text-danger">*</span>
+                                        </label>
+                                        <select id="batchSlotDuration" class="form-select form-select-sm" style="border-radius: 8px; font-size: 0.82rem;">
+                                            <option value="15">15 phút / người</option>
+                                            <option value="20">20 phút / người</option>
+                                            <option value="30" selected>30 phút / người</option>
+                                            <option value="45">45 phút / người</option>
+                                            <option value="60">60 phút / người</option>
+                                            <option value="90">90 phút / người</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small fw-semibold text-muted mb-1">
+                                            Nghỉ giải lao giữa ca
+                                        </label>
+                                        <select id="batchBreakDuration" class="form-select form-select-sm" style="border-radius: 8px; font-size: 0.82rem;">
+                                            <option value="0">0 phút (Liên tục)</option>
+                                            <option value="5" selected>5 phút (Đề xuất)</option>
+                                            <option value="10">10 phút</option>
+                                            <option value="15">15 phút</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Hình thức & Địa điểm / Liên kết Meet -->
+                                <div class="row g-2 mb-2.5">
+                                    <div class="col-5">
+                                        <label class="form-label small fw-semibold text-muted mb-1">Hình thức <span class="text-danger">*</span></label>
+                                        <select id="batchInterviewType" class="form-select form-select-sm" style="border-radius: 8px; font-size: 0.82rem;" onchange="onBatchInterviewTypeChange()">
+                                            <option value="ONLINE_MEET" selected>Trực tuyến (Meet)</option>
+                                            <option value="OFFLINE_OFFICE">Trực tiếp văn phòng</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-7">
+                                        <label class="form-label small fw-semibold text-muted mb-1">Phòng họp / Link Meet <span class="text-danger">*</span></label>
+                                        <input type="text" id="batchLocationOrLink" class="form-control form-control-sm" 
+                                               value="https://meet.google.com/nov-batch-interview" 
+                                               style="border-radius: 8px; font-size: 0.82rem;" />
+                                    </div>
+                                </div>
+
+                                <!-- Hội đồng phỏng vấn (Panelists) -->
+                                <div class="mb-2.5">
+                                    <label class="form-label small fw-semibold text-muted mb-1">
+                                        Hội đồng phỏng vấn (chọn ít nhất 1) <span class="text-danger">*</span>
+                                    </label>
+                                    <select id="batchPanelists" class="form-select form-select-sm" multiple size="3" style="border-radius: 8px; font-size: 0.82rem;">
+                                        <option disabled>Đang tải nhân sự...</option>
+                                    </select>
+                                    <div class="text-danger small mt-1 d-none" id="batchPanelistError">
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>Vui lòng chọn ít nhất một người phỏng vấn.
+                                    </div>
+                                </div>
+
+                                <!-- Ghi chú -->
+                                <div>
+                                    <label class="form-label small fw-semibold text-muted mb-1">Ghi chú / Dặn dò ứng viên</label>
+                                    <textarea id="batchNotes" class="form-control form-control-sm" rows="2" 
+                                              placeholder="Chuẩn bị laptop, tài liệu chuyên môn và có mặt đúng khung giờ..." 
+                                              style="border-radius: 8px; font-size: 0.82rem;"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- BƯỚC 2: XEM TRƯỚC TOÀN BỘ KHE GIỜ & TINH CHỈNH THỨ TỰ -->
+                <div id="batchSchedStep2" class="d-none">
+                    
+                    <!-- Banner tóm tắt buổi phỏng vấn -->
+                    <div class="p-3 mb-3 border rounded-3" style="background: #F8FAFC; border-color: #E2E8F0 !important;">
+                        <div class="row g-3 align-items-center">
+                            <div class="col-12 col-md-4">
+                                <div class="text-muted small">Quy mô buổi phỏng vấn:</div>
+                                <div class="fw-bold text-dark fs-5 mt-0.5" style="letter-spacing: -0.02em;">
+                                    <span id="previewTotalCandidates" class="text-success" style="font-family: 'JetBrains Mono', monospace;">0</span> Ứng viên tập trung
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-5">
+                                <div class="text-muted small">Khung giờ tổng thể buổi phỏng vấn:</div>
+                                <div class="fw-bold text-primary fs-6 mt-0.5" style="font-family: 'JetBrains Mono', monospace;">
+                                    <i class="bi bi-clock-history me-1"></i><span id="previewOverallTime">--:-- - --:--</span>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-3 text-md-end">
+                                <span class="badge px-3 py-2 fw-semibold" style="background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; border-radius: 6px; font-size: 0.8rem;">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Đã phân bổ liên tiếp
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hướng dẫn tinh chỉnh -->
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="text-muted small">
+                            <i class="bi bi-info-circle text-info me-1"></i>Bạn có thể bấm mũi tên <i class="bi bi-arrow-up-short"></i> <i class="bi bi-arrow-down-short"></i> để đổi thứ tự ca giữa các ứng viên trước khi chốt lịch.
+                        </div>
+                        <span class="badge bg-light text-secondary border small">Thứ tự phỏng vấn từ trên xuống dưới</span>
+                    </div>
+
+                    <!-- Bảng chi tiết các khe thời gian -->
+                    <div class="table-responsive border rounded-3 bg-white" style="max-height: 420px; overflow-y: auto;">
+                        <table class="table align-middle mb-0" style="min-width: 850px; font-size: 0.84rem;">
+                            <thead style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0; color: #64748B; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; position: sticky; top: 0; z-index: 5;">
+                                <tr>
+                                    <th class="py-2.5 px-3 text-center" style="width: 80px;">Khe giờ</th>
+                                    <th class="py-2.5 px-3" style="width: 170px;">Khung giờ (GMT+7)</th>
+                                    <th class="py-2.5 px-3">Ứng viên</th>
+                                    <th class="py-2.5 px-3">Vị trí ứng tuyển</th>
+                                    <th class="py-2.5 px-3">Thông tin liên hệ</th>
+                                    <th class="py-2.5 px-3 text-center" style="width: 110px;">Đổi thứ tự</th>
+                                </tr>
+                            </thead>
+                            <tbody id="batchPreviewSlotsTableBody">
+                                <!-- Rendered dynamically via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Cảnh báo thư mời tự động -->
+                    <div class="alert d-flex align-items-center p-3 mt-3 mb-0 border-0" style="background: #FFFBEB; border: 1px solid #FDE68A !important; border-radius: 8px; color: #92400E;">
+                        <i class="bi bi-envelope-check-fill fs-5 me-2.5 text-warning flex-shrink-0"></i>
+                        <div class="small">
+                            <strong>Lưu ý quan trọng:</strong> Khi bạn bấm <em>"Xác nhận đặt lịch & Gửi thư mời hàng loạt"</em>, hệ thống sẽ tự động cập nhật giai đoạn hồ sơ sang <strong>Phỏng vấn</strong> và kích hoạt gửi thư mời email độc lập tới từng ứng viên với chính xác khung giờ của riêng họ.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ── Modal Footer ── -->
+            <div class="modal-footer py-2.5 px-4 d-flex justify-content-between align-items-center" style="background: #F8FAFC; border-top: 1px solid #E2E8F0;">
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-2 px-3 py-1.5" data-bs-dismiss="modal">
+                        Hủy bỏ
+                    </button>
+                </div>
+                
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Nút ở Bước 1 -->
+                    <button type="button" id="btnBatchStep1Next" class="btn btn-sm btn-success fw-semibold rounded-2 px-3 py-1.5" onclick="generateBatchSchedulePreview()">
+                        Xem trước toàn bộ khe giờ <i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+
+                    <!-- Các nút ở Bước 2 -->
+                    <button type="button" id="btnBatchStep2Back" class="btn btn-sm btn-outline-secondary fw-semibold rounded-2 px-3 py-1.5 d-none" onclick="backToBatchStep1()">
+                        <i class="bi bi-arrow-left me-1"></i> Điều chỉnh cấu hình
+                    </button>
+                    <button type="button" id="btnBatchConfirmSubmit" class="btn btn-sm btn-success fw-bold rounded-2 px-3.5 py-1.5 d-none" onclick="submitConfirmBatchSchedule()">
+                        <span id="spinnerBatchConfirm" class="spinner-border spinner-border-sm me-1 d-none" role="status"></span>
+                        <i class="bi bi-send-check-fill me-1" id="iconBatchConfirm"></i> Xác nhận đặt lịch & Gửi thư mời hàng loạt
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
