@@ -1,5 +1,9 @@
 using Ats.Web.Constants;
+using System.Globalization;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using Ats.Web.Data;
+using Ats.Web.Exceptions;
 using Ats.Web.Models.DTOs;
 using Ats.Web.Models.Entities;
 using Ats.Web.Models.Enums;
@@ -11,8 +15,8 @@ using Microsoft.Extensions.Logging;
 namespace Ats.Web.Services;
 
 /// <summary>
-/// Dịch vụ điều phối nghiệp vụ Đặt lịch phỏng vấn và Phân công hội đồng phỏng vấn (Scrum - Số 51 / EP-06).
-/// Tuân thủ quy chuẩn C# 12 Primary Constructors, xử lý thời gian UTC và kiểm tra tính hợp lệ chặt chẽ.
+/// Dịch vụ điều phối nghiệp vụ Đặt lịch phỏng vấn, Kiểm tra xung đột lịch và Phân công hội đồng phỏng vấn (Scrum - Số 51 & SCRUM-53 / EP-06).
+/// Tuân thủ quy chuẩn: Primary Constructors, Service Layer phân tầng sạch, xử lý UTC chuẩn DB và múi giờ Việt Nam khi hiển thị.
 /// </summary>
 public class InterviewService(
     ApplicationDbContext dbContext,
@@ -24,6 +28,211 @@ public class InterviewService(
     private readonly IEmailService _emailService = emailService;
     private readonly IRequisitionAssignmentService? _assignmentService = assignmentService;
     private readonly ILogger<InterviewService> _logger = logger;
+
+    private static readonly TimeZoneInfo VietnamTimeZone = GetVietnamTimeZone();
+
+    private static TimeZoneInfo GetVietnamTimeZone()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+        }
+        catch
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+            }
+            catch
+            {
+                return TimeZoneInfo.CreateCustomTimeZone("Vietnam Time", TimeSpan.FromHours(7), "Vietnam Time", "Vietnam Time");
+            }
+        }
+    }
+
+    private static string FormatVietnamTime(DateTimeOffset? utcTime)
+    {
+        if (!utcTime.HasValue) return string.Empty;
+        var vnTime = TimeZoneInfo.ConvertTime(utcTime.Value, VietnamTimeZone);
+        return vnTime.ToString("dd/MM/yyyy HH:mm", CultureInfo.GetCultureInfo("vi-VN"));
+    }
+
+    /// <inheritdoc/>
+    public async Task<InterviewConflictCheckResultViewModel> CheckScheduleConflictAsync(
+        InterviewConflictCheckInputModel input,
+        CancellationToken cancellationToken = default)
+    {
+        if (input == null || !input.StartTime.HasValue)
+        {
+            return new InterviewConflictCheckResultViewModel
+            {
+                HasConflict = false,
+                Message = "Dữ liệu thời gian kiểm tra xung đột không hợp lệ."
+            };
+        }
+
+        var startUtc = input.StartTime.Value.ToUniversalTime();
+        var durationMinutes = input.DurationMinutes.GetValueOrDefault(60);
+        if (durationMinutes <= 0) durationMinutes = 60;
+
+        var endUtc = input.EndTime.HasValue
+            ? input.EndTime.Value.ToUniversalTime()
+            : startUtc.AddMinutes(durationMinutes);
+
+        if (endUtc <= startUtc)
+        {
+            endUtc = startUtc.AddMinutes(durationMinutes);
+        }
+
+        // Truy vấn tất cả các buổi phỏng vấn có khung giờ giao nhau:
+        // A.StartTime < B.EndTime && A.EndTime > B.StartTime
+        // Bỏ qua các buổi đã hủy (CANCELLED) và đã bị xóa mềm (IsDeleted)
+        var query = _dbContext.Interviews
+            .AsNoTracking()
+            .Include(i => i.Panelists)
+                .ThenInclude(p => p.Interviewer)
+            .Include(i => i.Application)
+                .ThenInclude(a => a.Candidate)
+            .Include(i => i.Application)
+                .ThenInclude(a => a.JobPosting)
+            .Where(i => !i.IsDeleted &&
+                        i.Status != InterviewStatus.CANCELLED &&
+                        i.StartTime.HasValue &&
+                        i.EndTime.HasValue &&
+                        startUtc < i.EndTime.Value &&
+                        endUtc > i.StartTime.Value);
+
+        if (input.ExcludeInterviewId.HasValue && input.ExcludeInterviewId.Value != Guid.Empty)
+        {
+            query = query.Where(i => i.Id != input.ExcludeInterviewId.Value);
+        }
+
+        var overlappingInterviews = await query.ToListAsync(cancellationToken);
+
+        var conflicts = new List<InterviewConflictItemViewModel>();
+
+        // 1. Kiểm tra xung đột Người phỏng vấn (Interviewer Conflict)
+        var checkedInterviewerIds = input.InterviewerIds?
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList() ?? new List<Guid>();
+
+        if (checkedInterviewerIds.Count > 0)
+        {
+            foreach (var interview in overlappingInterviews)
+            {
+                var matchedPanelists = interview.Panelists
+                    .Where(p => !p.IsDeleted && checkedInterviewerIds.Contains(p.InterviewerId))
+                    .ToList();
+
+                foreach (var panelist in matchedPanelists)
+                {
+                    var interviewerName = panelist.Interviewer?.FullName ?? "Người phỏng vấn";
+                    var candName = $"{interview.Application?.Candidate?.FirstName} {interview.Application?.Candidate?.LastName}".Trim();
+                    if (string.IsNullOrWhiteSpace(candName)) candName = "Ứng viên";
+                    var jobTitle = interview.Application?.JobPosting?.Title ?? "Vị trí tuyển dụng";
+
+                    var startVn = FormatVietnamTime(interview.StartTime);
+                    var endVn = FormatVietnamTime(interview.EndTime);
+
+                    conflicts.Add(new InterviewConflictItemViewModel
+                    {
+                        ConflictType = "INTERVIEWER",
+                        ConflictingEntityName = interviewerName,
+                        ConflictingEntityId = panelist.InterviewerId,
+                        ConflictingCandidateName = candName,
+                        JobTitle = jobTitle,
+                        ConflictingInterviewId = interview.Id,
+                        ConflictingStartTime = startVn,
+                        ConflictingEndTime = endVn,
+                        StartTimeUtc = interview.StartTime,
+                        EndTimeUtc = interview.EndTime,
+                        TimeRangeDisplay = $"{startVn} - {endVn}"
+                    });
+                }
+            }
+        }
+
+        // 2. Kiểm tra xung đột Phòng họp (Room/Location Conflict)
+        string? targetRoomName = null;
+        if (input.MeetingRoomId.HasValue && input.MeetingRoomId.Value != Guid.Empty)
+        {
+            var roomCatalog = await _dbContext.RecruitmentCatalogs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == input.MeetingRoomId.Value, cancellationToken);
+            targetRoomName = roomCatalog?.Name;
+        }
+
+        if (string.IsNullOrWhiteSpace(targetRoomName) && !string.IsNullOrWhiteSpace(input.LocationOrLink))
+        {
+            var loc = input.LocationOrLink.Trim();
+            // Nếu không phải đường link mạng (http/https) thì xem như địa điểm phòng họp thực tế
+            if (!loc.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            {
+                targetRoomName = loc;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(targetRoomName))
+        {
+            foreach (var interview in overlappingInterviews)
+            {
+                if (string.IsNullOrWhiteSpace(interview.LocationOrLink)) continue;
+                var existingLoc = interview.LocationOrLink.Trim();
+
+                var isRoomConflict = existingLoc.Equals(targetRoomName, StringComparison.OrdinalIgnoreCase) ||
+                                     (input.MeetingRoomId.HasValue && existingLoc.Equals(input.MeetingRoomId.Value.ToString(), StringComparison.OrdinalIgnoreCase));
+
+                if (isRoomConflict)
+                {
+                    var candName = $"{interview.Application?.Candidate?.FirstName} {interview.Application?.Candidate?.LastName}".Trim();
+                    if (string.IsNullOrWhiteSpace(candName)) candName = "Ứng viên";
+                    var jobTitle = interview.Application?.JobPosting?.Title ?? "Vị trí tuyển dụng";
+
+                    var startVn = FormatVietnamTime(interview.StartTime);
+                    var endVn = FormatVietnamTime(interview.EndTime);
+
+                    conflicts.Add(new InterviewConflictItemViewModel
+                    {
+                        ConflictType = "ROOM",
+                        ConflictingEntityName = targetRoomName,
+                        ConflictingEntityId = input.MeetingRoomId,
+                        ConflictingCandidateName = candName,
+                        JobTitle = jobTitle,
+                        ConflictingInterviewId = interview.Id,
+                        ConflictingStartTime = startVn,
+                        ConflictingEndTime = endVn,
+                        StartTimeUtc = interview.StartTime,
+                        EndTimeUtc = interview.EndTime,
+                        TimeRangeDisplay = $"{startVn} - {endVn}"
+                    });
+                }
+            }
+        }
+
+        var hasConflict = conflicts.Count > 0;
+        string message;
+        if (hasConflict)
+        {
+            var interviewerCount = conflicts.Count(c => c.ConflictType == "INTERVIEWER");
+            var roomCount = conflicts.Count(c => c.ConflictType == "ROOM");
+            var details = new List<string>();
+            if (interviewerCount > 0) details.Add($"{interviewerCount} người phỏng vấn");
+            if (roomCount > 0) details.Add($"{roomCount} phòng họp");
+            message = $"Phát hiện trùng lịch phỏng vấn ({string.Join(", ", details)}).";
+        }
+        else
+        {
+            message = "Không có xung đột lịch phỏng vấn.";
+        }
+
+        return new InterviewConflictCheckResultViewModel
+        {
+            HasConflict = hasConflict,
+            Conflicts = conflicts,
+            Message = message
+        };
+    }
 
     /// <inheritdoc/>
     public async Task<InterviewScheduleResultDto> ScheduleInterviewAsync(
@@ -90,7 +299,7 @@ public class InterviewService(
 
         // 3. Kiểm tra danh sách người phỏng vấn
         var interviewerIds = model.GetNormalizedInterviewerIds();
-        if (!interviewerIds.Any())
+        if (interviewerIds.Count == 0)
         {
             return new InterviewScheduleResultDto
             {
@@ -160,7 +369,41 @@ public class InterviewService(
             }
         }
 
-        // 7. Xác định thông tin buổi phỏng vấn
+        // 7. Kiểm tra xung đột lịch phỏng vấn (SCRUM-53)
+        var conflictInput = new InterviewConflictCheckInputModel
+        {
+            StartTime = startUtc,
+            EndTime = endUtc,
+            InterviewerIds = interviewerIds,
+            MeetingRoomId = model.MeetingRoomId,
+            LocationOrLink = model.LocationOrLink,
+            ExcludeInterviewId = null
+        };
+
+        var conflictCheck = await CheckScheduleConflictAsync(conflictInput, cancellationToken);
+        if (conflictCheck.HasConflict)
+        {
+            if (!model.IsOverridden)
+            {
+                var errorList = conflictCheck.Conflicts.Select(c =>
+                    $"[{c.ConflictType}] {c.ConflictingEntityName} bị trùng lịch với ứng viên {c.ConflictingCandidateName} ({c.JobTitle}) khung giờ {c.TimeRangeDisplay}").ToList();
+
+                throw new BusinessRuleValidationException(
+                    conflictCheck.Message,
+                    errorList,
+                    conflictCheck);
+            }
+
+            if (string.IsNullOrWhiteSpace(model.OverrideReason) || model.OverrideReason.Trim().Length < 10)
+            {
+                throw new BusinessRuleValidationException(
+                    "Bắt buộc nhập lý do ghi đè trùng lịch hợp lệ (tối thiểu 10 ký tự).",
+                    new List<string> { "Lý do ghi đè phải có độ dài tối thiểu 10 ký tự để phục vụ lưu vết kiểm toán." },
+                    conflictCheck);
+            }
+        }
+
+        // 8. Xác định thông tin buổi phỏng vấn
         var roundNum = model.RoundNumber >= 1 ? model.RoundNumber : 1;
         var roundTitle = !string.IsNullOrWhiteSpace(model.RoundTitle)
             ? model.RoundTitle.Trim()
@@ -191,69 +434,114 @@ public class InterviewService(
             UpdatedAt = DateTimeOffset.UtcNow
         };
 
-        await _dbContext.Interviews.AddAsync(interview, cancellationToken);
 
-        // 8. Gán danh sách Hội đồng phỏng vấn (Panelists)
         var panelistNames = new List<string>();
-        var isLead = true;
-        foreach (var inv in interviewers)
+
+        // Thực thi toàn bộ thao tác ghi dữ liệu trong Transaction tường minh
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        try
         {
-            await _dbContext.InterviewPanelists.AddAsync(new InterviewPanelist
+            await _dbContext.Interviews.AddAsync(interview, cancellationToken);
+
+            // 9. Gán danh sách Hội đồng phỏng vấn (Panelists)
+            var isLead = true;
+            foreach (var inv in interviewers)
             {
-                Id = Guid.NewGuid(),
-                InterviewId = interview.Id,
-                InterviewerId = inv.Id,
-                IsLead = isLead,
-                CreatedAt = DateTimeOffset.UtcNow,
-                UpdatedAt = DateTimeOffset.UtcNow
-            }, cancellationToken);
+                await _dbContext.InterviewPanelists.AddAsync(new InterviewPanelist
+                {
+                    Id = Guid.NewGuid(),
+                    InterviewId = interview.Id,
+                    InterviewerId = inv.Id,
+                    IsLead = isLead,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                }, cancellationToken);
 
-            var displayRole = UserRoles.GetDisplayName(inv.Role);
-            panelistNames.Add($"{inv.FullName} ({displayRole})");
-            isLead = false;
-        }
+                var displayRole = UserRoles.GetDisplayName(inv.Role);
+                panelistNames.Add($"{inv.FullName} ({displayRole})");
+                isLead = false;
+            }
 
-        if (!panelistNames.Any())
-        {
-            panelistNames.Add("Ban Tuyển Dụng NoveraTech");
-        }
-
-        // 9. Cập nhật giai đoạn tuyển dụng nếu hồ sơ chưa tới stage Phỏng vấn
-        var interviewStage = await _dbContext.PipelineStages
-            .FirstOrDefaultAsync(s => s.StageOrder == 3 || s.Name.Contains("Phỏng vấn"), cancellationToken);
-
-        if (interviewStage != null && (application.CurrentStage == null || application.CurrentStage.StageOrder < interviewStage.StageOrder))
-        {
-            var prevStageId = application.CurrentStageId;
-            application.CurrentStageId = interviewStage.Id;
-            application.StageEnteredAt = DateTimeOffset.UtcNow;
-            application.IsSlaOverdue = false;
-            application.SlaOverdueAlertedAt = null;
-            application.UpdatedAt = DateTimeOffset.UtcNow;
-
-            var effectiveUserId = currentUserId != Guid.Empty
-                ? currentUserId
-                : (interviewers.FirstOrDefault()?.Id ?? Guid.Empty);
-
-            await _dbContext.ApplicationStageHistories.AddAsync(new ApplicationStageHistory
+            if (panelistNames.Count == 0)
             {
-                Id = Guid.NewGuid(),
-                ApplicationId = application.Id,
-                FromStageId = prevStageId,
-                ToStageId = interviewStage.Id,
-                ChangedByUserId = effectiveUserId,
-                Comment = $"Đã lên lịch {roundTitle} ({startUtc:dd/MM/yyyy HH:mm}).",
-                CreatedAt = DateTimeOffset.UtcNow
-            }, cancellationToken);
+                panelistNames.Add("Ban Tuyển Dụng NoveraTech");
+            }
+
+            // 10. Cập nhật giai đoạn tuyển dụng nếu hồ sơ chưa tới stage Phỏng vấn
+            var interviewStage = await _dbContext.PipelineStages
+                .FirstOrDefaultAsync(s => s.StageOrder == 3 || s.Name.Contains("Phỏng vấn"), cancellationToken);
+
+            if (interviewStage != null && (application.CurrentStage == null || application.CurrentStage.StageOrder < interviewStage.StageOrder))
+            {
+                var prevStageId = application.CurrentStageId;
+                application.CurrentStageId = interviewStage.Id;
+                application.StageEnteredAt = DateTimeOffset.UtcNow;
+                application.IsSlaOverdue = false;
+                application.SlaOverdueAlertedAt = null;
+                application.UpdatedAt = DateTimeOffset.UtcNow;
+
+                var effectiveUserId = currentUserId != Guid.Empty
+                    ? currentUserId
+                    : (interviewers.FirstOrDefault()?.Id ?? Guid.Empty);
+
+                await _dbContext.ApplicationStageHistories.AddAsync(new ApplicationStageHistory
+                {
+                    Id = Guid.NewGuid(),
+                    ApplicationId = application.Id,
+                    FromStageId = prevStageId,
+                    ToStageId = interviewStage.Id,
+                    ChangedByUserId = effectiveUserId,
+                    Comment = $"Đã lên lịch {roundTitle} ({startUtc:dd/MM/yyyy HH:mm}).",
+                    CreatedAt = DateTimeOffset.UtcNow
+                }, cancellationToken);
+            }
+
+            // 11. Ghi vết kiểm toán (AuditLog) chi tiết nếu có hành động ghi đè trùng lịch
+            if (model.IsOverridden && conflictCheck.HasConflict)
+            {
+                var auditLog = new AuditLog
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = currentUserId != Guid.Empty ? currentUserId : null,
+                    Action = "OVERRIDE_INTERVIEW_CONFLICT",
+                    EntityName = nameof(Interview),
+                    EntityId = interview.Id.ToString(),
+                    NewValues = JsonSerializer.Serialize(new
+                    {
+                        InterviewId = interview.Id,
+                        ApplicationId = application.Id,
+                        CandidateName = $"{application.Candidate?.FirstName} {application.Candidate?.LastName}".Trim(),
+                        JobTitle = application.JobPosting?.Title ?? "Vị trí tuyển dụng",
+                        StartTime = startUtc,
+                        EndTime = endUtc,
+                        IsOverridden = true,
+                        OverrideReason = model.OverrideReason?.Trim(),
+                        ConflictsCount = conflictCheck.Conflicts.Count,
+                        Conflicts = conflictCheck.Conflicts
+                    }, new JsonSerializerOptions
+                    {
+                        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                    }),
+                    CreatedAt = DateTimeOffset.UtcNow
+                };
+
+                await _dbContext.AuditLogs.AddAsync(auditLog, cancellationToken);
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
         }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
-        // 10. Gửi thư mời phỏng vấn tự động cho ứng viên
+        // 12. Gửi thư mời phỏng vấn tự động cho ứng viên
         var candFullName = $"{application.Candidate?.FirstName} {application.Candidate?.LastName}".Trim();
         var panelistStr = string.Join(", ", panelistNames);
         var candEmail = application.Candidate?.Email;
-        var jobTitle = application.JobPosting?.Title ?? "Vị trí tuyển dụng";
+        var candJobTitle = application.JobPosting?.Title ?? "Vị trí tuyển dụng";
 
         if (!string.IsNullOrWhiteSpace(candEmail))
         {
@@ -264,7 +552,7 @@ public class InterviewService(
                     await _emailService.SendInterviewInvitationAsync(
                         candEmail,
                         candFullName,
-                        jobTitle,
+                        candJobTitle,
                         roundTitle,
                         startUtc,
                         endUtc,
@@ -289,12 +577,227 @@ public class InterviewService(
             InterviewId = interview.Id,
             RoundNumber = roundNum,
             Title = roundTitle,
-            StartTimeDisplay = startUtc.ToString("dd/MM/yyyy HH:mm"),
-            EndTimeDisplay = endUtc.ToString("dd/MM/yyyy HH:mm"),
+            StartTimeDisplay = FormatVietnamTime(startUtc),
+            EndTimeDisplay = FormatVietnamTime(endUtc),
             InterviewTypeDisplay = interviewTypeDisplay,
             LocationOrLink = meetLocation,
             Panelists = panelistStr
         };
+    }
+
+    /// <inheritdoc/>
+    public async Task<InterviewScheduleResultDto> RescheduleInterviewAsync(
+        Guid interviewId,
+        ScheduleInterviewInputModel model,
+        Guid currentUserId,
+        bool isRecruiterOnly,
+        CancellationToken cancellationToken = default)
+    {
+        if (model == null)
+        {
+            return new InterviewScheduleResultDto
+            {
+                Success = false,
+                Message = "Dữ liệu đổi lịch không hợp lệ.",
+                Errors = new List<string> { "Model không được null." }
+            };
+        }
+
+        var interview = await _dbContext.Interviews
+            .Include(i => i.Panelists)
+            .Include(i => i.Application)
+                .ThenInclude(a => a.Candidate)
+            .Include(i => i.Application)
+                .ThenInclude(a => a.JobPosting)
+            .FirstOrDefaultAsync(i => i.Id == interviewId && !i.IsDeleted, cancellationToken);
+
+        if (interview == null)
+        {
+            return new InterviewScheduleResultDto
+            {
+                Success = false,
+                Message = "Không tìm thấy buổi phỏng vấn cần đổi lịch trong hệ thống.",
+                Errors = new List<string> { "Buổi phỏng vấn không tồn tại." }
+            };
+        }
+
+        var rawStartTime = model.GetNormalizedStartTime();
+        if (!rawStartTime.HasValue)
+        {
+            return new InterviewScheduleResultDto
+            {
+                Success = false,
+                Message = "Vui lòng chọn ngày giờ bắt đầu phỏng vấn.",
+                Errors = new List<string> { "Ngày giờ bắt đầu phỏng vấn không được để trống." }
+            };
+        }
+
+        var startUtc = new DateTimeOffset(DateTime.SpecifyKind(rawStartTime.Value, DateTimeKind.Utc));
+        var durationMinutes = model.DurationMinutes > 0 ? model.DurationMinutes : 60;
+        var endUtc = model.EndTime.HasValue
+            ? new DateTimeOffset(DateTime.SpecifyKind(model.EndTime.Value, DateTimeKind.Utc))
+            : startUtc.AddMinutes(durationMinutes);
+
+        if (endUtc <= startUtc)
+        {
+            endUtc = startUtc.AddMinutes(durationMinutes);
+        }
+
+        var interviewerIds = model.GetNormalizedInterviewerIds();
+        if (interviewerIds.Count == 0)
+        {
+            return new InterviewScheduleResultDto
+            {
+                Success = false,
+                Message = "Vui lòng chọn ít nhất một người phỏng vấn cho hội đồng.",
+                Errors = new List<string> { "Hội đồng phỏng vấn bắt buộc có ít nhất 1 thành viên." }
+            };
+        }
+
+        // Kiểm tra xung đột thời gian (loại trừ chính buổi phỏng vấn đang sửa này)
+        var conflictInput = new InterviewConflictCheckInputModel
+        {
+            StartTime = startUtc,
+            EndTime = endUtc,
+            InterviewerIds = interviewerIds,
+            MeetingRoomId = model.MeetingRoomId,
+            LocationOrLink = model.LocationOrLink,
+            ExcludeInterviewId = interviewId
+        };
+
+        var conflictCheck = await CheckScheduleConflictAsync(conflictInput, cancellationToken);
+        if (conflictCheck.HasConflict)
+        {
+            if (!model.IsOverridden)
+            {
+                var errorList = conflictCheck.Conflicts.Select(c =>
+                    $"[{c.ConflictType}] {c.ConflictingEntityName} bị trùng lịch với ứng viên {c.ConflictingCandidateName} ({c.JobTitle}) khung giờ {c.TimeRangeDisplay}").ToList();
+
+                throw new BusinessRuleValidationException(
+                    conflictCheck.Message,
+                    errorList,
+                    conflictCheck);
+            }
+
+            if (string.IsNullOrWhiteSpace(model.OverrideReason) || model.OverrideReason.Trim().Length < 10)
+            {
+                throw new BusinessRuleValidationException(
+                    "Bắt buộc nhập lý do ghi đè trùng lịch hợp lệ (tối thiểu 10 ký tự).",
+                    new List<string> { "Lý do ghi đè phải có độ dài tối thiểu 10 ký tự để phục vụ lưu vết kiểm toán." },
+                    conflictCheck);
+            }
+        }
+
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var oldValues = JsonSerializer.Serialize(new
+            {
+                interview.StartTime,
+                interview.EndTime,
+                interview.LocationOrLink,
+                interview.RoundNumber,
+                interview.Status
+            });
+
+            interview.StartTime = startUtc;
+            interview.EndTime = endUtc;
+            if (!string.IsNullOrWhiteSpace(model.LocationOrLink))
+            {
+                interview.LocationOrLink = model.LocationOrLink.Trim();
+            }
+            if (model.RoundNumber >= 1)
+            {
+                interview.RoundNumber = model.RoundNumber;
+            }
+            if (!string.IsNullOrWhiteSpace(model.RoundTitle))
+            {
+                interview.Title = model.RoundTitle.Trim();
+            }
+            interview.Status = InterviewStatus.SCHEDULED;
+            interview.CandidateConfirmed = CandidateConfirmStatus.PENDING;
+            interview.UpdatedAt = DateTimeOffset.UtcNow;
+            interview.UpdatedById = currentUserId != Guid.Empty ? currentUserId : null;
+
+            // Cập nhật lại danh sách Panelists
+            _dbContext.InterviewPanelists.RemoveRange(interview.Panelists);
+
+            var interviewers = await _dbContext.Users
+                .Where(u => interviewerIds.Contains(u.Id))
+                .ToListAsync(cancellationToken);
+
+            var isLead = true;
+            var panelistNames = new List<string>();
+            foreach (var inv in interviewers)
+            {
+                await _dbContext.InterviewPanelists.AddAsync(new InterviewPanelist
+                {
+                    Id = Guid.NewGuid(),
+                    InterviewId = interview.Id,
+                    InterviewerId = inv.Id,
+                    IsLead = isLead,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                }, cancellationToken);
+
+                panelistNames.Add($"{inv.FullName} ({inv.Role})");
+                isLead = false;
+            }
+
+            // Ghi AuditLog nếu có ghi đè
+            if (model.IsOverridden && conflictCheck.HasConflict)
+            {
+                var auditLog = new AuditLog
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = currentUserId != Guid.Empty ? currentUserId : null,
+                    Action = "OVERRIDE_INTERVIEW_RESCHEDULE_CONFLICT",
+                    EntityName = nameof(Interview),
+                    EntityId = interview.Id.ToString(),
+                    OldValues = oldValues,
+                    NewValues = JsonSerializer.Serialize(new
+                    {
+                        InterviewId = interview.Id,
+                        StartTime = startUtc,
+                        EndTime = endUtc,
+                        IsOverridden = true,
+                        OverrideReason = model.OverrideReason?.Trim(),
+                        ConflictsCount = conflictCheck.Conflicts.Count,
+                        Conflicts = conflictCheck.Conflicts
+                    }, new JsonSerializerOptions
+                    {
+                        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                    }),
+                    CreatedAt = DateTimeOffset.UtcNow
+                };
+
+                await _dbContext.AuditLogs.AddAsync(auditLog, cancellationToken);
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            var candFullName = $"{interview.Application?.Candidate?.FirstName} {interview.Application?.Candidate?.LastName}".Trim();
+            var panelistStr = string.Join(", ", panelistNames);
+
+            return new InterviewScheduleResultDto
+            {
+                Success = true,
+                Message = $"Đã cập nhật lại lịch phỏng vấn {interview.Title} cho ứng viên {candFullName} thành công!",
+                InterviewId = interview.Id,
+                RoundNumber = interview.RoundNumber,
+                Title = interview.Title,
+                StartTimeDisplay = FormatVietnamTime(startUtc),
+                EndTimeDisplay = FormatVietnamTime(endUtc),
+                LocationOrLink = interview.LocationOrLink,
+                Panelists = panelistStr
+            };
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
     /// <inheritdoc/>
@@ -332,6 +835,41 @@ public class InterviewService(
     }
 
     /// <inheritdoc/>
+    public async Task<List<MeetingRoomLookupDto>> GetAvailableMeetingRoomsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var existing = await _dbContext.RecruitmentCatalogs
+            .AsNoTracking()
+            .Where(c => c.CatalogType == "MEETING_ROOM" && !c.IsDeleted)
+            .OrderBy(c => c.DisplayOrder)
+            .ToListAsync(cancellationToken);
+
+        if (!existing.Any())
+        {
+            var defaultRooms = new List<RecruitmentCatalog>
+            {
+                new() { Id = Guid.NewGuid(), CatalogType = "MEETING_ROOM", Code = "ROOM_RUBY", Name = "Phòng Họp Ruby (Tầng 8 - Trụ sở HN)", Description = "Sức chứa 6-8 người, trang bị màn hình & họp trực tuyến", DisplayOrder = 1, IsSystem = true, CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow },
+                new() { Id = Guid.NewGuid(), CatalogType = "MEETING_ROOM", Code = "ROOM_DIAMOND", Name = "Phòng Họp Diamond (Tầng 10 - Trụ sở HN)", Description = "Sức chứa 10-12 người, hệ thống Video Conference", DisplayOrder = 2, IsSystem = true, CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow },
+                new() { Id = Guid.NewGuid(), CatalogType = "MEETING_ROOM", Code = "ROOM_SAPPHIRE", Name = "Phòng Họp Sapphire (Tầng 12 - Trụ sở HN)", Description = "Sức chứa 4-6 người, phỏng vấn chuyên sâu", DisplayOrder = 3, IsSystem = true, CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow },
+                new() { Id = Guid.NewGuid(), CatalogType = "MEETING_ROOM", Code = "ROOM_LOTUS_HCM", Name = "Phòng Họp Lotus (Tầng 15 - Chi nhánh HCM)", Description = "Sức chứa 8-10 người, màn hình tương tác", DisplayOrder = 4, IsSystem = true, CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow },
+                new() { Id = Guid.NewGuid(), CatalogType = "MEETING_ROOM", Code = "ROOM_DANANG_01", Name = "Phòng Họp Sơn Trà (Hub Đà Nẵng)", Description = "Sức chứa 6 người, bảng kính & webcam 4K", DisplayOrder = 5, IsSystem = true, CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow }
+            };
+
+            await _dbContext.RecruitmentCatalogs.AddRangeAsync(defaultRooms, cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            existing = defaultRooms;
+        }
+
+        return existing.Select(r => new MeetingRoomLookupDto
+        {
+            Id = r.Id,
+            Name = r.Name,
+            Code = r.Code,
+            Location = r.Description
+        }).ToList();
+    }
+
+    /// <inheritdoc/>
     public async Task<List<InterviewScheduleResultDto>> GetApplicationInterviewsAsync(
         Guid applicationId,
         CancellationToken cancellationToken = default)
@@ -350,8 +888,8 @@ public class InterviewService(
             InterviewId = i.Id,
             RoundNumber = i.RoundNumber,
             Title = i.Title,
-            StartTimeDisplay = i.StartTime.HasValue ? i.StartTime.Value.ToString("dd/MM/yyyy HH:mm") : string.Empty,
-            EndTimeDisplay = i.EndTime.HasValue ? i.EndTime.Value.ToString("dd/MM/yyyy HH:mm") : string.Empty,
+            StartTimeDisplay = FormatVietnamTime(i.StartTime),
+            EndTimeDisplay = FormatVietnamTime(i.EndTime),
             InterviewTypeDisplay = i.InterviewType == InterviewType.ONLINE_MEET ? "Trực tuyến" : "Trực tiếp",
             LocationOrLink = i.LocationOrLink,
             Panelists = string.Join(", ", i.Panelists.Select(p => p.Interviewer?.FullName ?? "Hội đồng phỏng vấn")),

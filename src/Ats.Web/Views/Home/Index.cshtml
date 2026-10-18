@@ -1764,7 +1764,7 @@
                                                         else if (interview.CandidateConfirmed == Ats.Web.Models.Enums.CandidateConfirmStatus.DECLINED)
                                                         {
                                                             <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size: 0.68rem; font-weight: 600; width: fit-content; cursor: pointer;"
-                                                                  onclick="showCandidateRescheduleModal('@interview.CandidateName', '@Html.Raw(Html.Encode(interview.CandidateNotes ?? "Ứng viên yêu cầu đổi lịch phỏng vấn"))')"
+                                                                  onclick="showCandidateRescheduleModal('@interview.CandidateName', '@Html.Raw(Html.Encode(interview.CandidateNotes ?? "Ứng viên yêu cầu đổi lịch phỏng vấn"))', '@interview.InterviewId', '@interview.ApplicationId', '@interview.JobTitle')"
                                                                   title="Bấm để xem lý do &amp; đề xuất đổi lịch của ứng viên">
                                                                 <i class="bi bi-clock-history me-1"></i>UV xin đổi lịch <i class="bi bi-info-circle ms-0.5"></i>
                                                             </span>
@@ -2752,7 +2752,10 @@
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-7">
-                            <label class="form-label small fw-semibold text-dark">Thời gian bắt đầu <span class="text-danger">*</span></label>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label small fw-semibold text-dark mb-0">Thời gian bắt đầu <span class="text-danger">*</span></label>
+                                <span class="conflict-loading-spinner spinner-border spinner-border-sm text-primary d-none" role="status" title="Đang kiểm tra trùng lịch..."></span>
+                            </div>
                             <input type="datetime-local" class="form-control form-control-sm" id="schedDate" required style="border-radius:8px;" onchange="validateSchedDateTime()" />
                             <div id="schedPastDateError" class="text-danger small mt-1 d-none" style="font-size:0.75rem;">
                                 <i class="bi bi-exclamation-triangle-fill me-1"></i>Không thể đặt lịch trong quá khứ. Vui lòng chọn thời gian tới.
@@ -2760,7 +2763,7 @@
                         </div>
                         <div class="col-5">
                             <label class="form-label small fw-semibold text-dark">Thời lượng <span class="text-danger">*</span></label>
-                            <select class="form-select form-select-sm" id="schedDuration" style="border-radius:8px;">
+                            <select class="form-select form-select-sm" id="schedDuration" style="border-radius:8px;" onchange="triggerHomeConflictCheck()">
                                 <option value="30">30 phút</option>
                                 <option value="45">45 phút</option>
                                 <option value="60" selected>60 phút (Chuẩn)</option>
@@ -2771,14 +2774,24 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-dark">Hình thức phỏng vấn</label>
-                        <select class="form-select form-select-sm" id="schedType" style="border-radius:8px;">
+                        <select class="form-select form-select-sm" id="schedType" style="border-radius:8px;" onchange="onHomeSchedTypeChange(this.value)">
                             <option value="ONLINE_MEET">Trực tuyến (Google Meet / MS Teams)</option>
                             <option value="OFFLINE_OFFICE">Trực tiếp tại Trụ sở NoveraTech</option>
                         </select>
                     </div>
+                    <!-- Chọn Phòng họp khi trực tiếp (SCRUM-53) -->
+                    <div class="mb-3" id="schedMeetingRoomGroup" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label small fw-semibold text-dark mb-0">Phòng họp phỏng vấn trực tiếp <span class="text-danger">*</span></label>
+                            <span class="conflict-loading-spinner spinner-border spinner-border-sm text-primary d-none" role="status" title="Đang kiểm tra xung đột phòng họp..."></span>
+                        </div>
+                        <select class="form-select form-select-sm" id="schedMeetingRoomId" style="border-radius:8px;" onchange="onHomeMeetingRoomChange(this)">
+                            <option value="">-- Chọn phòng họp khả dụng --</option>
+                        </select>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-dark">Địa điểm / Link phòng họp <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control form-control-sm" id="schedLocation" placeholder="https://meet.google.com/... hoặc Phòng Họp Tầng 12" required style="border-radius:8px;" />
+                        <input type="text" class="form-control form-control-sm" id="schedLocation" placeholder="https://meet.google.com/... hoặc Phòng Họp Tầng 12" required style="border-radius:8px;" oninput="triggerHomeConflictCheck()" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-dark">Thành viên hội đồng phỏng vấn (Panelists) <span class="text-danger">*</span></label>
@@ -2794,6 +2807,10 @@
                         <label class="form-label small fw-semibold text-dark">Ghi chú chuẩn bị / Lời nhắn ứng viên</label>
                         <textarea class="form-control form-control-sm" id="schedNotes" rows="2" placeholder="Vui lòng chuẩn bị slide hoặc mã nguồn demo (nếu có)..." style="border-radius:8px; font-size:0.85rem;"></textarea>
                     </div>
+
+                    <!-- Khung Cảnh Báo Xung Đột & Mở Khóa Ghi Đè (SCRUM-53) -->
+                    <partial name="_InterviewConflictAlertPartial" />
+
                     <div class="d-flex justify-content-end gap-2 mt-4 pt-2" style="border-top:1px solid #E2E8F0;">
                         <button type="button" class="btn btn-light px-4" style="border-radius:8px; font-size:0.85rem;" data-bs-dismiss="modal">Hủy</button>
                         <button type="submit" class="btn btn-primary px-4 fw-semibold text-white" style="border-radius:8px; font-size:0.85rem;" id="btnSubmitSched">
@@ -2829,6 +2846,9 @@
             </div>
             <div class="modal-footer border-0 pt-0">
                 <button type="button" class="btn btn-secondary btn-sm px-3" style="border-radius: 8px;" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-warning btn-sm px-3 fw-semibold text-dark" style="border-radius: 8px;" onclick="onCandidateRescheduleProceed()">
+                    <i class="bi bi-calendar2-range me-1"></i>Đổi lịch phỏng vấn ngay
+                </button>
             </div>
         </div>
     </div>
@@ -2989,6 +3009,7 @@
 
 
 @section Scripts {
+    <script src="~/js/interview-conflict.js"></script>
     <script>
         function getCsrfToken() {
             var input = document.querySelector('input[name="__RequestVerificationToken"]');
@@ -3781,13 +3802,28 @@
         }
 
         // Scrum - Số 54: Hiển thị modal xem lý do đổi lịch & Copy link mời
-        function showCandidateRescheduleModal(candidateName, notes) {
+        var activeRescheduleData = null;
+        function showCandidateRescheduleModal(candidateName, notes, interviewId, applicationId, jobTitle) {
             var nameEl = document.getElementById('modalRescheduleCandidateName');
             var noteEl = document.getElementById('modalRescheduleCandidateNotes');
             if (nameEl) nameEl.textContent = candidateName || 'Ứng viên';
             if (noteEl) noteEl.textContent = notes || 'Không có ghi chú thêm.';
+            activeRescheduleData = {
+                candidateName: candidateName,
+                interviewId: interviewId,
+                applicationId: applicationId,
+                jobTitle: jobTitle
+            };
             var modal = new bootstrap.Modal(document.getElementById('candidateRescheduleNoteModal'));
             modal.show();
+        }
+
+        function onCandidateRescheduleProceed() {
+            var noteModal = bootstrap.Modal.getInstance(document.getElementById('candidateRescheduleNoteModal'));
+            if (noteModal) noteModal.hide();
+            if (activeRescheduleData && activeRescheduleData.applicationId) {
+                openScheduleModal(activeRescheduleData.applicationId, activeRescheduleData.candidateName, activeRescheduleData.jobTitle);
+            }
         }
 
         function copyCandidateInviteUrl(url) {
@@ -4974,6 +5010,7 @@
                 if (errEl) errEl.classList.add('d-none');
                 timeInput.classList.remove('is-invalid');
                 if (btn) btn.disabled = false;
+                triggerHomeConflictCheck();
                 return true;
             }
         }
@@ -4993,6 +5030,7 @@
                 if (errEl) errEl.classList.add('d-none');
                 var isDateValid = validateSchedDateTime();
                 if (btn) btn.disabled = !isDateValid;
+                triggerHomeConflictCheck();
                 return true;
             }
         }
@@ -5022,18 +5060,80 @@
                     onSchedRoundChange(defaultRound);
                 }
             }
+            triggerHomeConflictCheck();
+        }
+
+        function onHomeSchedTypeChange(typeVal) {
+            var roomGroup = document.getElementById('schedMeetingRoomGroup');
+            var locInput = document.getElementById('schedLocation');
+            if (typeVal === 'ONLINE_MEET') {
+                if (roomGroup) roomGroup.style.display = 'none';
+                if (locInput && (!locInput.value || locInput.value.startsWith('Phòng'))) {
+                    locInput.value = 'https://meet.google.com/nov-' + Math.random().toString(36).substring(2, 6) + '-' + Math.random().toString(36).substring(2, 5);
+                }
+            } else {
+                if (roomGroup) {
+                    roomGroup.style.display = 'block';
+                    loadHomeMeetingRooms();
+                }
+                if (locInput && (!locInput.value || locInput.value.startsWith('https://'))) {
+                    locInput.value = 'Phòng Hội nghị Tầng 12 - Trụ sở NoveraTech';
+                }
+            }
+            triggerHomeConflictCheck();
+        }
+
+        var homeMeetingRoomsLoaded = false;
+        async function loadHomeMeetingRooms() {
+            if (homeMeetingRoomsLoaded) return;
+            var select = document.getElementById('schedMeetingRoomId');
+            if (!select) return;
+            try {
+                var res = await fetch('/interviews/danh-sach-phong-hop', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                var json = await res.json();
+                var list = json.data || json;
+                if (Array.isArray(list) && list.length > 0) {
+                    select.innerHTML = '<option value="">-- Chọn phòng họp khả dụng --</option>' +
+                        list.map(r => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
+                    homeMeetingRoomsLoaded = true;
+                }
+            } catch (e) {
+                console.warn('Lỗi khi tải danh sách phòng họp:', e);
+            }
+        }
+
+        function onHomeMeetingRoomChange(selectEl) {
+            if (!selectEl) return;
+            var selectedText = selectEl.options[selectEl.selectedIndex]?.text;
+            var locInput = document.getElementById('schedLocation');
+            if (locInput && selectEl.value && selectedText && !selectedText.startsWith('--')) {
+                locInput.value = selectedText;
+            }
+            triggerHomeConflictCheck();
+        }
+
+        function triggerHomeConflictCheck() {
+            if (!window.interviewConflict) return;
+            var timeVal = document.getElementById('schedDate')?.value;
+            var durationVal = document.getElementById('schedDuration')?.value || 60;
+            var locVal = document.getElementById('schedLocation')?.value;
+            var roomIdVal = document.getElementById('schedMeetingRoomId')?.value;
+            var select = document.getElementById('schedPanelists');
+            var selectedPanelists = select ? Array.from(select.selectedOptions).map(o => o.value).filter(v => v) : [];
+
+            window.interviewConflict.scheduleCheck({
+                startTime: timeVal,
+                durationMinutes: durationVal,
+                interviewerIds: selectedPanelists,
+                meetingRoomId: roomIdVal,
+                locationOrLink: locVal,
+                submitBtnId: 'btnSubmitSched'
+            });
         }
 
         async function openScheduleModal(applicationId, candidateName, jobTitle, roundNumber) {
-            // Option 2: Chuyển hướng sang Trang Chuyên Biệt Wizard (/phong-van/dat-lich)
-            if (applicationId && String(applicationId).trim() !== '') {
-                window.location.href = '/phong-van/dat-lich?applicationId=' + encodeURIComponent(applicationId);
-                return;
-            } else {
-                window.location.href = '/phong-van/dat-lich';
-                return;
-            }
-
             var candidateBox = document.getElementById('schedCandidateBox');
             var candidateSelectGroup = document.getElementById('schedCandidateSelectGroup');
             var candidateSelect = document.getElementById('schedCandidateSelect');
@@ -5075,16 +5175,18 @@
             var localIso = new Date(tomorrow.getTime() - tomorrow.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
             dateInput.value = localIso;
 
+            // Reset conflict alert state (SCRUM-53)
+            if (window.interviewConflict) {
+                window.interviewConflict.resetAlert();
+            }
+
             // Clear errors
             document.getElementById('schedPastDateError')?.classList.add('d-none');
             document.getElementById('schedPanelistError')?.classList.add('d-none');
             dateInput.classList.remove('is-invalid');
 
             // Default location
-            var locInput = document.getElementById('schedLocation');
-            if (locInput && (!locInput.value || locInput.value.trim() === '')) {
-                locInput.value = 'https://meet.google.com/nov-' + Math.random().toString(36).substring(2, 6) + '-' + Math.random().toString(36).substring(2, 5);
-            }
+            onHomeSchedTypeChange('ONLINE_MEET');
 
             // Load internal interviewers
             var select = document.getElementById('schedPanelists');
@@ -5110,6 +5212,9 @@
             } catch (e) {
                 select.innerHTML = '<option value="">(Không thể tải danh sách)</option>';
             }
+
+            // Gắn lắng nghe và kích hoạt kiểm tra xung đột thời gian thực ban đầu
+            triggerHomeConflictCheck();
 
             var modal = new bootstrap.Modal(document.getElementById('scheduleInterviewModal'));
             modal.show();
@@ -5147,6 +5252,9 @@
             var roundNumVal = parseInt(document.getElementById('schedRoundNumber')?.value, 10) || 1;
             var roundTitleVal = document.getElementById('schedRoundTitle')?.value || 'Phỏng vấn chuyên môn';
             var durationVal = parseInt(document.getElementById('schedDuration')?.value, 10) || 60;
+            var meetingRoomId = document.getElementById('schedMeetingRoomId')?.value || null;
+            var isOverridden = document.getElementById('chkIsOverridden')?.checked || false;
+            var overrideReason = document.getElementById('txtOverrideReason')?.value?.trim() || '';
 
             var payload = {
                 applicationId: document.getElementById('schedApplicationId').value,
@@ -5157,6 +5265,9 @@
                 durationMinutes: durationVal,
                 interviewType: document.getElementById('schedType').value,
                 locationOrLink: document.getElementById('schedLocation').value,
+                meetingRoomId: (meetingRoomId && meetingRoomId !== '') ? meetingRoomId : null,
+                isOverridden: isOverridden,
+                overrideReason: overrideReason,
                 notes: document.getElementById('schedNotes').value,
                 note: document.getElementById('schedNotes').value,
                 interviewerIds: selectedPanelists,
@@ -5179,7 +5290,14 @@
                     showToast(data.message || 'Lên lịch phỏng vấn thành công!', true);
                     setTimeout(() => window.location.reload(), 1200);
                 } else {
-                    showToast(data.message || 'Lỗi khi lên lịch phỏng vấn', false);
+                    if (data.isConflict) {
+                        if (window.interviewConflict) {
+                            window.interviewConflict.renderResult(data.data || data);
+                        }
+                        showToast(data.message || 'Phát hiện xung đột lịch phỏng vấn! Vui lòng kiểm tra danh sách hoặc xác nhận ghi đè.', false);
+                    } else {
+                        showToast(data.message || 'Lỗi khi lên lịch phỏng vấn', false);
+                    }
                 }
             } catch (err) {
                 showToast('Lỗi kết nối: ' + err.message, false);

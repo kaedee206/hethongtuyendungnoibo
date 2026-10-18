@@ -1,0 +1,81 @@
+@*
+    Partial View: _InterviewConflictAlertPartial.cshtml
+    Mục đích: Hiển thị cảnh báo trực quan khi phát hiện trùng lịch phỏng vấn hoặc phòng họp,
+              đồng thời cung cấp khu vực mở khóa Ghi đè (Hard Block with Override) theo SCRUM-53.
+*@
+
+<div id="interviewConflictSection" class="mt-2.5 mb-3">
+    <!-- Khung Loading khi đang kiểm tra xung đột -->
+    <div id="interviewConflictCheckingIndicator" class="d-none alert alert-light border py-2 px-3 mb-2 rounded-2 shadow-xs" style="background: #F8FAFC; border-color: #CBD5E1 !important;">
+        <div class="d-flex align-items-center gap-2">
+            <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
+            <small class="text-secondary fw-medium">Đang kiểm tra xung đột lịch người phỏng vấn &amp; phòng họp theo thời gian thực...</small>
+        </div>
+    </div>
+
+    <!-- Khung cảnh báo xung đột (Conflict Alert Banner) -->
+    <div id="interviewConflictAlert" class="alert alert-danger border-0 p-3 mb-3 rounded-2 shadow-xs d-none" style="background: #FEF2F2; border-left: 4px solid #DC2626 !important;">
+        <div class="d-flex align-items-start gap-2 mb-2">
+            <i class="bi bi-exclamation-octagon-fill text-danger fs-5 mt-n0.5"></i>
+            <div>
+                <h6 class="fw-bold text-danger mb-0" id="interviewConflictAlertTitle">
+                    Phát hiện xung đột lịch phỏng vấn!
+                </h6>
+                <small class="text-danger-emphasis" id="interviewConflictAlertMessage" style="font-size: 0.8rem;">
+                    Người phỏng vấn hoặc phòng họp đã có lịch trong khung giờ này. Lịch đã bị chặn tự động.
+                </small>
+            </div>
+        </div>
+
+        <!-- Danh sách chi tiết các ca trùng lặp -->
+        <div id="interviewConflictList" class="d-flex flex-column gap-2 mt-2 pt-1 border-top border-danger-subtle">
+            <!-- Dynamic items rendered by interview-conflict.js -->
+        </div>
+
+        <div class="mt-2.5 pt-2 border-top border-danger-subtle text-muted" style="font-size: 0.78rem;">
+            <i class="bi bi-shield-lock-fill text-danger me-1"></i>
+            <strong>Cơ chế chặn cứng (Hard Block):</strong> Không thể lưu lịch phỏng vấn này trừ khi bạn xác nhận ghi đè có lý do chính đáng bên dưới.
+        </div>
+    </div>
+
+    <!-- Khu vực Mở khóa Ghi đè (Override Section) -->
+    <div id="interviewOverrideSection" class="p-3 rounded-2 border shadow-xs d-none" style="background: #FFFBEB; border-color: #FDE68A !important;">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center gap-1.5">
+                <i class="bi bi-unlock-fill text-warning fs-6"></i>
+                <span class="fw-bold text-dark" style="font-size: 0.88rem;">Yêu cầu Ghi đè lịch (Override)</span>
+            </div>
+            <span id="interviewOverrideStatusBadge" class="badge rounded-2 bg-secondary text-white" style="font-size: 0.72rem;">
+                Chưa mở khóa
+            </span>
+        </div>
+
+        <!-- Checkbox xác nhận ghi đè -->
+        <div class="form-check form-switch mb-2.5">
+            <input class="form-check-input" type="checkbox" id="chkIsOverridden" name="IsOverridden" value="true" onchange="onInterviewOverrideChange()" style="cursor: pointer;">
+            <label class="form-check-label fw-semibold text-dark" for="chkIsOverridden" style="font-size: 0.84rem; cursor: pointer;">
+                Tôi đã trao đổi với các bên liên quan và xác nhận tiếp tục ghi đè lịch phỏng vấn này
+            </label>
+        </div>
+
+        <!-- Khung nhập lý do ghi đè bắt buộc -->
+        <div id="interviewOverrideReasonContainer" class="d-none">
+            <label class="form-label small fw-semibold text-dark mb-1">
+                Lý do ghi đè bắt buộc <span class="text-danger">*</span>
+                <span class="text-muted fw-normal" style="font-size: 0.75rem;">(Tối thiểu 10 ký tự để lưu vết kiểm toán AuditLog)</span>
+            </label>
+            <textarea id="txtOverrideReason" name="OverrideReason" class="form-control form-control-sm rounded-2" rows="2"
+                      placeholder="Nhập lý do ghi đè lịch phỏng vấn (tối thiểu 10 ký tự, ví dụ: Ứng viên chỉ rảnh khung giờ này, giám khảo đã đồng ý đổi buổi họp khác)..."
+                      oninput="onInterviewOverrideReasonInput()"></textarea>
+            
+            <div class="d-flex justify-content-between align-items-center mt-1">
+                <small id="overrideReasonValidationMsg" class="text-danger" style="font-size: 0.75rem;">
+                    <i class="bi bi-exclamation-circle me-1"></i>Lý do phải có độ dài từ 10 ký tự trở lên.
+                </small>
+                <small id="overrideReasonCounter" class="text-muted fw-semibold" style="font-size: 0.74rem;">
+                    0/10 ký tự
+                </small>
+            </div>
+        </div>
+    </div>
+</div>

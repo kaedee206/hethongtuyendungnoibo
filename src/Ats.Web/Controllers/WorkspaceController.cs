@@ -11,6 +11,7 @@ using Ats.Web.Services.Interfaces;
 using Ats.Web.Models.DTOs;
 using Ats.Web.Models.ViewModels.Referral;
 using Ats.Web.Models.ViewModels.CandidateMerge;
+using Ats.Web.Exceptions;
 using Ats.Web.Models.ViewModels.CandidateTimeline;
 
 namespace Ats.Web.Controllers;
@@ -1127,35 +1128,50 @@ public class WorkspaceController : Controller
 
             if (_interviewService != null)
             {
-                var result = await _interviewService.ScheduleInterviewAsync(model, currentUserId, isRecruiterOnly, cancellationToken);
-                string? confirmUrl = null;
-                if (result.Success && _candidateInterviewService != null && result.InterviewId.HasValue)
+                try
                 {
-                    var candEmail = await _dbContext.Applications
-                        .Where(a => a.Id == model.ApplicationId)
-                        .Select(a => a.Candidate.Email)
-                        .FirstOrDefaultAsync(cancellationToken);
-                    if (!string.IsNullOrWhiteSpace(candEmail))
+                    var result = await _interviewService.ScheduleInterviewAsync(model, currentUserId, isRecruiterOnly, cancellationToken);
+                    string? confirmUrl = null;
+                    if (result.Success && _candidateInterviewService != null && result.InterviewId.HasValue)
                     {
-                        confirmUrl = _candidateInterviewService.BuildConfirmationUrl(Request, result.InterviewId.Value, candEmail);
+                        var candEmail = await _dbContext.Applications
+                            .Where(a => a.Id == model.ApplicationId)
+                            .Select(a => a.Candidate.Email)
+                            .FirstOrDefaultAsync(cancellationToken);
+                        if (!string.IsNullOrWhiteSpace(candEmail))
+                        {
+                            confirmUrl = _candidateInterviewService.BuildConfirmationUrl(Request, result.InterviewId.Value, candEmail);
+                        }
                     }
-                }
 
-                return Json(new
+                    return Json(new
+                    {
+                        success = result.Success,
+                        message = result.Message,
+                        interviewId = result.InterviewId,
+                        confirmationUrl = confirmUrl,
+                        roundNumber = result.RoundNumber,
+                        title = result.Title,
+                        startTime = result.StartTimeDisplay,
+                        endTime = result.EndTimeDisplay,
+                        interviewType = result.InterviewTypeDisplay,
+                        locationOrLink = result.LocationOrLink,
+                        panelists = result.Panelists,
+                        errors = result.Errors
+                    });
+                }
+                catch (BusinessRuleValidationException ex)
                 {
-                    success = result.Success,
-                    message = result.Message,
-                    interviewId = result.InterviewId,
-                    confirmationUrl = confirmUrl,
-                    roundNumber = result.RoundNumber,
-                    title = result.Title,
-                    startTime = result.StartTimeDisplay,
-                    endTime = result.EndTimeDisplay,
-                    interviewType = result.InterviewTypeDisplay,
-                    locationOrLink = result.LocationOrLink,
-                    panelists = result.Panelists,
-                    errors = result.Errors
-                });
+                    _logger.LogWarning("Xung đột lịch phỏng vấn: {Msg}", ex.Message);
+                    return Json(new
+                    {
+                        success = false,
+                        isConflict = true,
+                        message = ex.Message,
+                        errors = ex.ValidationErrors,
+                        data = ex.ErrorData
+                    });
+                }
             }
 
             var application = await _dbContext.Applications
