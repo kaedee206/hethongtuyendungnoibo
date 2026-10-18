@@ -1,3 +1,4 @@
+using Ats.Web.Constants;
 using Ats.Web.Data;
 using Ats.Web.Models.Entities;
 using Ats.Web.Models.Enums;
@@ -41,7 +42,10 @@ public class InterviewEvaluationServiceTests
             Id = Guid.NewGuid(),
             FullName = "Nguyễn Văn Giám Khảo 1",
             Email = $"panelist1_{Guid.NewGuid():N}@noveratech.vn",
-            PasswordHash = "hash"
+            PasswordHash = "hash",
+            Status = "ACTIVE",
+            Role = UserRoles.Interviewer,
+            UserType = UserType.INTERNAL
         };
 
         var panelist2 = new User
@@ -49,7 +53,10 @@ public class InterviewEvaluationServiceTests
             Id = Guid.NewGuid(),
             FullName = "Trần Thị Giám Khảo 2",
             Email = $"panelist2_{Guid.NewGuid():N}@noveratech.vn",
-            PasswordHash = "hash"
+            PasswordHash = "hash",
+            Status = "ACTIVE",
+            Role = UserRoles.Interviewer,
+            UserType = UserType.INTERNAL
         };
 
         var uninvitedUser = new User
@@ -57,7 +64,10 @@ public class InterviewEvaluationServiceTests
             Id = Guid.NewGuid(),
             FullName = "Lê Người Ngoài Cuộc",
             Email = $"outsider_{Guid.NewGuid():N}@noveratech.vn",
-            PasswordHash = "hash"
+            PasswordHash = "hash",
+            Status = "ACTIVE",
+            Role = UserRoles.Interviewer,
+            UserType = UserType.INTERNAL
         };
 
         var recruiter = new User
@@ -65,7 +75,10 @@ public class InterviewEvaluationServiceTests
             Id = Guid.NewGuid(),
             FullName = "Phạm Chuyên Viên Tuyển Dụng",
             Email = $"recruiter_{Guid.NewGuid():N}@noveratech.vn",
-            PasswordHash = "hash"
+            PasswordHash = "hash",
+            Status = "ACTIVE",
+            Role = UserRoles.Recruiter,
+            UserType = UserType.INTERNAL
         };
 
         await context.Users.AddRangeAsync(panelist1, panelist2, uninvitedUser, recruiter);
@@ -503,6 +516,77 @@ public class InterviewEvaluationServiceTests
         Assert.Equal(panelist1.Id, p1Eval.InterviewerId);
         Assert.True(p1Eval.CanRecruiterReopen); // Còn trong 24h nên Recruiter có quyền mở lại
         Assert.True(p1Eval.HoursRemainingToReopen > 0);
+    }
+
+    [Fact]
+    public async Task GetEvaluationSheet_WhenCandidateAttemptsToOpen_ShouldReturnSecurityViolation_Rule12()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var (interview, _, _, _, _) = await SeedInterviewTestDataAsync(context);
+
+        var candidateUser = new User
+        {
+            Id = Guid.NewGuid(),
+            FullName = "Ứng Viên Đang Thi Tuyển",
+            Email = "candidate_hacker@gmail.com",
+            PasswordHash = "hash",
+            Status = "ACTIVE",
+            Role = UserRoles.Candidate,
+            UserType = UserType.EXTERNAL_CANDIDATE
+        };
+        await context.Users.AddAsync(candidateUser);
+        await context.SaveChangesAsync();
+
+        var service = new InterviewEvaluationService(context, NullLogger<InterviewEvaluationService>.Instance);
+
+        // Act
+        var (canOpen, message, model) = await service.GetEvaluationSheetAsync(interview.Id, candidateUser.Id, isStaffManager: false);
+
+        // Assert
+        Assert.False(canOpen);
+        Assert.Null(model);
+        Assert.Contains("Rule 12", message);
+        Assert.Contains("Ứng viên (Candidate) không có quyền mở phiếu đánh giá", message);
+    }
+
+    [Fact]
+    public async Task SubmitEvaluation_WhenCandidateAttemptsToSubmit_ShouldFailWithSecurityViolation_Rule12()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var (interview, _, _, _, _) = await SeedInterviewTestDataAsync(context);
+
+        var candidateUser = new User
+        {
+            Id = Guid.NewGuid(),
+            FullName = "Ứng Viên Cố Nộp Đánh Giá",
+            Email = "candidate_submitting@gmail.com",
+            PasswordHash = "hash",
+            Status = "ACTIVE",
+            Role = UserRoles.Candidate,
+            UserType = UserType.EXTERNAL_CANDIDATE
+        };
+        await context.Users.AddAsync(candidateUser);
+        await context.SaveChangesAsync();
+
+        var service = new InterviewEvaluationService(context, NullLogger<InterviewEvaluationService>.Instance);
+
+        var input = new InterviewEvaluationSubmitInputModel
+        {
+            InterviewId = interview.Id,
+            Recommendation = "HIRE",
+            DetailedFeedback = "Tự đánh giá chính mình"
+        };
+
+        // Act
+        var (success, message, evalId) = await service.SubmitEvaluationAsync(input, candidateUser.Id);
+
+        // Assert
+        Assert.False(success);
+        Assert.Null(evalId);
+        Assert.Contains("Rule 12", message);
+        Assert.Contains("Ứng viên (Candidate) tuyệt đối không có quyền nộp phiếu đánh giá", message);
     }
 
     #endregion

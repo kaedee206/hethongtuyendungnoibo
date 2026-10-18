@@ -455,4 +455,70 @@ public class RequisitionAssignmentTests
         controller.TempData["SuccessMessage"].Should().NotBeNull();
         controller.TempData["SuccessMessage"]!.ToString().Should().Contain("thành công");
     }
+
+    [Fact]
+    public async Task GetAssignmentOverviewAsync_PopulatesRecruiterWorkloadsAndCapacityMatrix()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.CreateInMemoryDbContext();
+        var (dept, pos, req1, leadUser, supportUser, hrManager) = CreateBasicTestData(db);
+        var service = new RequisitionAssignmentService(db, _serviceLogger);
+
+        var req2 = new JobRequisition
+        {
+            Id = Guid.NewGuid(),
+            Code = "REQ-IT-002",
+            JobPositionId = pos.Id,
+            DepartmentId = dept.Id,
+            HiringManagerId = hrManager.Id,
+            Quantity = 1,
+            Status = RequisitionStatus.APPROVED
+        };
+        db.JobRequisitions.Add(req2);
+
+        // Assign leadUser to req1 as Lead, req2 as Support
+        db.RequisitionRecruiters.AddRange(
+            new RequisitionRecruiter { Id = Guid.NewGuid(), RequisitionId = req1.Id, RecruiterId = leadUser.Id, IsPrimary = true },
+            new RequisitionRecruiter { Id = Guid.NewGuid(), RequisitionId = req2.Id, RecruiterId = leadUser.Id, IsPrimary = false }
+        );
+        req1.AssignedRecruiterId = leadUser.Id;
+        await db.SaveChangesAsync();
+
+        // Act
+        var overview = await service.GetAssignmentOverviewAsync();
+
+        // Assert
+        overview.RecruiterWorkloads.Should().NotBeEmpty();
+        var leadWorkload = overview.RecruiterWorkloads.FirstOrDefault(w => w.RecruiterId == leadUser.Id);
+        leadWorkload.Should().NotBeNull();
+        leadWorkload!.LeadCount.Should().Be(1);
+        leadWorkload.SupportCount.Should().Be(1);
+        leadWorkload.TotalActivePositions.Should().Be(2);
+        leadWorkload.WorkloadLevel.Should().Be("Tải nhẹ");
+    }
+
+    [Fact]
+    public async Task Controller_QuickAssign_ReturnsOkResultOnSuccess()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.CreateInMemoryDbContext();
+        var (_, _, req, leadUser, _, hrManager) = CreateBasicTestData(db);
+        var service = new RequisitionAssignmentService(db, _serviceLogger);
+        var controller = new RequisitionAssignmentsController(service, _controllerLogger);
+
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, hrManager.Id.ToString()),
+            new(ClaimTypes.Name, hrManager.FullName),
+            new(ClaimTypes.Role, UserRoles.HRManager)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) } };
+
+        // Act
+        var actionResult = await controller.QuickAssign(req.Id, leadUser.Id, "Phân công nhanh");
+
+        // Assert
+        actionResult.Should().BeOfType<OkObjectResult>();
+    }
 }
