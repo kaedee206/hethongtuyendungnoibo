@@ -792,4 +792,631 @@ public class InterviewService(
             };
         }).ToList();
     }
+
+    /// <inheritdoc/>
+    public async Task<InterviewDetailForEditDto?> GetInterviewDetailForEditAsync(
+        Guid interviewId,
+        Guid currentUserId,
+        bool isRecruiterOnly,
+        CancellationToken cancellationToken = default)
+    {
+        var interview = await _dbContext.Interviews
+            .Include(i => i.Application)
+                .ThenInclude(a => a.Candidate)
+            .Include(i => i.Application)
+                .ThenInclude(a => a.JobPosting)
+            .Include(i => i.Panelists)
+                .ThenInclude(p => p.Interviewer)
+            .Include(i => i.Evaluations)
+            .FirstOrDefaultAsync(i => i.Id == interviewId && !i.IsDeleted, cancellationToken);
+
+        if (interview == null)
+        {
+            return null;
+        }
+
+        if (isRecruiterOnly && _assignmentService != null && currentUserId != Guid.Empty)
+        {
+            var canAccess = await _assignmentService.CanRecruiterAccessApplicationAsync(currentUserId, interview.ApplicationId);
+            if (!canAccess)
+            {
+                return null;
+            }
+        }
+
+        var cand = interview.Application?.Candidate;
+        var candName = cand != null ? $"{cand.FirstName} {cand.LastName}".Trim() : "Ứng viên";
+        var hasSubmitted = interview.Evaluations.Any(e => e.IsSubmitted && !e.IsDeleted);
+
+        var duration = 60;
+        if (interview.StartTime.HasValue && interview.EndTime.HasValue)
+        {
+            var diff = (int)(interview.EndTime.Value - interview.StartTime.Value).TotalMinutes;
+            if (diff > 0) duration = diff;
+        }
+
+        var activePanelists = interview.Panelists.Where(p => !p.IsDeleted).ToList();
+        var panelistNames = activePanelists.Any()
+            ? string.Join(", ", activePanelists.Select(p => p.Interviewer?.FullName ?? "Giám khảo"))
+            : "Chưa phân công";
+
+        string? cancellationReason = null;
+        if (interview.Status == InterviewStatus.CANCELLED && !string.IsNullOrWhiteSpace(interview.CandidateNotes))
+        {
+            var marker = "[LÝ DO HUỶ]:";
+            var idx = interview.CandidateNotes.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            if (idx >= 0)
+            {
+                var sub = interview.CandidateNotes[(idx + marker.Length)..];
+                var endIdx = sub.IndexOf('\n');
+                cancellationReason = (endIdx >= 0 ? sub[..endIdx] : sub).Trim();
+            }
+            else
+            {
+                cancellationReason = interview.CandidateNotes.Trim();
+            }
+        }
+
+        string? rescheduleReason = null;
+        if (interview.Status == InterviewStatus.RESCHEDULED && !string.IsNullOrWhiteSpace(interview.CandidateNotes))
+        {
+            var marker = "[Dời lịch:";
+            var idx = interview.CandidateNotes.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            if (idx >= 0)
+            {
+                var sub = interview.CandidateNotes[(idx + marker.Length)..];
+                var endBracket = sub.IndexOf(']');
+                rescheduleReason = (endBracket >= 0 ? sub[..endBracket] : sub).Trim();
+            }
+        }
+
+        return new InterviewDetailForEditDto
+        {
+            InterviewId = interview.Id,
+            ApplicationId = interview.ApplicationId,
+            CandidateName = candName,
+            CandidateEmail = cand?.Email ?? string.Empty,
+            JobTitle = interview.Application?.JobPosting?.Title ?? "Vị trí tuyển dụng",
+            RoundNumber = interview.RoundNumber,
+            Title = interview.Title,
+            StartTime = interview.StartTime?.UtcDateTime,
+            EndTime = interview.EndTime?.UtcDateTime,
+            DurationMinutes = duration,
+            InterviewType = interview.InterviewType.ToString(),
+            LocationOrLink = interview.LocationOrLink ?? string.Empty,
+            InterviewerIds = activePanelists.Select(p => p.InterviewerId).ToList(),
+            PanelistNames = panelistNames,
+            Notes = interview.CandidateNotes,
+            HasSubmittedEvaluation = hasSubmitted,
+            Status = interview.Status.ToString(),
+            CancellationReason = cancellationReason,
+            RescheduleReason = rescheduleReason
+        };
+    }
+
+    /// <inheritdoc/>
+    public async Task<InterviewScheduleResultDto> RescheduleInterviewAsync(
+        RescheduleInterviewInputModel model,
+        Guid currentUserId,
+        bool isRecruiterOnly,
+        CancellationToken cancellationToken = default)
+    {
+        if (model == null || model.InterviewId == Guid.Empty)
+        {
+            return new InterviewScheduleResultDto
+            {
+                Success = false,
+                Message = "Dữ liệu yêu cầu dời lịch phỏng vấn không hợp lệ.",
+                Errors = new List<string> { "Mã buổi phỏng vấn không được để trống." }
+            };
+        }
+
+        var interview = await _dbContext.Interviews
+            .Include(i => i.Application)
+                .ThenInclude(a => a.Candidate)
+            .Include(i => i.Application)
+                .ThenInclude(a => a.JobPosting)
+            .Include(i => i.Panelists)
+                .ThenInclude(p => p.Interviewer)
+            .Include(i => i.Evaluations)
+            .FirstOrDefaultAsync(i => i.Id == model.InterviewId && !i.IsDeleted, cancellationToken);
+
+        if (interview == null)
+        {
+            return new InterviewScheduleResultDto
+            {
+                Success = false,
+                Message = "Không tìm thấy thông tin buổi phỏng vấn trong hệ thống.",
+                Errors = new List<string> { "Buổi phỏng vấn không tồn tại hoặc đã bị xóa." }
+            };
+        }
+
+        // 1. Kiểm tra quyền hạn phụ trách hồ sơ (Scrum 26)
+        if (isRecruiterOnly && _assignmentService != null && currentUserId != Guid.Empty)
+        {
+            var canAccess = await _assignmentService.CanRecruiterAccessApplicationAsync(currentUserId, interview.ApplicationId);
+            if (!canAccess)
+            {
+                return new InterviewScheduleResultDto
+                {
+                    Success = false,
+                    Message = "Bạn không có quyền dời lịch phỏng vấn cho hồ sơ này do không phụ trách vị trí tuyển dụng tương ứng.",
+                    Errors = new List<string> { "Không có quyền phụ trách vị trí tuyển dụng tương ứng." }
+                };
+            }
+        }
+
+        // 2. QUY TẮC CỐT TỬ: Không sửa được buổi đã có phiếu đánh giá nộp (Scrum - Số 55)
+        var hasSubmittedEval = interview.Evaluations.Any(e => e.IsSubmitted && !e.IsDeleted);
+        if (hasSubmittedEval)
+        {
+            return new InterviewScheduleResultDto
+            {
+                Success = false,
+                Message = "Không thể dời lịch phỏng vấn này vì đã có phiếu đánh giá được nộp bởi hội đồng phỏng vấn.",
+                Errors = new List<string> { "Buổi phỏng vấn đã có ít nhất một phiếu đánh giá nộp, hệ thống khóa toàn bộ quyền sửa đổi." }
+            };
+        }
+
+        // 3. Kiểm tra trạng thái buổi phỏng vấn
+        if (interview.Status == InterviewStatus.CANCELLED)
+        {
+            return new InterviewScheduleResultDto
+            {
+                Success = false,
+                Message = "Buổi phỏng vấn đã bị huỷ trước đó, không thể dời lịch. Vui lòng tạo một lịch phỏng vấn mới.",
+                Errors = new List<string> { "Không thể dời lịch buổi phỏng vấn đã huỷ." }
+            };
+        }
+
+        if (interview.Status == InterviewStatus.COMPLETED)
+        {
+            return new InterviewScheduleResultDto
+            {
+                Success = false,
+                Message = "Buổi phỏng vấn đã hoàn thành, không thể dời lịch.",
+                Errors = new List<string> { "Không thể dời lịch buổi phỏng vấn đã hoàn thành." }
+            };
+        }
+
+        // 4. Kiểm tra ngày giờ bắt đầu mới
+        var rawStartTime = model.GetNormalizedStartTime();
+        if (!rawStartTime.HasValue)
+        {
+            return new InterviewScheduleResultDto
+            {
+                Success = false,
+                Message = "Vui lòng chọn ngày giờ phỏng vấn mới.",
+                Errors = new List<string> { "Ngày giờ phỏng vấn mới không được để trống." }
+            };
+        }
+
+        var startUtc = new DateTimeOffset(DateTime.SpecifyKind(rawStartTime.Value, DateTimeKind.Utc));
+        var nowUtc = DateTimeOffset.UtcNow;
+
+        if (startUtc <= nowUtc)
+        {
+            return new InterviewScheduleResultDto
+            {
+                Success = false,
+                Message = "Không thể dời lịch phỏng vấn về thời điểm trong quá khứ. Vui lòng chọn ngày giờ trong tương lai.",
+                Errors = new List<string> { "Thời điểm phỏng vấn mới phải lớn hơn thời gian hiện tại." }
+            };
+        }
+
+        // 5. Kiểm tra thời lượng và kết thúc
+        if (model.DurationMinutes <= 0) model.DurationMinutes = 60;
+        var endUtc = model.NewEndTime.HasValue
+            ? new DateTimeOffset(DateTime.SpecifyKind(model.NewEndTime.Value, DateTimeKind.Utc))
+            : (model.EndTime.HasValue
+                ? new DateTimeOffset(DateTime.SpecifyKind(model.EndTime.Value, DateTimeKind.Utc))
+                : startUtc.AddMinutes(model.DurationMinutes));
+
+        if (endUtc <= startUtc)
+        {
+            endUtc = startUtc.AddMinutes(model.DurationMinutes);
+        }
+
+        // 6. Kiểm tra người phỏng vấn
+        var interviewerIds = model.GetNormalizedInterviewerIds();
+        if (!interviewerIds.Any())
+        {
+            return new InterviewScheduleResultDto
+            {
+                Success = false,
+                Message = "Vui lòng chọn ít nhất một người phỏng vấn cho hội đồng.",
+                Errors = new List<string> { "Hội đồng phỏng vấn bắt buộc có ít nhất 1 thành viên." }
+            };
+        }
+
+        // 7. Kiểm tra phòng hoặc liên kết họp
+        if (string.IsNullOrWhiteSpace(model.LocationOrLink))
+        {
+            return new InterviewScheduleResultDto
+            {
+                Success = false,
+                Message = "Vui lòng cung cấp phòng họp hoặc liên kết họp trực tuyến mới.",
+                Errors = new List<string> { "Địa điểm hoặc liên kết họp không được để trống." }
+            };
+        }
+
+        // Lưu thông tin cũ để đưa vào nội dung email so sánh
+        var oldStartUtc = interview.StartTime ?? DateTimeOffset.UtcNow;
+        var oldPanelistUsers = interview.Panelists.Where(p => !p.IsDeleted).Select(p => p.Interviewer).ToList();
+
+        // 8. Cập nhật thông tin buổi phỏng vấn
+        var meetLocation = model.LocationOrLink.Trim();
+        var interviewType = model.InterviewType?.Equals("OFFLINE_OFFICE", StringComparison.OrdinalIgnoreCase) == true
+            ? InterviewType.OFFLINE_OFFICE
+            : (model.InterviewType?.Equals("ONLINE_MEET", StringComparison.OrdinalIgnoreCase) == true
+                ? InterviewType.ONLINE_MEET
+                : (meetLocation.Contains("http", StringComparison.OrdinalIgnoreCase) ? InterviewType.ONLINE_MEET : InterviewType.OFFLINE_OFFICE));
+
+        interview.StartTime = startUtc;
+        interview.EndTime = endUtc;
+        interview.InterviewType = interviewType;
+        interview.LocationOrLink = meetLocation;
+        interview.Status = InterviewStatus.RESCHEDULED;
+        interview.CandidateConfirmed = CandidateConfirmStatus.PENDING;
+
+        var reason = model.GetNormalizedReason();
+        var notes = model.GetNormalizedNotes();
+        var prefixReason = !string.IsNullOrWhiteSpace(reason) ? $"[Dời lịch: {reason}]" : "";
+        interview.CandidateNotes = string.Join(" ", new[] { prefixReason, notes }.Where(s => !string.IsNullOrWhiteSpace(s))).Trim();
+        interview.UpdatedAt = DateTimeOffset.UtcNow;
+        if (currentUserId != Guid.Empty) interview.UpdatedById = currentUserId;
+
+        // 9. Cập nhật thành viên hội đồng phỏng vấn (Panelists)
+        var newPanelists = await _dbContext.Users
+            .Where(u => interviewerIds.Contains(u.Id) && u.Status == "ACTIVE")
+            .ToListAsync(cancellationToken);
+
+        // Xóa các panelist cũ không còn trong danh sách mới
+        var currentPanelists = interview.Panelists.ToList();
+        foreach (var p in currentPanelists)
+        {
+            if (!interviewerIds.Contains(p.InterviewerId))
+            {
+                _dbContext.InterviewPanelists.Remove(p);
+            }
+        }
+
+        // Thêm panelist mới nếu chưa có
+        var existingUserIds = currentPanelists.Select(p => p.InterviewerId).ToHashSet();
+        var isLead = !currentPanelists.Any(p => p.IsLead);
+        foreach (var user in newPanelists)
+        {
+            if (!existingUserIds.Contains(user.Id))
+            {
+                await _dbContext.InterviewPanelists.AddAsync(new InterviewPanelist
+                {
+                    Id = Guid.NewGuid(),
+                    InterviewId = interview.Id,
+                    InterviewerId = user.Id,
+                    IsLead = isLead,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                }, cancellationToken);
+                isLead = false;
+            }
+        }
+
+        var newPanelistNames = newPanelists.Select(u => $"{u.FullName} ({u.Role})").ToList();
+        var panelistStr = newPanelistNames.Any() ? string.Join(", ", newPanelistNames) : "Hội đồng phỏng vấn";
+
+        // 10. Ghi nhận lịch sử giai đoạn hồ sơ ứng viên
+        var cand = interview.Application?.Candidate;
+        var candName = cand != null ? $"{cand.FirstName} {cand.LastName}".Trim() : "Ứng viên";
+        var candEmail = cand?.Email;
+        var jobTitle = interview.Application?.JobPosting?.Title ?? "Vị trí tuyển dụng";
+        var reasonComment = !string.IsNullOrWhiteSpace(reason) ? $". Lý do: {reason}" : "";
+
+        await _dbContext.ApplicationStageHistories.AddAsync(new ApplicationStageHistory
+        {
+            Id = Guid.NewGuid(),
+            ApplicationId = interview.ApplicationId,
+            FromStageId = interview.Application?.CurrentStageId,
+            ToStageId = interview.Application?.CurrentStageId,
+            ChangedByUserId = currentUserId != Guid.Empty ? currentUserId : Guid.Empty,
+            Comment = $"Đã dời lịch {interview.Title}: từ {oldStartUtc.ToOffset(TimeSpan.FromHours(7)):dd/MM/yyyy HH:mm} sang {startUtc.ToOffset(TimeSpan.FromHours(7)):dd/MM/yyyy HH:mm}{reasonComment}.",
+            CreatedAt = DateTimeOffset.UtcNow
+        }, cancellationToken);
+
+        // 11. Gửi thông báo trong hệ thống (In-App Notifications) cho toàn bộ giám khảo liên quan
+        var allAffectedInterviewerUsers = newPanelists.Concat(oldPanelistUsers)
+            .GroupBy(u => u.Id)
+            .Select(g => g.First())
+            .ToList();
+
+        foreach (var invUser in allAffectedInterviewerUsers)
+        {
+            await _dbContext.Notifications.AddAsync(new Notification
+            {
+                Id = Guid.NewGuid(),
+                UserId = invUser.Id,
+                Title = $"Lịch phỏng vấn đã được dời: {jobTitle}",
+                Content = $"Phiên phỏng vấn ứng viên {candName} ({interview.Title}) đã dời sang {startUtc.ToOffset(TimeSpan.FromHours(7)):HH:mm dd/MM/yyyy}. Hình thức: {(interviewType == InterviewType.ONLINE_MEET ? "Online Google Meet" : "Trực tiếp tại VP")}.{(!string.IsNullOrWhiteSpace(reason) ? $" Lý do: {reason}" : "")}",
+                Link = "/dashboard/lich-phong-van",
+                IsRead = false,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            }, cancellationToken);
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // 12. Gửi email thông báo dời lịch tự động cho Ứng viên và Toàn bộ Người phỏng vấn (Scrum - Số 55)
+        var typeDisplay = interviewType == InterviewType.ONLINE_MEET ? "Trực tuyến (Google Meet)" : "Trực tiếp tại văn phòng NoveraTech";
+
+        _ = Task.Run(async () =>
+        {
+            // Gửi email cho Ứng viên
+            if (!string.IsNullOrWhiteSpace(candEmail))
+            {
+                try
+                {
+                    await _emailService.SendInterviewRescheduledAsync(
+                        candEmail,
+                        candName,
+                        isCandidate: true,
+                        candidateName: candName,
+                        jobTitle: jobTitle,
+                        roundTitle: interview.Title,
+                        oldStartTime: oldStartUtc,
+                        newStartTime: startUtc,
+                        newEndTime: endUtc,
+                        newLocationOrLink: meetLocation,
+                        newInterviewTypeDisplay: typeDisplay,
+                        panelistNames: panelistStr,
+                        rescheduleReason: reason);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Không thể gửi email dời lịch cho ứng viên {Email}: {Msg}", candEmail, ex.Message);
+                }
+            }
+
+            // Gửi email cho từng Giám khảo trong hội đồng phỏng vấn
+            foreach (var invUser in allAffectedInterviewerUsers)
+            {
+                if (!string.IsNullOrWhiteSpace(invUser.Email))
+                {
+                    try
+                    {
+                        await _emailService.SendInterviewRescheduledAsync(
+                            invUser.Email,
+                            invUser.FullName,
+                            isCandidate: false,
+                            candidateName: candName,
+                            jobTitle: jobTitle,
+                            roundTitle: interview.Title,
+                            oldStartTime: oldStartUtc,
+                            newStartTime: startUtc,
+                            newEndTime: endUtc,
+                            newLocationOrLink: meetLocation,
+                            newInterviewTypeDisplay: typeDisplay,
+                            panelistNames: panelistStr,
+                            rescheduleReason: reason);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning("Không thể gửi email dời lịch cho giám khảo {Email}: {Msg}", invUser.Email, ex.Message);
+                    }
+                }
+            }
+        });
+
+        return new InterviewScheduleResultDto
+        {
+            Success = true,
+            Message = $"Đã dời lịch phỏng vấn {interview.Title} cho ứng viên {candName} sang {startUtc.ToOffset(TimeSpan.FromHours(7)):dd/MM/yyyy HH:mm} thành công!",
+            InterviewId = interview.Id,
+            RoundNumber = interview.RoundNumber,
+            Title = interview.Title,
+            StartTimeDisplay = startUtc.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm"),
+            EndTimeDisplay = endUtc.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm"),
+            InterviewTypeDisplay = typeDisplay,
+            LocationOrLink = meetLocation,
+            Panelists = panelistStr
+        };
+    }
+
+    /// <inheritdoc/>
+    public async Task<InterviewCancelResultDto> CancelInterviewAsync(
+        CancelInterviewInputModel model,
+        Guid currentUserId,
+        bool isRecruiterOnly,
+        CancellationToken cancellationToken = default)
+    {
+        if (model == null || model.InterviewId == Guid.Empty)
+        {
+            return new InterviewCancelResultDto
+            {
+                Success = false,
+                Message = "Dữ liệu yêu cầu huỷ buổi phỏng vấn không hợp lệ.",
+                Errors = new List<string> { "Mã buổi phỏng vấn không được để trống." }
+            };
+        }
+
+        // BẮT BUỘC NHẬP LÝ DO HUỶ (Scrum - Số 55)
+        if (string.IsNullOrWhiteSpace(model.Reason) || model.Reason.Trim().Length < 5)
+        {
+            return new InterviewCancelResultDto
+            {
+                Success = false,
+                Message = "Vui lòng nhập lý do huỷ buổi phỏng vấn (tối thiểu 5 ký tự) để gửi thông báo giải thích cho ứng viên và hội đồng.",
+                Errors = new List<string> { "Lý do huỷ bắt buộc phải có ít nhất 5 ký tự." }
+            };
+        }
+
+        var interview = await _dbContext.Interviews
+            .Include(i => i.Application)
+                .ThenInclude(a => a.Candidate)
+            .Include(i => i.Application)
+                .ThenInclude(a => a.JobPosting)
+            .Include(i => i.Panelists)
+                .ThenInclude(p => p.Interviewer)
+            .Include(i => i.Evaluations)
+            .FirstOrDefaultAsync(i => i.Id == model.InterviewId && !i.IsDeleted, cancellationToken);
+
+        if (interview == null)
+        {
+            return new InterviewCancelResultDto
+            {
+                Success = false,
+                Message = "Không tìm thấy thông tin buổi phỏng vấn trong hệ thống.",
+                Errors = new List<string> { "Buổi phỏng vấn không tồn tại hoặc đã bị xóa." }
+            };
+        }
+
+        // 1. Kiểm tra quyền hạn phụ trách hồ sơ (Scrum 26)
+        if (isRecruiterOnly && _assignmentService != null && currentUserId != Guid.Empty)
+        {
+            var canAccess = await _assignmentService.CanRecruiterAccessApplicationAsync(currentUserId, interview.ApplicationId);
+            if (!canAccess)
+            {
+                return new InterviewCancelResultDto
+                {
+                    Success = false,
+                    Message = "Bạn không có quyền huỷ lịch phỏng vấn của hồ sơ này do không phụ trách vị trí tuyển dụng tương ứng.",
+                    Errors = new List<string> { "Không có quyền phụ trách vị trí tuyển dụng tương ứng." }
+                };
+            }
+        }
+
+        // 2. QUY TẮC CỐT TỬ: Không huỷ được buổi đã có phiếu đánh giá nộp (Scrum - Số 55)
+        var hasSubmittedEval = interview.Evaluations.Any(e => e.IsSubmitted && !e.IsDeleted);
+        if (hasSubmittedEval)
+        {
+            return new InterviewCancelResultDto
+            {
+                Success = false,
+                Message = "Không thể huỷ buổi phỏng vấn này vì đã có phiếu đánh giá được nộp bởi hội đồng phỏng vấn.",
+                Errors = new List<string> { "Buổi phỏng vấn đã có ít nhất một phiếu đánh giá nộp, không được phép huỷ." }
+            };
+        }
+
+        // 3. Kiểm tra trạng thái buổi phỏng vấn
+        if (interview.Status == InterviewStatus.CANCELLED)
+        {
+            return new InterviewCancelResultDto
+            {
+                Success = false,
+                Message = "Buổi phỏng vấn này đã ở trạng thái huỷ trước đó.",
+                Errors = new List<string> { "Buổi phỏng vấn đã bị huỷ trước đó." }
+            };
+        }
+
+        if (interview.Status == InterviewStatus.COMPLETED)
+        {
+            return new InterviewCancelResultDto
+            {
+                Success = false,
+                Message = "Buổi phỏng vấn đã hoàn thành, không thể huỷ.",
+                Errors = new List<string> { "Buổi phỏng vấn đã hoàn thành, không thể huỷ." }
+            };
+        }
+
+        var cleanReason = model.Reason.Trim();
+        var cand = interview.Application?.Candidate;
+        var candName = cand != null ? $"{cand.FirstName} {cand.LastName}".Trim() : "Ứng viên";
+        var candEmail = cand?.Email;
+        var jobTitle = interview.Application?.JobPosting?.Title ?? "Vị trí tuyển dụng";
+        var scheduledTime = interview.StartTime ?? DateTimeOffset.UtcNow;
+
+        // 4. Cập nhật trạng thái buổi phỏng vấn thành CANCELLED
+        interview.Status = InterviewStatus.CANCELLED;
+        var prevNotes = interview.CandidateNotes ?? string.Empty;
+        interview.CandidateNotes = $"[LÝ DO HUỶ]: {cleanReason}\n{prevNotes}".Trim();
+        interview.UpdatedAt = DateTimeOffset.UtcNow;
+        if (currentUserId != Guid.Empty) interview.UpdatedById = currentUserId;
+
+        // 5. Ghi nhận lịch sử ứng viên
+        await _dbContext.ApplicationStageHistories.AddAsync(new ApplicationStageHistory
+        {
+            Id = Guid.NewGuid(),
+            ApplicationId = interview.ApplicationId,
+            FromStageId = interview.Application?.CurrentStageId,
+            ToStageId = interview.Application?.CurrentStageId,
+            ChangedByUserId = currentUserId != Guid.Empty ? currentUserId : Guid.Empty,
+            Comment = $"Đã huỷ {interview.Title} ({scheduledTime.ToOffset(TimeSpan.FromHours(7)):dd/MM/yyyy HH:mm}). Lý do: {cleanReason}.",
+            CreatedAt = DateTimeOffset.UtcNow
+        }, cancellationToken);
+
+        // 6. Gửi In-App Notification cho toàn bộ giám khảo trong hội đồng phỏng vấn
+        var activePanelists = interview.Panelists.Where(p => !p.IsDeleted).Select(p => p.Interviewer).Where(u => u != null).ToList();
+        foreach (var panelistUser in activePanelists)
+        {
+            await _dbContext.Notifications.AddAsync(new Notification
+            {
+                Id = Guid.NewGuid(),
+                UserId = panelistUser.Id,
+                Title = $"Buổi phỏng vấn đã bị huỷ: {jobTitle}",
+                Content = $"Buổi phỏng vấn ứng viên {candName} ({interview.Title}) dự kiến lúc {scheduledTime.ToOffset(TimeSpan.FromHours(7)):HH:mm dd/MM/yyyy} đã bị huỷ. Lý do: {cleanReason}",
+                Link = "/dashboard/lich-phong-van",
+                IsRead = false,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            }, cancellationToken);
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // 7. Gửi email thông báo huỷ tự động cho Ứng viên và Toàn bộ Giám khảo (Scrum - Số 55)
+        _ = Task.Run(async () =>
+        {
+            // Email cho Ứng viên
+            if (!string.IsNullOrWhiteSpace(candEmail))
+            {
+                try
+                {
+                    await _emailService.SendInterviewCancelledAsync(
+                        candEmail,
+                        candName,
+                        isCandidate: true,
+                        candidateName: candName,
+                        jobTitle: jobTitle,
+                        roundTitle: interview.Title,
+                        scheduledStartTime: scheduledTime,
+                        cancellationReason: cleanReason);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Không thể gửi email huỷ lịch cho ứng viên {Email}: {Msg}", candEmail, ex.Message);
+                }
+            }
+
+            // Email cho từng Giám khảo
+            foreach (var panelistUser in activePanelists)
+            {
+                if (!string.IsNullOrWhiteSpace(panelistUser.Email))
+                {
+                    try
+                    {
+                        await _emailService.SendInterviewCancelledAsync(
+                            panelistUser.Email,
+                            panelistUser.FullName,
+                            isCandidate: false,
+                            candidateName: candName,
+                            jobTitle: jobTitle,
+                            roundTitle: interview.Title,
+                            scheduledStartTime: scheduledTime,
+                            cancellationReason: cleanReason);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning("Không thể gửi email huỷ lịch cho giám khảo {Email}: {Msg}", panelistUser.Email, ex.Message);
+                    }
+                }
+            }
+        });
+
+        return new InterviewCancelResultDto
+        {
+            Success = true,
+            Message = $"Đã huỷ buổi phỏng vấn {interview.Title} của ứng viên {candName} thành công. Hệ thống đã gửi thông báo đến các bên liên quan.",
+            InterviewId = interview.Id,
+            CancellationReason = cleanReason
+        };
+    }
 }
