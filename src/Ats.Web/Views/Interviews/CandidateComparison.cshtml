@@ -1,285 +1,93 @@
 @model Ats.Web.Models.ViewModels.CandidateComparison.CandidateEvaluationComparisonViewModel
+@using System.Globalization
 @{
-    ViewData["Title"] = "So sánh đánh giá ứng viên - NoveraTech";
+    ViewData["Title"] = $"So sánh ứng viên - {Model.SelectedJobTitle}";
     Layout = "_Layout";
 }
 
-@functions {
-    public static string CleanDescription(string? raw)
-    {
-        if (string.IsNullOrWhiteSpace(raw)) return "";
-        var trimmed = raw.Trim();
-        if (trimmed.StartsWith("{") && trimmed.EndsWith("}"))
-        {
-            try
-            {
-                using var doc = System.Text.Json.JsonDocument.Parse(trimmed);
-                if (doc.RootElement.TryGetProperty("Summary", out var summaryProp))
-                {
-                    var summary = summaryProp.GetString();
-                    if (!string.IsNullOrWhiteSpace(summary)) return summary;
-                }
-                if (doc.RootElement.TryGetProperty("Description", out var descProp))
-                {
-                    var desc = descProp.GetString();
-                    if (!string.IsNullOrWhiteSpace(desc)) return desc;
-                }
-            }
-            catch { }
-        }
-        return raw;
-    }
-}
-
-<style>
-    /* Styling chuyên biệt cho màn hình So sánh đánh giá ứng viên */
-    .comparison-page-wrapper {
-        max-width: 1520px;
-        margin: 0 auto;
-    }
-
-    .comparison-header-card {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 14px;
-        position: relative;
-        overflow: hidden;
-    }
-    .comparison-header-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, #059669 0%, #0284C7 50%, #4F46E5 100%);
-    }
-
-    .kpi-card {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 12px;
-        padding: 1.15rem 1.25rem;
-        transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-    }
-    .kpi-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
-        border-color: #CBD5E1;
-    }
-
-    .kpi-icon-box {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.15rem;
-        flex-shrink: 0;
-    }
-
-    /* Bảng Ma Trận */
-    .comparison-table-card {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 14px;
-        overflow: hidden;
-    }
-
-    .matrix-table {
-        margin-bottom: 0;
-        font-size: 0.84rem;
-    }
-    .matrix-table thead th {
-        background: #F8FAFC;
-        border-bottom: 2px solid #E2E8F0;
-        color: #475569;
-        font-weight: 600;
-        vertical-align: middle;
-        padding: 0.75rem 0.65rem;
-    }
-    .matrix-table tbody td {
-        vertical-align: middle;
-        padding: 0.85rem 0.65rem;
-        border-bottom: 1px solid #F1F5F9;
-    }
-
-    /* Rank Pill */
-    .rank-badge {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-family: 'JetBrains Mono', monospace;
-        font-weight: 700;
-        font-size: 0.84rem;
-    }
-    .rank-badge-1 {
-        background: #FEF3C7;
-        color: #B45309;
-        border: 1.5px solid #FDE68A;
-        box-shadow: 0 2px 4px rgba(217, 119, 6, 0.15);
-    }
-    .rank-badge-2 {
-        background: #F1F5F9;
-        color: #475569;
-        border: 1.5px solid #CBD5E1;
-    }
-    .rank-badge-3 {
-        background: #FFF7ED;
-        color: #C2410C;
-        border: 1.5px solid #FFEDD5;
-    }
-    .rank-badge-other {
-        background: #FFFFFF;
-        color: #64748B;
-        border: 1px solid #E2E8F0;
-    }
-
-    /* Score Badges */
-    .score-badge {
-        display: inline-block;
-        padding: 3px 8px;
-        border-radius: 6px;
-        font-family: 'JetBrains Mono', monospace;
-        font-weight: 700;
-        font-size: 0.85rem;
-        min-width: 44px;
-        text-align: center;
-    }
-    .score-badge-excellent {
-        background: #ECFDF5;
-        color: #047857;
-        border: 1px solid #A7F3D0;
-    }
-    .score-badge-good {
-        background: #F0F9FF;
-        color: #0284C7;
-        border: 1px solid #BAE6FD;
-    }
-    .score-badge-average {
-        background: #FFFBEB;
-        color: #B45309;
-        border: 1px solid #FDE68A;
-    }
-    .score-badge-poor {
-        background: #FEF2F2;
-        color: #DC2626;
-        border: 1px solid #FECACA;
-    }
-    .score-badge-none {
-        background: #F8FAFC;
-        color: #94A3B8;
-        border: 1px solid #E2E8F0;
-    }
-
-    /* Overall Score Cell */
-    .overall-score-cell {
-        background: #F8FAFC;
-        text-align: center;
-        border-left: 1px solid #E2E8F0;
-        border-right: 1px solid #E2E8F0;
-    }
-    .overall-score-cell.is-top {
-        background: #F0FDF4;
-    }
-
-    /* Benchmark Table */
-    .benchmark-table {
-        margin-bottom: 0;
-        font-size: 0.84rem;
-    }
-    .benchmark-table thead th {
-        background: #F8FAFC;
-        border-bottom: 2px solid #E2E8F0;
-        padding: 0.85rem 1rem;
-        vertical-align: middle;
-    }
-    .benchmark-table tbody td {
-        padding: 0.95rem 1rem;
-        border-bottom: 1px solid #F1F5F9;
-        vertical-align: middle;
-    }
-
-    /* In ấn Print Media */
-    @@media print {
-        header, .sidebar, .sidebar-nav, .no-print, .btn, .breadcrumb-nav {
-            display: none !important;
-        }
-        body {
-            background: #FFFFFF !important;
-            color: #000000 !important;
-            font-size: 11pt !important;
-        }
-        .comparison-page-wrapper {
-            max-width: 100% !important;
-            padding: 0 !important;
-        }
-        .card {
-            border: 1px solid #CCCCCC !important;
-            box-shadow: none !important;
-            page-break-inside: avoid;
-        }
-    }
-</style>
-
-<div class="comparison-page-wrapper px-3 px-md-4 py-4">
-    <!-- Breadcrumb & Top Context -->
-    <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2 breadcrumb-nav">
+<div class="container-fluid px-3 px-md-4 py-4" style="max-width: 1480px;">
+    <!-- Breadcrumb điều hướng -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
         <a href="/dashboard/lich-phong-van" class="text-decoration-none text-muted small d-inline-flex align-items-center gap-1.5 hover-text-primary">
             <i class="bi bi-arrow-left"></i> Quay lại Lịch phỏng vấn
         </a>
         <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-light text-secondary border px-2.5 py-1 d-inline-flex align-items-center gap-1" style="border-radius: 6px; font-size: 0.74rem;">
-                <i class="bi bi-shield-check text-success"></i> Hội đồng phỏng vấn &amp; Ban tuyển dụng
+            <span class="badge bg-white text-dark border px-2.5 py-1 shadow-2xs font-mono" style="border-radius: 6px; font-size: 0.75rem;">
+                <i class="bi bi-shield-check text-success me-1"></i> Kiểm chứng dữ liệu độc lập · Nguyên tắc: So sánh trước, kết luận sau
             </span>
         </div>
     </div>
 
-    <!-- Header Card (Sang trọng, sạch sẽ, không AI slop / không chữ SCRUM) -->
-    <div class="comparison-header-card shadow-sm p-4 mb-4">
-        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
-            <div>
-                <div class="d-flex align-items-center gap-2 mb-1.5">
-                    <span class="badge bg-success-subtle text-success border border-success-subtle fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.04em;">
-                        <i class="bi bi-bar-chart-line-fill me-1"></i>ĐÁNH GIÁ NĂNG LỰC ỨNG VIÊN
-                    </span>
-                    <span class="text-muted small">•</span>
-                    <span class="text-muted small">Dữ liệu chấm điểm hội đồng phỏng vấn</span>
+    <!-- ========================================================================= -->
+    <!-- HEADER: So sánh ứng viên - {JobTitle}                                    -->
+    <!-- Vòng: Final Interview | Số ứng viên: 4 | Đã có đánh giá: 4/4              -->
+    <!-- ========================================================================= -->
+    <div class="card border-0 shadow-sm mb-4 overflow-hidden" style="border-radius: 12px; background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #F8FAFC;">
+        <div class="card-body p-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle font-mono text-uppercase px-2.5 py-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+                            <i class="bi bi-clipboard2-data me-1"></i> Bảng đối chiếu năng lực
+                        </span>
+                        <span class="text-white-50 small">·</span>
+                        <span class="text-white-50 small">Vị trí: <b>@Model.SelectedJobCode</b></span>
+                        <span class="text-white-50 small">·</span>
+                        <span class="text-white-50 small">Phòng ban: <b>@Model.DepartmentName</b></span>
+                    </div>
+
+                    <h1 class="fw-bold text-white mb-2" style="font-size: 1.5rem; letter-spacing: -0.01em;">
+                        So sánh ứng viên - @Model.SelectedJobTitle
+                    </h1>
+
+                    <!-- Thông số Header theo wireframe -->
+                    <div class="d-flex flex-wrap align-items-center gap-2 gap-md-4 text-white-50 small pt-1 font-mono">
+                        <div class="d-flex align-items-center gap-1.5">
+                            <i class="bi bi-diagram-3-fill text-info"></i>
+                            <span>Vòng:</span>
+                            <strong class="text-white">@(string.IsNullOrWhiteSpace(Model.RoundName) ? "Final Interview" : Model.RoundName)</strong>
+                        </div>
+                        <span class="text-white-50 d-none d-sm-inline">|</span>
+                        <div class="d-flex align-items-center gap-1.5">
+                            <i class="bi bi-people-fill text-primary"></i>
+                            <span>Số ứng viên:</span>
+                            <strong class="text-white">@(Model.TotalCandidatesInJob > 0 ? Model.TotalCandidatesInJob : Model.Candidates.Count)</strong>
+                        </div>
+                        <span class="text-white-50 d-none d-sm-inline">|</span>
+                        <div class="d-flex align-items-center gap-1.5">
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            <span>Đã có đánh giá:</span>
+                            <span class="badge bg-success text-white font-mono px-2 py-0.5">@Model.EvaluationRatioDisplay</span>
+                        </div>
+                    </div>
                 </div>
-                <h2 class="fw-bold text-dark mb-1" style="font-size: 1.4rem;">
-                    So Sánh Đánh Giá Ứng Viên Theo Tiêu Chí
-                </h2>
-                <p class="text-secondary mb-0 small" style="max-width: 860px; line-height: 1.55;">
-                    Đối chiếu trực quan điểm số năng lực chuyên môn, kỹ năng mềm và mức độ phù hợp văn hóa giữa các ứng viên của cùng một vị trí. 
-                    Hỗ trợ Trưởng bộ phận và Hội đồng đưa ra quyết định tuyển chọn minh bạch, công tâm dựa trên dữ liệu thực tế.
-                </p>
-            </div>
-            <div class="d-flex gap-2 flex-wrap flex-shrink-0 no-print">
-                <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5" style="border-radius: 8px; font-size: 0.82rem; padding: 0.4rem 0.85rem;" onclick="window.print()" title="In bảng so sánh hoặc lưu file PDF">
-                    <i class="bi bi-printer"></i> In báo cáo
-                </button>
-                <a href="/interviews/so-sanh-ung-vien" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1.5 shadow-sm" style="background: #059669; border-color: #059669; border-radius: 8px; font-size: 0.82rem; padding: 0.4rem 0.85rem;">
-                    <i class="bi bi-arrow-clockwise"></i> Làm mới dữ liệu
-                </a>
+
+                <!-- Các nút hành động thao tác -->
+                <div class="d-flex gap-2 flex-wrap flex-shrink-0">
+                    <button type="button" class="btn btn-outline-light btn-sm d-inline-flex align-items-center gap-1.5" style="border-radius: 8px; padding: 0.5rem 0.85rem;" onclick="window.print()" title="In bảng so sánh hoặc xuất PDF">
+                        <i class="bi bi-printer-fill"></i> In dữ liệu
+                    </button>
+                    <a href="/interviews/so-sanh-ung-vien?jobId=@Model.SelectedJobPostingId" class="btn btn-light btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm" style="border-radius: 8px; padding: 0.5rem 0.85rem;" title="Làm mới bảng đối chiếu">
+                        <i class="bi bi-arrow-clockwise"></i> Làm mới
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Filter & Position Selector Toolbar -->
-    <div class="card border-0 shadow-sm p-3.5 mb-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+    <!-- ========================================================================= -->
+    <!-- KHU VỰC 5 - BỘ LỌC (Filter Bar)                                           -->
+    <!-- [Vị trí] [Vòng đánh giá] [Chỉ hiện ứng viên đạt ngưỡng] [Sắp xếp]         -->
+    <!-- ========================================================================= -->
+    <div class="card border-0 shadow-sm p-3 mb-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
         <form method="get" action="/interviews/so-sanh-ung-vien" id="filterForm">
-            <div class="row g-3 align-items-center">
-                <!-- Dropdown Chọn Vị trí tuyển dụng -->
-                <div class="col-12 col-md-5 col-lg-5">
-                    <label class="form-label small fw-semibold text-dark mb-1 d-flex align-items-center justify-content-between">
-                        <span><i class="bi bi-briefcase text-success me-1"></i> Vị trí tuyển dụng</span>
-                        <span class="badge bg-light text-muted border font-mono" style="font-size: 0.7rem;">@Model.AvailableJobs.Count vị trí khả dụng</span>
+            <div class="row g-3 align-items-end">
+                <!-- Dropdown Chọn Vị trí -->
+                <div class="col-12 col-md-4 col-lg-4">
+                    <label class="form-label small fw-bold text-dark mb-1">
+                        <i class="bi bi-briefcase-fill text-success me-1"></i> Vị trí tuyển dụng
                     </label>
-                    <select class="form-select form-select-sm" name="jobId" id="jobSelect" style="border-radius: 8px; border-color: #CBD5E1; font-size: 0.85rem; font-weight: 500;" onchange="this.form.submit()">
+                    <select class="form-select form-select-sm" name="jobId" id="jobSelect" style="border-radius: 8px; border-color: #CBD5E1; font-weight: 500;" onchange="this.form.submit()">
                         @if (Model.AvailableJobs.Count == 0)
                         {
                             <option value="">Không có vị trí nào</option>
@@ -296,539 +104,550 @@
                     </select>
                 </div>
 
-                <!-- Lọc Giai đoạn / Vòng phỏng vấn -->
-                <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-                    <label class="form-label small fw-semibold text-dark mb-1">
-                        <i class="bi bi-funnel text-primary me-1"></i> Phạm vi vòng đánh giá
+                <!-- Lọc Vòng đánh giá -->
+                <div class="col-12 col-sm-6 col-md-3 col-lg-2">
+                    <label class="form-label small fw-bold text-dark mb-1">
+                        <i class="bi bi-funnel-fill text-primary me-1"></i> Vòng đánh giá
                     </label>
-                    <select class="form-select form-select-sm" name="stage" id="stageSelect" style="border-radius: 8px; border-color: #CBD5E1; font-size: 0.85rem;" onchange="this.form.submit()">
-                        <option value="ALL" selected="@(Model.StageFilter == "ALL")">Tất cả ứng viên có điểm</option>
-                        <option value="FINAL_ROUND" selected="@(Model.StageFilter == "FINAL_ROUND")">⭐ Ứng viên Vòng cuối / Offer</option>
-                        <option value="3" selected="@(Model.StageFilter == "3")">Vòng Phỏng vấn (Stage 3)</option>
-                        <option value="4" selected="@(Model.StageFilter == "4")">Đề xuất Offer (Stage 4)</option>
-                        <option value="5" selected="@(Model.StageFilter == "5")">Đã tuyển dụng (Stage 5)</option>
+                    <select class="form-select form-select-sm" name="stage" id="stageSelect" style="border-radius: 8px; border-color: #CBD5E1;" onchange="this.form.submit()">
+                        <option value="ALL" selected="@(Model.StageFilter == "ALL")">Tất cả các vòng</option>
+                        <option value="FINAL_ROUND" selected="@(Model.StageFilter == "FINAL_ROUND")">Final Interview</option>
+                        <option value="3" selected="@(Model.StageFilter == "3")">Vòng Chuyên môn</option>
+                        <option value="4" selected="@(Model.StageFilter == "4")">Đề xuất Offer</option>
                     </select>
                 </div>
 
-                <!-- Sắp xếp theo điểm tổng -->
-                <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                    <label class="form-label small fw-semibold text-dark mb-1">
-                        <i class="bi bi-sort-numeric-down text-warning me-1"></i> Tiêu chí sắp xếp
+                <!-- Sắp xếp -->
+                <div class="col-12 col-sm-6 col-md-3 col-lg-2">
+                    <label class="form-label small fw-bold text-dark mb-1">
+                        <i class="bi bi-sort-numeric-down text-warning me-1"></i> Sắp xếp
                     </label>
-                    <select class="form-select form-select-sm" name="sortBy" id="sortSelect" style="border-radius: 8px; border-color: #CBD5E1; font-size: 0.85rem;" onchange="this.form.submit()">
-                        <option value="total_desc" selected="@(Model.SortBy == "total_desc")">Điểm tổng: Cao xuống Thấp (Mặc định)</option>
-                        <option value="total_asc" selected="@(Model.SortBy == "total_asc")">Điểm tổng: Thấp lên Cao</option>
-                        <option value="weighted_desc" selected="@(Model.SortBy == "weighted_desc")">Điểm theo trọng số: Cao xuống Thấp</option>
-                        <option value="name_asc" selected="@(Model.SortBy == "name_asc")">Tên ứng viên: A &rarr; Z</option>
+                    <select class="form-select form-select-sm" name="sortBy" id="sortSelect" style="border-radius: 8px; border-color: #CBD5E1;" onchange="this.form.submit()">
+                        <option value="total_desc" selected="@(Model.SortBy == "total_desc")">Điểm tổng giảm dần</option>
+                        <option value="name_asc" selected="@(Model.SortBy == "name_asc")">Tên ứng viên (A-Z)</option>
+                        <option value="latest" selected="@(Model.SortBy == "latest")">Đánh giá mới nhất</option>
+                        <option value="total_asc" selected="@(Model.SortBy == "total_asc")">Điểm tổng tăng dần</option>
                     </select>
                 </div>
 
-                <!-- Nút đặt lại nhanh -->
+                <!-- Checkbox Chỉ hiện ứng viên đạt ngưỡng -->
+                <div class="col-12 col-md-8 col-lg-3">
+                    <div class="p-2 border rounded-3 bg-light d-flex align-items-center justify-content-between" style="border-color: #E2E8F0 !important;">
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" name="thresholdOnly" id="thresholdOnlyCheck" value="true" @(Model.ThresholdOnly ? "checked" : "") onchange="this.form.submit()" style="cursor: pointer;">
+                            <label class="form-check-label small fw-semibold text-dark" for="thresholdOnlyCheck" style="cursor: pointer;">
+                                Chỉ hiện đạt ngưỡng
+                            </label>
+                        </div>
+                        <div class="d-flex align-items-center gap-1 font-mono small">
+                            <span class="text-muted">&ge;</span>
+                            <input type="number" step="0.1" min="1.0" max="5.0" name="minScore" value="@Model.MinThreshold.ToString("0.0", CultureInfo.InvariantCulture)"
+                                   class="form-control form-control-sm text-center px-1 py-0" style="width: 52px; height: 26px; font-size: 0.78rem; font-weight: 700;"
+                                   onchange="this.form.submit()" title="Ngưỡng điểm tối thiểu">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nút đặt lại -->
                 <div class="col-12 col-lg-1 d-flex align-items-end justify-content-end">
-                    <a href="/interviews/so-sanh-ung-vien?jobId=@Model.SelectedJobPostingId" class="btn btn-sm btn-outline-secondary w-100" style="border-radius: 8px; font-size: 0.8rem; padding: 0.35rem 0.5rem;" title="Đặt lại bộ lọc về mặc định">
+                    <a href="/interviews/so-sanh-ung-vien?jobId=@Model.SelectedJobPostingId" class="btn btn-sm btn-outline-secondary w-100" style="border-radius: 8px; font-size: 0.8rem;" title="Đặt lại bộ lọc mặc định">
                         <i class="bi bi-arrow-counterclockwise"></i>
                     </a>
                 </div>
             </div>
         </form>
-
-        <!-- Current Target Position Info Bar -->
-        @if (Model.SelectedJobPostingId.HasValue && !string.IsNullOrWhiteSpace(Model.SelectedJobTitle))
-        {
-            <div class="d-flex flex-wrap align-items-center justify-content-between pt-3 mt-3 border-top gap-2" style="border-color: #F1F5F9 !important; font-size: 0.82rem;">
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <span class="text-muted">Đang so sánh vị trí:</span>
-                    @if (!string.IsNullOrWhiteSpace(Model.SelectedJobCode))
-                    {
-                        <span class="badge bg-dark text-white font-mono px-2 py-0.5">@Model.SelectedJobCode</span>
-                    }
-                    <strong class="text-dark">@Model.SelectedJobTitle</strong>
-                    @if (!string.IsNullOrWhiteSpace(Model.DepartmentName))
-                    {
-                        <span class="badge bg-light text-secondary border">Phòng ban: <b>@Model.DepartmentName</b></span>
-                    }
-                    @if (!string.IsNullOrWhiteSpace(Model.TargetLevel))
-                    {
-                        <span class="badge bg-light text-secondary border">Cấp bậc: <b>@Model.TargetLevel</b></span>
-                    }
-                </div>
-                <div class="d-flex align-items-center gap-1.5 text-muted small">
-                    <i class="bi bi-info-circle text-primary"></i>
-                    <span>Tổng hợp từ các phiếu đánh giá chính thức có xác nhận của hội đồng.</span>
-                </div>
-            </div>
-        }
     </div>
 
     @if (Model.Candidates.Count > 0)
     {
-        <!-- KPI Metrics Summary Cards -->
-        <div class="row g-3 mb-4">
-            <!-- Card 1: Tổng số ứng viên có điểm -->
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="kpi-card h-100">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="small fw-semibold text-muted">Ứng viên đã đánh giá</span>
-                        <div class="kpi-icon-box" style="background: #ECFDF5; color: #059669;">
-                            <i class="bi bi-people-fill"></i>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-baseline gap-2">
-                        <h3 class="fw-bold text-dark mb-0 font-mono" style="font-size: 1.75rem;">@Model.TotalCandidatesCount</h3>
-                        <span class="small text-muted">hồ sơ hợp lệ</span>
-                    </div>
-                    <div class="small text-success mt-2 d-flex align-items-center gap-1" style="font-size: 0.76rem;">
-                        <i class="bi bi-check-circle-fill"></i>
-                        <span>100% có phiếu nộp chính thức</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Card 2: Điểm cao nhất -->
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="kpi-card h-100">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="small fw-semibold text-muted">Điểm dẫn đầu (Top 1)</span>
-                        <div class="kpi-icon-box" style="background: #FEF3C7; color: #D97706;">
-                            <i class="bi bi-trophy-fill"></i>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-baseline gap-2">
-                        <h3 class="fw-bold mb-0 font-mono" style="font-size: 1.75rem; color: #D97706;">
-                            @Model.HighestScore.ToString("0.0")
-                        </h3>
-                        <span class="small text-muted">/ 5.0 điểm</span>
-                    </div>
-                    <div class="small text-muted mt-2 text-truncate" style="font-size: 0.76rem;" title="@Model.TopCandidateName">
-                        Ứng viên: <strong class="text-dark">@Model.TopCandidateName</strong>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Card 3: Điểm trung bình vị trí -->
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="kpi-card h-100">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="small fw-semibold text-muted">Điểm trung bình vòng này</span>
-                        <div class="kpi-icon-box" style="background: #EFF6FF; color: #2563EB;">
-                            <i class="bi bi-graph-up-arrow"></i>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-baseline gap-2">
-                        <h3 class="fw-bold text-dark mb-0 font-mono" style="font-size: 1.75rem;">
-                            @Model.AverageScore.ToString("0.0")
-                        </h3>
-                        <span class="small text-muted">/ 5.0 điểm</span>
-                    </div>
-                    <div class="small text-primary mt-2" style="font-size: 0.76rem;">
-                        <i class="bi bi-sliders me-1"></i>Quy chuẩn thang 5.0 NoveraTech
-                    </div>
-                </div>
-            </div>
-
-            <!-- Card 4: Tỷ lệ Khuyên Nên tuyển -->
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="kpi-card h-100">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="small fw-semibold text-muted">Được khuyên "Nên tuyển"</span>
-                        <div class="kpi-icon-box" style="background: #F0FDF4; color: #16A34A;">
-                            <i class="bi bi-patch-check-fill"></i>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-baseline gap-2">
-                        <h3 class="fw-bold text-success mb-0 font-mono" style="font-size: 1.75rem;">
-                            @Model.RecommendHireCount
-                        </h3>
-                        <span class="small text-muted">/ @Model.TotalCandidatesCount ứng viên</span>
-                    </div>
-                    <div class="small text-muted mt-2" style="font-size: 0.76rem;">
-                        Tỷ lệ đạt chuẩn: <strong>@(Model.TotalCandidatesCount > 0 ? (Model.RecommendHireCount * 100 / Model.TotalCandidatesCount) : 0)%</strong>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ============================================================== -->
-        <!-- SECTION 1: BẢNG MA TRẬN SO SÁNH ĐIỂM TIÊU CHÍ (MATRIX TABLE) -->
-        <!-- ============================================================== -->
-        <div class="comparison-table-card shadow-sm mb-4">
+        <!-- ========================================================================= -->
+        <!-- KHU VỰC 1 - BẢNG SO SÁNH MA TRẬN (Thành phần chính - chiếm ~70% màn hình)  -->
+        <!-- Hàng = TIÊU CHÍ (.NET, SQL, Architecture...) | Cột = Ứng viên             -->
+        <!-- Hàng cuối = ĐIỂM TỔNG                                                     -->
+        <!-- UX Rule:                                                                  -->
+        <!-- Điểm cao nhất mỗi hàng tô xanh (bg-success-subtle text-success)           -->
+        <!-- Điểm thấp nhất mỗi hàng tô đỏ nhạt (bg-danger-subtle text-danger)         -->
+        <!-- Hover hiện: Số người đánh giá, Điểm trung bình, Độ lệch                   -->
+        <!-- ========================================================================= -->
+        <div class="card border-0 shadow-sm bg-white mb-4 overflow-hidden" style="border: 1px solid #E2E8F0 !important; border-radius: 14px;">
             <div class="card-header bg-white border-bottom p-3.5 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2" style="border-color: #F1F5F9 !important;">
                 <div>
-                    <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2" style="font-size: 1rem;">
-                        <i class="bi bi-grid-3x3 text-success"></i>
-                        <span>Ma Trận So Sánh Năng Lực Ứng Viên</span>
-                        <span class="badge bg-light text-muted border ms-1" style="font-size: 0.7rem; font-weight: 500;">Thang điểm 1 - 5</span>
+                    <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-grid-3x3-gap-fill text-primary"></i>
+                        <span>Bảng So Sánh Tiêu Chí &amp; Điểm Đánh Giá</span>
+                        <span class="badge bg-light text-muted border font-mono ms-1" style="font-size: 0.72rem;">@Model.Candidates.Count ứng viên</span>
                     </h5>
-                    <div class="text-muted small mt-0.5" style="font-size: 0.76rem;">
-                        Điểm hiển thị là điểm trung bình từ các thành viên hội đồng phỏng vấn đã nộp phiếu chính thức.
+                    <div class="text-muted small mt-0.5">
+                        Dữ liệu đối chiếu điểm số khách quan. Rê chuột vào từng ô điểm để xem số lượng giám khảo và độ lệch chấm điểm.
                     </div>
                 </div>
 
-                <!-- Chú giải màu sắc thang điểm (Legend) -->
-                <div class="d-flex align-items-center gap-1.5 flex-wrap font-mono" style="font-size: 0.72rem;">
-                    <span class="text-muted fw-semibold me-1">Mức điểm:</span>
-                    <span class="score-badge score-badge-excellent py-0.5 px-2">&ge; 4.5 Xuất sắc</span>
-                    <span class="score-badge score-badge-good py-0.5 px-2">3.5 - 4.4 Tốt</span>
-                    <span class="score-badge score-badge-average py-0.5 px-2">2.5 - 3.4 Cân nhắc</span>
-                    <span class="score-badge score-badge-poor py-0.5 px-2">&lt; 2.5 Cần cải thiện</span>
+                <!-- Chú thích màu sắc theo UX Rule -->
+                <div class="d-flex align-items-center gap-2 flex-wrap font-mono small" style="font-size: 0.75rem;">
+                    <span class="text-muted fw-bold">Quy ước ma trận:</span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                        <i class="bi bi-check-circle-fill me-1"></i> Điểm cao nhất hàng
+                    </span>
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                        <i class="bi bi-arrow-down-circle-fill me-1"></i> Điểm thấp nhất hàng
+                    </span>
                 </div>
             </div>
 
-            <div class="ats-mobile-table-hint px-3 pt-2"><i class="bi bi-arrow-left-right"></i> Vuốt ngang để xem đủ ma trận so sánh ứng viên</div>
-            <div class="ats-mobile-table-wrapper table-responsive mb-0">
-                <table class="table matrix-table align-middle" id="comparisonMatrixTable" style="min-width: 850px;">
-                    <thead>
+            <div class="table-responsive" style="max-height: 68vh; overflow-y: auto;">
+                <table class="table table-bordered table-hover align-middle mb-0 text-center" id="transposedComparisonMatrix" style="min-width: 800px; border-color: #E2E8F0;">
+                    <!-- HEADER BẢNG: Cột 1 = TIÊU CHÍ, các cột sau là TÊN ỨNG VIÊN -->
+                    <thead class="sticky-top bg-light" style="z-index: 10; border-bottom: 2px solid #CBD5E1;">
                         <tr>
-                            <!-- Hạng -->
-                            <th scope="col" class="text-center" style="width: 55px;">Hạng</th>
-                            
-                            <!-- Ứng viên -->
-                            <th scope="col" style="min-width: 260px;">Ứng viên &amp; Vòng PV</th>
-
-                            <!-- Tiêu chí đánh giá động -->
-                            @foreach (var crit in Model.CriteriaHeaders)
-                            {
-                                <th scope="col" class="text-center" style="min-width: 130px;" title="@CleanDescription(crit.Description)">
-                                    <div class="d-flex flex-column align-items-center gap-1">
-                                        <span class="badge @crit.TypeBadgeClass" style="font-size: 0.65rem; font-weight: 600;">
-                                            @crit.TypeDisplayName
-                                        </span>
-                                        <div class="fw-bold text-dark text-truncate" style="max-width: 140px;" title="@crit.Name">
-                                            @crit.Name
-                                        </div>
-                                        <span class="text-muted font-mono" style="font-size: 0.68rem;" title="Trọng số tính điểm: x@crit.Weight">
-                                            w = @crit.Weight
-                                        </span>
-                                    </div>
-                                </th>
-                            }
-
-                            <!-- Điểm Tổng Kết -->
-                            <th scope="col" class="text-center" style="width: 120px; background: #F8FAFC;">
-                                <div class="d-flex flex-column align-items-center">
-                                    <span class="fw-bold text-dark">
-                                        <i class="bi bi-star-fill text-warning me-1"></i>Điểm Tổng
-                                    </span>
-                                    <span class="text-muted" style="font-size: 0.68rem;">Thang 5.0</span>
+                            <!-- Cột TIÊU CHÍ (Sticky bên trái) -->
+                            <th scope="col" class="py-3 px-3 text-start bg-light" style="width: 240px; min-width: 220px; font-size: 0.82rem; text-transform: uppercase; color: #334155; letter-spacing: 0.03em;">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span class="fw-bold"><i class="bi bi-list-check me-1.5 text-primary"></i> Tiêu Chí Đánh Giá</span>
+                                    <span class="badge bg-white text-muted border font-mono" style="font-size: 0.68rem;">@Model.CriteriaHeaders.Count tiêu chí</span>
                                 </div>
                             </th>
 
-                            <!-- Đề xuất Tuyển dụng -->
-                            <th scope="col" class="text-center" style="width: 150px;">Đề Xuất</th>
+                            <!-- CÁC CỘT ỨNG VIÊN (Sắp xếp theo thứ hạng) -->
+                            @foreach (var cand in Model.Candidates)
+                            {
+                                var isLeader = cand.Rank == 1;
+                                var headerBg = isLeader ? "#F0FDF4" : "#F8FAFC";
+                                var nameColor = isLeader ? "#047857" : "#0F172A";
 
-                            <!-- Nhận xét Hội đồng -->
-                            <th scope="col" style="min-width: 240px;">Nhận Xét Hội Đồng</th>
-
-                            <!-- Thao tác -->
-                            <th scope="col" class="text-end" style="width: 110px;">Thao tác</th>
+                                <th scope="col" class="py-3 px-2 text-center" style="min-width: 140px; background: @headerBg;">
+                                    <div class="d-flex flex-column align-items-center gap-1">
+                                        <div class="d-flex align-items-center gap-1.5">
+                                            <span class="badge font-mono @(isLeader ? "bg-success text-white" : "bg-secondary text-white")" style="font-size: 0.68rem; padding: 0.2rem 0.45rem; border-radius: 9999px;">
+                                                #@cand.Rank
+                                            </span>
+                                            <a href="/Candidates/Details/@cand.CandidateId" class="fw-bold text-decoration-none hover-text-primary" style="color: @nameColor; font-size: 0.95rem;">
+                                                @cand.CandidateName
+                                            </a>
+                                        </div>
+                                        <div class="text-muted" style="font-size: 0.7rem; font-family: 'JetBrains Mono', monospace;">
+                                            @cand.SubmittedEvaluationsCount phiếu đánh giá
+                                        </div>
+                                    </div>
+                                </th>
+                            }
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var cand in Model.Candidates)
+                        <!-- CÁC HÀNG TIÊU CHÍ (.NET, SQL, Architecture, Problem Solving, Communication...) -->
+                        @foreach (var row in Model.TransposedMatrix)
                         {
-                            var rankClass = cand.Rank == 1 ? "rank-badge-1" : (cand.Rank == 2 ? "rank-badge-2" : (cand.Rank == 3 ? "rank-badge-3" : "rank-badge-other"));
-                            var isTop = cand.IsTopCandidate;
-
-                            <tr style="@(isTop ? "background-color: #F8FAF9;" : "") transition: background .15s;">
-                                <!-- Hạng -->
-                                <td class="text-center">
-                                    <div class="rank-badge @rankClass" title="Thứ hạng @cand.Rank theo điểm tổng">
-                                        @if (cand.Rank == 1)
-                                        {
-                                            <i class="bi bi-crown-fill text-warning me-0.5" style="font-size: 0.72rem;"></i>
-                                        }
-                                        @cand.Rank
+                            <tr>
+                                <!-- Cột Tên Tiêu Chí (Rút gọn <= 4 từ theo UX Rule) -->
+                                <td class="py-3 px-3 text-start bg-white" style="font-size: 0.88rem;">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <span class="fw-bold text-dark">@row.DisplayTitle</span>
+                                            @if (!string.IsNullOrWhiteSpace(row.CriteriaName) && row.CriteriaName != row.DisplayTitle)
+                                            {
+                                                <div class="text-muted" style="font-size: 0.72rem;" title="@row.CriteriaName">
+                                                    @row.CriteriaName
+                                                </div>
+                                            }
+                                        </div>
+                                        <span class="badge bg-light text-muted border font-mono ms-1" style="font-size: 0.65rem;" title="Trọng số: x@row.Weight">
+                                            w = @row.Weight
+                                        </span>
                                     </div>
                                 </td>
 
-                                <!-- Ứng viên & Vòng phỏng vấn -->
-                                <td>
-                                    <div class="d-flex align-items-start gap-2.5">
-                                        <div class="d-flex align-items-center justify-content-center fw-bold text-white rounded-circle flex-shrink-0"
-                                             style="width: 38px; height: 38px; background: @(isTop ? "linear-gradient(135deg, #059669 0%, #047857 100%)" : "linear-gradient(135deg, #1E293B 0%, #334155 100%)"); font-size: 0.92rem; box-shadow: 0 2px 4px rgba(0,0,0,0.08);">
-                                            @(string.IsNullOrEmpty(cand.CandidateName) ? "?" : cand.CandidateName[..1].ToUpper())
-                                        </div>
-                                        <div style="min-width: 0;">
-                                            <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                                                <a href="/ung-vien/@cand.CandidateId" class="fw-bold text-dark text-decoration-none hover-text-primary" style="font-size: 0.92rem;">
-                                                    @cand.CandidateName
-                                                </a>
-                                                @if (isTop)
-                                                {
-                                                    <span class="badge" style="background:#ECFDF5; color:#047857; border:1px solid #A7F3D0; font-size:0.65rem; font-weight:700;">
-                                                        <i class="bi bi-trophy-fill me-0.5 text-warning"></i>DẪN ĐẦU
-                                                    </span>
-                                                }
-                                            </div>
-                                            <div class="text-muted mt-0.5" style="font-size: 0.75rem; font-family:'JetBrains Mono',monospace;">
-                                                @cand.Email @(!string.IsNullOrEmpty(cand.Phone) ? $"• {cand.Phone}" : "")
-                                            </div>
-                                            <div class="d-flex align-items-center gap-1.5 mt-1 flex-wrap" style="font-size: 0.72rem;">
-                                                <span class="badge" style="background: @cand.StageColor; color: #FFF; font-size: 0.65rem; font-weight: 600;">
-                                                    @cand.CurrentStageName
-                                                </span>
-                                                <span class="text-muted">· @cand.InterviewTitle (Vòng @cand.RoundNumber)</span>
-                                                @if (!string.IsNullOrEmpty(cand.ResumeFilePath))
-                                                {
-                                                    <a href="@cand.ResumeFilePath" target="_blank" class="badge bg-light text-primary border text-decoration-none" title="Xem CV đính kèm">
-                                                        <i class="bi bi-file-earmark-pdf"></i> CV
-                                                    </a>
-                                                }
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-
-                                <!-- Điểm chi tiết từng tiêu chí -->
-                                @foreach (var crit in Model.CriteriaHeaders)
+                                <!-- Các ô điểm số của từng ứng viên cho tiêu chí này -->
+                                @foreach (var cand in Model.Candidates)
                                 {
-                                    var hasScore = cand.CriteriaScores.TryGetValue(crit.Id, out var score);
-                                    var scoreDisplay = hasScore ? score.ToString("0.0") : "—";
+                                    row.ScoresByCandidateId.TryGetValue(cand.CandidateId, out var cell);
+                                    var cellScore = cell?.Score ?? cand.OverallScore;
+                                    var cellAvg = cell?.AverageScore ?? cellScore;
+                                    var evalCount = cell?.EvaluatorCount ?? cand.SubmittedEvaluationsCount;
+                                    var spread = cell?.ScoreSpread ?? 0.0m;
+                                    var minS = cell?.MinScore ?? cellScore;
+                                    var maxS = cell?.MaxScore ?? cellScore;
 
-                                    string badgeClass = "score-badge-none";
-                                    if (hasScore)
+                                    var isHighest = cell?.IsHighestInRow ?? false;
+                                    var isLowest = cell?.IsLowestInRow ?? false;
+
+                                    // UX Rule:
+                                    // Điểm cao nhất mỗi hàng tô xanh
+                                    // Điểm thấp nhất mỗi hàng tô đỏ nhạt
+                                    string cellBg = "bg-white";
+                                    string badgeClass = "bg-light text-dark border";
+
+                                    if (isHighest)
                                     {
-                                        if (score >= 4.5m) badgeClass = "score-badge-excellent";
-                                        else if (score >= 3.5m) badgeClass = "score-badge-good";
-                                        else if (score >= 2.5m) badgeClass = "score-badge-average";
-                                        else badgeClass = "score-badge-poor";
+                                        cellBg = "bg-success-subtle";
+                                        badgeClass = "bg-success text-white shadow-xs fw-bold";
+                                    }
+                                    else if (isLowest)
+                                    {
+                                        cellBg = "bg-danger-subtle";
+                                        badgeClass = "bg-danger-subtle text-danger border border-danger-subtle fw-semibold";
+                                    }
+                                    else
+                                    {
+                                        badgeClass = "bg-light text-dark border font-mono fw-semibold";
                                     }
 
-                                    <td class="text-center">
-                                        <div class="score-badge @badgeClass" title="@crit.Name: @scoreDisplay/5.0 (Trọng số w = @crit.Weight)">
-                                            @scoreDisplay
+                                    // Nội dung tooltip khi hover: Số người đánh giá, Điểm trung bình, Độ lệch
+                                    var tooltipContent = $"<b>{cand.CandidateName} - {row.DisplayTitle}</b><br/>" +
+                                                         $"• Số người đánh giá: <b>{evalCount} giám khảo</b><br/>" +
+                                                         $"• Điểm trung bình: <b>{cellAvg.ToString("0.0", CultureInfo.InvariantCulture)} / 5.0</b><br/>" +
+                                                         $"• Độ lệch: <b>{spread.ToString("0.0", CultureInfo.InvariantCulture)}</b> (Min: {minS:0.0} - Max: {maxS:0.0})";
+
+                                    <td class="py-3 px-2 text-center @cellBg position-relative" style="transition: background .15s;">
+                                        <div class="d-inline-flex flex-column align-items-center cursor-pointer"
+                                             data-bs-toggle="tooltip"
+                                             data-bs-html="true"
+                                             data-bs-placement="top"
+                                             title="@tooltipContent">
+                                            <span class="badge font-mono px-2.5 py-1.5 fs-6 @badgeClass" style="min-width: 48px; font-size: 0.95rem !important;">
+                                                @cellScore.ToString("0.0", CultureInfo.InvariantCulture)
+                                            </span>
+                                            <div class="progress mt-1.5" style="height: 3px; width: 48px; background: #E2E8F0;">
+                                                <div class="progress-bar @(isHighest ? "bg-success" : (isLowest ? "bg-danger" : "bg-primary"))"
+                                                     role="progressbar"
+                                                     style="width: @(cellScore * 20)%;"
+                                                     aria-valuenow="@cellScore" aria-valuemin="0" aria-valuemax="5"></div>
+                                            </div>
                                         </div>
                                     </td>
                                 }
-
-                                <!-- Điểm Tổng Kết -->
-                                <td class="overall-score-cell @(isTop ? "is-top" : "")">
-                                    <div class="fw-bold font-mono" style="font-size: 1.15rem; color: @(cand.OverallScore >= 4.0m ? "#059669" : (cand.OverallScore >= 3.0m ? "#0284C7" : "#D97706"));">
-                                        @cand.OverallScore.ToString("0.0")
-                                    </div>
-                                    <div class="text-muted" style="font-size: 0.68rem; font-family:'JetBrains Mono',monospace;" title="Điểm chuẩn hóa theo trọng số">
-                                        w: @cand.WeightedScore.ToString("0.00")
-                                    </div>
-                                </td>
-
-                                <!-- Kết luận đề xuất -->
-                                <td class="text-center">
-                                    <span class="badge @cand.RecommendationBadgeClass py-1 px-2 text-wrap" style="border-radius: 6px; font-size: 0.74rem;">
-                                        @cand.RecommendationDisplay
-                                    </span>
-                                    <div class="text-muted small mt-1 font-mono" style="font-size: 0.68rem;" title="Hội đồng: @cand.PanelistNames">
-                                        <i class="bi bi-people me-1"></i>@cand.SubmittedEvaluationsCount phiếu nộp
-                                    </div>
-                                </td>
-
-                                <!-- Nhận xét hội đồng -->
-                                <td>
-                                    @if (!string.IsNullOrEmpty(cand.Strengths))
-                                    {
-                                        <div class="small text-dark mb-1" style="font-size: 0.75rem; line-height: 1.4;">
-                                            <strong class="text-success"><i class="bi bi-plus-circle me-1"></i>Ưu điểm:</strong> @cand.Strengths
-                                        </div>
-                                    }
-                                    @if (!string.IsNullOrEmpty(cand.Weaknesses))
-                                    {
-                                        <div class="small text-muted" style="font-size: 0.74rem; line-height: 1.4;">
-                                            <strong class="text-danger"><i class="bi bi-dash-circle me-1"></i>Lưu ý:</strong> @cand.Weaknesses
-                                        </div>
-                                    }
-                                    @if (string.IsNullOrEmpty(cand.Strengths) && string.IsNullOrEmpty(cand.Weaknesses))
-                                    {
-                                        <span class="text-muted small fst-italic" style="font-size: 0.74rem;">@(cand.DetailedFeedback ?? "Hội đồng đánh giá đạt chuẩn.")</span>
-                                    }
-                                </td>
-
-                                <!-- Thao tác Action Buttons -->
-                                <td class="text-end">
-                                    <div class="d-flex align-items-center justify-content-end gap-1.5">
-                                        @if (cand.LastInterviewId.HasValue)
-                                        {
-                                            <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center"
-                                                    style="border-radius: 6px; font-size: 0.75rem; padding: 0.25rem 0.5rem;"
-                                                    onclick="openInterviewEvaluationModal('@cand.LastInterviewId.Value')"
-                                                    title="Mở phiếu đánh giá phỏng vấn của hội đồng">
-                                                <i class="bi bi-card-checklist me-1"></i> Phiếu
-                                            </button>
-                                        }
-                                        <a href="/ung-vien/@cand.CandidateId" class="btn btn-sm btn-outline-secondary"
-                                           style="border-radius: 6px; font-size: 0.75rem; padding: 0.25rem 0.5rem;" title="Xem toàn bộ hồ sơ chi tiết">
-                                            <i class="bi bi-arrow-right"></i>
-                                        </a>
-                                    </div>
-                                </td>
                             </tr>
                         }
+
+                        <!-- ========================================================================= -->
+                        <!-- HÀNG CUỐI CÙNG: ĐIỂM TỔNG (Overall Score của từng ứng viên)                -->
+                        <!-- ========================================================================= -->
+                        <tr class="table-secondary fw-bold" style="border-top: 2.5px solid #CBD5E1; background: #F1F5F9;">
+                            <td class="py-3 px-3 text-start bg-secondary-subtle">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-trophy-fill text-warning fs-5"></i>
+                                    <div>
+                                        <div class="text-uppercase fw-bolder text-dark" style="letter-spacing: 0.05em; font-size: 0.92rem;">
+                                            ĐIỂM TỔNG
+                                        </div>
+                                        <div class="text-muted fw-normal" style="font-size: 0.7rem;">
+                                            Thang điểm 5.0 chuẩn hóa
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            @foreach (var cand in Model.Candidates)
+                            {
+                                var isHighestTotal = cand.Rank == 1;
+                                var isLowestTotal = cand.OverallScore == Model.LowestScore && Model.Candidates.Count > 1;
+
+                                string totalCellBg = "bg-white";
+                                string totalBadgeClass = "bg-light text-dark border";
+
+                                if (isHighestTotal)
+                                {
+                                    totalCellBg = "bg-success-subtle";
+                                    totalBadgeClass = "bg-success text-white shadow-xs fw-bold";
+                                }
+                                else if (isLowestTotal)
+                                {
+                                    totalCellBg = "bg-danger-subtle";
+                                    totalBadgeClass = "bg-danger-subtle text-danger border border-danger-subtle fw-semibold";
+                                }
+                                else
+                                {
+                                    totalBadgeClass = "bg-white text-dark border font-mono fw-bold";
+                                }
+
+                                var totalTooltip = $"<b>Điểm tổng: {cand.CandidateName}</b><br/>" +
+                                                   $"• Thứ hạng: <b>#{cand.Rank}</b><br/>" +
+                                                   $"• Điểm trung bình: <b>{cand.OverallScore.ToString("0.00", CultureInfo.InvariantCulture)} / 5.0</b><br/>" +
+                                                   $"• Phiếu đánh giá: <b>{cand.SubmittedEvaluationsCount} phiếu</b>";
+
+                                <td class="py-3 px-2 text-center @totalCellBg"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-html="true"
+                                    data-bs-placement="bottom"
+                                    title="@totalTooltip">
+                                    <div class="d-inline-flex flex-column align-items-center">
+                                        <span class="badge font-mono px-3 py-2 fs-5 @totalBadgeClass" style="min-width: 60px; font-size: 1.15rem !important;">
+                                            @cand.OverallScore.ToString("0.00", CultureInfo.InvariantCulture)
+                                        </span>
+                                        <span class="badge bg-white text-muted border font-mono mt-1" style="font-size: 0.65rem;">
+                                            Hạng #@cand.Rank
+                                        </span>
+                                    </div>
+                                </td>
+                            }
+                        </tr>
                     </tbody>
                 </table>
             </div>
 
             <div class="card-footer bg-white border-top p-3 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2" style="border-color: #F1F5F9 !important;">
-                <div class="small text-muted">
-                    Hiển thị <strong>@Model.Candidates.Count</strong> ứng viên của vị trí <strong>@Model.SelectedJobTitle</strong>.
+                <div class="small text-muted font-mono">
+                    <i class="bi bi-info-circle text-primary me-1"></i>
+                    Bảng so sánh chuyển vị: điểm cao nhất mỗi hàng tô xanh, điểm thấp nhất mỗi hàng tô đỏ nhạt.
                 </div>
-                <div class="small text-muted d-flex align-items-center gap-3">
-                    <span><i class="bi bi-check-all text-success me-1"></i>Đã đối chiếu khung tiêu chí chuẩn hóa</span>
-                    <span><i class="bi bi-shield-check text-primary me-1"></i>Chế độ Blind Review bảo mật hội đồng</span>
+                <div class="small text-muted font-mono">
+                    Tổng số: <strong>@Model.Candidates.Count</strong> ứng viên có phiếu đánh giá
                 </div>
             </div>
         </div>
 
-        <!-- ============================================================== -->
-        <!-- SECTION 2: BIỂU ĐỒ ĐỐI ĐẦU TRỰC QUAN (HEAD-TO-HEAD BENCHMARK) -->
-        <!-- THIẾT KẾ TOÀN CHIỀU RỘNG: KHÔNG BAO GIỜ BỊ CẮT CHỮ '...'      -->
-        <!-- ============================================================== -->
-        <div class="card border-0 shadow-sm p-4 bg-white mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 14px;">
-            <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between mb-3 pb-2 border-bottom gap-2" style="border-color: #F1F5F9 !important;">
-                <div class="d-flex align-items-center gap-2.5">
-                    <div class="p-2 rounded-2" style="background: #ECFDF5; color: #059669;">
-                        <i class="bi bi-bar-chart-fill fs-5"></i>
-                    </div>
-                    <div>
-                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1rem;">
-                            Đối Chiếu Năng Lực Trực Quan (Top Ứng Viên)
+        <!-- ========================================================================= -->
+        <!-- HÀNG 2 CỘT: KHU VỰC 2 (XẾP HẠNG) VÀ KHU VỰC 3 (CHÊNH LỆCH ỨNG VIÊN)       -->
+        <!-- ========================================================================= -->
+        <div class="row g-4 mb-4">
+            <!-- ===================================================================== -->
+            <!-- KHU VỰC 2 - XẾP HẠNG (Rankings)                                       -->
+            <!-- #1 Hải ━━━━━━━━━━━━ 4.54                                              -->
+            <!-- #2 Nam ━━━━━━━━━━ 4.40                                                -->
+            <!-- ===================================================================== -->
+            <div class="col-12 col-lg-5">
+                <div class="card border-0 shadow-sm h-100 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 14px;">
+                    <div class="card-header bg-white border-bottom p-3.5" style="border-color: #F1F5F9 !important;">
+                        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-trophy text-warning"></i>
+                            <span>Xếp Hạng Ứng Viên</span>
                         </h5>
-                        <span class="text-muted small">So sánh song song điểm số từng tiêu chí giữa các ứng viên dẫn đầu để đưa ra quyết định tuyển dụng.</span>
+                        <div class="text-muted small mt-0.5">
+                            Sắp xếp tự động theo điểm tổng đánh giá từ cao xuống thấp.
+                        </div>
                     </div>
-                </div>
-                <div class="d-flex align-items-center gap-2 font-mono small text-muted">
-                    <span class="badge bg-light text-muted border">Thang điểm 1.0 - 5.0</span>
-                </div>
-            </div>
-
-            <!-- Bảng Đối Đầu Song Song (Full-width Benchmark Grid) -->
-            <div class="ats-mobile-table-hint px-3 pt-2"><i class="bi bi-arrow-left-right"></i> Vuốt ngang để xem đủ bảng đối đầu ứng viên</div>
-            <div class="ats-mobile-table-wrapper table-responsive mb-0">
-                <table class="table benchmark-table align-middle" style="min-width: 800px;">
-                    <thead>
-                        <tr>
-                            <th scope="col" style="width: 32%; min-width: 250px;">
-                                <span class="text-uppercase text-secondary small fw-bold" style="letter-spacing: 0.05em;">Tiêu chí đánh giá</span>
-                            </th>
-                            @foreach (var topCand in Model.Candidates.Take(3))
+                    <div class="card-body p-3.5">
+                        <div class="d-flex flex-column gap-3">
+                            @foreach (var rank in Model.Rankings)
                             {
-                                var rankBadgeClass = topCand.Rank == 1 ? "rank-badge-1" : (topCand.Rank == 2 ? "rank-badge-2" : "rank-badge-3");
-                                <th scope="col" style="width: @(68 / Math.Min(3, Model.Candidates.Count))%; min-width: 220px;" class="px-3">
-                                    <div class="d-flex align-items-center justify-content-between p-2 rounded-3" style="background: #F8FAFC; border: 1px solid #E2E8F0;">
+                                var isLeader = rank.IsLeader;
+                                var barColor = isLeader ? "#059669" : (rank.Rank == 2 ? "#0284C7" : (rank.Rank == 3 ? "#D97706" : "#64748B"));
+                                var bgItem = isLeader ? "background: #F0FDF4; border: 1.5px solid #A7F3D0;" : "background: #F8FAFC; border: 1px solid #E2E8F0;";
+
+                                <div class="p-3 rounded-3" style="@bgItem">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
                                         <div class="d-flex align-items-center gap-2">
-                                            <div class="rank-badge @rankBadgeClass" style="width: 28px; height: 28px; font-size: 0.75rem;">
-                                                #@topCand.Rank
-                                            </div>
-                                            <div>
-                                                <div class="fw-bold text-dark text-truncate" style="max-width: 150px;" title="@topCand.CandidateName">
-                                                    @topCand.CandidateName
-                                                </div>
-                                                <span class="badge @topCand.RecommendationBadgeClass" style="font-size: 0.65rem;">
-                                                    @topCand.RecommendationDisplay
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div class="text-end">
-                                            <div class="fw-bold font-mono" style="font-size: 1.05rem; color: #059669;">
-                                                @topCand.OverallScore.ToString("0.0")
-                                            </div>
-                                            <div class="text-muted" style="font-size: 0.65rem;">/ 5.0</div>
-                                        </div>
-                                    </div>
-                                </th>
-                            }
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var crit in Model.CriteriaHeaders)
-                        {
-                            // Tìm điểm cao nhất của tiêu chí này trong top 3
-                            decimal maxScoreInCrit = 0;
-                            foreach (var c in Model.Candidates.Take(3))
-                            {
-                                if (c.CriteriaScores.TryGetValue(crit.Id, out var s) && s > maxScoreInCrit)
-                                {
-                                    maxScoreInCrit = s;
-                                }
-                            }
-
-                            <tr>
-                                <!-- Cột 1: Tên tiêu chí ĐẦY ĐỦ 100% -->
-                                <td>
-                                    <div class="d-flex align-items-start gap-2">
-                                        <span class="badge @crit.TypeBadgeClass mt-0.5" style="font-size: 0.65rem; font-weight: 600; flex-shrink: 0;">
-                                            @crit.TypeDisplayName
-                                        </span>
-                                        <div>
-                                            <div class="fw-bold text-dark" style="font-size: 0.88rem; line-height: 1.35;">
-                                                @crit.Name
-                                            </div>
-                                            <div class="text-muted small mt-0.5" style="font-size: 0.74rem;">
-                                                @{
-                                                    var cleanDesc = CleanDescription(crit.Description);
-                                                }
-                                                @if (!string.IsNullOrEmpty(cleanDesc))
-                                                {
-                                                    <span>@cleanDesc • </span>
-                                                }
-                                                <span class="font-mono">Trọng số: x@(crit.Weight.ToString("0.#"))</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-
-                                <!-- Cột 2, 3, 4: Thanh điểm từng ứng viên -->
-                                @foreach (var topCand in Model.Candidates.Take(3))
-                                {
-                                    topCand.CriteriaScores.TryGetValue(crit.Id, out var sVal);
-                                    var percent = sVal * 20;
-                                    var barColor = sVal >= 4.5m ? "#059669" : (sVal >= 3.5m ? "#0284C7" : (sVal >= 2.5m ? "#D97706" : "#DC2626"));
-                                    var isHighestInRow = sVal == maxScoreInCrit && sVal > 0;
-
-                                    <td class="px-3">
-                                        <div class="d-flex align-items-center justify-content-between mb-1.5">
-                                            <div class="d-flex align-items-center gap-1.5">
-                                                <span class="fw-bold font-mono" style="font-size: 0.95rem; color: @barColor;">
-                                                    @sVal.ToString("0.0")
-                                                </span>
-                                                <span class="text-muted" style="font-size: 0.7rem;">/ 5.0</span>
-                                            </div>
-                                            @if (isHighestInRow)
+                                            <span class="badge font-mono @(isLeader ? "bg-success text-white" : "bg-secondary text-white")" style="font-size: 0.75rem; border-radius: 6px; width: 32px; text-align: center;">
+                                                #@rank.Rank
+                                            </span>
+                                            <a href="/Candidates/Details/@rank.CandidateId" class="fw-bold text-dark text-decoration-none hover-text-primary" style="font-size: 0.95rem;">
+                                                @rank.CandidateName
+                                            </a>
+                                            @if (isLeader)
                                             {
-                                                <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.64rem; font-weight: 600;">
-                                                    <i class="bi bi-star-fill text-warning me-0.5"></i>Ưu thế
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle font-mono" style="font-size: 0.68rem;">
+                                                    Dẫn đầu
                                                 </span>
                                             }
                                         </div>
-                                        <div class="progress" style="height: 7px; background: #E2E8F0; border-radius: 4px; overflow: hidden;">
-                                            <div class="progress-bar" role="progressbar" 
-                                                 style="width: @percent%; background: @barColor; border-radius: 4px; transition: width .4s ease;" 
-                                                 aria-valuenow="@sVal" aria-valuemin="0" aria-valuemax="5"></div>
+                                        <div class="font-mono fw-bold" style="font-size: 1.05rem; color: @barColor;">
+                                            @rank.OverallScoreDisplay
                                         </div>
-                                    </td>
+                                    </div>
+
+                                    <!-- Thanh bar độ dài biểu diễn điểm số -->
+                                    <div class="progress" style="height: 8px; background: #E2E8F0; border-radius: 9999px;">
+                                        <div class="progress-bar progress-bar-striped @(isLeader ? "progress-bar-animated" : "")"
+                                             role="progressbar"
+                                             style="width: @rank.ScorePercent%; background-color: @barColor; border-radius: 9999px;"
+                                             aria-valuenow="@rank.OverallScore" aria-valuemin="0" aria-valuemax="5"></div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===================================================================== -->
+            <!-- KHU VỰC 3 - CHÊNH LỆCH ỨNG VIÊN (Delta Analysis)                       -->
+            <!-- "Tại sao Hải đang đứng đầu?"                                          -->
+            <!-- So với Nam: + SQL +0.3 | + Communication +0.2 | - Problem Solving -0.2 -->
+            <!-- ===================================================================== -->
+            <div class="col-12 col-lg-7">
+                <div class="card border-0 shadow-sm h-100 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 14px;">
+                    <div class="card-header bg-white border-bottom p-3.5" style="border-color: #F1F5F9 !important;">
+                        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-graph-up-arrow text-success"></i>
+                            <span>Chênh Lệch Năng Lực (Delta Analysis)</span>
+                        </h5>
+                        <div class="text-muted small mt-0.5">
+                            Giải đáp cụ thể cho Trưởng bộ phận: <em>"Tại sao ứng viên dẫn đầu đang đứng đầu?"</em>
+                        </div>
+                    </div>
+                    <div class="card-body p-3.5">
+                        @if (Model.DeltaAnalysis != null)
+                        {
+                            var delta = Model.DeltaAnalysis;
+
+                            <!-- Header so sánh Leader vs RunnerUp -->
+                            <div class="p-3 mb-3 rounded-3" style="background: #F0FDF4; border: 1.5px solid #BBF7D0;">
+                                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
+                                    <div>
+                                        <div class="small text-muted font-mono">Ứng viên dẫn đầu:</div>
+                                        <div class="fw-bold text-success fs-5">
+                                            <i class="bi bi-award-fill me-1"></i> @delta.LeaderName
+                                            <span class="badge bg-success text-white font-mono ms-1 fs-6">@delta.LeaderScore.ToString("0.00", CultureInfo.InvariantCulture)</span>
+                                        </div>
+                                        <div class="text-muted small mt-0.5">
+                                            Đối chiếu trực tiếp với ứng viên kế tiếp: <b>@delta.RunnerUpName</b> (@delta.RunnerUpScore.ToString("0.00", CultureInfo.InvariantCulture))
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="small text-muted font-mono">Chênh lệch tổng:</div>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle font-mono fs-5 fw-bold px-3 py-1">
+                                            @delta.TotalDifferenceText
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Danh sách tiêu chí chênh lệch (+ / -) -->
+                            <div class="row g-2.5">
+                                @foreach (var item in delta.CriteriaDeltas)
+                                {
+                                    var isPlus = item.IsAdvantage;
+                                    var isMinus = item.IsDisadvantage;
+                                    var itemBg = isPlus ? "#F0FDF4" : (isMinus ? "#FEF2F2" : "#F8FAFC");
+                                    var itemBorder = isPlus ? "#BBF7D0" : (isMinus ? "#FECACA" : "#E2E8F0");
+                                    var textColor = isPlus ? "#15803D" : (isMinus ? "#DC2626" : "#475569");
+                                    var icon = isPlus ? "bi-plus-circle-fill text-success" : (isMinus ? "bi-dash-circle-fill text-danger" : "bi-pause-circle text-muted");
+
+                                    <div class="col-12 col-sm-6">
+                                        <div class="p-2.5 px-3 rounded-3 d-flex align-items-center justify-content-between h-100"
+                                             style="background: @itemBg; border: 1px solid @itemBorder;">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi @icon fs-6"></i>
+                                                <div>
+                                                    <span class="fw-bold" style="color: @textColor; font-size: 0.88rem;">
+                                                        @item.CriteriaName
+                                                    </span>
+                                                    @if (item.IsHighestInGroup)
+                                                    {
+                                                        <span class="badge bg-success text-white font-mono ms-1" style="font-size: 0.6rem; padding: 0.15rem 0.35rem;">
+                                                            Cao nhất nhóm
+                                                        </span>
+                                                    }
+                                                </div>
+                                            </div>
+                                            <div class="text-end font-mono">
+                                                <span class="fw-bold" style="color: @textColor; font-size: 0.95rem;">
+                                                    @item.DeltaText
+                                                </span>
+                                                <div class="text-muted" style="font-size: 0.68rem;">
+                                                    (@item.LeaderScore:0.0 vs @item.RunnerUpScore:0.0)
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 }
-                            </tr>
+                            </div>
                         }
-                    </tbody>
-                </table>
+                        else
+                        {
+                            <div class="text-center py-4 text-muted">
+                                <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+                                Cần tối thiểu 2 ứng viên có điểm đánh giá để thực hiện phân tích chênh lệch năng lực.
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- KHU VỰC 4 - CHI TIẾT PHIẾU ĐÁNH GIÁ (Collapse mặc định - Chống thiên vị)   -->
+        <!-- [+] Xem nguồn điểm                                                        -->
+        <!-- Từng ứng viên: Đánh giá viên A, B, C và điểm trung bình                   -->
+        <!-- ========================================================================= -->
+        <div class="card border-0 shadow-sm bg-white mb-4 overflow-hidden" style="border: 1px solid #E2E8F0 !important; border-radius: 14px;">
+            <div class="card-header bg-white border-bottom p-3.5 d-flex align-items-center justify-content-between" style="border-color: #F1F5F9 !important;">
+                <div>
+                    <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-shaded text-primary"></i>
+                        <span>Minh Bạch Nguồn Điểm &amp; Chống Thiên Vị</span>
+                    </h5>
+                    <div class="text-muted small mt-0.5">
+                        Kiểm chứng độc lập điểm số từng giám khảo trong hội đồng. Giúp phát hiện sai lệch hoặc thiên kiến cá nhân.
+                    </div>
+                </div>
+                <!-- Nút toggle mở rộng collapse -->
+                <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5" type="button" data-bs-toggle="collapse" data-bs-target="#evaluatorBreakdownCollapse" aria-expanded="false" aria-controls="evaluatorBreakdownCollapse" style="border-radius: 8px;">
+                    <i class="bi bi-chevron-expand"></i> [+] Xem nguồn điểm đánh giá
+                </button>
+            </div>
+
+            <!-- Khối Collapse (Mặc định thu gọn theo wireframe) -->
+            <div class="collapse" id="evaluatorBreakdownCollapse">
+                <div class="card-body p-4 bg-light border-top" style="border-color: #F1F5F9 !important;">
+                    <div class="row g-4">
+                        @foreach (var candidateBreakdown in Model.EvaluatorBreakdowns)
+                        {
+                            <div class="col-12 col-md-6 col-lg-3">
+                                <div class="card border-0 shadow-sm bg-white h-100" style="border: 1px solid #E2E8F0 !important; border-radius: 10px;">
+                                    <div class="card-header bg-white border-bottom p-3 d-flex align-items-center justify-content-between" style="border-color: #F1F5F9 !important;">
+                                        <div>
+                                            <h6 class="fw-bold text-dark mb-0">@candidateBreakdown.CandidateName</h6>
+                                            <span class="text-muted small font-mono">@candidateBreakdown.EvaluatorCount giám khảo</span>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle font-mono fs-6 fw-bold">
+                                                @candidateBreakdown.AverageScore.ToString("0.00", CultureInfo.InvariantCulture)
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="card-body p-3">
+                                        <div class="small fw-bold text-uppercase text-muted mb-2 font-mono" style="font-size: 0.68rem; letter-spacing: 0.05em;">
+                                            Chi tiết điểm các giám khảo:
+                                        </div>
+                                        <ul class="list-unstyled mb-0 d-flex flex-column gap-2 font-mono small">
+                                            @foreach (var evaluator in candidateBreakdown.Evaluators)
+                                            {
+                                                <li class="p-2 rounded-2 bg-light d-flex align-items-center justify-content-between border" style="border-color: #E2E8F0 !important;">
+                                                    <span class="text-dark">@evaluator.EvaluatorName</span>
+                                                    <span class="badge bg-white text-dark border font-mono fw-bold">
+                                                        @evaluator.OverallScore.ToString("0.0", CultureInfo.InvariantCulture)
+                                                    </span>
+                                                </li>
+                                            }
+                                        </ul>
+
+                                        <div class="mt-3 pt-2.5 border-top d-flex align-items-center justify-content-between small font-mono" style="border-color: #F1F5F9 !important;">
+                                            <span class="text-muted">Trung bình :</span>
+                                            <strong class="text-dark">@candidateBreakdown.AverageScore.ToString("0.00", CultureInfo.InvariantCulture)</strong>
+                                        </div>
+
+                                        @if (candidateBreakdown.HasDiscrepancy)
+                                        {
+                                            <div class="mt-2 p-2 rounded-2 bg-warning-subtle text-warning-emphasis border border-warning-subtle small font-mono" style="font-size: 0.72rem;">
+                                                <i class="bi bi-exclamation-triangle-fill me-1"></i> Có độ lệch điểm giữa các giám khảo (&ge; @candidateBreakdown.Spread.ToString("0.0", CultureInfo.InvariantCulture)). Cần kiểm tra lại phiếu đánh giá.
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
             </div>
         </div>
     }
     else
     {
-        <!-- Empty State: Trang thái trống lịch sự, tinh tế, không từ ngữ kỹ thuật -->
+        <!-- Empty State khi chưa có dữ liệu đánh giá -->
         <div class="card border-0 shadow-sm p-5 bg-white text-center mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 14px;">
             <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-3" style="width: 72px; height: 72px; background: #F8FAFC; border: 2px dashed #CBD5E1; color: #94A3B8;">
-                <i class="bi bi-bar-chart-steps" style="font-size: 2rem;"></i>
+                <i class="bi bi-clipboard2-data" style="font-size: 2rem;"></i>
             </div>
             <h5 class="fw-bold text-dark mb-1">Chưa có ứng viên nào có phiếu đánh giá chính thức</h5>
             <p class="text-muted small mx-auto mb-4" style="max-width: 520px; line-height: 1.6;">
-                Bảng so sánh năng lực chỉ hiển thị các ứng viên đã được hội đồng phỏng vấn hoàn tất và nộp phiếu đánh giá. 
-                Vị trí <strong>@Model.SelectedJobTitle</strong> hiện chưa có ứng viên nào có kết quả chấm điểm phù hợp với bộ lọc hiện tại.
+                Theo nguyên tắc so sánh khách quan, bảng so sánh chỉ hiển thị các ứng viên đã được hội đồng phỏng vấn nộp phiếu đánh giá chính thức. Vị trí <strong>@Model.SelectedJobTitle</strong> hiện chưa có ứng viên nào thỏa mãn điều kiện lọc.
             </p>
-            <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap no-print">
-                <a href="/dashboard/lich-phong-van" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5 shadow-sm" style="background: #0284C7; border-color: #0284C7; border-radius: 8px; font-size: 0.82rem; padding: 0.45rem 0.95rem;">
-                    <i class="bi bi-calendar3"></i> Xem lịch phỏng vấn &amp; nộp phiếu
+            <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
+                <a href="/dashboard/lich-phong-van" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5 shadow-sm" style="border-radius: 8px;">
+                    <i class="bi bi-calendar-check-fill"></i> Xem lịch phỏng vấn &amp; nộp phiếu
                 </a>
-                <a href="/ung-vien" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5" style="border-radius: 8px; font-size: 0.82rem; padding: 0.45rem 0.95rem;">
-                    <i class="bi bi-people"></i> Quản lý hồ sơ ứng viên
+                <a href="/interviews/so-sanh-ung-vien" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5" style="border-radius: 8px;">
+                    <i class="bi bi-arrow-counterclockwise"></i> Xem tất cả vị trí
                 </a>
             </div>
         </div>
@@ -837,6 +656,16 @@
 
 @section Scripts {
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Khởi tạo Bootstrap Tooltip cho tất cả ô điểm ma trận
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                new bootstrap.Tooltip(tooltipTriggerEl, {
+                    delay: { show: 100, hide: 100 }
+                });
+            });
+        });
+
         // Điều hướng xem chi tiết phiếu đánh giá
         function openInterviewEvaluationModal(interviewId) {
             if (!interviewId) return;
