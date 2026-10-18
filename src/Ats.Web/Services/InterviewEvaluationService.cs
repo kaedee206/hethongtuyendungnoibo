@@ -1,3 +1,4 @@
+using Ats.Web.Constants;
 using Ats.Web.Data;
 using Ats.Web.Models.Entities;
 using Ats.Web.Models.Enums;
@@ -42,6 +43,13 @@ public class InterviewEvaluationService(
         if (interview == null)
         {
             return (false, "Không tìm thấy buổi phỏng vấn yêu cầu.", null);
+        }
+
+        // Rule 12: Ứng viên (Candidate) tuyệt đối KHÔNG ĐƯỢC PHÉP mở phiếu đánh giá
+        var currentUser = await _dbContext.Users.FindAsync(new object[] { currentUserId }, cancellationToken);
+        if (currentUser == null || currentUser.UserType != UserType.INTERNAL || !UserRoles.CanBeInterviewer(currentUser.Role))
+        {
+            return (false, "Lỗi bảo mật (Rule 12): Ứng viên (Candidate) không có quyền mở phiếu đánh giá phỏng vấn.", null);
         }
 
         // Quy tắc 1: Kiểm tra người dùng có trong danh sách Panelists được mời hay không
@@ -182,6 +190,13 @@ public class InterviewEvaluationService(
         if (interview == null)
         {
             return (false, "Không tìm thấy thông tin buổi phỏng vấn.", null);
+        }
+
+        // Rule 12: Ứng viên (Candidate) tuyệt đối KHÔNG ĐƯỢC PHÉP nộp phiếu đánh giá
+        var currentUser = await _dbContext.Users.FindAsync(new object[] { currentUserId }, cancellationToken);
+        if (currentUser == null || currentUser.UserType != UserType.INTERNAL || !UserRoles.CanBeInterviewer(currentUser.Role))
+        {
+            return (false, "Lỗi bảo mật (Rule 12): Ứng viên (Candidate) tuyệt đối không có quyền nộp phiếu đánh giá phỏng vấn.", null);
         }
 
         // 2. Quy tắc 1: Chỉ người phỏng vấn được mời mới được nộp phiếu

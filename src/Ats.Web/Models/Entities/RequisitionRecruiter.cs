@@ -11,7 +11,7 @@ public class RequisitionRecruiter : BaseEntity
     public Guid RecruiterId { get; set; }
     
     /// <summary>
-    /// true: Recruiter chính (chịu trách nhiệm chạy tới cùng), false: Recruiter hỗ trợ
+    /// true: Chuyên viên tuyển dụng phụ trách chính, false: Chuyên viên hỗ trợ
     /// </summary>
     public bool IsPrimary { get; set; } = false;
     

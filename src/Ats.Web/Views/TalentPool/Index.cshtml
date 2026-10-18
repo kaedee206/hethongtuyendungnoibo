@@ -172,27 +172,7 @@
         </div>
     </div>
 
-    <!-- ── Flash Messages ── -->
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show rounded-2 py-2.5 px-3 mb-3 border-0 shadow-sm" style="background:#ECFDF5; color:#065F46; border-left: 4px solid #059669 !important;" role="alert">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
-                <span class="small fw-semibold">@TempData["SuccessMessage"]</span>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show rounded-2 py-2.5 px-3 mb-3 border-0 shadow-sm" style="background:#FEF2F2; color:#991B1B; border-left: 4px solid #DC2626 !important;" role="alert">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
-                <span class="small fw-semibold">@TempData["ErrorMessage"]</span>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
+
 
     <!-- ── KPI Metric Cards ── -->
     <div class="row g-3 mb-4">

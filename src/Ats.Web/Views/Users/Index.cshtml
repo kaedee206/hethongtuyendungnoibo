@@ -10,19 +10,25 @@
             <h1 class="h3 fw-bold text-dark mb-1">Quản trị người dùng & Phân quyền</h1>
             <p class="text-muted small mb-0">Quản lý danh sách tài khoản nội bộ NoveraTech, phân quyền đa vai trò và kiểm soát bảo mật.</p>
         </div>
-        <div class="d-flex gap-2">
+        @{
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("Quản trị hệ thống") || User.IsInRole("Quản trị viên");
+        }
+        <div class="mobile-action-bar align-items-center gap-2">
             <a href="/users/import-template" download="Mau_Nhap_Nhan_Su.xlsx" class="btn btn-outline-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" style="border-radius: 8px;" title="Tải file mẫu Excel nhập nhân sự">
                 <i class="bi bi-file-earmark-arrow-down"></i>
                 <span class="fw-semibold">Tải file mẫu</span>
             </a>
-            <button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#importUserModal" style="border-radius: 8px;">
-                <i class="bi bi-file-earmark-arrow-up"></i>
-                <span class="fw-semibold">Nhập Excel</span>
-            </button>
-            <a asp-action="Create" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" style="border-radius: 8px;">
-                <i class="bi bi-person-plus-fill"></i>
-                <span class="fw-semibold">Thêm tài khoản mới</span>
-            </a>
+            @if (isAdmin)
+            {
+                <button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#importUserModal" style="border-radius: 8px;">
+                    <i class="bi bi-file-earmark-arrow-up"></i>
+                    <span class="fw-semibold">Nhập Excel</span>
+                </button>
+                <a asp-action="Create" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" style="border-radius: 8px;">
+                    <i class="bi bi-person-plus-fill"></i>
+                    <span class="fw-semibold">Thêm tài khoản mới</span>
+                </a>
+            }
         </div>
     </div>
 
@@ -50,12 +56,13 @@
                     <label class="form-label small fw-semibold text-muted">Vai trò</label>
                     <select id="userRoleSelect" name="role" class="form-select bg-light">
                         <option value="">-- Tất cả vai trò --</option>
-                        <option value="Admin" selected="@(Model.RoleFilter == "Admin")">Quản trị viên (Admin)</option>
-                        <option value="HRManager" selected="@(Model.RoleFilter == "HRManager")">Quản lý nhân sự (HR Manager)</option>
-                        <option value="Recruiter" selected="@(Model.RoleFilter == "Recruiter")">Chuyên viên tuyển dụng (Recruiter)</option>
-                        <option value="HiringManager" selected="@(Model.RoleFilter == "HiringManager")">Quản lý tuyển dụng (Hiring Manager)</option>
+                        <option value="Admin" selected="@(Model.RoleFilter == "Admin")">Quản trị hệ thống (Admin)</option>
+                        <option value="HRManager" selected="@(Model.RoleFilter == "HRManager")">Trưởng phòng Nhân sự (HR Manager)</option>
+                        <option value="Recruiter" selected="@(Model.RoleFilter == "Recruiter")">Nhân viên tuyển dụng (Recruiter)</option>
+                        <option value="HiringManager" selected="@(Model.RoleFilter == "HiringManager")">Trưởng bộ phận (Hiring Manager)</option>
                         <option value="Interviewer" selected="@(Model.RoleFilter == "Interviewer")">Người phỏng vấn (Interviewer)</option>
-                        <option value="Approver" selected="@(Model.RoleFilter == "Approver")">Người phê duyệt (Approver)</option>
+                        <option value="Approver" selected="@(Model.RoleFilter == "Approver")">Người duyệt (Approver)</option>
+                        <option value="Candidate" selected="@(Model.RoleFilter == "Candidate")">Ứng viên (Candidate)</option>
                     </select>
                 </div>
 
@@ -88,16 +95,17 @@
             <span class="small text-muted">Hiển thị trang @Model.CurrentPage / @Math.Max(1, Model.TotalPages)</span>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+        <div class="ats-mobile-table-hint px-3 pt-2"><i class="bi bi-arrow-left-right"></i> Vuốt ngang để xem đủ thông tin tài khoản, vai trò & thao tác</div>
+        <div class="ats-mobile-table-wrapper table-responsive mb-0">
+            <table class="table table-hover align-middle mb-0" style="min-width: 820px;">
                 <thead class="table-light">
                     <tr>
-                        <th class="ps-4">Họ và tên & Email</th>
-                        <th>Phòng ban</th>
-                        <th>Vai trò</th>
-                        <th>Trạng thái</th>
-                        <th>Hoạt động gần nhất</th>
-                        <th class="text-end pe-4">Thao tác</th>
+                        <th class="ps-4 text-nowrap">Họ và tên & Email</th>
+                        <th class="text-nowrap">Phòng ban</th>
+                        <th class="text-nowrap">Vai trò</th>
+                        <th class="text-nowrap">Trạng thái</th>
+                        <th class="text-nowrap">Hoạt động gần nhất</th>
+                        <th class="text-end pe-4 text-nowrap">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -144,18 +152,19 @@
                                     <div class="d-flex flex-wrap gap-1">
                                         @foreach (var role in user.Roles)
                                         {
-                                            var badgeClass = role switch
+                                            var normRole = Ats.Web.Constants.UserRoles.NormalizeRole(role);
+                                            var badgeClass = normRole switch
                                             {
-                                                "Admin" => "bg-danger-subtle text-danger border border-danger-subtle",
-                                                "HRManager" => "bg-primary-subtle text-primary border border-primary-subtle",
-                                                "Recruiter" => "bg-info-subtle text-info-emphasis border border-info-subtle",
-                                                "HiringManager" => "bg-warning-subtle text-warning-emphasis border border-warning-subtle",
-                                                "Interviewer" => "bg-success-subtle text-success border border-success-subtle",
-                                                "Approver" => "bg-secondary-subtle text-secondary border border-secondary-subtle",
+                                                Ats.Web.Constants.UserRoles.Admin => "bg-danger-subtle text-danger border border-danger-subtle",
+                                                Ats.Web.Constants.UserRoles.HRManager => "bg-primary-subtle text-primary border border-primary-subtle",
+                                                Ats.Web.Constants.UserRoles.Recruiter => "bg-info-subtle text-info-emphasis border border-info-subtle",
+                                                Ats.Web.Constants.UserRoles.HiringManager => "bg-warning-subtle text-warning-emphasis border border-warning-subtle",
+                                                Ats.Web.Constants.UserRoles.Interviewer => "bg-success-subtle text-success border border-success-subtle",
+                                                Ats.Web.Constants.UserRoles.Approver => "bg-secondary-subtle text-secondary border border-secondary-subtle",
                                                 _ => "bg-light text-dark border"
                                             };
-                                            <span class="badge @badgeClass fw-medium px-2 py-1" style="border-radius: 6px;">
-                                                @role
+                                            <span class="badge @badgeClass fw-medium px-2 py-1" style="border-radius: 6px;" title="@Ats.Web.Constants.UserRoles.GetWho(normRole)">
+                                                @Ats.Web.Constants.UserRoles.GetDisplayName(role)
                                             </span>
                                         }
                                     </div>
@@ -197,34 +206,43 @@
                                     <div class="text-xs">Tạo ngày: @user.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</div>
                                 </td>
                                 <td class="text-end pe-4">
-                                    <div class="dropdown">
-                                        <button class="btn btn-sm btn-light border dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                            Hành động
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                            <li>
-                                                <a class="dropdown-item" asp-action="Edit" asp-route-id="@user.Id">
-                                                    <i class="bi bi-pencil-square me-2 text-primary"></i> Phân quyền & Chỉnh sửa
-                                                </a>
-                                            </li>
-                                            @if (user.Status == "LOCKED")
-                                            {
+                                    @if (isAdmin)
+                                    {
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-light border dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                Hành động
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                                                 <li>
-                                                    <button type="button" class="dropdown-item text-success" data-bs-toggle="modal" data-bs-target="#unlockModal" data-user-id="@user.Id" data-user-name="@user.FullName">
-                                                        <i class="bi bi-unlock-fill me-2"></i> Mở khóa tài khoản
-                                                    </button>
+                                                    <a class="dropdown-item" asp-action="Edit" asp-route-id="@user.Id">
+                                                        <i class="bi bi-pencil-square me-2 text-primary"></i> Phân quyền & Chỉnh sửa
+                                                    </a>
                                                 </li>
-                                            }
-                                            else
-                                            {
-                                                <li>
-                                                    <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#lockModal" data-user-id="@user.Id" data-user-name="@user.FullName">
-                                                        <i class="bi bi-lock-fill me-2"></i> Khóa tài khoản
-                                                    </button>
-                                                </li>
-                                            }
-                                        </ul>
-                                    </div>
+                                                @if (user.Status == "LOCKED")
+                                                {
+                                                    <li>
+                                                        <button type="button" class="dropdown-item text-success" data-bs-toggle="modal" data-bs-target="#unlockModal" data-user-id="@user.Id" data-user-name="@user.FullName">
+                                                            <i class="bi bi-unlock-fill me-2"></i> Mở khóa tài khoản
+                                                        </button>
+                                                    </li>
+                                                }
+                                                else
+                                                {
+                                                    <li>
+                                                        <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#lockModal" data-user-id="@user.Id" data-user-name="@user.FullName">
+                                                            <i class="bi bi-lock-fill me-2"></i> Khóa tài khoản
+                                                        </button>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-light text-muted border px-2 py-1" style="font-size: 0.75rem;">
+                                            <i class="bi bi-eye me-1"></i> Chỉ xem
+                                        </span>
+                                    }
                                 </td>
                             </tr>
                         }

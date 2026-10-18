@@ -152,6 +152,52 @@
         border-radius: var(--radius-card);
         padding: 1.5rem;
         margin-bottom: 1.5rem;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    }
+
+    .perk-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
+        padding: 0.75rem 0.85rem;
+        border-radius: 10px;
+        background: #F8FAFC;
+        border: 1px solid #F1F5F9;
+        transition: all 0.2s ease;
+    }
+    .perk-item:hover {
+        background: #F1F5F9;
+        border-color: #E2E8F0;
+        transform: translateX(2px);
+    }
+    .perk-icon-wrapper {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 1.1rem;
+    }
+
+    .related-job-item {
+        display: block;
+        padding: 0.85rem 1rem;
+        border-radius: 10px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        text-decoration: none;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .related-job-item:hover {
+        background: #FFFFFF;
+        border-color: #059669;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+        transform: translateY(-2px);
+    }
+    .related-job-item:hover .related-job-title {
+        color: #059669 !important;
     }
 
     .info-row {
@@ -237,27 +283,7 @@
         <span class="text-dark fw-medium">@job.Title</span>
     </nav>
 
-    <!-- Success Message Alert if applied -->
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show p-3 mb-4 shadow-sm" style="border-radius: var(--radius-button); border-left: 5px solid var(--color-accent);" role="alert">
-            <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-check-circle-fill fs-5 text-success"></i>
-                <div class="fw-semibold">@TempData["SuccessMessage"]</div>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show p-3 mb-4 shadow-sm" style="border-radius: var(--radius-button); border-left: 5px solid #DC2626;" role="alert">
-            <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
-                <div class="fw-semibold">@TempData["ErrorMessage"]</div>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
+
 
     <!-- ── THÔNG BÁO TRẠNG THÁI GỠ TIN / QUÁ HẠN (SCRUM-38) ── -->
     @if (job.IsClosed)
@@ -793,33 +819,52 @@
             </div>
 
             <!-- Widget 2: Môi trường NoveraTech -->
-            <div class="sidebar-widget" style="background: #FFFFFF;">
-                <div class="d-flex align-items-center gap-2 mb-3">
-                    <img src="~/img/logo-icon-dark-transparent.png" alt="NoveraTech" style="width: 28px; height: 28px;" asp-append-version="true" />
+            <div class="sidebar-widget">
+                <div class="d-flex align-items-center gap-2.5 mb-3.5 pb-2.5 border-bottom">
+                    <img src="~/img/logo-icon-dark-transparent.png" alt="NoveraTech" style="width: 30px; height: 30px;" asp-append-version="true" />
                     <div>
-                        <div class="fw-bold small text-dark">Đặc quyền Kỹ sư NoveraTech</div>
-                        <div class="text-muted" style="font-size: 0.72rem;">Engineering-First Organization</div>
+                        <div class="fw-bold text-dark" style="font-size: 0.95rem; line-height: 1.25;">Đặc quyền Kỹ sư NoveraTech</div>
+                        <div class="text-muted" style="font-size: 0.73rem;">Engineering-First Organization</div>
                     </div>
                 </div>
 
-                <div class="d-flex flex-column gap-2 mb-3">
-                    <div class="p-2.5 bg-light rounded-3 border" style="border-radius: 8px;">
-                        <div class="fw-semibold text-dark small"><i class="bi bi-laptop text-primary me-1"></i> Cấp MacBook Pro M3/M4 Max</div>
-                        <div class="text-muted" style="font-size: 0.75rem;">Trang bị 100% kèm 2 màn hình 4K công thái học.</div>
+                <div class="d-flex flex-column gap-2.5 mb-3.5">
+                    <div class="perk-item">
+                        <div class="perk-icon-wrapper" style="background: #EFF6FF; color: #2563EB;">
+                            <i class="bi bi-laptop"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold text-dark" style="font-size: 0.85rem;">Cấp MacBook Pro M3/M4 Max</div>
+                            <div class="text-muted mt-0.5" style="font-size: 0.76rem; line-height: 1.45;">Trang bị 100% máy mới kèm 2 màn hình 4K công thái học.</div>
+                        </div>
                     </div>
-                    <div class="p-2.5 bg-light rounded-3 border" style="border-radius: 8px;">
-                        <div class="fw-semibold text-dark small"><i class="bi bi-heart-pulse text-danger me-1"></i> Bảo hiểm NoveraCare VIP</div>
-                        <div class="text-muted" style="font-size: 0.75rem;">Bảo lãnh viện quốc tế nội & ngoại trú cho bạn + gia đình.</div>
+
+                    <div class="perk-item">
+                        <div class="perk-icon-wrapper" style="background: #FEF2F2; color: #DC2626;">
+                            <i class="bi bi-heart-pulse"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold text-dark" style="font-size: 0.85rem;">Bảo hiểm NoveraCare VIP</div>
+                            <div class="text-muted mt-0.5" style="font-size: 0.76rem; line-height: 1.45;">Bảo lãnh viện quốc tế nội &amp; ngoại trú cho bạn + gia đình.</div>
+                        </div>
                     </div>
-                    <div class="p-2.5 bg-light rounded-3 border" style="border-radius: 8px;">
-                        <div class="fw-semibold text-dark small"><i class="bi bi-mortarboard text-success me-1"></i> Tài trợ chứng chỉ 25tr/năm</div>
-                        <div class="text-muted" style="font-size: 0.75rem;">Tài trợ học và thi chứng chỉ AWS, Azure, CMMI, TOGAF.</div>
+
+                    <div class="perk-item">
+                        <div class="perk-icon-wrapper" style="background: #ECFDF5; color: #059669;">
+                            <i class="bi bi-mortarboard"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold text-dark" style="font-size: 0.85rem;">Tài trợ chứng chỉ 25tr/năm</div>
+                            <div class="text-muted mt-0.5" style="font-size: 0.76rem; line-height: 1.45;">Tài trợ học và thi chứng chỉ AWS, Azure, CMMI, TOGAF.</div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="text-center pt-2">
-                    <div class="text-muted small" style="font-size: 0.78rem;">Cần hỗ trợ về vị trí này? Liên hệ HR:</div>
-                    <div class="font-monospace fw-bold text-dark small mt-0.5">careers@@noveratech.digital</div>
+                <div class="p-2.5 rounded-3 text-center" style="background: #F8FAFC; border: 1px dashed #CBD5E1;">
+                    <div class="text-muted" style="font-size: 0.76rem;">Cần hỗ trợ về vị trí này? Liên hệ HR:</div>
+                    <a href="mailto:careers@noveratech.digital" class="fw-bold text-dark text-decoration-none d-inline-flex align-items-center gap-1.5 mt-0.5 font-monospace hover-green" style="font-size: 0.82rem;">
+                        <i class="bi bi-envelope-at text-success"></i>careers@@noveratech.digital
+                    </a>
                 </div>
             </div>
 
@@ -827,31 +872,43 @@
             @if (Model.RelatedJobs.Any())
             {
                 <div class="sidebar-widget">
-                    <h5 class="fw-bold mb-3 pb-2 border-bottom" style="font-size: 1rem; color: var(--color-text-main);">
-                        <i class="bi bi-layers text-primary me-1.5"></i> Vị trí tương tự đang mở
-                    </h5>
-                    <div class="d-flex flex-column gap-3">
+                    <div class="d-flex align-items-center justify-content-between mb-3 pb-2.5 border-bottom">
+                        <h5 class="fw-bold mb-0 d-flex align-items-center gap-2" style="font-size: 0.95rem; color: var(--color-text-main);">
+                            <span class="d-inline-flex align-items-center justify-content-center text-primary bg-primary-subtle rounded-2" style="width: 26px; height: 26px;">
+                                <i class="bi bi-layers fs-6"></i>
+                            </span>
+                            <span>Vị trí tương tự đang mở</span>
+                        </h5>
+                        <span class="badge rounded-pill bg-light text-secondary border font-monospace" style="font-size: 0.7rem;">@Model.RelatedJobs.Count</span>
+                    </div>
+
+                    <div class="d-flex flex-column gap-2.5">
                         @foreach (var rel in Model.RelatedJobs)
                         {
-                            <div class="p-2.5 rounded-3 border" style="background: #F8FAFC; border-color: var(--color-border) !important; border-radius: 8px;">
-                                <div class="d-flex justify-content-between align-items-start mb-1">
-                                    <span class="badge bg-white text-secondary border px-1.5 py-0.5" style="font-size: 0.68rem; border-radius: 4px;">
+                            <a asp-controller="Jobs" asp-action="Detail" asp-route-id="@rel.Slug" class="related-job-item">
+                                <div class="d-flex justify-content-between align-items-center gap-2 mb-1.5">
+                                    <span class="badge" style="background: #F1F5F9; color: #475569; font-size: 0.7rem; font-weight: 600; padding: 0.25rem 0.55rem; border-radius: 6px;">
                                         @rel.Department
                                     </span>
-                                    <span class="fw-bold font-monospace text-success" style="font-size: 0.8rem;">@rel.SalaryDisplay</span>
+                                    <span class="fw-bold font-monospace text-success" style="font-size: 0.8rem;">
+                                        @rel.SalaryDisplay
+                                    </span>
                                 </div>
-                                <a asp-controller="Jobs" asp-action="Detail" asp-route-id="@rel.Slug" class="fw-bold text-dark text-decoration-none small d-block mb-1 hover-green" style="line-height: 1.35;">
+                                <div class="fw-bold text-dark related-job-title mb-1.5" style="font-size: 0.88rem; line-height: 1.4; transition: color 0.15s ease;">
                                     @rel.Title
-                                </a>
-                                <div class="text-muted" style="font-size: 0.72rem;">
-                                    <i class="bi bi-geo-alt me-0.5"></i> @rel.WorkLocation
                                 </div>
-                            </div>
+                                <div class="d-flex align-items-center gap-1.5 text-muted" style="font-size: 0.74rem;">
+                                    <i class="bi bi-geo-alt text-secondary opacity-75"></i>
+                                    <span>@rel.WorkLocation</span>
+                                </div>
+                            </a>
                         }
                     </div>
-                    <div class="mt-3 text-center">
-                        <a asp-controller="Jobs" asp-action="Index" class="btn btn-sm btn-link text-success fw-semibold text-decoration-none" style="font-size: 0.85rem;">
-                            Xem toàn bộ vị trí khác &rarr;
+
+                    <div class="mt-3.5 pt-2 text-center">
+                        <a asp-controller="Jobs" asp-action="Index" class="btn btn-sm btn-outline-success fw-semibold d-inline-flex align-items-center gap-1.5 px-3 py-1.5" style="border-radius: 8px; font-size: 0.82rem; border-color: #A7F3D0; color: #047857; background: #ECFDF5;">
+                            <span>Xem toàn bộ vị trí khác</span>
+                            <i class="bi bi-arrow-right"></i>
                         </a>
                     </div>
                 </div>

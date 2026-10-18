@@ -2,172 +2,330 @@
 @{
     ViewData["Title"] = $"Chi tiết Khung năng lực: {Model.Name}";
     var canManage = (bool)(ViewBag.CanManage ?? false);
+    var totalWeight = Model.Criteria.Sum(c => c.Weight);
 }
 
-<div class="container-fluid px-3 px-md-4 py-4" style="max-width: 1200px;">
-    <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb small">
-            <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none text-muted">Bàn làm việc</a></li>
-            <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-muted">Khung năng lực</a></li>
-            <li class="breadcrumb-item active fw-medium text-dark" aria-current="page">@Model.Code</li>
-        </ol>
-    </nav>
+<div class="container-fluid px-3 px-md-4 py-4" style="max-width: 1320px;">
+    <!-- Breadcrumb -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
+                <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none text-muted">Bàn làm việc</a></li>
+                <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-muted">Khung năng lực</a></li>
+                <li class="breadcrumb-item active text-emerald-700 fw-semibold" aria-current="page">@Model.Code</li>
+            </ol>
+        </nav>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1.5" style="border-radius: 8px;">
+            <i class="bi bi-arrow-left"></i> Quay lại danh sách
+        </a>
+    </div>
 
-    <!-- Header -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
-        <div>
-            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                <span class="badge bg-light text-dark border font-monospace px-2 py-1" style="border-radius: 6px; font-size: 0.88rem;">@Model.Code</span>
-                <h1 class="h3 fw-bold text-dark mb-0">@Model.Name</h1>
-                @if (Model.IsActive)
-                {
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="border-radius: 6px;">
-                        <i class="bi bi-check-circle-fill me-1"></i>Đang sử dụng
-                    </span>
-                }
-                else
-                {
-                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1" style="border-radius: 6px;">
-                        Ngừng sử dụng
-                    </span>
-                }
+    <!-- Header Block -->
+    <div class="card border-0 shadow-sm mb-4 bg-white" style="border-radius: 14px; border: 1px solid #E2E8F0 !important;">
+        <div class="card-body p-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                        <span class="badge font-monospace px-2.5 py-1.5 text-slate-800" 
+                              style="border-radius: 6px; font-size: 0.88rem; font-family: 'JetBrains Mono', monospace; background: #F1F5F9; border: 1px solid #CBD5E1;">
+                            @Model.Code
+                        </span>
+                        @if (Model.IsActive)
+                        {
+                            <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1.5 d-inline-flex align-items-center gap-1" style="border-radius: 6px; font-size: 0.82rem;">
+                                <i class="bi bi-check-circle-fill"></i> Đang áp dụng
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-slate-100 text-slate-500 border border-slate-200 px-2.5 py-1.5" style="border-radius: 6px; font-size: 0.82rem;">
+                                Ngừng sử dụng
+                            </span>
+                        }
+                        <span class="badge bg-light text-muted border px-2 py-1 font-monospace" style="font-size: 0.78rem;">
+                            Cập nhật: @Model.UpdatedAt.ToString("dd/MM/yyyy HH:mm")
+                        </span>
+                    </div>
+                    <h1 class="h3 fw-bold text-slate-900 mb-1" style="color: #0F172A;">@Model.Name</h1>
+                    @if (!string.IsNullOrWhiteSpace(Model.Description))
+                    {
+                        <p class="text-muted small mb-0 mt-1" style="max-width: 820px; line-height: 1.5;">@Model.Description</p>
+                    }
+                </div>
+
+                <!-- Action Button Group -->
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    @if (canManage)
+                    {
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-success btn-sm px-3.5 py-2 d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold" 
+                           style="background-color: #059669; border-color: #059669; border-radius: 8px;">
+                            <i class="bi bi-pencil-square"></i>
+                            <span>Chỉnh sửa khung</span>
+                        </a>
+                        <form asp-action="Clone" asp-route-id="@Model.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn nhân bản khung năng lực [@Model.Code] @Model.Name không?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-secondary btn-sm px-3 py-2 d-inline-flex align-items-center gap-1.5" style="border-radius: 8px;">
+                                <i class="bi bi-copy"></i>
+                                <span>Nhân bản</span>
+                            </button>
+                        </form>
+                        <button type="button" class="btn btn-outline-danger btn-sm px-2.5 py-2" style="border-radius: 8px;" data-bs-toggle="modal" data-bs-target="#deleteFrameworkModal" title="Xóa khung năng lực">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    }
+                </div>
             </div>
-            @if (!string.IsNullOrWhiteSpace(Model.Description))
-            {
-                <p class="text-muted small mb-0">@Model.Description</p>
-            }
-        </div>
-
-        <div class="d-flex align-items-center gap-2">
-            @if (canManage)
-            {
-                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary d-inline-flex align-items-center gap-2 px-3 py-2" style="border-radius: 8px;">
-                    <i class="bi bi-pencil-square"></i>
-                    <span class="fw-semibold">Chỉnh sửa</span>
-                </a>
-                <form asp-action="Clone" asp-route-id="@Model.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn nhân bản khung năng lực [@Model.Code] @Model.Name không?');">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2" style="border-radius: 8px;">
-                        <i class="bi bi-copy"></i>
-                        <span class="fw-semibold">Nhân bản</span>
-                    </button>
-                </form>
-                <button type="button" class="btn btn-outline-danger d-inline-flex align-items-center gap-2 px-3 py-2" style="border-radius: 8px;" data-bs-toggle="modal" data-bs-target="#deleteFrameworkModal">
-                    <i class="bi bi-trash"></i>
-                    <span class="fw-semibold">Xóa</span>
-                </button>
-            }
-            <a asp-action="Index" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2" style="border-radius: 8px;">
-                <i class="bi bi-arrow-left"></i>
-                <span class="fw-semibold">Danh sách</span>
-            </a>
         </div>
     </div>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success border-0 shadow-sm d-flex align-items-center gap-2 mb-4" style="border-radius: 12px; background-color: #ECFDF5; color: #065F46;">
-            <i class="bi bi-check-circle-fill fs-5 text-success"></i>
-            <div>@TempData["SuccessMessage"]</div>
+    <!-- 4 Metric Highlights Strip -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-white" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
+                <div class="card-body p-3 d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
+                         style="width: 42px; height: 42px; background: #F1F5F9; color: #475569; font-size: 1.2rem;">
+                        <i class="bi bi-qr-code"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-medium" style="font-size: 0.78rem;">Mã tiêu chuẩn</div>
+                        <div class="h5 fw-bold mb-0 text-slate-900 font-monospace" style="font-family: 'JetBrains Mono', monospace; color: #0F172A;">
+                            @Model.Code
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    }
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-white" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
+                <div class="card-body p-3 d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
+                         style="width: 42px; height: 42px; background: #ECFDF5; color: #059669; font-size: 1.2rem;">
+                        <i class="bi bi-list-check"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-medium" style="font-size: 0.78rem;">Số lượng tiêu chí</div>
+                        <div class="h5 fw-bold mb-0 text-emerald-600 font-monospace" style="font-family: 'JetBrains Mono', monospace;">
+                            @Model.Criteria.Count <span class="fs-6 fw-normal text-muted">tiêu chí</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-white" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
+                <div class="card-body p-3 d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
+                         style="width: 42px; height: 42px; background: @(totalWeight == 100 ? "#ECFDF5" : "#FFFBEB"); color: @(totalWeight == 100 ? "#059669" : "#D97706"); font-size: 1.2rem;">
+                        <i class="bi bi-pie-chart-fill"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-medium" style="font-size: 0.78rem;">Tổng trọng số</div>
+                        <div class="h5 fw-bold mb-0 @(totalWeight == 100 ? "text-emerald-600" : "text-warning") font-monospace" style="font-family: 'JetBrains Mono', monospace;">
+                            @totalWeight% 
+                            @if (totalWeight == 100)
+                            {
+                                <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 ms-1 fw-normal" style="font-size: 0.68rem;">Chuẩn hóa</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-white" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
+                <div class="card-body p-3 d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
+                         style="width: 42px; height: 42px; background: #EFF6FF; color: #2563EB; font-size: 1.2rem;">
+                        <i class="bi bi-briefcase-fill"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-medium" style="font-size: 0.78rem;">Chức danh áp dụng</div>
+                        <div class="h5 fw-bold mb-0 text-slate-900 font-monospace" style="font-family: 'JetBrains Mono', monospace; color: #0F172A;">
+                            @Model.AssignedPositions.Count <span class="fs-6 fw-normal text-muted">vị trí</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <div class="row g-4 mb-4">
-        <!-- Cột trái: Tiêu chí đánh giá & Rubric -->
+
+
+    <!-- Main Content Layout (2-Column Grid) -->
+    <div class="row g-4">
+        <!-- Cột trái (8 cols): Danh sách Tiêu chí & Thang Rubric 5 mức -->
         <div class="col-12 col-lg-8">
-            <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-bold text-slate-900 mb-0 d-flex align-items-center gap-2" style="color: #0F172A; font-size: 1.05rem;">
+                    <i class="bi bi-ui-checks-grid text-emerald-600"></i>
+                    <span>Tiêu chí Đánh giá &amp; Thang Rubric</span>
+                </h5>
+                <span class="badge bg-light text-muted border font-monospace small">
+                    @Model.Criteria.Count tiêu chí
+                </span>
+            </div>
+
+            @if (Model.Criteria.Any())
+            {
+                <div class="d-flex flex-column gap-3 mb-4">
+                    @for (int i = 0; i < Model.Criteria.Count; i++)
+                    {
+                        var c = Model.Criteria[i];
+                        <div class="card border-0 shadow-sm bg-white overflow-hidden" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
+                            <!-- Criterion Header -->
+                            <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2" style="background: #FAFAFA;">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <span class="badge rounded-circle d-inline-flex align-items-center justify-content-center bg-slate-900 text-white font-monospace" 
+                                          style="width: 26px; height: 26px; font-size: 0.78rem; font-family: 'JetBrains Mono', monospace;">
+                                        @(i + 1)
+                                    </span>
+                                    <div>
+                                        <h6 class="fw-bold text-slate-900 mb-0" style="color: #0F172A; font-size: 0.98rem;">@c.Name</h6>
+                                        @if (!string.IsNullOrWhiteSpace(c.Description))
+                                        {
+                                            <div class="text-muted small mt-0.5" style="font-size: 0.8rem;">@c.Description</div>
+                                        }
+                                    </div>
+                                </div>
+                                <span class="badge px-2.5 py-1.5 font-monospace" 
+                                      style="border-radius: 6px; background-color: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem;">
+                                    Trọng số: @c.Weight%
+                                </span>
+                            </div>
+
+                            <!-- 5-Level Rubric Progression Cards (Không ép bảng hẹp) -->
+                            <div class="card-body p-3.5">
+                                <div class="text-muted small mb-2 fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.05em; color: #64748B;">
+                                    Thang tiêu chuẩn đánh giá theo mức độ thành thạo:
+                                </div>
+                                <div class="row g-2">
+                                    <!-- Mức 1 -->
+                                    <div class="col-12 col-md-6 col-xl">
+                                        <div class="p-2.5 rounded-3 h-100 border" style="background: #FFF1F2; border-color: #FECDD3 !important; border-top: 3px solid #E11D48 !important;">
+                                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                                <span class="badge bg-white text-danger border border-danger-subtle font-monospace" style="font-size: 0.7rem;">MỨC 1</span>
+                                                <span class="text-danger fw-semibold" style="font-size: 0.72rem;">Cơ bản</span>
+                                            </div>
+                                            <div class="text-dark small" style="font-size: 0.8rem; line-height: 1.45;">
+                                                @(string.IsNullOrWhiteSpace(c.Rubric1) ? "—" : c.Rubric1)
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Mức 2 -->
+                                    <div class="col-12 col-md-6 col-xl">
+                                        <div class="p-2.5 rounded-3 h-100 border" style="background: #FFFBEB; border-color: #FDE68A !important; border-top: 3px solid #D97706 !important;">
+                                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                                <span class="badge bg-white text-warning-emphasis border border-warning-subtle font-monospace" style="font-size: 0.7rem;">MỨC 2</span>
+                                                <span class="text-warning-emphasis fw-semibold" style="font-size: 0.72rem;">Khá</span>
+                                            </div>
+                                            <div class="text-dark small" style="font-size: 0.8rem; line-height: 1.45;">
+                                                @(string.IsNullOrWhiteSpace(c.Rubric2) ? "—" : c.Rubric2)
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Mức 3 (Chuẩn vị trí) -->
+                                    <div class="col-12 col-md-6 col-xl">
+                                        <div class="p-2.5 rounded-3 h-100 border" style="background: #F0F9FF; border-color: #BAE6FD !important; border-top: 3px solid #0284C7 !important;">
+                                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                                <span class="badge bg-white text-primary border border-primary-subtle font-monospace" style="font-size: 0.7rem;">MỨC 3</span>
+                                                <span class="text-primary fw-semibold" style="font-size: 0.72rem;">Thành thạo</span>
+                                            </div>
+                                            <div class="text-dark small" style="font-size: 0.8rem; line-height: 1.45;">
+                                                @(string.IsNullOrWhiteSpace(c.Rubric3) ? "—" : c.Rubric3)
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Mức 4 -->
+                                    <div class="col-12 col-md-6 col-xl">
+                                        <div class="p-2.5 rounded-3 h-100 border" style="background: #EEF2FF; border-color: #C7D2FE !important; border-top: 3px solid #4F46E5 !important;">
+                                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                                <span class="badge bg-white text-indigo border border-indigo-subtle font-monospace" style="font-size: 0.7rem; color: #4F46E5;">MỨC 4</span>
+                                                <span class="fw-semibold" style="font-size: 0.72rem; color: #4F46E5;">Nâng cao</span>
+                                            </div>
+                                            <div class="text-dark small" style="font-size: 0.8rem; line-height: 1.45;">
+                                                @(string.IsNullOrWhiteSpace(c.Rubric4) ? "—" : c.Rubric4)
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Mức 5 (Chuyên gia) -->
+                                    <div class="col-12 col-md-6 col-xl">
+                                        <div class="p-2.5 rounded-3 h-100 border" style="background: #ECFDF5; border-color: #A7F3D0 !important; border-top: 3px solid #059669 !important;">
+                                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                                <span class="badge bg-white text-emerald-700 border border-emerald-200 font-monospace" style="font-size: 0.7rem;">MỨC 5</span>
+                                                <span class="text-emerald-700 fw-semibold" style="font-size: 0.72rem;">Chuyên gia</span>
+                                            </div>
+                                            <div class="text-dark small" style="font-size: 0.8rem; line-height: 1.45;">
+                                                @(string.IsNullOrWhiteSpace(c.Rubric5) ? "—" : c.Rubric5)
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="card border-0 shadow-sm p-5 text-center bg-white" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center p-3 bg-light text-muted mb-3 mx-auto" style="width: 60px; height: 60px;">
+                        <i class="bi bi-list-check fs-4"></i>
+                    </div>
+                    <h6 class="fw-bold text-slate-900 mb-1">Chưa thiết lập tiêu chí đánh giá</h6>
+                    <p class="text-muted small mb-3">Khung năng lực này chưa được gán bộ tiêu chuẩn và rubric đánh giá cụ thể.</p>
+                    @if (canManage)
+                    {
+                        <div>
+                            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-success px-3" style="background: #059669; border-color: #059669; border-radius: 6px;">
+                                <i class="bi bi-plus-lg me-1"></i> Thêm tiêu chí đánh giá
+                            </a>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Cột phải (4 cols): Chức danh áp dụng & Thông tin quản trị -->
+        <div class="col-12 col-lg-4">
+            <!-- Card: Chức danh áp dụng -->
+            <div class="card border-0 shadow-sm mb-4 bg-white" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
                 <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                        <i class="bi bi-list-check text-primary"></i>
-                        <span>Tiêu chí Đánh giá (@Model.Criteria.Count tiêu chí)</span>
-                    </h5>
-                    <span class="badge font-monospace px-3 py-1" style="border-radius: 6px; background-color: #ECFDF5; color: #059669; border: 1px solid #A7F3D0;">
-                        Tổng trọng số: @Model.Criteria.Sum(c => c.Weight)%
+                    <h6 class="fw-bold text-slate-900 mb-0 d-flex align-items-center gap-2" style="color: #0F172A; font-size: 0.95rem;">
+                        <i class="bi bi-briefcase text-emerald-600"></i>
+                        <span>Chức danh áp dụng</span>
+                    </h6>
+                    <span class="badge bg-light text-slate-700 border font-monospace" style="font-family: 'JetBrains Mono', monospace;">
+                        @Model.AssignedPositions.Count
                     </span>
                 </div>
-                <div class="card-body p-4">
-                    @if (Model.Criteria.Any())
-                    {
-                        <div class="d-flex flex-column gap-3">
-                            @for (int i = 0; i < Model.Criteria.Count; i++)
-                            {
-                                var c = Model.Criteria[i];
-                                <div class="border rounded-3 p-3 bg-light" style="border-radius: 10px !important;">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <div>
-                                            <span class="badge bg-secondary font-monospace me-2" style="border-radius: 6px;">#@(i + 1)</span>
-                                            <strong class="text-dark fs-6">@c.Name</strong>
-                                        </div>
-                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace px-2 py-1" style="border-radius: 6px;">
-                                            Trọng số: @c.Weight%
-                                        </span>
-                                    </div>
-
-                                    @if (!string.IsNullOrWhiteSpace(c.Description))
-                                    {
-                                        <p class="text-muted small mb-3">@c.Description</p>
-                                    }
-
-                                    <!-- Rubric Matrix -->
-                                    <div class="table-responsive border rounded-3 bg-white" style="border-radius: 8px !important;">
-                                        <table class="table table-sm table-bordered align-middle mb-0" style="font-size: 0.82rem;">
-                                            <thead class="table-light">
-                                                <tr class="text-center">
-                                                    <th style="width: 20%; color: #DC2626;">Mức 1 (Kém/Cơ bản)</th>
-                                                    <th style="width: 20%; color: #D97706;">Mức 2 (Khá)</th>
-                                                    <th style="width: 20%; color: #0284C7;">Mức 3 (Thành thạo)</th>
-                                                    <th style="width: 20%; color: #2563EB;">Mức 4 (Nâng cao)</th>
-                                                    <th style="width: 20%; color: #059669;">Mức 5 (Chuyên gia)</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td class="p-2 text-muted">@(string.IsNullOrWhiteSpace(c.Rubric1) ? "—" : c.Rubric1)</td>
-                                                    <td class="p-2 text-muted">@(string.IsNullOrWhiteSpace(c.Rubric2) ? "—" : c.Rubric2)</td>
-                                                    <td class="p-2 text-muted">@(string.IsNullOrWhiteSpace(c.Rubric3) ? "—" : c.Rubric3)</td>
-                                                    <td class="p-2 text-muted">@(string.IsNullOrWhiteSpace(c.Rubric4) ? "—" : c.Rubric4)</td>
-                                                    <td class="p-2 text-muted">@(string.IsNullOrWhiteSpace(c.Rubric5) ? "—" : c.Rubric5)</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="text-center py-4 text-muted small">
-                            Chưa có tiêu chí nào được định nghĩa trong khung năng lực này.
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <!-- Cột phải: Vị trí chức danh áp dụng & Metadata -->
-        <div class="col-12 col-lg-4">
-            <!-- Chức danh áp dụng -->
-            <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
-                <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                        <i class="bi bi-briefcase text-success"></i>
-                        <span>Chức danh áp dụng (@Model.AssignedPositions.Count)</span>
-                    </h6>
-                </div>
-                <div class="card-body p-3" style="max-height: 420px; overflow-y: auto;">
+                <div class="card-body p-3" style="max-height: 480px; overflow-y: auto;">
                     @if (Model.AssignedPositions.Any())
                     {
-                        <div class="list-group list-group-flush">
+                        <div class="d-flex flex-column gap-2">
                             @foreach (var pos in Model.AssignedPositions)
                             {
-                                <div class="list-group-item px-2 py-2 border-0 border-bottom">
-                                    <div class="fw-semibold text-dark small text-truncate">@pos.Title</div>
-                                    <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.78rem;">
-                                        <span class="badge bg-light text-dark border font-monospace" style="border-radius: 4px;">@pos.Code</span>
-                                        <span>•</span>
-                                        <span class="text-truncate">@pos.DepartmentName</span>
+                                <div class="p-2.5 rounded-3 border bg-light d-flex align-items-start justify-content-between gap-2" style="border-radius: 8px !important;">
+                                    <div>
+                                        <div class="fw-semibold text-slate-900 small" style="color: #0F172A;">@pos.Title</div>
+                                        <div class="d-flex align-items-center gap-1.5 mt-1 text-muted" style="font-size: 0.75rem;">
+                                            <span class="badge bg-white text-secondary border font-monospace" style="font-size: 0.68rem; font-family: 'JetBrains Mono', monospace;">
+                                                @pos.Code
+                                            </span>
+                                            <span>•</span>
+                                            <span>@(string.IsNullOrWhiteSpace(pos.DepartmentName) ? "Chung" : pos.DepartmentName)</span>
+                                        </div>
                                     </div>
+                                    @if (!string.IsNullOrWhiteSpace(pos.JobLevel))
+                                    {
+                                        <span class="badge bg-blue-50 text-blue-700 border border-blue-200" style="font-size: 0.68rem;">
+                                            @pos.JobLevel
+                                        </span>
+                                    }
                                 </div>
                             }
                         </div>
@@ -175,26 +333,46 @@
                     else
                     {
                         <div class="text-center py-4 text-muted small">
-                            <i class="bi bi-info-circle d-block mb-1 fs-5"></i>
-                            Khung năng lực này chưa được gán cho chức danh công việc nào.
+                            <i class="bi bi-briefcase d-block mb-2 fs-4 text-slate-400"></i>
+                            <div>Khung năng lực này chưa được liên kết với chức danh nào.</div>
+                            @if (canManage)
+                            {
+                                <div class="mt-2">
+                                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-secondary py-1 px-2.5" style="border-radius: 6px; font-size: 0.78rem;">
+                                        <i class="bi bi-link-45deg me-1"></i> Gán chức danh
+                                    </a>
+                                </div>
+                            }
                         </div>
                     }
                 </div>
             </div>
 
-            <!-- Metadata info -->
-            <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+            <!-- Card: Thông tin hệ thống & Kiểm toán -->
+            <div class="card border-0 shadow-sm bg-white" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
                 <div class="card-header bg-white border-bottom py-3 px-4">
-                    <h6 class="fw-bold text-dark mb-0">Thông tin bổ sung</h6>
+                    <h6 class="fw-bold text-slate-900 mb-0" style="color: #0F172A; font-size: 0.95rem;">
+                        <i class="bi bi-info-circle me-1 text-muted"></i> Thông tin kiểm toán
+                    </h6>
                 </div>
                 <div class="card-body p-3">
                     <div class="d-flex justify-content-between py-2 border-bottom small">
-                        <span class="text-muted">Ngày tạo:</span>
-                        <span class="font-monospace text-dark">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                        <span class="text-muted">Mã hệ thống (ID):</span>
+                        <span class="font-monospace text-slate-600 small" style="font-size: 0.72rem;">@Model.Id.ToString()[..8]...</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom small">
+                        <span class="text-muted">Ngày khởi tạo:</span>
+                        <span class="font-monospace text-slate-800 fw-medium">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom small">
+                        <span class="text-muted">Cập nhật lần cuối:</span>
+                        <span class="font-monospace text-slate-800 fw-medium">@Model.UpdatedAt.ToString("dd/MM/yyyy HH:mm")</span>
                     </div>
                     <div class="d-flex justify-content-between py-2 small">
-                        <span class="text-muted">Cập nhật lần cuối:</span>
-                        <span class="font-monospace text-dark">@Model.UpdatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                        <span class="text-muted">Trạng thái vận hành:</span>
+                        <span class="fw-semibold @(Model.IsActive ? "text-emerald-600" : "text-muted")">
+                            @(Model.IsActive ? "Đang hiệu lực" : "Tạm dừng")
+                        </span>
                     </div>
                 </div>
             </div>
@@ -207,7 +385,7 @@
 {
     <div class="modal fade" id="deleteFrameworkModal" tabindex="-1" aria-labelledby="deleteFrameworkModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-content border-0 shadow" style="border-radius: 14px; overflow: hidden;">
                 <div class="modal-header border-bottom py-3 px-4 bg-danger-subtle text-danger">
                     <h6 class="modal-title fw-bold d-flex align-items-center gap-2" id="deleteFrameworkModalLabel">
                         <i class="bi bi-exclamation-triangle-fill"></i>

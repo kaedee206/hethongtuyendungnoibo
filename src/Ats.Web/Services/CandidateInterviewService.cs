@@ -16,12 +16,12 @@ namespace Ats.Web.Services;
 /// </summary>
 public class CandidateInterviewService(
     ApplicationDbContext dbContext,
-    ILogger<CandidateInterviewService> logger) : ICandidateInterviewService
+    ILogger<CandidateInterviewService> logger,
+    IConfiguration? configuration = null) : ICandidateInterviewService
 {
     private readonly ApplicationDbContext _dbContext = dbContext;
     private readonly ILogger<CandidateInterviewService> _logger = logger;
-
-    private const string TokenSecret = "NoveraTech_Ats_Interview_Invitation_Key_2026_Secure_HMAC";
+    private readonly string _tokenSecret = configuration?["Security:InterviewTokenSecret"] ?? "NoveraTech_Ats_Interview_Invitation_Key_2026_Secure_HMAC";
     private static readonly TimeZoneInfo VietnamTimeZone = GetVietnamTimeZone();
 
     private static TimeZoneInfo GetVietnamTimeZone()
@@ -52,7 +52,7 @@ public class CandidateInterviewService(
         var emailNormalized = (candidateEmail ?? string.Empty).Trim().ToLowerInvariant();
         var rawData = $"{interviewId:D}:{emailNormalized}";
 
-        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(TokenSecret));
+        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_tokenSecret));
         var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(rawData));
         var hashHex = Convert.ToHexString(hashBytes)[..16].ToLowerInvariant();
 
@@ -175,6 +175,7 @@ public class CandidateInterviewService(
             Token = token,
             CandidateName = candName,
             CandidateEmail = cand.Email,
+            CandidateUserId = cand.UserId,
             JobTitle = jobTitle,
             DepartmentName = deptName,
             RoundTitle = interview.Title,

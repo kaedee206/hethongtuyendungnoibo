@@ -38,16 +38,17 @@
     <!-- Table View -->
     <div class="card border-0 shadow-sm" style="border-radius: 12px;">
         <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="approvalRulesTable">
+            <div class="ats-mobile-table-hint px-3 pt-2"><i class="bi bi-arrow-left-right"></i> Vuốt ngang để xem đủ quy trình, chuỗi phê duyệt & thao tác</div>
+            <div class="ats-mobile-table-wrapper table-responsive mb-0">
+                <table class="table table-hover align-middle mb-0" id="approvalRulesTable" style="min-width: 800px;">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-4">Tên quy trình</th>
-                            <th>Phòng ban áp dụng</th>
-                            <th>Hạn mức lương (VNĐ)</th>
-                            <th>Chuỗi phê duyệt</th>
-                            <th>Trạng thái</th>
-                            <th class="text-end pe-4">Thao tác</th>
+                            <th class="ps-4 text-nowrap" style="min-width: 180px;">Tên quy trình</th>
+                            <th class="text-nowrap">Phòng ban áp dụng</th>
+                            <th class="text-nowrap">Hạn mức lương (VNĐ)</th>
+                            <th class="text-nowrap" style="min-width: 240px;">Chuỗi phê duyệt</th>
+                            <th class="text-nowrap text-center">Trạng thái</th>
+                            <th class="text-end pe-4 text-nowrap">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody id="approvalRulesTbody">

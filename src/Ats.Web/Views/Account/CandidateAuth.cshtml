@@ -110,7 +110,7 @@
     <div class="w-full lg:w-1/2 flex flex-col h-full overflow-hidden bg-white dark:bg-[#111827]">
 
         @* Mobile Brand (visible only mobile) *@
-        <div class="lg:hidden flex items-center justify-between px-6 py-3 border-b border-[#E2E8F0] dark:border-[#1E293B] flex-shrink-0">
+        <div class="lg:hidden flex items-center justify-between pl-6 pr-16 py-3 border-b border-[#E2E8F0] dark:border-[#1E293B] flex-shrink-0">
             <a href="/gioi-thieu" title="Quay lại Trang chủ NoveraTech" class="inline-block">
                 <img src="~/img/logo-dark-transparent.png"
                      alt="NoveraTech Careers"
@@ -147,8 +147,8 @@
                                      alt="NoveraTech Careers"
                                      class="h-7 object-contain dark:brightness-0 dark:invert transition-opacity group-hover:opacity-80" />
                             </a>
-                            <h2 class="text-[#0F172A] dark:text-[#F8FAFC] text-2xl font-semibold tracking-tight">Chào mừng trở lại</h2>
-                            <p class="text-[#64748B] dark:text-[#94A3B8] text-xs mt-1">Đăng nhập để theo dõi hồ sơ ứng tuyển.</p>
+                            <h2 class="text-[#0F172A] dark:text-[#F8FAFC] text-2xl font-semibold tracking-tight">Cổng Ứng Viên Tuyển Dụng</h2>
+                            <p class="text-[#64748B] dark:text-[#94A3B8] text-xs mt-1">Đăng nhập để theo dõi tiến độ hồ sơ ứng tuyển &amp; cơ hội nghề nghiệp tại NoveraTech.</p>
                         </div>
 
                         @* Validation Summary *@
@@ -159,10 +159,7 @@
                                  role="alert" aria-live="polite"></div>
                         }
 
-                        @if (TempData["SuccessMessage"] != null)
-                        {
-                            <div class="mb-3 px-3 py-2 border border-[#10B981]/40 bg-[#10B981]/5 text-[#047857] dark:text-[#10B981] text-xs rounded-none" role="status">@TempData["SuccessMessage"]</div>
-                        }
+
 
                         <div id="signinDynamicSuccess"
                              class="mb-3 px-3 py-2 border border-[#10B981]/40 bg-[#10B981]/5 text-[#047857] dark:text-[#10B981] text-xs rounded-none @(activePanel == "signin" && Model.IsSuccess && !string.IsNullOrWhiteSpace(Model.StatusMessage) ? "" : "hidden")"

@@ -11,7 +11,7 @@ namespace Ats.Web.Controllers;
 /// Quản lý phân công Recruiter phụ trách yêu cầu tuyển dụng và lịch sử chuyển giao (Scrum 26).
 /// Chỉ dành cho Trưởng phòng Nhân sự và Admin hệ thống.
 /// </summary>
-[Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager}")]
+[Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},Quản trị viên,Trưởng phòng nhân sự,Quản trị viên hệ thống")]
 [Route("phan-cong-recruiter")]
 [Route("yeu-cau-tuyen-dung/phan-cong")]
 public class RequisitionAssignmentsController : Controller
@@ -99,10 +99,10 @@ public class RequisitionAssignmentsController : Controller
         {
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
-                return BadRequest(new { success = false, message = "Vui lòng chọn yêu cầu tuyển dụng và chỉ định 1 Recruiter chính." });
+                return BadRequest(new { success = false, message = "Vui lòng chọn yêu cầu tuyển dụng và chỉ định Chuyên viên phụ trách chính." });
             }
 
-            TempData["ErrorMessage"] = "Vui lòng chỉ định 1 Recruiter chính chịu trách nhiệm chạy tới cùng.";
+            TempData["ErrorMessage"] = "Vui lòng chỉ định Chuyên viên phụ trách chính cho vị trí tuyển dụng.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -127,6 +127,41 @@ public class RequisitionAssignmentsController : Controller
         }
 
         return RedirectToAction(nameof(Index));
+    }
+
+    /// <summary>
+    /// POST: /phan-cong-recruiter/quick-assign
+    /// Phân công nhanh chuyên viên phụ trách chính trực tiếp.
+    /// </summary>
+    [HttpPost("quick-assign")]
+    [HttpPost("api/quick-assign")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> QuickAssign(
+        [FromForm] Guid requisitionId,
+        [FromForm] Guid leadRecruiterId,
+        [FromForm] string? reason,
+        CancellationToken cancellationToken = default)
+    {
+        var currentUserId = GetCurrentUserId();
+        if (requisitionId == Guid.Empty || leadRecruiterId == Guid.Empty)
+        {
+            return BadRequest(new { success = false, message = "Vui lòng chọn yêu cầu tuyển dụng và chuyên viên phụ trách." });
+        }
+
+        var model = new RequisitionAssignRequestModel
+        {
+            RequisitionId = requisitionId,
+            LeadRecruiterId = leadRecruiterId,
+            Reason = reason
+        };
+
+        var (success, message) = await _assignmentService.AssignRecruitersAsync(model, currentUserId, cancellationToken);
+        if (!success)
+        {
+            return BadRequest(new { success = false, message });
+        }
+
+        return Ok(new { success = true, message });
     }
 
     /// <summary>

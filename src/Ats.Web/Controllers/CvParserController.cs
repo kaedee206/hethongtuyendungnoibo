@@ -1,6 +1,7 @@
 using Ats.Web.Models.DTOs;
 using Ats.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Ats.Web.Controllers;
 
@@ -10,6 +11,7 @@ namespace Ats.Web.Controllers;
 [ApiController]
 [Route("api/cv")]
 [Route("cv")]
+[EnableRateLimiting("ApplyRateLimit")]
 public class CvParserController : ControllerBase
 {
     private readonly ICvParserService _cvParserService;
@@ -68,6 +70,21 @@ public class CvParserController : ControllerBase
         try
         {
             using var stream = file.OpenReadStream();
+
+            // Kiểm tra Magic Bytes chống giả mạo định dạng và tấn công từ chối dịch vụ (%PDF-)
+            var header = new byte[5];
+            var bytesRead = await stream.ReadAsync(header.AsMemory(0, 5), cancellationToken);
+            if (bytesRead < 5 || header[0] != 0x25 || header[1] != 0x50 || header[2] != 0x44 || header[3] != 0x46 || header[4] != 0x2D)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Tệp không phải định dạng PDF hợp lệ (thiếu tiêu đề %PDF-).",
+                    data = (CvParseResultDto?)null
+                });
+            }
+            stream.Position = 0;
+
             var parseResult = await _cvParserService.ParsePdfCvAsync(stream, file.FileName, cancellationToken);
 
             return Ok(new

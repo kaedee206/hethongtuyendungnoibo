@@ -107,6 +107,7 @@ public class CandidateService(
             .Include(c => c.Notes.Where(n => !n.IsDeleted))
                 .ThenInclude(n => n.AuthorUser)
             .Include(c => c.ReferrerUser)
+            .Include(c => c.User)
             .FirstOrDefaultAsync(c => c.Id == candidateId && !c.IsDeleted, cancellationToken);
 
         if (candidate == null)
@@ -347,6 +348,7 @@ public class CandidateService(
             CurrentCompany = candidate.CurrentCompany,
             CurrentTitle = candidate.CurrentTitle,
             LinkedinUrl = candidate.LinkedinUrl,
+            AvatarUrl = candidate.User?.AvatarUrl,
             Source = candidate.Source.ToString(),
             ReferrerName = candidate.ReferrerUser?.FullName,
             IsBlacklisted = candidate.IsBlacklisted,
@@ -368,6 +370,7 @@ public class CandidateService(
         CancellationToken cancellationToken = default)
     {
         var query = _dbContext.Candidates
+            .Include(c => c.User)
             .Include(c => c.Tags.Where(t => !t.IsDeleted))
             .Include(c => c.Applications.Where(a => !a.IsDeleted))
                 .ThenInclude(a => a.JobPosting)
@@ -399,6 +402,7 @@ public class CandidateService(
                 FullName = $"{c.FirstName} {c.LastName}".Trim(),
                 Email = c.Email,
                 Phone = c.Phone,
+                AvatarUrl = c.User?.AvatarUrl,
                 CurrentTitle = c.CurrentTitle,
                 CurrentCompany = c.CurrentCompany,
                 ApplicationCount = c.Applications.Count,
@@ -703,6 +707,7 @@ public class CandidateService(
 
         // 3. Xây dựng truy vấn lọc ứng viên
         var query = _dbContext.Candidates
+            .Include(c => c.User)
             .Include(c => c.Tags.Where(t => !t.IsDeleted))
             .Include(c => c.Applications.Where(a => !a.IsDeleted))
                 .ThenInclude(a => a.JobPosting)
@@ -832,6 +837,7 @@ public class CandidateService(
                 FullName = $"{c.FirstName} {c.LastName}".Trim(),
                 Email = c.Email,
                 Phone = c.Phone,
+                AvatarUrl = c.User?.AvatarUrl,
                 CurrentTitle = c.CurrentTitle,
                 CurrentCompany = c.CurrentCompany,
                 ApplicationCount = apps.Count,

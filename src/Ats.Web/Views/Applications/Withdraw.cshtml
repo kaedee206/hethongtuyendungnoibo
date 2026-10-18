@@ -1,106 +1,101 @@
 @model Ats.Web.Models.ViewModels.Applications.WithdrawApplicationViewModel
 @{
-    ViewData["Title"] = "Xác nhận Rút hồ sơ ứng tuyển";
+    ViewData["Title"] = "Rút hồ sơ ứng tuyển - NoveraTech Careers";
     Layout = "_Layout";
 }
 
-<div class="container py-5" style="max-width: 760px;">
-    <!-- Breadcrumb & Back Link -->
+<div class="container py-4 py-md-5" style="max-width: 640px;">
+    <!-- Breadcrumb link -->
     <div class="mb-3">
-        <a href="/gioi-thieu" class="text-decoration-none text-muted small d-inline-flex align-items-center gap-1.5 hover-text-primary">
-            <i class="bi bi-arrow-left"></i> Quay lại Trang chủ Tuyển dụng
+        <a href="/gioi-thieu" class="text-decoration-none text-muted small d-inline-flex align-items-center" style="transition: color 0.15s ease;">
+            <i class="bi bi-arrow-left me-1.5"></i> Quay lại Cổng thông tin Tuyển dụng
         </a>
     </div>
 
-    <!-- Main Confirmation Card -->
-    <div class="card border-0 shadow-sm bg-white overflow-hidden" style="border: 1px solid #E2E8F0 !important; border-radius: 16px;">
-        <!-- Card Header Banner -->
-        <div class="p-4 p-md-4" style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #F8FAFC;">
-            <div class="d-flex align-items-center gap-2 mb-2">
-                <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #FCA5A5; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase;">
-                    <i class="bi bi-shield-exclamation me-1"></i> Xác nhận hành động
+    <!-- Main Card -->
+    <div class="card border-0 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);">
+        <!-- Card Header (Integrated & Clean) -->
+        <div class="p-4 border-bottom" style="border-color: #F1F5F9 !important;">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <img src="/img/logo-dark-transparent.png" alt="NoveraTech" style="height: 24px; width: auto; max-width: 120px; object-fit: contain;" />
+                    <span class="text-muted small">·</span>
+                    <span class="text-muted small fw-medium">Careers</span>
+                </div>
+                <span class="font-mono text-muted small" style="font-size: 0.8rem; background: #F1F5F9; padding: 2px 8px; border-radius: 6px; border: 1px solid #E2E8F0;">
+                    @Model.ApplicationCode
                 </span>
-                <span class="text-white-50 small">·</span>
-                <span class="text-white-50 font-mono small">@Model.ApplicationCode</span>
             </div>
-            <h3 class="fw-bold text-white mb-1" style="font-size: 1.45rem;">
-                Rút hồ sơ ứng tuyển vị trí @Model.JobTitle
-            </h3>
-            <p class="text-white-50 mb-0 small">
-                Hệ thống Tuyển dụng &amp; Thu hút Nhân tài NoveraTech Enterprise
+            <h1 class="fw-bold text-dark mb-1" style="font-size: 1.25rem; letter-spacing: -0.01em;">
+                Rút hồ sơ ứng tuyển
+            </h1>
+            <p class="text-muted mb-0 small" style="line-height: 1.5;">
+                Vị trí: <strong class="text-dark">@Model.JobTitle</strong> · @Model.DepartmentName
             </p>
         </div>
 
-        <div class="p-4 p-md-5">
+        <div class="p-4">
             @if (Model.IsAlreadyWithdrawn)
             {
                 <!-- Thông báo nếu hồ sơ đã được rút trước đó -->
-                <div class="alert alert-secondary border-0 d-flex align-items-start gap-3 p-3.5 mb-4" style="background: #F1F5F9; border-radius: 10px;">
-                    <i class="bi bi-info-circle-fill text-muted fs-4 flex-shrink-0 mt-0.5"></i>
+                <div class="d-flex align-items-start gap-3 p-3.5 mb-4" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;">
+                    <i class="bi bi-info-circle text-primary fs-5 flex-shrink-0 mt-0.5 me-2"></i>
                     <div>
-                        <h6 class="fw-bold text-dark mb-1">Hồ sơ đã được rút thành công trước đó</h6>
-                        <p class="text-muted small mb-1">
-                            Hồ sơ ứng tuyển của bạn đã được ghi nhận rút khỏi hệ thống vào ngày 
-                            <strong class="text-dark font-mono">@(Model.WithdrawnAt?.ToString("dd/MM/yyyy HH:mm") ?? "Gần đây")</strong>.
+                        <div class="fw-bold text-dark mb-1" style="font-size: 0.9rem;">Hồ sơ này đã được rút khỏi hệ thống</div>
+                        <p class="text-muted small mb-0" style="line-height: 1.5;">
+                            Yêu cầu rút hồ sơ của bạn đã được ghi nhận vào ngày 
+                            <span class="text-dark font-mono fw-medium">@(Model.WithdrawnAt?.ToString("dd/MM/yyyy HH:mm") ?? "Gần đây")</span>.
                         </p>
                         @if (!string.IsNullOrWhiteSpace(Model.ExistingReason))
                         {
-                            <div class="small text-muted mt-2 p-2 bg-white rounded border border-light">
-                                <strong>Lý do ghi nhận:</strong> @Model.ExistingReason
+                            <div class="small text-muted mt-2 p-2.5 bg-white rounded" style="border: 1px solid #E2E8F0;">
+                                <span class="fw-medium text-dark">Lý do đã ghi nhận:</span> @Model.ExistingReason
                             </div>
                         }
                     </div>
                 </div>
 
-                <div class="d-flex gap-2">
-                    <a href="/Jobs" class="btn btn-success fw-semibold px-4" style="border-radius: 8px; font-size: 0.85rem; background: #059669;">
-                        Khám phá việc làm khác
+                <div class="d-flex flex-wrap gap-2 pt-1">
+                    <a href="/Jobs" class="btn text-white fw-semibold px-3 py-2" style="background: #059669; border-radius: 8px; font-size: 0.85rem;">
+                        <i class="bi bi-briefcase me-1.5"></i> Tìm vị trí khác
                     </a>
-                    <a href="/gioi-thieu" class="btn btn-light border px-4" style="border-radius: 8px; font-size: 0.85rem;">
-                        Về trang chủ
+                    <a href="/gioi-thieu" class="btn btn-light border px-3 py-2" style="border-color: #CBD5E1 !important; border-radius: 8px; font-size: 0.85rem; color: #334155;">
+                        Trang chủ NoveraTech
                     </a>
                 </div>
             }
             else
             {
                 <!-- Tóm tắt thông tin hồ sơ ứng tuyển -->
-                <div class="p-3.5 mb-4" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px;">
-                    <div class="row g-3">
+                <div class="p-3 mb-4" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;">
+                    <div class="row g-3 small">
                         <div class="col-12 col-sm-6">
-                            <div class="text-muted text-xs text-uppercase fw-semibold" style="letter-spacing: 0.04em;">Họ tên ứng viên</div>
-                            <div class="fw-bold text-dark" style="font-size: 0.95rem;">@Model.CandidateName</div>
+                            <span class="text-muted d-block mb-1" style="font-size: 0.78rem;">Ứng viên:</span>
+                            <span class="fw-semibold text-dark">@Model.CandidateName</span>
                         </div>
                         <div class="col-12 col-sm-6">
-                            <div class="text-muted text-xs text-uppercase fw-semibold" style="letter-spacing: 0.04em;">Email liên hệ</div>
-                            <div class="font-mono text-dark small">@Model.CandidateEmail</div>
+                            <span class="text-muted d-block mb-1" style="font-size: 0.78rem;">Email liên hệ:</span>
+                            <span class="font-mono text-dark">@Model.CandidateEmail</span>
                         </div>
                         <div class="col-12 col-sm-6">
-                            <div class="text-muted text-xs text-uppercase fw-semibold" style="letter-spacing: 0.04em;">Vị trí ứng tuyển</div>
-                            <div class="fw-bold text-dark small">@Model.JobTitle</div>
+                            <span class="text-muted d-block mb-1" style="font-size: 0.78rem;">Giai đoạn tuyển dụng:</span>
+                            <span class="d-inline-flex align-items-center fw-medium text-dark">
+                                <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #059669; margin-right: 6px;"></span>
+                                @Model.CurrentStageName
+                            </span>
                         </div>
                         <div class="col-12 col-sm-6">
-                            <div class="text-muted text-xs text-uppercase fw-semibold" style="letter-spacing: 0.04em;">Giai đoạn tuyển dụng hiện tại</div>
-                            <div class="d-flex align-items-center gap-1.5 mt-0.5">
-                                <span class="badge" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">
-                                    <i class="bi bi-record-circle-fill me-1" style="font-size: 0.5rem; vertical-align: middle;"></i>@Model.CurrentStageName
-                                </span>
-                                <span class="text-muted small" style="font-size: 0.72rem;">(Nộp lúc: @Model.AppliedDateDisplay)</span>
-                            </div>
+                            <span class="text-muted d-block mb-1" style="font-size: 0.78rem;">Thời điểm ứng tuyển:</span>
+                            <span class="text-dark">@Model.AppliedDateDisplay</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Cảnh báo hậu quả trước khi xác nhận -->
-                <div class="alert alert-warning border-0 d-flex align-items-start gap-3 p-3.5 mb-4" style="background: #FFFBEB; border: 1px solid #FDE68A !important; border-radius: 10px;">
-                    <i class="bi bi-exclamation-triangle-fill text-warning fs-4 flex-shrink-0 mt-0.5"></i>
-                    <div>
-                        <h6 class="fw-bold text-dark mb-1" style="font-size: 0.9rem;">Lưu ý trước khi thực hiện:</h6>
-                        <ul class="text-muted small mb-0 ps-3" style="line-height: 1.6;">
-                            <li>Hồ sơ của bạn sẽ chuyển sang trạng thái <strong>Ứng viên rút (WITHDRAWN)</strong>.</li>
-                            <li>Toàn bộ các vòng phỏng vấn hoặc xét duyệt còn lại cho vị trí này sẽ lập tức dừng lại.</li>
-                            <li>Chuyên viên tuyển dụng (Recruiter) phụ trách sẽ nhận được thông báo để cập nhật kế hoạch tuyển dụng.</li>
-                            <li>Hành động này <strong>không thể hoàn tác</strong>. Bạn có thể ứng tuyển lại vị trí này trong các đợt tuyển dụng sau.</li>
-                        </ul>
+                <!-- Thông điệp hướng dẫn lịch sự -->
+                <div class="d-flex align-items-start gap-2.5 p-3 mb-4" style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 8px;">
+                    <i class="bi bi-exclamation-triangle-fill text-warning fs-5 flex-shrink-0 mt-0.5 me-2" style="color: #D97706 !important;"></i>
+                    <div class="small" style="line-height: 1.5; color: #78350F;">
+                        Khi xác nhận rút hồ sơ, toàn bộ quá trình ứng tuyển cho vị trí này sẽ dừng lại và chuyên viên phụ trách sẽ được thông báo. Bạn vẫn có thể nộp hồ sơ ở các cơ hội khác tại NoveraTech bất cứ khi nào sẵn sàng.
                     </div>
                 </div>
 
@@ -109,39 +104,39 @@
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="token" value="@Model.Token" />
 
-                    <!-- Nhóm lý do chính -->
-                    <div class="mb-3.5">
-                        <label for="reasonCategory" class="form-label fw-bold text-dark" style="font-size: 0.85rem;">
-                            Vui lòng chọn lý do rút hồ sơ <span class="text-danger">*</span>
+                    <!-- Nhóm lý do chính (Clean, no emojis) -->
+                    <div class="mb-3">
+                        <label for="reasonCategory" class="form-label fw-semibold text-dark small mb-1.5">
+                            Lý do rút hồ sơ <span class="text-danger">*</span>
                         </label>
-                        <select class="form-select" id="reasonCategory" name="reasonCategory" required style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.88rem; padding: 0.55rem 0.85rem;">
-                            <option value="Đã nhận việc nơi khác" selected>🎉 Tôi đã nhận lời mời làm việc (Offer) từ công ty khác</option>
-                            <option value="Thay đổi kế hoạch cá nhân">📅 Kế hoạch cá nhân / Gia đình có sự thay đổi đột xuất</option>
-                            <option value="Không còn phù hợp định hướng nghề nghiệp">🎯 Định hướng nghề nghiệp hiện tại chưa hoàn toàn trùng khớp</option>
-                            <option value="Lý do mức lương / Đãi ngộ">💼 Mức đãi ngộ chưa đạt kỳ vọng mong muốn</option>
-                            <option value="Địa điểm / Thời gian làm việc không thuận tiện">📍 Địa điểm làm việc hoặc thời gian chưa phù hợp</option>
-                            <option value="Lý do khác">📝 Lý do cá nhân khác</option>
+                        <select class="form-select" id="reasonCategory" name="reasonCategory" required style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.875rem; padding: 0.55rem 0.85rem;">
+                            <option value="Đã nhận lời mời làm việc từ đơn vị khác" selected>Đã nhận lời mời làm việc từ đơn vị khác</option>
+                            <option value="Thay đổi kế hoạch cá nhân hoặc gia đình">Thay đổi kế hoạch cá nhân hoặc gia đình</option>
+                            <option value="Định hướng nghề nghiệp chưa hoàn toàn phù hợp">Định hướng nghề nghiệp chưa hoàn toàn phù hợp</option>
+                            <option value="Chế độ đãi ngộ chưa đạt kỳ vọng">Chế độ đãi ngộ chưa đạt kỳ vọng</option>
+                            <option value="Địa điểm hoặc thời gian làm việc chưa thuận tiện">Địa điểm hoặc thời gian làm việc chưa thuận tiện</option>
+                            <option value="Lý do cá nhân khác">Lý do cá nhân khác</option>
                         </select>
                     </div>
 
                     <!-- Ghi chú chi tiết (Tùy chọn) -->
                     <div class="mb-4">
-                        <label for="reasonDetail" class="form-label fw-semibold text-muted small">
-                            Chia sẻ thêm chi tiết với bộ phận Tuyển dụng (tùy chọn)
+                        <label for="reasonDetail" class="form-label text-muted small mb-1.5">
+                            Chia sẻ thêm với bộ phận tuyển dụng <span class="text-muted fw-normal">(tùy chọn)</span>
                         </label>
                         <textarea class="form-control" id="reasonDetail" name="reasonDetail" rows="3"
-                                  placeholder="Nếu bạn có thêm góp ý hoặc chia sẻ về trải nghiệm ứng tuyển vừa qua, hãy cho chúng tôi biết..."
+                                  placeholder="Nếu bạn có thêm đóng góp hoặc phản hồi về trải nghiệm ứng tuyển vừa qua, hãy cho chúng tôi biết..."
                                   style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.85rem;"></textarea>
                     </div>
 
                     <!-- Nút thao tác -->
-                    <div class="d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 pt-2 border-top" style="border-color: #F1F5F9 !important;">
-                        <a href="/gioi-thieu" class="btn btn-light border w-100 w-sm-auto px-4 order-2 order-sm-1" style="border-radius: 8px; font-size: 0.85rem;">
-                            <i class="bi bi-x-circle me-1 text-muted"></i> Giữ lại hồ sơ &amp; Quay về
+                    <div class="d-flex flex-column-reverse flex-sm-row align-items-center justify-content-between gap-2.5 pt-3 border-top" style="border-color: #F1F5F9 !important;">
+                        <a href="/gioi-thieu" class="btn btn-light border w-100 w-sm-auto px-3.5 py-2 text-muted" style="border-radius: 8px; font-size: 0.85rem; border-color: #E2E8F0 !important;">
+                            Giữ lại hồ sơ &amp; Quay lại
                         </a>
-                        <button type="submit" id="btnConfirmWithdraw" class="btn btn-danger fw-semibold w-100 w-sm-auto px-4 order-1 order-sm-2 d-inline-flex align-items-center justify-content-center gap-2"
+                        <button type="submit" id="btnConfirmWithdraw" class="btn btn-danger fw-semibold w-100 w-sm-auto px-4 py-2 d-inline-flex align-items-center justify-content-center gap-1.5"
                                 style="border-radius: 8px; font-size: 0.85rem; background: #DC2626; border-color: #DC2626;">
-                            <i class="bi bi-trash3"></i> Xác nhận rút hồ sơ ứng tuyển
+                            <i class="bi bi-x-circle me-1.5"></i> Xác nhận rút hồ sơ
                         </button>
                     </div>
                 </form>
@@ -152,11 +147,11 @@
 
 @section Scripts {
     <script>
-        document.getElementById('withdrawForm')?.addEventListener('submit', function (e) {
+        document.getElementById('withdrawForm')?.addEventListener('submit', function () {
             var btn = document.getElementById('btnConfirmWithdraw');
             if (btn) {
                 btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Đang xử lý rút hồ sơ...';
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span>Đang xử lý...';
             }
         });
     </script>

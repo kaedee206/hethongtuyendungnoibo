@@ -12,7 +12,7 @@ namespace Ats.Web.Controllers;
 /// Quản lý phân hệ Yêu cầu Tuyển dụng & Luồng phê duyệt (EP-03_Requisition).
 /// Tuân thủ Clean Controller, Primary Constructor, ValidateAntiForgeryToken và kebab-case routing.
 /// </summary>
-[Authorize(Roles = $"{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Approver}")]
+[Authorize(Roles = $"{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Approver},{UserRoles.Recruiter}")]
 [Route("yeu-cau-tuyen-dung")]
 [Route("requisitions")]
 public class RequisitionsController : Controller
@@ -67,9 +67,12 @@ public class RequisitionsController : Controller
         [FromQuery] DateOnly? fromDate = null,
         [FromQuery] DateOnly? toDate = null,
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 15,
+        [FromQuery] int pageSize = 10,
         CancellationToken cancellationToken = default)
     {
+        if (pageSize <= 0) pageSize = 10;
+        if (page <= 0) page = 1;
+
         var userId = GetCurrentUserId();
         var items = await _requisitionService.GetRequisitionsForApprovalAsync(userId, tab, search, departmentId, recruiterId, fromDate, toDate, page, pageSize, cancellationToken);
         var pendingCount = await _requisitionService.GetPendingApprovalCountForUserAsync(userId, cancellationToken);
@@ -83,12 +86,18 @@ public class RequisitionsController : Controller
         ViewBag.ToDate = toDate;
         ViewBag.PendingMyApprovalCount = pendingCount;
         ViewBag.MyRequisitionsCount = myCount;
+        ViewBag.PageSize = pageSize;
+        ViewBag.CurrentPage = page;
 
         ViewBag.Departments = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(
             _dbContext.Departments.Where(d => !d.IsDeleted).ToList(),
             "Id", "Name", departmentId);
 
-        var recruiters = _dbContext.Users.Where(u => u.Role == Ats.Web.Constants.UserRoles.Recruiter || u.Role == Ats.Web.Constants.UserRoles.HRManager).ToList();
+        var recruiters = _dbContext.Users.Where(u => 
+            u.Role == UserRoles.Recruiter || 
+            u.Role == UserRoles.HRManager || 
+            u.Role == UserRoles.NameRecruiter || 
+            u.UserRoles.Any(ur => ur.Role != null && (ur.Role.Code == Ats.Web.Models.Enums.RoleCode.RECRUITER || ur.Role.Code == Ats.Web.Models.Enums.RoleCode.HR_MANAGER))).ToList();
         ViewBag.Recruiters = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(
             recruiters, "Id", "FullName", recruiterId);
 

@@ -43,16 +43,7 @@
         </div>
     </div>
 
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show p-3 mb-4 shadow-sm" style="border-radius: 8px; border-left: 5px solid #DC2626;" role="alert">
-            <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
-                <div class="fw-semibold">@TempData["ErrorMessage"]</div>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
+
 
     <!-- ── Main Form Card ── -->
     <div class="card border-0 shadow-sm bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px; overflow: hidden;">

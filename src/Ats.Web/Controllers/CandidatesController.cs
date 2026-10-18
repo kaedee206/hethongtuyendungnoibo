@@ -54,7 +54,7 @@ public class CandidatesController(
 
     // GET: /ung-vien hoặc /Candidates
     [HttpGet("")]
-    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager}")]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Approver},{UserRoles.Interviewer}")]
     public async Task<IActionResult> Index([FromQuery] CandidateFilterCriteria criteria, CancellationToken cancellationToken)
     {
         var currentUserId = GetCurrentUserId();

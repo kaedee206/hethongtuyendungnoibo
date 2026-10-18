@@ -6,32 +6,38 @@
 }
 
 <div class="container-fluid px-3 px-md-4 py-4">
+    <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb small">
+        <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
             <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none text-muted">Bàn làm việc</a></li>
-            <li class="breadcrumb-item active fw-medium text-dark" aria-current="page">Khung năng lực</li>
+            <li class="breadcrumb-item"><span class="text-muted">Cơ cấu &amp; Tiêu chuẩn</span></li>
+            <li class="breadcrumb-item active text-emerald-700 fw-semibold" aria-current="page">Khung năng lực</li>
         </ol>
     </nav>
 
+    <!-- Header Section -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
-                <div class="p-2 bg-white rounded-3 shadow-xs border d-inline-flex align-items-center justify-content-center text-primary" style="border-radius: 8px !important; width: 42px; height: 42px;">
-                    <i class="bi bi-diagram-3-fill fs-5" style="color: #059669;"></i>
-                </div>
-                <h1 class="h3 fw-bold text-dark mb-0">Danh mục Khung năng lực chuẩn</h1>
+                <span class="badge px-2.5 py-1 fw-semibold text-uppercase" 
+                      style="font-size: 0.72rem; letter-spacing: 0.05em; background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; border-radius: 6px;">
+                    <i class="bi bi-diagram-3-fill me-1"></i>Định chuẩn Nhân sự
+                </span>
+                <h1 class="h3 fw-bold text-slate-900 mb-0" style="color: #0F172A;">Khung Năng lực Chuẩn</h1>
             </div>
-            <p class="text-muted small mb-0 ms-md-5">Quản lý hệ thống tiêu chuẩn năng lực, kỹ năng chuyên môn và các chức danh vị trí áp dụng.</p>
+            <p class="text-muted small mb-0">
+                Hệ thống tiêu chuẩn năng lực, kỹ năng chuyên môn và các chức danh vị trí áp dụng.
+            </p>
         </div>
 
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-            <a href="/job-positions" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-xs" style="border-radius: 8px;">
+        <div class="mobile-action-bar align-items-center gap-2">
+            <a href="/job-positions" class="btn btn-outline-secondary btn-sm px-3 py-2 d-inline-flex align-items-center gap-1.5 shadow-xs" style="border-radius: 8px;">
                 <i class="bi bi-person-badge"></i>
                 <span class="fw-semibold">Danh mục Chức danh</span>
             </a>
             @if (canManage)
             {
-                <a asp-action="Create" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-xs fw-semibold" style="border-radius: 8px; background-color: #059669; border-color: #059669;">
+                <a asp-action="Create" class="btn btn-success btn-sm d-inline-flex align-items-center gap-1.5 px-3.5 py-2 shadow-sm fw-semibold" style="border-radius: 8px; background-color: #059669; border-color: #059669;">
                     <i class="bi bi-plus-lg"></i>
                     <span>Tạo mới Khung năng lực</span>
                 </a>
@@ -39,75 +45,61 @@
         </div>
     </div>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success border-0 shadow-sm d-flex align-items-center gap-2 mb-4" style="border-radius: 12px; background-color: #ECFDF5; color: #065F46;">
-            <i class="bi bi-check-circle-fill fs-5 text-success"></i>
-            <div>@TempData["SuccessMessage"]</div>
-        </div>
-    }
 
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger border-0 shadow-sm d-flex align-items-center gap-2 mb-4" style="border-radius: 12px;">
-            <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
-            <div>@TempData["ErrorMessage"]</div>
-        </div>
-    }
 
-    <!-- Summary KPI cards -->
+    <!-- 4 Summary KPI cards -->
     <div class="row g-3 mb-4">
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100" style="border-radius: 12px !important;">
+        <div class="col-6 col-xl-3">
+            <div class="card border-0 shadow-sm p-3 bg-white h-100" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <span class="text-muted small fw-medium">Tổng số khung năng lực</span>
-                        <h3 class="fw-bold font-monospace text-dark mb-0 mt-1">@Model.TotalRecords</h3>
+                        <span class="text-muted small fw-medium" style="font-size: 0.78rem;">Tổng số khung năng lực</span>
+                        <h3 class="fw-bold font-monospace text-slate-900 mb-0 mt-1" style="font-family: 'JetBrains Mono', monospace; color: #0F172A;">@Model.TotalRecords</h3>
                     </div>
-                    <div class="p-3 rounded-3" style="background-color: #ECFDF5; color: #059669; border-radius: 8px;">
-                        <i class="bi bi-collection-fill fs-5"></i>
+                    <div class="rounded-3 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; background-color: #F1F5F9; color: #475569; font-size: 1.25rem;">
+                        <i class="bi bi-collection-fill"></i>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100" style="border-radius: 12px !important;">
+        <div class="col-6 col-xl-3">
+            <div class="card border-0 shadow-sm p-3 bg-white h-100" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <span class="text-muted small fw-medium">Đang sử dụng</span>
-                        <h3 class="fw-bold font-monospace text-success mb-0 mt-1">@Model.TotalActiveFrameworks</h3>
+                        <span class="text-muted small fw-medium" style="font-size: 0.78rem;">Đang sử dụng</span>
+                        <h3 class="fw-bold font-monospace text-emerald-600 mb-0 mt-1" style="font-family: 'JetBrains Mono', monospace;">@Model.TotalActiveFrameworks</h3>
                     </div>
-                    <div class="p-3 rounded-3" style="background-color: #ECFDF5; color: #10B981; border-radius: 8px;">
-                        <i class="bi bi-check-circle-fill fs-5"></i>
+                    <div class="rounded-3 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; background-color: #ECFDF5; color: #059669; font-size: 1.25rem;">
+                        <i class="bi bi-check-circle-fill"></i>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100" style="border-radius: 12px !important;">
+        <div class="col-6 col-xl-3">
+            <div class="card border-0 shadow-sm p-3 bg-white h-100" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <span class="text-muted small fw-medium">Ngừng sử dụng</span>
-                        <h3 class="fw-bold font-monospace text-secondary mb-0 mt-1">@Model.TotalInactiveFrameworks</h3>
+                        <span class="text-muted small fw-medium" style="font-size: 0.78rem;">Ngừng sử dụng</span>
+                        <h3 class="fw-bold font-monospace text-secondary mb-0 mt-1" style="font-family: 'JetBrains Mono', monospace;">@Model.TotalInactiveFrameworks</h3>
                     </div>
-                    <div class="p-3 rounded-3 bg-light text-muted" style="border-radius: 8px;">
-                        <i class="bi bi-slash-circle fs-5"></i>
+                    <div class="rounded-3 d-flex align-items-center justify-content-center bg-light text-muted" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                        <i class="bi bi-slash-circle"></i>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100" style="border-radius: 12px !important;">
+        <div class="col-6 col-xl-3">
+            <div class="card border-0 shadow-sm p-3 bg-white h-100" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <span class="text-muted small fw-medium">Chức danh đang áp dụng</span>
-                        <h3 class="fw-bold font-monospace text-primary mb-0 mt-1">@Model.TotalPositionsMapped</h3>
+                        <span class="text-muted small fw-medium" style="font-size: 0.78rem;">Chức danh đang áp dụng</span>
+                        <h3 class="fw-bold font-monospace text-primary mb-0 mt-1" style="font-family: 'JetBrains Mono', monospace; color: #2563EB;">@Model.TotalPositionsMapped</h3>
                     </div>
-                    <div class="p-3 rounded-3 bg-primary-subtle text-primary" style="border-radius: 8px;">
-                        <i class="bi bi-briefcase-fill fs-5"></i>
+                    <div class="rounded-3 d-flex align-items-center justify-content-center bg-primary-subtle text-primary" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                        <i class="bi bi-briefcase-fill"></i>
                     </div>
                 </div>
             </div>
@@ -115,31 +107,31 @@
     </div>
 
     <!-- Filter Form -->
-    <div class="card border-0 shadow-sm rounded-3 mb-4" style="border-radius: 12px !important;">
-        <div class="card-body p-3 p-md-4">
-            <form id="frameworkFilterForm" method="get" asp-action="Index" class="row g-3 align-items-end">
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
+        <div class="card-body p-3 p-md-3">
+            <form id="frameworkFilterForm" method="get" asp-action="Index" class="row g-2.5 align-items-end">
                 <div class="col-12 col-md-5">
-                    <label class="form-label small fw-semibold text-muted">Tìm kiếm khung năng lực</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 8px 0 0 8px;">
+                    <label class="form-label small fw-semibold text-muted mb-1" style="font-size: 0.8rem;">Tìm kiếm khung năng lực</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 6px 0 0 6px;">
                             <i class="bi bi-search"></i>
                         </span>
-                        <input type="text" name="keyword" value="@Model.Keyword" class="form-control bg-light border-start-0" placeholder="Nhập mã hoặc tên khung năng lực..." style="border-radius: 0 8px 8px 0;">
+                        <input type="text" name="keyword" value="@Model.Keyword" class="form-control bg-light border-start-0" placeholder="Nhập mã hoặc tên khung năng lực..." style="border-radius: 0 6px 6px 0; font-size: 0.85rem;">
                     </div>
                 </div>
 
-                <div class="col-12 col-sm-6 col-md-3">
-                    <label class="form-label small fw-semibold text-muted">Trạng thái</label>
-                    <select name="status" class="form-select bg-light" style="border-radius: 8px;">
+                <div class="col-6 col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1" style="font-size: 0.8rem;">Trạng thái</label>
+                    <select name="status" class="form-select form-select-sm bg-light" style="border-radius: 6px; font-size: 0.85rem;">
                         <option value="ALL" selected="@(Model.StatusFilter == "ALL" || string.IsNullOrEmpty(Model.StatusFilter))">Tất cả trạng thái</option>
                         <option value="ACTIVE" selected="@(Model.StatusFilter == "ACTIVE")">Đang sử dụng</option>
                         <option value="INACTIVE" selected="@(Model.StatusFilter == "INACTIVE")">Ngừng sử dụng</option>
                     </select>
                 </div>
 
-                <div class="col-12 col-sm-6 col-md-2">
-                    <label class="form-label small fw-semibold text-muted">Hiển thị</label>
-                    <select name="pageSize" class="form-select bg-light" style="border-radius: 8px;">
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold text-muted mb-1" style="font-size: 0.8rem;">Hiển thị</label>
+                    <select name="pageSize" class="form-select form-select-sm bg-light" style="border-radius: 6px; font-size: 0.85rem;">
                         <option value="15" selected="@(Model.PageSize == 15)">15 bản ghi</option>
                         <option value="25" selected="@(Model.PageSize == 25)">25 bản ghi</option>
                         <option value="50" selected="@(Model.PageSize == 50)">50 bản ghi</option>
@@ -148,10 +140,10 @@
                 </div>
 
                 <div class="col-12 col-md-2 d-flex gap-2">
-                    <button id="filterSubmitBtn" type="submit" class="btn btn-dark w-100 fw-semibold" style="border-radius: 8px;">
+                    <button id="filterSubmitBtn" type="submit" class="btn btn-dark btn-sm w-100 fw-semibold" style="border-radius: 6px;">
                         <i class="bi bi-funnel me-1"></i> Lọc
                     </button>
-                    <a id="filterResetBtn" asp-action="Index" class="btn btn-outline-secondary" style="border-radius: 8px;" title="Đặt lại bộ lọc">
+                    <a id="filterResetBtn" asp-action="Index" class="btn btn-outline-secondary btn-sm" style="border-radius: 6px;" title="Đặt lại bộ lọc">
                         <i class="bi bi-arrow-counterclockwise"></i>
                     </a>
                 </div>
@@ -160,7 +152,7 @@
     </div>
 
     <!-- Table Card -->
-    <div class="card border-0 shadow-sm rounded-3 position-relative overflow-hidden" style="border-radius: 12px !important;">
+    <div class="card border-0 shadow-sm position-relative overflow-hidden mb-4" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
         <div id="tableLoadingState" class="position-absolute top-0 start-0 w-100 h-100 d-none flex-column align-items-center justify-content-center" style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(2px); z-index: 15; min-height: 220px;" role="status" aria-live="polite">
             <div class="spinner-border text-success mb-2" role="status" style="width: 2.2rem; height: 2.2rem; color: #059669 !important;"></div>
             <div class="fw-semibold text-dark small">Đang tải dữ liệu khung năng lực...</div>
@@ -168,33 +160,33 @@
         </div>
 
         <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
-            <span class="fw-semibold text-dark">
+            <span class="fw-semibold text-slate-900" style="color: #0F172A; font-size: 0.95rem;">
                 Danh sách khung năng lực 
-                <span class="badge ms-1 font-monospace" style="border-radius: 6px; background-color: #F1F5F9; color: #475569; border: 1px solid #E2E8F0;">
+                <span class="badge ms-1 font-monospace" style="border-radius: 6px; background-color: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; font-family: 'JetBrains Mono', monospace;">
                     @Model.TotalRecords bản ghi
                 </span>
             </span>
-            <span class="small text-muted">Bộ tiêu chuẩn định ngạch & đánh giá kỹ thuật</span>
+            <span class="small text-muted">Bộ tiêu chuẩn định ngạch &amp; đánh giá kỹ thuật</span>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+        <div class="ats-mobile-table-hint px-3 pt-2"><i class="bi bi-arrow-left-right"></i> Vuốt ngang để xem đủ tiêu chí, chức danh & thao tác</div>
+        <div class="ats-mobile-table-wrapper table-responsive mb-0">
+            <table class="table table-hover align-middle mb-0" style="min-width: 820px;">
+                <thead style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748B;">
                     <tr>
-                        <th class="ps-4" style="min-width: 140px;">Mã khung</th>
-                        <th style="min-width: 280px;">Tên khung năng lực</th>
-                        <th style="min-width: 180px;">Mô tả / Nhóm</th>
-                        <th class="text-center" style="min-width: 110px;">Tiêu chí</th>
-                        <th class="text-center" style="min-width: 180px;">Chức danh đang dùng</th>
-                        <th style="min-width: 130px;">Trạng thái</th>
-                        <th class="text-end pe-4" style="min-width: 180px;">Thao tác</th>
+                        <th class="ps-4 py-3 text-nowrap" style="width: 130px;">Mã khung</th>
+                        <th class="py-3 text-nowrap" style="min-width: 320px;">Tên khung năng lực</th>
+                        <th class="py-3 text-center text-nowrap" style="width: 130px;">Tiêu chí</th>
+                        <th class="py-3 text-center text-nowrap" style="width: 170px;">Chức danh áp dụng</th>
+                        <th class="py-3 text-center text-nowrap" style="width: 140px;">Trạng thái</th>
+                        <th class="text-end pe-4 py-3 text-nowrap" style="width: 110px;">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (Model.Frameworks == null || !Model.Frameworks.Any())
                     {
                         <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
+                            <td colspan="6" class="text-center py-5 text-muted">
                                 @if (isFiltered)
                                 {
                                     <div class="py-4 px-3 text-center">
@@ -228,26 +220,22 @@
                             var serializedPositions = System.Text.Json.JsonSerializer.Serialize(fw.AssociatedJobPositions);
                             <tr>
                                 <td class="ps-4">
-                                    <a asp-action="Details" asp-route-id="@fw.Id" class="badge bg-light text-dark border font-monospace px-2 py-1 text-decoration-none" style="border-radius: 6px; font-size: 0.82rem;" title="Xem chi tiết">
+                                    <a asp-action="Details" asp-route-id="@fw.Id" 
+                                       class="badge bg-light text-slate-800 border font-monospace px-2.5 py-1.5 text-decoration-none" 
+                                       style="border-radius: 6px; font-size: 0.82rem; font-family: 'JetBrains Mono', monospace;" 
+                                       title="Xem chi tiết khung @fw.Code">
                                         @fw.Code
                                     </a>
                                 </td>
                                 <td>
-                                    <a asp-action="Details" asp-route-id="@fw.Id" class="fw-semibold text-dark text-decoration-none d-block">@fw.Name</a>
-                                    @if (!string.IsNullOrWhiteSpace(fw.Description))
-                                    {
-                                        <div class="text-muted small text-truncate" style="max-width: 320px;" title="@fw.Description">
-                                            @fw.Description
-                                        </div>
-                                    }
-                                </td>
-                                <td>
-                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1" style="border-radius: 6px; font-weight: 500;">
-                                        @(string.IsNullOrWhiteSpace(fw.Category) ? "Tiêu chuẩn" : fw.Category)
-                                    </span>
+                                    <a asp-action="Details" asp-route-id="@fw.Id" 
+                                       class="fw-semibold text-slate-900 text-decoration-none d-block hover-emerald" 
+                                       style="color: #0F172A; font-size: 0.92rem;">
+                                        @fw.Name
+                                    </a>
                                 </td>
                                 <td class="text-center font-monospace">
-                                    <span class="badge bg-light text-dark border px-2 py-1" style="border-radius: 6px;">
+                                    <span class="badge bg-light text-slate-700 border px-2.5 py-1" style="border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">
                                         @fw.CompetenciesCount tiêu chí
                                     </span>
                                 </td>
@@ -255,8 +243,8 @@
                                     @if (fw.AssociatedJobPositionsCount > 0)
                                     {
                                         <button type="button" 
-                                                class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1 view-positions-btn px-2 py-1" 
-                                                style="border-radius: 6px; font-size: 0.82rem;"
+                                                class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1.5 view-positions-btn px-2.5 py-1" 
+                                                style="border-radius: 6px; font-size: 0.8rem;"
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#frameworkPositionsModal"
                                                 data-framework-code="@fw.Code"
@@ -268,61 +256,76 @@
                                     }
                                     else
                                     {
-                                        <span class="badge bg-light text-muted border px-2 py-1" style="border-radius: 6px; font-size: 0.82rem;">
+                                        <span class="badge bg-light text-muted border px-2 py-1" style="border-radius: 6px; font-size: 0.78rem;">
                                             Chưa áp dụng
                                         </span>
                                     }
                                 </td>
-                                <td>
+                                <td class="text-center">
                                     @if (fw.IsActive)
                                     {
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="border-radius: 6px;">
+                                        <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1" style="border-radius: 6px; font-size: 0.78rem;">
                                             <i class="bi bi-check-circle-fill me-1"></i>Đang sử dụng
                                         </span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1" style="border-radius: 6px;">
+                                        <span class="badge bg-slate-100 text-slate-500 border border-slate-200 px-2 py-1" style="border-radius: 6px; font-size: 0.78rem;">
                                             Ngừng sử dụng
                                         </span>
                                     }
                                 </td>
                                 <td class="text-end pe-4">
+                                    <!-- Compact Action Group -->
                                     <div class="d-inline-flex align-items-center gap-1">
                                         <a asp-action="Details" asp-route-id="@fw.Id"
-                                           class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 px-2 py-1"
-                                           style="border-radius: 6px; font-size: 0.82rem;" title="Xem chi tiết">
+                                           class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center px-2 py-1"
+                                           style="border-radius: 6px; font-size: 0.8rem;" title="Xem chi tiết">
                                             <i class="bi bi-eye"></i>
-                                            <span>Chi tiết</span>
                                         </a>
 
                                         @if (canManage)
                                         {
-                                            <a asp-action="Edit" asp-route-id="@fw.Id"
-                                               class="btn btn-sm btn-outline-primary d-inline-flex align-items-center px-2 py-1"
-                                               style="border-radius: 6px; font-size: 0.82rem;" title="Chỉnh sửa">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            <form asp-action="Clone" asp-route-id="@fw.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn nhân bản khung năng lực [@fw.Code] @fw.Name không?');">
-                                                @Html.AntiForgeryToken()
-                                                <button type="submit"
-                                                        class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center px-2 py-1"
-                                                        style="border-radius: 6px; font-size: 0.82rem;"
-                                                        title="Nhân bản khung năng lực">
-                                                    <i class="bi bi-copy"></i>
+                                            <div class="dropdown d-inline-block">
+                                                <button class="btn btn-sm btn-light border py-1 px-1.5 text-muted shadow-xs" 
+                                                        type="button" 
+                                                        data-bs-toggle="dropdown" 
+                                                        aria-expanded="false" 
+                                                        style="border-radius: 6px; font-size: 0.8rem;" 
+                                                        title="Thao tác khác">
+                                                    <i class="bi bi-three-dots-vertical"></i>
                                                 </button>
-                                            </form>
-                                            <button type="button"
-                                                    class="btn btn-sm btn-outline-danger d-inline-flex align-items-center px-2 py-1 btn-delete-fw"
-                                                    style="border-radius: 6px; font-size: 0.82rem;"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#deleteFrameworkModal"
-                                                    data-fw-id="@fw.Id"
-                                                    data-fw-code="@fw.Code"
-                                                    data-fw-name="@fw.Name"
-                                                    title="Xóa">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+                                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" style="border-radius: 8px; font-size: 0.84rem; min-width: 160px;">
+                                                    <li>
+                                                        <a class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-2" asp-action="Edit" asp-route-id="@fw.Id">
+                                                            <i class="bi bi-pencil text-primary"></i>
+                                                            <span>Chỉnh sửa</span>
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <form asp-action="Clone" asp-route-id="@fw.Id" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn nhân bản khung năng lực [@fw.Code] @fw.Name không?');">
+                                                            @Html.AntiForgeryToken()
+                                                            <button type="submit" class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-2">
+                                                                <i class="bi bi-copy text-secondary"></i>
+                                                                <span>Nhân bản</span>
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider my-1"></li>
+                                                    <li>
+                                                        <button type="button" 
+                                                                class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-2 text-danger btn-delete-fw"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#deleteFrameworkModal"
+                                                                data-fw-id="@fw.Id"
+                                                                data-fw-code="@fw.Code"
+                                                                data-fw-name="@fw.Name">
+                                                            <i class="bi bi-trash"></i>
+                                                            <span>Xóa khung</span>
+                                                        </button>
+                                                    </li>
+                                                </ul>
+                                            </div>
                                         }
                                     </div>
                                 </td>
@@ -397,8 +400,8 @@
         <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
             <div class="modal-header border-bottom py-3 px-4" style="background-color: #F8FAFC;">
                 <div>
-                    <span class="badge bg-light text-dark border font-monospace px-2 py-1 mb-1" id="modalFrameworkCode" style="border-radius: 6px; font-size: 0.82rem;">CF-001</span>
-                    <h5 class="modal-title fw-bold text-dark" id="modalFrameworkName">Khung năng lực</h5>
+                    <span class="badge bg-light text-dark border font-monospace px-2 py-1 mb-1" id="modalFrameworkCode" style="border-radius: 6px; font-size: 0.82rem; font-family: 'JetBrains Mono', monospace;">CF-001</span>
+                    <h5 class="modal-title fw-bold text-slate-900" id="modalFrameworkName" style="color: #0F172A;">Khung năng lực</h5>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
@@ -479,6 +482,9 @@
 }
 
 <style>
+    .hover-emerald:hover {
+        color: #059669 !important;
+    }
     .pagination-ats .page-link {
         color: #334155;
         border-color: #E2E8F0;

@@ -43,8 +43,9 @@ public class UsersController(
     }
 
     /// <summary>
-    /// S1-07: Form tạo tài khoản nội bộ mới.
+    /// S1-07: Form tạo tài khoản nội bộ mới (Chỉ Admin - Module 10: Admin F, HR Manager R).
     /// </summary>
+    [Authorize(Roles = $"{UserRoles.Admin},Quản trị hệ thống,Quản trị viên")]
     [HttpGet("create")]
     public async Task<IActionResult> Create(CancellationToken cancellationToken)
     {
@@ -55,6 +56,7 @@ public class UsersController(
     /// <summary>
     /// S1-07: Xử lý tạo tài khoản, sinh mật khẩu tạm và gửi email chào mừng.
     /// </summary>
+    [Authorize(Roles = $"{UserRoles.Admin},Quản trị hệ thống,Quản trị viên")]
     [HttpPost("create")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(UserCreateViewModel model, CancellationToken cancellationToken)
@@ -86,6 +88,7 @@ public class UsersController(
     /// <summary>
     /// S1-08, S1-09: Form chỉnh sửa thông tin và phân quyền vai trò.
     /// </summary>
+    [Authorize(Roles = $"{UserRoles.Admin},Quản trị hệ thống,Quản trị viên")]
     [HttpGet("edit/{id:guid}")]
     public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
     {
@@ -104,6 +107,7 @@ public class UsersController(
     /// <summary>
     /// S1-08, S1-09: Cập nhật thông tin và danh sách vai trò (chặn tự tước quyền Admin).
     /// </summary>
+    [Authorize(Roles = $"{UserRoles.Admin},Quản trị hệ thống,Quản trị viên")]
     [HttpPost("edit/{id:guid}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(Guid id, UserEditViewModel model, CancellationToken cancellationToken)
@@ -149,6 +153,7 @@ public class UsersController(
     /// <summary>
     /// S1-10: Khóa tài khoản nội bộ kèm lý do bắt buộc, thu hồi session ngay lập tức.
     /// </summary>
+    [Authorize(Roles = $"{UserRoles.Admin},Quản trị hệ thống,Quản trị viên")]
     [HttpPost("lock/{id:guid}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Lock(Guid id, [FromForm] string lockReason, CancellationToken cancellationToken)
@@ -181,6 +186,7 @@ public class UsersController(
     /// <summary>
     /// S1-10: Mở khóa tài khoản nội bộ.
     /// </summary>
+    [Authorize(Roles = $"{UserRoles.Admin},Quản trị hệ thống,Quản trị viên")]
     [HttpPost("unlock/{id:guid}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Unlock(Guid id, CancellationToken cancellationToken)
@@ -233,11 +239,11 @@ public class UsersController(
     }
 
     /// <summary>
-    /// SCRUM-178: Xử lý đọc và validate dữ liệu từng dòng trong tệp Excel
+    /// SCRUM-178: Xử lý đọc và validate dữ liệu từng dòng trong tệp Excel (Admin only - Module 10)
     /// </summary>
     [HttpPost("import-excel")]
     [IgnoreAntiforgeryToken]
-    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager}")]
+    [Authorize(Roles = $"{UserRoles.Admin},Quản trị hệ thống,Quản trị viên")]
     public async Task<IActionResult> ImportExcel(IFormFile file, CancellationToken cancellationToken)
     {
         if (file == null || file.Length == 0)
@@ -280,11 +286,11 @@ public class UsersController(
     }
 
     /// <summary>
-    /// SCRUM-180: Thực thi nhập dữ liệu hàng loạt từ danh sách dòng hợp lệ
+    /// SCRUM-180: Thực thi nhập dữ liệu hàng loạt từ danh sách dòng hợp lệ (Admin only - Module 10)
     /// </summary>
     [HttpPost("execute-import")]
     [IgnoreAntiforgeryToken]
-    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager}")]
+    [Authorize(Roles = $"{UserRoles.Admin},Quản trị hệ thống,Quản trị viên")]
     public async Task<IActionResult> ExecuteImport([FromBody] ExecuteImportRequestDto request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)

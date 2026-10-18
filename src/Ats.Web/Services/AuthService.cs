@@ -50,9 +50,7 @@ public class AuthService : IAuthService
         var user = await _dbContext.Users
             .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.Email.ToLower() == reqEmail
-                || (reqEmail == "hieu.luong@noveratech.digital" && (u.Email.ToLower() == "nam.dang@noveratech.digital" || u.Email.ToLower() == "admin@noveratech.vn"))
-                || (reqEmail == "admin@noveratech.vn" && (u.Email.ToLower() == "nam.dang@noveratech.digital" || u.Email.ToLower() == "hieu.luong@noveratech.digital")), cancellationToken);
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == reqEmail, cancellationToken);
 
         bool isPasswordValid = false;
 
@@ -189,16 +187,15 @@ public class AuthService : IAuthService
             _ => "/candidate/ho-so-cua-toi"
         };
 
-        // Gửi email thông báo đăng nhập qua email công ty
-        _ = _emailService.SendEmailAsync(new SendEmailRequestDto(
-            user.Email,
-            "Thông báo đăng nhập hệ thống NoveraTech ATS",
-            $"<p>Xin chào <b>{user.FullName}</b>,</p><p>Tài khoản của bạn vừa đăng nhập thành công vào hệ thống ATS lúc {DateTime.Now:HH:mm dd/MM/yyyy}.</p>"
-        ), cancellationToken);
+        var isCandidate = normalizedPrimaryRole == UserRoles.Candidate;
+        var roleDisplayName = UserRoles.GetDisplayName(normalizedPrimaryRole);
+        var successMessage = isCandidate 
+            ? "Đăng nhập Cổng Ứng viên thành công." 
+            : $"Đăng nhập Cổng Quản trị Nội bộ thành công ({roleDisplayName}).";
 
         var normalizedRoles = roles.Select(UserRoles.NormalizeRole).Distinct().ToList();
         var userInfo = new UserInfoDto(user.Id, user.Email, user.FullName, normalizedPrimaryRole, normalizedRoles, redirectUrl);
-        return new AuthResponseDto(true, "Đăng nhập thành công.", userInfo);
+        return new AuthResponseDto(true, successMessage, userInfo);
     }
 
     public async Task<(bool IsSuccess, string Message)> ForgotPasswordAsync(string email, string baseUrl, CancellationToken cancellationToken = default)
@@ -1107,6 +1104,17 @@ public class AuthService : IAuthService
         else
         {
             // 2. Tài khoản đã tồn tại -> Kiểm tra trạng thái
+            // Bảo vệ tài khoản nội bộ: Tài khoản cán bộ nhân sự (Admin, HR, Recruiter...) bắt buộc phải qua SSO Doanh nghiệp (NoveraSSO)
+            // Ngăn chặn leo thang đặc quyền qua luồng OAuth ứng viên công khai (Google)
+            var hasStaffRole = user.UserRoles.Any(ur => ur.Role.Code != RoleCode.CANDIDATE) ||
+                               (!string.IsNullOrWhiteSpace(user.Role) && UserRoles.NormalizeRole(user.Role) != UserRoles.Candidate);
+            var isStaffAccount = user.UserType != UserType.EXTERNAL_CANDIDATE || hasStaffRole;
+
+            if (isStaffAccount && provider != "NoveraSSO")
+            {
+                return new AuthResponseDto(false, "Tài khoản cán bộ nhân sự nội bộ bắt buộc phải đăng nhập qua Cổng Đăng Nhập Nhân Sự (SSO Doanh nghiệp).", null);
+            }
+
             if (user.Status != "ACTIVE")
             {
                 return new AuthResponseDto(false, "Tài khoản của bạn đã bị vô hiệu hóa hoặc chưa được kích hoạt.", null);

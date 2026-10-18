@@ -144,6 +144,10 @@ int idleTimeoutMinutes = int.TryParse(idleTimeoutMinutesStr, out var parsedIdle)
 
 // 1. Thêm cấu hình Session với thời gian hết hạn (Idle timeout)
 builder.Services.AddDistributedMemoryCache();
+var cookieSecurePolicy = builder.Environment.IsDevelopment()
+    ? CookieSecurePolicy.SameAsRequest
+    : CookieSecurePolicy.Always;
+
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(idleTimeoutMinutes);
@@ -151,7 +155,7 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SecurePolicy = cookieSecurePolicy;
 });
 
 // 2. Thêm cấu hình Authentication Cookie & External Google OAuth
@@ -173,7 +177,7 @@ var authBuilder = builder.Services.AddAuthentication(options =>
         options.SlidingExpiration = true; // Tự động gia hạn phiên khi user hoạt động > 50% thời hạn
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SecurePolicy = cookieSecurePolicy;
     })
     .AddCookie("ExternalCookieScheme", options =>
     {
@@ -181,7 +185,7 @@ var authBuilder = builder.Services.AddAuthentication(options =>
         options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SecurePolicy = cookieSecurePolicy;
     });
 
 // Kiểm tra xem đã cung cấp ClientId thực tế hay chưa

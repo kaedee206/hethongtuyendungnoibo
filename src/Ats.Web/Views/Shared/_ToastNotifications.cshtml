@@ -1,0 +1,68 @@
+@* Centralized Toast Notification Container & TempData Bridge (RULE.MD Section 4.3.B) *@
+<div id="novera-toast-container" aria-live="polite" aria-atomic="false"></div>
+
+@{
+    var successMsg = TempData["SuccessMessage"]?.ToString();
+    var trackingCode = TempData["TrackingCode"]?.ToString();
+    if (!string.IsNullOrWhiteSpace(trackingCode) && !string.IsNullOrWhiteSpace(successMsg) && !successMsg.Contains(trackingCode))
+    {
+        successMsg += $" (Mã tra cứu: {trackingCode})";
+    }
+
+    var rejectMsg = TempData["RejectMessage"]?.ToString();
+    // Auto-detect rejection actions routed through SuccessMessage
+    if (string.IsNullOrWhiteSpace(rejectMsg) && !string.IsNullOrWhiteSpace(successMsg) &&
+        (successMsg.StartsWith("Đã từ chối", StringComparison.OrdinalIgnoreCase) ||
+         successMsg.StartsWith("Từ chối", StringComparison.OrdinalIgnoreCase)))
+    {
+        rejectMsg = successMsg;
+        successMsg = null;
+    }
+
+    var errorMsg = TempData["ErrorMessage"]?.ToString();
+    var warningMsg = TempData["WarningMessage"]?.ToString();
+    var infoMsg = TempData["InfoMessage"]?.ToString();
+
+    var hasNotifications = !string.IsNullOrWhiteSpace(successMsg) ||
+                           !string.IsNullOrWhiteSpace(rejectMsg) ||
+                           !string.IsNullOrWhiteSpace(errorMsg) ||
+                           !string.IsNullOrWhiteSpace(warningMsg) ||
+                           !string.IsNullOrWhiteSpace(infoMsg);
+}
+
+@if (hasNotifications)
+{
+    <script>
+        (function() {
+            function triggerToasts() {
+                if (!window.NoveraToast) return;
+                @if (!string.IsNullOrWhiteSpace(successMsg))
+                {
+                    <text>window.NoveraToast.success(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(successMsg)));</text>
+                }
+                @if (!string.IsNullOrWhiteSpace(rejectMsg))
+                {
+                    <text>window.NoveraToast.reject(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(rejectMsg)));</text>
+                }
+                @if (!string.IsNullOrWhiteSpace(errorMsg))
+                {
+                    <text>window.NoveraToast.error(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(errorMsg)));</text>
+                }
+                @if (!string.IsNullOrWhiteSpace(warningMsg))
+                {
+                    <text>window.NoveraToast.warning(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(warningMsg)));</text>
+                }
+                @if (!string.IsNullOrWhiteSpace(infoMsg))
+                {
+                    <text>window.NoveraToast.info(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(infoMsg)));</text>
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', triggerToasts);
+            } else {
+                triggerToasts();
+            }
+        })();
+    </script>
+}

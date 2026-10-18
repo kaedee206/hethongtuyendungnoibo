@@ -99,21 +99,72 @@ public class EmailService : IEmailService
         string location,
         string userAgent,
         DateTimeOffset loginTime,
+        bool isCandidate = false,
+        string? roleName = null,
         CancellationToken cancellationToken = default)
     {
-        var subject = "🔒 [Cảnh báo bảo mật] Đăng nhập thành công vào Hệ thống NoveraTech ATS";
         var timeDisplay = loginTime.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm:ss - dd/MM/yyyy") + " (Giờ Việt Nam)";
+
+        string subject;
+        string badgeText;
+        string portalTitle;
+        string greetingIntro;
+        string roleRowHtml;
+        string securityNoticeHtml;
+        string ctaButtonText;
+        string ctaButtonUrl;
+        string footerText;
+
+        if (isCandidate)
+        {
+            subject = "✨ [NoveraTech Careers] Đăng nhập thành công Cổng Ứng viên";
+            badgeText = "CỔNG ỨNG VIÊN TUYỂN DỤNG";
+            portalTitle = "NOVERATECH CAREERS";
+            greetingIntro = "Hệ thống ghi nhận tài khoản của bạn vừa đăng nhập thành công vào <strong>Cổng thông tin Ứng viên NoveraTech Careers</strong> với thông số chi tiết dưới đây:";
+            roleRowHtml = @"
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Phân hệ:</td>
+                            <td style=""padding: 6px 0; color: #059669; font-weight: 600;"">Cổng Ứng viên (Candidate Portal)</td>
+                        </tr>";
+            securityNoticeHtml = @"
+                        <strong>Lưu ý an toàn:</strong> Đây là cổng thông tin dành riêng cho ứng viên theo dõi tiến trình hồ sơ, cập nhật CV và ứng tuyển các cơ hội việc làm tại NoveraTech. Nếu không phải bạn thực hiện đăng nhập này, vui lòng truy cập ngay vào mục Đổi mật khẩu hoặc liên hệ Ban Tuyển dụng qua <em>tuyendung@noveratech.digital</em>.";
+            ctaButtonText = "Truy cập Cổng Ứng viên";
+            ctaButtonUrl = "https://tuyendung.noveratech.digital/candidate/ho-so-cua-toi";
+            footerText = "NoveraTech Careers · Cổng Thông tin Tuyển dụng Trực tiếp NoveraTech · Email thông báo tự động.";
+        }
+        else
+        {
+            var displayRole = string.IsNullOrWhiteSpace(roleName) ? "Cán bộ nhân sự" : roleName;
+            subject = "🔒 [Bảo mật Nội bộ] Đăng nhập thành công - Hệ thống Quản trị ATS NoveraTech";
+            badgeText = "HỆ THỐNG QUẢN TRỊ NỘI BỘ";
+            portalTitle = "NOVERATECH INTERNAL ATS";
+            greetingIntro = "Hệ thống xác nhận tài khoản nhân sự của bạn vừa đăng nhập thành công vào <strong>Hệ thống Quản trị Tuyển dụng Nội bộ (NoveraTech ATS)</strong> với thông số chi tiết dưới đây:";
+            roleRowHtml = $@"
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Vai trò nội bộ:</td>
+                            <td style=""padding: 6px 0; color: #059669; font-weight: 700;"">{displayRole}</td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Phân hệ:</td>
+                            <td style=""padding: 6px 0; color: #0F172A; font-weight: 600;"">Không gian Làm việc Quản trị Nội bộ (Internal Staff Workspace)</td>
+                        </tr>";
+            securityNoticeHtml = @"
+                        <strong>Cảnh báo an ninh thông tin:</strong> Đây là hệ thống phân quyền nội bộ dành riêng cho cán bộ nhân sự và hội đồng tuyển dụng NoveraTech. Mọi thao tác đều được ghi nhật ký bảo mật (Audit Log). Nếu phát hiện bất thường, vui lòng báo ngay cho Ban An toàn Thông tin qua <em>security@noveratech.digital</em>.";
+            ctaButtonText = "Truy cập Không gian Làm việc Nội bộ";
+            ctaButtonUrl = "https://tuyendung.noveratech.digital/dashboard";
+            footerText = "Tập đoàn Công nghệ NoveraTech · Hệ thống Quản trị Tuyển dụng & Nhân sự Nội bộ (NoveraTech ATS) · Bảo mật nội bộ.";
+        }
 
         var body = $@"
         <div style=""font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden;"">
             <div style=""background: #0F172A; padding: 24px; text-align: center;"">
-                <h2 style=""color: #FFFFFF; margin: 0; font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em;"">NOVERATECH CAREERS & ATS</h2>
-                <div style=""color: #10B981; font-size: 0.8rem; font-weight: 600; margin-top: 4px;"">TRUNG TÂM BẢO MẬT & ĐIỀU HÀNH NHÂN SỰ</div>
+                <h2 style=""color: #FFFFFF; margin: 0; font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em;"">{portalTitle}</h2>
+                <div style=""color: #10B981; font-size: 0.8rem; font-weight: 600; margin-top: 4px; letter-spacing: 0.05em;"">{badgeText}</div>
             </div>
             <div style=""padding: 28px 24px;"">
                 <p style=""font-size: 1rem; color: #0F172A; margin-top: 0;"">Xin chào <strong>{fullName}</strong>,</p>
                 <p style=""color: #475569; font-size: 0.92rem; line-height: 1.6;"">
-                    Hệ thống ghi nhận tài khoản của bạn vừa đăng nhập thành công vào Cổng thông tin Tuyển dụng & Quản trị NoveraTech với thông số chi tiết dưới đây:
+                    {greetingIntro}
                 </p>
                 <div style=""background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 0.88rem;"">
                     <table style=""width: 100%; border-collapse: collapse;"">
@@ -133,19 +184,20 @@ public class EmailService : IEmailService
                             <td style=""padding: 6px 0; color: #64748B;"">Thiết bị / Trình duyệt:</td>
                             <td style=""padding: 6px 0; color: #334155; font-size: 0.82rem;"">{userAgent}</td>
                         </tr>
+                        {roleRowHtml}
                     </table>
                 </div>
                 <div style=""background: #FFFBEB; border-left: 4px solid #F59E0B; padding: 12px 16px; border-radius: 4px; margin-bottom: 24px;"">
                     <p style=""margin: 0; font-size: 0.82rem; color: #92400E; line-height: 1.5;"">
-                        <strong>Lưu ý bảo mật:</strong> Nếu không phải chính bạn thực hiện đăng nhập này, vui lòng truy cập ngay vào mục Đổi mật khẩu hoặc liên hệ Ban An toàn Thông tin NoveraTech qua <em>security@noveratech.digital</em>.
+                        {securityNoticeHtml}
                     </p>
                 </div>
                 <div style=""text-align: center; margin-top: 24px;"">
-                    <a href=""https://noveratech.digital/dashboard"" style=""background: #059669; color: #FFFFFF; text-decoration: none; padding: 10px 24px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; display: inline-block;"">Truy cập Không gian làm việc</a>
+                    <a href=""{ctaButtonUrl}"" style=""background: #059669; color: #FFFFFF; text-decoration: none; padding: 10px 24px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; display: inline-block;"">{ctaButtonText}</a>
                 </div>
             </div>
             <div style=""background: #F1F5F9; padding: 16px; text-align: center; font-size: 0.75rem; color: #64748B; border-top: 1px solid #E2E8F0;"">
-                Tập đoàn Công nghệ NoveraTech · Hệ thống Tuyển dụng & Quản trị Nhân sự Nội bộ · Email tự động, vui lòng không phản hồi trực tiếp.
+                {footerText}
             </div>
         </div>";
 

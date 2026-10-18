@@ -20,6 +20,7 @@ public class CandidateDetailsViewModel
     public string? CurrentCompany { get; set; }
     public string? CurrentTitle { get; set; }
     public string? LinkedinUrl { get; set; }
+    public string? AvatarUrl { get; set; }
     public string Source { get; set; } = "PORTAL";
     public string? ReferrerName { get; set; }
     public bool IsBlacklisted { get; set; }
@@ -236,6 +237,7 @@ public class CandidateListViewModel
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string? Phone { get; set; }
+    public string? AvatarUrl { get; set; }
     public string? CurrentTitle { get; set; }
     public string? CurrentCompany { get; set; }
     public int ApplicationCount { get; set; }

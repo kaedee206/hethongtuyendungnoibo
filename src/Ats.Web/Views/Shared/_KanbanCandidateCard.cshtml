@@ -11,73 +11,39 @@
      data-name="@Model.CandidateName.ToLower()"
      data-email="@Model.CandidateEmail.ToLower()"
      data-job="@Model.JobTitle.ToLower()"
-     title="Ứng viên: @Model.CandidateName&#10;Email: @Model.CandidateEmail&#10;SĐT: @(string.IsNullOrEmpty(Model.CandidatePhone) ? "Chưa có" : Model.CandidatePhone)@(Model.IsOverdueSla ? $"\n⚠️ Quá hạn SLA {Model.OverdueDays} ngày (Đã ở giai đoạn này {Model.DaysInCurrentStage}/{Model.SlaDays} ngày)" : "")"
+     title="Ứng viên: @Model.CandidateName&#10;Email: @Model.CandidateEmail&#10;SĐT: @(string.IsNullOrEmpty(Model.CandidatePhone) ? "Chưa có" : Model.CandidatePhone)@(Model.IsOverdueSla ? $"\n⚠️ Quá hạn SLA {Model.OverdueDays} ngày (Đã ở giai đoạn này {Model.DaysInCurrentStage}/{Model.SlaDays} ngày)" : "")&#10;Nhấp để xem chi tiết & thao tác hồ sơ"
      ondragstart="onKanbanCardDragStart(event)"
      ondragend="onKanbanCardDragEnd(event)"
      onclick="openCandidateDetailModal('@Model.ApplicationId')"
      style="@(Model.IsOverdueSla ? "border-left: 3.5px solid #DC2626 !important;" : "")">
 
-    <!-- Popover hiển thị nhanh thông tin liên lạc khi hover thẻ ở chế độ Thu gọn -->
-    <div class="kanban-card-hover-popover">
-        <div><i class="bi bi-envelope text-info me-1"></i>@Model.CandidateEmail</div>
-        @if (!string.IsNullOrEmpty(Model.CandidatePhone) && Model.CandidatePhone != "Chưa có")
+    <!-- Header thẻ: Avatar, Tên ứng viên & Tag vị trí (Đã tinh gọn bỏ nút 3 chấm gây rối mắt & chớp hình) -->
+    <div class="d-flex align-items-center gap-2 mb-1" style="min-width: 0;">
+        @if (!string.IsNullOrEmpty(Model.AvatarUrl))
         {
-            <div class="mt-0.5"><i class="bi bi-telephone text-success me-1"></i>@Model.CandidatePhone</div>
+            <div class="position-relative flex-shrink-0" style="width: 28px; height: 28px;">
+                <img src="@Model.AvatarUrl" alt="@Model.CandidateName" 
+                     class="rounded-circle object-fit-cover shadow-xs border"
+                     style="width: 28px; height: 28px; display: block;"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                <div class="kanban-card-avatar flex-shrink-0" style="display: none; @(Model.IsOverdueSla ? "background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA;" : "")">
+                    @(string.IsNullOrEmpty(Model.CandidateName) ? "?" : Model.CandidateName.Substring(0, 1).ToUpper())
+                </div>
+            </div>
         }
-        @if (Model.IsOverdueSla)
+        else
         {
-            <div class="mt-1 text-danger fw-bold"><i class="bi bi-flag-fill me-1"></i>Quá hạn SLA +@Model.OverdueDays ngày</div>
-        }
-    </div>
-
-    <!-- Header thẻ: Avatar, Tên ứng viên, Tag vị trí & Menu thao tác -->
-    <div class="d-flex justify-content-between align-items-start mb-1" style="gap: 4px;">
-        <div class="d-flex align-items-center gap-1.5" style="min-width: 0; flex: 1;">
             <div class="kanban-card-avatar flex-shrink-0" style="@(Model.IsOverdueSla ? "background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA;" : "")">
                 @(string.IsNullOrEmpty(Model.CandidateName) ? "?" : Model.CandidateName.Substring(0, 1).ToUpper())
             </div>
-            <div style="min-width: 0; flex: 1;">
-                <div class="kanban-card-title text-truncate" title="@Model.CandidateName">
-                    @Model.CandidateName
-                </div>
-                <div class="kanban-job-badge text-truncate" title="@Model.JobTitle">
-                    <i class="bi bi-briefcase me-1"></i>@Model.JobTitle
-                </div>
+        }
+        <div style="min-width: 0; flex: 1;">
+            <div class="kanban-card-title text-truncate" title="@Model.CandidateName">
+                @Model.CandidateName
             </div>
-        </div>
-
-        <div class="dropdown flex-shrink-0" onclick="event.stopPropagation();">
-            <button type="button" class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration:none; line-height: 1;" title="Tác vụ">
-                <i class="bi bi-three-dots-vertical" style="font-size: 0.85rem;"></i>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.8rem; border-radius: 8px;">
-                <li><a class="dropdown-item" href="javascript:void(0)" onclick="openCandidateDetailModal('@Model.ApplicationId')"><i class="bi bi-eye text-primary me-2"></i>Chi tiết hồ sơ</a></li>
-                @if (!string.IsNullOrEmpty(Model.ResumeFilePath))
-                {
-                    <li><a class="dropdown-item" href="@Model.ResumeFilePath" target="_blank"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Xem CV</a></li>
-                }
-                <li><hr class="dropdown-divider my-1"></li>
-                @if (Model.CurrentStageOrder == 1)
-                {
-                    <li><a class="dropdown-item text-success" href="javascript:void(0)" onclick="moveCandidateStageViaButton('@Model.ApplicationId', 2, '@Model.CandidateName', 'Sàng lọc')"><i class="bi bi-arrow-right-circle me-2"></i>Chuyển Sàng lọc</a></li>
-                }
-                else if (Model.CurrentStageOrder == 2)
-                {
-                    <li><a class="dropdown-item text-info" href="javascript:void(0)" onclick="openScheduleModal('@Model.ApplicationId', '@Model.CandidateName', '@Model.JobTitle')"><i class="bi bi-calendar-plus me-2"></i>Lên lịch phỏng vấn</a></li>
-                }
-                else if (Model.CurrentStageOrder == 3 || Model.CurrentStageOrder == 4)
-                {
-                    <li><a class="dropdown-item text-warning" href="javascript:void(0)" onclick="openCreateOfferModal('@Model.ApplicationId', '@Model.CandidateName', '@Model.JobTitle')"><i class="bi bi-envelope-paper-heart me-2"></i>Đề xuất Offer</a></li>
-                }
-                else if (Model.CurrentStageOrder == 5)
-                {
-                    <li><a class="dropdown-item text-success" href="javascript:void(0)" onclick="moveCandidateStageViaButton('@Model.ApplicationId', 6, '@Model.CandidateName', 'Nhận việc')"><i class="bi bi-check2-all me-2"></i>Xác nhận Nhận việc</a></li>
-                }
-                @if (Model.Status != "REJECTED" && Model.CurrentStageOrder != 6)
-                {
-                    <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="openRejectModal('@Model.ApplicationId', '@Model.CandidateName', '@Model.JobTitle')"><i class="bi bi-x-circle me-2"></i>Loại hồ sơ</a></li>
-                }
-            </ul>
+            <div class="kanban-job-badge text-truncate" title="@Model.JobTitle">
+                <i class="bi bi-briefcase me-1"></i>@Model.JobTitle
+            </div>
         </div>
     </div>
 
@@ -121,4 +87,3 @@
         </div>
     </div>
 </div>
-

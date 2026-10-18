@@ -1,7 +1,9 @@
+using Ats.Web.Constants;
 using Ats.Web.Data;
 using Ats.Web.Models.DTOs;
 using Ats.Web.Models.Entities;
 using Ats.Web.Models.Enums;
+using Ats.Web.Models.ViewModels.Interviews;
 using Ats.Web.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -98,6 +100,22 @@ public class InterviewService(
             };
         }
 
+        // Rule 12: BẢO MẬT NGHIÊM NGẶT - Kiểm tra ngay lập tức không cho phép Ứng viên (Candidate) tham gia hội đồng phỏng vấn
+        var interviewers = await _dbContext.Users
+            .Where(u => interviewerIds.Contains(u.Id))
+            .ToListAsync(cancellationToken);
+
+        var invalidCandidates = interviewers
+            .Where(u => u.UserType != UserType.INTERNAL || !UserRoles.CanBeInterviewer(u.Role))
+            .ToList();
+
+        if (invalidCandidates.Any())
+        {
+            var invalidNames = string.Join(", ", invalidCandidates.Select(c => $"{c.FullName} ({c.Email})"));
+            _logger.LogError("LỖI BẢO MẬT NGHIÊM TRỌNG (Rule 12): Cố gắng phân công Ứng viên (Candidate) tham gia hội đồng phỏng vấn: {InvalidCandidates}", invalidNames);
+            throw new InvalidOperationException($"Lỗi bảo mật nghiêm ngặt (Rule 12): Ứng viên tuyệt đối không được phép tham gia hội đồng phỏng vấn ứng viên. Các tài khoản không hợp lệ: {invalidNames}");
+        }
+
         // 4. Kiểm tra phòng hoặc liên kết họp
         if (string.IsNullOrWhiteSpace(model.LocationOrLink))
         {
@@ -149,7 +167,8 @@ public class InterviewService(
             : $"Phỏng vấn Vòng {roundNum} - {application.JobPosting?.Title ?? "Chuyên môn"}";
 
         var meetLocation = model.LocationOrLink.Trim();
-        var interviewType = model.InterviewType?.Equals("OFFLINE_OFFICE", StringComparison.OrdinalIgnoreCase) == true
+        var interviewType = (model.InterviewFormat?.Equals("OFFLINE", StringComparison.OrdinalIgnoreCase) == true
+            || model.InterviewType?.Equals("OFFLINE_OFFICE", StringComparison.OrdinalIgnoreCase) == true)
             ? InterviewType.OFFLINE_OFFICE
             : (model.InterviewType?.Equals("ONLINE_MEET", StringComparison.OrdinalIgnoreCase) == true
                 ? InterviewType.ONLINE_MEET
@@ -175,10 +194,6 @@ public class InterviewService(
         await _dbContext.Interviews.AddAsync(interview, cancellationToken);
 
         // 8. Gán danh sách Hội đồng phỏng vấn (Panelists)
-        var interviewers = await _dbContext.Users
-            .Where(u => interviewerIds.Contains(u.Id))
-            .ToListAsync(cancellationToken);
-
         var panelistNames = new List<string>();
         var isLead = true;
         foreach (var inv in interviewers)
@@ -193,7 +208,8 @@ public class InterviewService(
                 UpdatedAt = DateTimeOffset.UtcNow
             }, cancellationToken);
 
-            panelistNames.Add($"{inv.FullName} ({inv.Role})");
+            var displayRole = UserRoles.GetDisplayName(inv.Role);
+            panelistNames.Add($"{inv.FullName} ({displayRole})");
             isLead = false;
         }
 
@@ -263,7 +279,7 @@ public class InterviewService(
         }
 
         var interviewTypeDisplay = interviewType == InterviewType.ONLINE_MEET
-            ? "Trực tuyến (Google Meet)"
+            ? (meetLocation.Contains("teams", StringComparison.OrdinalIgnoreCase) ? "Trực tuyến (MS Teams)" : "Trực tuyến (Google Meet)")
             : "Trực tiếp tại văn phòng";
 
         return new InterviewScheduleResultDto
@@ -285,9 +301,26 @@ public class InterviewService(
     public async Task<List<InterviewerLookupDto>> GetAvailableInterviewersAsync(
         CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Users
-            .Where(u => u.Status == "ACTIVE")
+        // Rule 12: Ứng viên (Candidate) tuyệt đối KHÔNG ĐƯỢC PHÉP tham gia hội đồng phỏng vấn ứng viên.
+        // Chỉ nhân sự nội bộ (UserType == INTERNAL) có trạng thái ACTIVE và vai trò được phép mới xuất hiện trong danh sách giám khảo.
+        var candidateAliases = UserRoles.GetAllRoleAliases(UserRoles.Candidate);
+
+        var users = await _dbContext.Users
+            .Where(u => u.Status == "ACTIVE" 
+                     && u.UserType == UserType.INTERNAL
+                     && !candidateAliases.Contains(u.Role))
             .OrderBy(u => u.FullName)
+            .Select(u => new
+            {
+                u.Id,
+                u.FullName,
+                u.Email,
+                u.Role
+            })
+            .ToListAsync(cancellationToken);
+
+        return users
+            .Where(u => UserRoles.CanBeInterviewer(u.Role))
             .Select(u => new InterviewerLookupDto
             {
                 Id = u.Id,
@@ -295,7 +328,7 @@ public class InterviewService(
                 Email = u.Email,
                 Role = u.Role
             })
-            .ToListAsync(cancellationToken);
+            .ToList();
     }
 
     /// <inheritdoc/>
@@ -324,5 +357,348 @@ public class InterviewService(
             Panelists = string.Join(", ", i.Panelists.Select(p => p.Interviewer?.FullName ?? "Hội đồng phỏng vấn")),
             Message = i.Status.ToString()
         }).ToList();
+    }
+
+    /// <inheritdoc/>
+    public async Task<ScheduleInterviewWizardViewModel> GetScheduleWizardDataAsync(
+        Guid? applicationId,
+        CancellationToken cancellationToken = default)
+    {
+        // 1. Lấy danh sách các ứng viên trong Pipeline đang hoạt động (chưa bị xóa, stage order <= 5)
+        var applications = await _dbContext.Applications
+            .Include(a => a.Candidate)
+                .ThenInclude(c => c.Resumes)
+            .Include(a => a.JobPosting)
+                .ThenInclude(jp => jp.Requisition)
+                    .ThenInclude(r => r.Department)
+            .Include(a => a.JobPosting)
+                .ThenInclude(jp => jp.Requisition)
+                    .ThenInclude(r => r.JobPosition)
+            .Include(a => a.CurrentStage)
+            .Include(a => a.Interviews)
+            .Where(a => !a.IsDeleted && (a.CurrentStage == null || a.CurrentStage.StageOrder <= 5))
+            .OrderByDescending(a => a.CreatedAt)
+            .Take(100)
+            .ToListAsync(cancellationToken);
+
+        var pipelineCandidates = applications.Select(a =>
+        {
+            var primaryResume = a.Candidate.Resumes.FirstOrDefault(r => r.IsPrimary) ?? a.Candidate.Resumes.FirstOrDefault();
+            return new CandidatePipelineOptionDto
+            {
+                ApplicationId = a.Id,
+                CandidateId = a.CandidateId,
+                FullName = $"{a.Candidate.FirstName} {a.Candidate.LastName}".Trim(),
+                Email = a.Candidate.Email,
+                Phone = a.Candidate.Phone ?? string.Empty,
+                JobPostingId = a.JobPostingId,
+                JobTitle = a.JobPosting?.Title ?? "Vị trí tuyển dụng",
+                DepartmentName = a.JobPosting?.Requisition?.Department?.Name ?? "Ban Công Nghệ",
+                CurrentStageName = a.CurrentStage?.Name ?? "Ứng tuyển mới",
+                CurrentStageOrder = a.CurrentStage?.StageOrder ?? 1,
+                HasCv = primaryResume != null,
+                ResumeId = primaryResume?.Id,
+                ResumeFileName = primaryResume?.FileName,
+                MatchScore = a.Rating.HasValue ? a.Rating.Value * 20 : null,
+                TotalInterviewsCount = a.Interviews.Count(i => !i.IsDeleted),
+                AppliedAt = a.CreatedAt
+            };
+        }).ToList();
+
+        // 2. Lấy danh sách giám khảo nội bộ có thể phân công
+        var interviewers = await GetAvailableInterviewersAsync(cancellationToken);
+
+        // 3. Danh sách phòng họp / liên kết họp mẫu (Hỗ trợ lọc Google Meet, Microsoft Teams và Văn phòng)
+        var roomPresets = new List<RoomPresetDto>
+        {
+            // --- Nhóm 1: Google Meet ---
+            new()
+            {
+                Id = "meet_auto",
+                Name = "Google Meet (Tự động cấp link họp)",
+                Type = "ONLINE_MEET",
+                Platform = "MEET",
+                LocationOrLink = "https://meet.google.com/nvr-atsw-int",
+                Capacity = "Trực tuyến (Không giới hạn)",
+                Description = "Tự động gửi liên kết Google Meet đồng bộ vào thư mời email ứng viên.",
+                BadgeText = "Google Meet",
+                IsDefault = true
+            },
+            new()
+            {
+                Id = "meet_panel",
+                Name = "Google Meet Hội Đồng (Kèm ghi hình & phụ đề)",
+                Type = "ONLINE_MEET",
+                Platform = "MEET",
+                LocationOrLink = "https://meet.google.com/nvr-exec-panel",
+                Capacity = "Trực tuyến (Tự động lưu Drive)",
+                Description = "Kích hoạt sẵn tính năng ghi âm và lưu trữ video phục vụ đánh giá năng lực.",
+                BadgeText = "Meet Hội Đồng",
+                IsDefault = false
+            },
+
+            // --- Nhóm 2: Microsoft Teams ---
+            new()
+            {
+                Id = "teams_online",
+                Name = "Microsoft Teams (Phòng kỹ thuật chuyên sâu)",
+                Type = "ONLINE_MEET",
+                Platform = "TEAMS",
+                LocationOrLink = "https://teams.microsoft.com/l/meetup-join/noveratech-interview-panel",
+                Capacity = "Trực tuyến (Không giới hạn)",
+                Description = "Tối ưu cho phiên phỏng vấn Live Coding & chia sẻ màn hình kỹ thuật.",
+                BadgeText = "MS Teams",
+                IsDefault = false
+            },
+            new()
+            {
+                Id = "teams_livecode",
+                Name = "Microsoft Teams Live Code (Lab Kỹ thuật 01)",
+                Type = "ONLINE_MEET",
+                Platform = "TEAMS",
+                LocationOrLink = "https://teams.microsoft.com/l/meetup-join/noveratech-livecode-lab",
+                Capacity = "Trực tuyến (Tích hợp VS Code)",
+                Description = "Hỗ trợ chia sẻ màn hình 4K, micro chống ồn và whiteboard tương tác kiến trúc.",
+                BadgeText = "Teams Lab",
+                IsDefault = false
+            },
+
+            // --- Nhóm 3: Trực tiếp tại văn phòng ---
+            new()
+            {
+                Id = "room_a1",
+                Name = "Phòng Họp A1 (Tầng 3 - Trụ sở NoveraTech)",
+                Type = "OFFLINE_OFFICE",
+                Platform = "OFFLINE",
+                LocationOrLink = "Phòng Họp A1, Tầng 3, Tòa nhà NoveraTech, 72 Trần Duy Hưng, Cầu Giấy, Hà Nội",
+                Capacity = "Sức chứa 6 người",
+                Description = "Màn hình 85 inch, Polycom đàm thoại, bảng trắng phân tích giải pháp.",
+                BadgeText = "Trực tiếp A1",
+                IsDefault = false
+            },
+            new()
+            {
+                Id = "room_b2",
+                Name = "Phòng Sáng Tạo B2 (Tầng 5 - Tech Lab)",
+                Type = "OFFLINE_OFFICE",
+                Platform = "OFFLINE",
+                LocationOrLink = "Phòng Sáng Tạo B2, Tầng 5, Tòa nhà NoveraTech, 72 Trần Duy Hưng, Cầu Giấy, Hà Nội",
+                Capacity = "Sức chứa 10 người",
+                Description = "Trang bị sẵn 2 máy trạm kỹ thuật, màn hình đôi để ứng viên demo sản phẩm.",
+                BadgeText = "Tech Lab B2",
+                IsDefault = false
+            },
+            new()
+            {
+                Id = "room_board",
+                Name = "Phòng Hội Đồng Quản Trị (Tầng 8)",
+                Type = "OFFLINE_OFFICE",
+                Platform = "OFFLINE",
+                LocationOrLink = "Phòng Executive Boardroom, Tầng 8, Tòa nhà NoveraTech, 72 Trần Duy Hưng, Cầu Giấy, Hà Nội",
+                Capacity = "Sức chứa 16 người",
+                Description = "Dành riêng cho phỏng vấn cấp Quản lý, Lead, Trưởng phòng và Giám đốc.",
+                BadgeText = "Boardroom",
+                IsDefault = false
+            }
+        };
+
+        // 4. Xác định ứng viên mục tiêu được chọn sẵn
+        Guid? targetApplicationId = applicationId;
+        if (!targetApplicationId.HasValue && pipelineCandidates.Any())
+        {
+            targetApplicationId = pipelineCandidates.First().ApplicationId;
+        }
+
+        CandidateWizardDetailDto? selectedCandidate = null;
+        if (targetApplicationId.HasValue)
+        {
+            selectedCandidate = await GetCandidateWizardDetailAsync(targetApplicationId.Value, cancellationToken);
+        }
+
+        var defaultStart = DateTime.Today.AddDays(1).AddHours(9); // Mặc định 9:00 sáng ngày mai
+
+        var defaultFormInput = new ScheduleInterviewInputModel
+        {
+            ApplicationId = targetApplicationId ?? Guid.Empty,
+            RoundNumber = selectedCandidate?.NextRoundNumber ?? 1,
+            RoundTitle = selectedCandidate?.SuggestedRoundTitle ?? "Phỏng vấn Vòng 1",
+            StartTime = defaultStart,
+            DurationMinutes = 60,
+            InterviewType = "ONLINE_MEET",
+            LocationOrLink = "https://meet.google.com/nvr-atsw-int",
+            InterviewerIds = interviewers.Take(2).Select(i => i.Id).ToList()
+        };
+
+        return new ScheduleInterviewWizardViewModel
+        {
+            PreselectedApplicationId = applicationId,
+            SelectedCandidate = selectedCandidate,
+            PipelineCandidates = pipelineCandidates,
+            AvailableInterviewers = interviewers,
+            RoomPresets = roomPresets,
+            FormInput = defaultFormInput
+        };
+    }
+
+    /// <inheritdoc/>
+    public async Task<CandidateWizardDetailDto?> GetCandidateWizardDetailAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken = default)
+    {
+        var app = await _dbContext.Applications
+            .Include(a => a.Candidate)
+                .ThenInclude(c => c.Resumes)
+            .Include(a => a.JobPosting)
+                .ThenInclude(jp => jp.Requisition)
+                    .ThenInclude(r => r.Department)
+            .Include(a => a.JobPosting)
+                .ThenInclude(jp => jp.Requisition)
+                    .ThenInclude(r => r.JobPosition)
+            .Include(a => a.CurrentStage)
+            .Include(a => a.Interviews)
+                .ThenInclude(i => i.Panelists)
+                    .ThenInclude(p => p.Interviewer)
+            .Include(a => a.Interviews)
+                .ThenInclude(i => i.Evaluations)
+            .FirstOrDefaultAsync(a => a.Id == applicationId && !a.IsDeleted, cancellationToken);
+
+        if (app == null) return null;
+
+        var primaryResume = app.Candidate.Resumes.FirstOrDefault(r => r.IsPrimary) ?? app.Candidate.Resumes.FirstOrDefault();
+
+        var interviewHistory = app.Interviews
+            .Where(i => !i.IsDeleted)
+            .OrderBy(i => i.RoundNumber)
+            .Select(i =>
+            {
+                var panelistsList = i.Panelists.Select(p => p.Interviewer?.FullName ?? "Giám khảo").ToList();
+                var avgScore = i.Evaluations.Any(e => e.OverallScore.HasValue)
+                    ? i.Evaluations.Where(e => e.OverallScore.HasValue).Average(e => (double)e.OverallScore!.Value)
+                    : (double?)null;
+                var latestEval = i.Evaluations.OrderByDescending(e => e.CreatedAt).FirstOrDefault();
+                var conclusionText = latestEval?.Recommendation switch
+                {
+                    RecommendationType.STRONG_HIRE => "Rất nên tuyển",
+                    RecommendationType.HIRE => "Nên tuyển",
+                    RecommendationType.CONSIDER => "Cân nhắc",
+                    RecommendationType.STRONG_NO_HIRE => "Không nên tuyển",
+                    _ => null
+                };
+
+                return new InterviewHistorySummaryDto
+                {
+                    InterviewId = i.Id,
+                    RoundNumber = i.RoundNumber,
+                    Title = i.Title,
+                    InterviewTypeDisplay = i.InterviewType == InterviewType.ONLINE_MEET ? "Trực tuyến (Meet)" : "Trực tiếp tại văn phòng",
+                    LocationOrLink = i.LocationOrLink,
+                    StartTime = i.StartTime,
+                    EndTime = i.EndTime,
+                    StatusDisplay = i.Status == InterviewStatus.SCHEDULED ? "Đã lên lịch" : (i.Status == InterviewStatus.COMPLETED ? "Đã hoàn thành" : "Đã hủy"),
+                    CandidateConfirmedDisplay = i.CandidateConfirmed == CandidateConfirmStatus.ACCEPTED ? "Ứng viên đã xác nhận" : (i.CandidateConfirmed == CandidateConfirmStatus.DECLINED ? "Ứng viên từ chối" : "Chờ ứng viên xác nhận"),
+                    PanelistsDisplay = panelistsList.Any() ? string.Join(", ", panelistsList) : "Chưa phân công",
+                    AverageScore = avgScore.HasValue ? Math.Round(avgScore.Value, 1) : null,
+                    FinalConclusion = conclusionText
+                };
+            }).ToList();
+
+        var completedOrScheduledRounds = app.Interviews.Where(i => !i.IsDeleted).Select(i => i.RoundNumber).ToList();
+        var nextRound = completedOrScheduledRounds.Any() ? completedOrScheduledRounds.Max() + 1 : 1;
+
+        var jobTitle = app.JobPosting?.Title ?? "Chuyên môn";
+        var suggestedTitle = nextRound switch
+        {
+            1 => $"Phỏng vấn Vòng 1: Sơ vấn & Trao đổi văn hóa - {jobTitle}",
+            2 => $"Phỏng vấn Vòng 2: Đánh giá Năng lực Kỹ thuật Chuyên sâu - {jobTitle}",
+            3 => $"Phỏng vấn Vòng 3: Phỏng vấn Ban Giám đốc & Thỏa thuận đãi ngộ - {jobTitle}",
+            _ => $"Phỏng vấn Vòng {nextRound} - {jobTitle}"
+        };
+
+        return new CandidateWizardDetailDto
+        {
+            ApplicationId = app.Id,
+            CandidateId = app.CandidateId,
+            FullName = $"{app.Candidate.FirstName} {app.Candidate.LastName}".Trim(),
+            Email = app.Candidate.Email,
+            Phone = app.Candidate.Phone ?? string.Empty,
+            CurrentTitle = !string.IsNullOrWhiteSpace(app.Candidate.CurrentTitle) ? app.Candidate.CurrentTitle : "Ứng viên chuyên môn",
+            CurrentCompany = !string.IsNullOrWhiteSpace(app.Candidate.CurrentCompany) ? app.Candidate.CurrentCompany : "Đang tìm kiếm cơ hội",
+            JobPostingId = app.JobPostingId,
+            JobTitle = jobTitle,
+            DepartmentName = app.JobPosting?.Requisition?.Department?.Name ?? "Ban Công Nghệ",
+            JobLevel = app.JobPosting?.Requisition?.JobPosition?.JobLevel ?? "Chuyên viên",
+            CurrentStageName = app.CurrentStage?.Name ?? "Ứng tuyển mới",
+            CurrentStageOrder = app.CurrentStage?.StageOrder ?? 1,
+            ActiveResumeId = primaryResume?.Id,
+            ResumeFileName = primaryResume?.FileName,
+            ResumeFileSizeDisplay = primaryResume != null ? $"{primaryResume.FileSize / 1024} KB" : null,
+            MatchScore = app.Rating.HasValue ? app.Rating.Value * 20 : null,
+            NextRoundNumber = nextRound,
+            SuggestedRoundTitle = suggestedTitle,
+            InterviewHistory = interviewHistory
+        };
+    }
+
+    /// <inheritdoc/>
+    public async Task<List<InterviewerBusyCheckDto>> CheckInterviewersAvailabilityAsync(
+        List<Guid> interviewerIds,
+        DateTimeOffset startTime,
+        DateTimeOffset endTime,
+        CancellationToken cancellationToken = default)
+    {
+        if (interviewerIds == null || !interviewerIds.Any())
+        {
+            return new List<InterviewerBusyCheckDto>();
+        }
+
+        var interviewers = await _dbContext.Users
+            .Where(u => interviewerIds.Contains(u.Id))
+            .ToListAsync(cancellationToken);
+
+        // Tìm các phỏng vấn trùng thời gian: [StartTime, EndTime] giao nhau với [startTime, endTime]
+        // Giao nhau khi: i.StartTime < endTime && i.EndTime > startTime
+        var conflictingInterviews = await _dbContext.InterviewPanelists
+            .Include(p => p.Interview)
+            .Where(p => interviewerIds.Contains(p.InterviewerId)
+                        && !p.Interview.IsDeleted
+                        && p.Interview.Status != InterviewStatus.CANCELLED
+                        && p.Interview.StartTime.HasValue
+                        && p.Interview.EndTime.HasValue
+                        && p.Interview.StartTime.Value < endTime
+                        && p.Interview.EndTime.Value > startTime)
+            .ToListAsync(cancellationToken);
+
+        var result = new List<InterviewerBusyCheckDto>();
+        foreach (var inv in interviewers)
+        {
+            var conflict = conflictingInterviews.FirstOrDefault(p => p.InterviewerId == inv.Id);
+            if (conflict != null)
+            {
+                var intv = conflict.Interview;
+                result.Add(new InterviewerBusyCheckDto
+                {
+                    InterviewerId = inv.Id,
+                    FullName = inv.FullName,
+                    Role = inv.Role,
+                    IsBusy = true,
+                    StatusMessage = "Có thể trùng lịch",
+                    ConflictTitle = intv.Title,
+                    ConflictTimeDisplay = $"{intv.StartTime?.ToOffset(TimeSpan.FromHours(7)):HH:mm} - {intv.EndTime?.ToOffset(TimeSpan.FromHours(7)):HH:mm}"
+                });
+            }
+            else
+            {
+                result.Add(new InterviewerBusyCheckDto
+                {
+                    InterviewerId = inv.Id,
+                    FullName = inv.FullName,
+                    Role = inv.Role,
+                    IsBusy = false,
+                    StatusMessage = "Sẵn sàng (Trống lịch)"
+                });
+            }
+        }
+
+        return result;
     }
 }

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Ats.Web.Common;
 using Ats.Web.Constants;
 using Ats.Web.Data;
 using Ats.Web.Models.Entities;
@@ -13,6 +14,7 @@ namespace Ats.Web.Controllers;
 
 /// <summary>
 /// Controller xử lý các tác vụ liên quan đến Đơn ứng tuyển của Ứng viên (SCRUM-291: Rút hồ sơ ứng tuyển).
+/// Đã được thắt chặt bảo mật: Bắt buộc đăng nhập và chỉ chính ứng viên nộp hồ sơ mới có quyền thao tác.
 /// </summary>
 public class ApplicationsController : Controller
 {
@@ -32,13 +34,21 @@ public class ApplicationsController : Controller
 
     /// <summary>
     /// GET /Applications/Withdraw?token={token}
-    /// Mở trang xác nhận rút hồ sơ ứng tuyển thông qua token bảo mật được đính kèm trong email xác nhận.
+    /// Mở trang xác nhận rút hồ sơ ứng tuyển thông qua token bảo mật.
+    /// YÊU CẦU BẢO MẬT: Bắt buộc đăng nhập và người dùng phải là chính chủ ứng viên sở hữu hồ sơ này.
     /// </summary>
     [HttpGet("/Applications/Withdraw")]
     [HttpGet("/ung-vien/rut-ho-so")]
-    [AllowAnonymous]
     public async Task<IActionResult> Withdraw([FromQuery] string? token)
     {
+        // 1. Kiểm tra đăng nhập (Authentication)
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            var returnUrl = Request.Path + Request.QueryString;
+            TempData["WarningMessage"] = "Vui lòng đăng nhập tài khoản Ứng viên để xác thực quyền quản lý và thao tác rút hồ sơ ứng tuyển.";
+            return RedirectToAction("CandidateAuth", "Account", new { returnUrl });
+        }
+
         if (string.IsNullOrWhiteSpace(token))
         {
             ViewBag.ErrorMessage = "Liên kết rút hồ sơ không hợp lệ hoặc thiếu mã xác thực bảo mật.";
@@ -57,6 +67,37 @@ public class ApplicationsController : Controller
         if (application == null)
         {
             ViewBag.ErrorMessage = "Không tìm thấy hồ sơ ứng tuyển tương ứng với liên kết này hoặc liên kết đã hết hiệu lực.";
+            return View("WithdrawError");
+        }
+
+        // 2. Kiểm tra quyền sở hữu hồ sơ (Authorization / Ownership check)
+        var userEmail = User.FindFirstValue(ClaimTypes.Email)?.Trim().ToLowerInvariant() ?? "";
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        _ = Guid.TryParse(userIdStr, out var userId);
+
+        var candidateEmail = application.Candidate?.Email?.Trim().ToLowerInvariant() ?? "";
+        var candidateUserId = application.Candidate?.UserId;
+        var isOwner = (userId != Guid.Empty && candidateUserId.HasValue && candidateUserId.Value == userId)
+                   || (!string.IsNullOrEmpty(userEmail) && !string.IsNullOrEmpty(candidateEmail) && candidateEmail == userEmail);
+
+        if (!isOwner)
+        {
+            var displayCandidateEmail = application.Candidate?.Email ?? "Ứng viên";
+            _logger.LogWarning("BẢO MẬT: Tài khoản {UserEmail} (ID: {UserId}) bị từ chối truy cập hồ sơ rút của ứng viên {CandidateEmail} (AppId: {AppId}). IP: {Ip}",
+                PiiMaskingHelper.MaskEmail(userEmail), userId, PiiMaskingHelper.MaskEmail(displayCandidateEmail), application.Id, HttpContext.Connection.RemoteIpAddress);
+
+            var statusCodeFeature = HttpContext.Features.Get<Microsoft.AspNetCore.Diagnostics.IStatusCodePagesFeature>();
+            if (statusCodeFeature != null)
+            {
+                statusCodeFeature.Enabled = false;
+            }
+
+            Response.StatusCode = StatusCodes.Status403Forbidden;
+            ViewBag.IsUnauthorizedUser = true;
+            ViewBag.LoggedInUserEmail = userEmail;
+            ViewBag.CandidateMaskedEmail = PiiMaskingHelper.MaskEmail(displayCandidateEmail);
+            ViewBag.ErrorMessage = $"Truy cập bị từ chối: Bạn đang đăng nhập bằng tài khoản ({userEmail}), không phải là chủ sở hữu của hồ sơ ứng tuyển này. Vui lòng đăng nhập đúng tài khoản ứng viên ({PiiMaskingHelper.MaskEmail(displayCandidateEmail)}) để thực hiện rút hồ sơ.";
+            ViewBag.ReturnUrl = Request.Path + Request.QueryString;
             return View("WithdrawError");
         }
 
@@ -88,16 +129,24 @@ public class ApplicationsController : Controller
     /// <summary>
     /// POST /Applications/ConfirmWithdraw
     /// Tiếp nhận xác nhận rút hồ sơ từ ứng viên, đổi trạng thái sang WITHDRAWN, đưa khỏi pipeline hoạt động và thông báo cho Recruiter.
+    /// YÊU CẦU BẢO MẬT: Bắt buộc đăng nhập và chỉ chính chủ ứng viên mới được xác nhận rút hồ sơ.
     /// </summary>
     [HttpPost("/Applications/ConfirmWithdraw")]
     [HttpPost("/ung-vien/xac-nhan-rut-ho-so")]
-    [AllowAnonymous]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ConfirmWithdraw(
         [FromForm] string token,
         [FromForm] string? reasonCategory,
         [FromForm] string? reasonDetail)
     {
+        // 1. Kiểm tra đăng nhập (Authentication)
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            var returnUrl = $"/Applications/Withdraw?token={Uri.EscapeDataString(token ?? "")}";
+            TempData["WarningMessage"] = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại tài khoản Ứng viên để xác nhận thao tác.";
+            return RedirectToAction("CandidateAuth", "Account", new { returnUrl });
+        }
+
         if (string.IsNullOrWhiteSpace(token))
         {
             ViewBag.ErrorMessage = "Yêu cầu không hợp lệ: Mã xác thực bảo mật bị trống.";
@@ -115,6 +164,37 @@ public class ApplicationsController : Controller
         if (application == null)
         {
             ViewBag.ErrorMessage = "Không tìm thấy hồ sơ ứng tuyển hợp lệ tương ứng với liên kết này.";
+            return View("WithdrawError");
+        }
+
+        // 2. Kiểm tra quyền sở hữu hồ sơ (Authorization / Ownership check)
+        var userEmail = User.FindFirstValue(ClaimTypes.Email)?.Trim().ToLowerInvariant() ?? "";
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        _ = Guid.TryParse(userIdStr, out var userId);
+
+        var candidateEmail = application.Candidate?.Email?.Trim().ToLowerInvariant() ?? "";
+        var candidateUserId = application.Candidate?.UserId;
+        var isOwner = (userId != Guid.Empty && candidateUserId.HasValue && candidateUserId.Value == userId)
+                   || (!string.IsNullOrEmpty(userEmail) && !string.IsNullOrEmpty(candidateEmail) && candidateEmail == userEmail);
+
+        if (!isOwner)
+        {
+            var displayCandidateEmail = application.Candidate?.Email ?? "Ứng viên";
+            _logger.LogWarning("BẢO MẬT: Tài khoản {UserEmail} (ID: {UserId}) cố tình xác nhận rút hồ sơ của ứng viên {CandidateEmail} (AppId: {AppId}). IP: {Ip}",
+                PiiMaskingHelper.MaskEmail(userEmail), userId, PiiMaskingHelper.MaskEmail(displayCandidateEmail), application.Id, HttpContext.Connection.RemoteIpAddress);
+
+            var statusCodeFeature = HttpContext.Features.Get<Microsoft.AspNetCore.Diagnostics.IStatusCodePagesFeature>();
+            if (statusCodeFeature != null)
+            {
+                statusCodeFeature.Enabled = false;
+            }
+
+            Response.StatusCode = StatusCodes.Status403Forbidden;
+            ViewBag.IsUnauthorizedUser = true;
+            ViewBag.LoggedInUserEmail = userEmail;
+            ViewBag.CandidateMaskedEmail = PiiMaskingHelper.MaskEmail(displayCandidateEmail);
+            ViewBag.ErrorMessage = $"Truy cập bị từ chối: Bạn không có quyền thao tác trên hồ sơ của ứng viên khác. Chỉ chính ứng viên sở hữu hồ sơ ({PiiMaskingHelper.MaskEmail(displayCandidateEmail)}) mới có quyền xác nhận rút hồ sơ.";
+            ViewBag.ReturnUrl = $"/Applications/Withdraw?token={Uri.EscapeDataString(cleanToken)}";
             return View("WithdrawError");
         }
 
@@ -155,7 +235,7 @@ public class ApplicationsController : Controller
         application.UpdatedAt = nowUtc;
 
         // 2. Ghi nhận lịch sử luồng tuyển dụng (ApplicationStageHistory)
-        var changedByUserId = application.Candidate.UserId 
+        var changedByUserId = (userId != Guid.Empty ? userId : application.Candidate.UserId)
             ?? (await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync());
 
         await _dbContext.ApplicationStageHistories.AddAsync(new ApplicationStageHistory
@@ -181,7 +261,12 @@ public class ApplicationsController : Controller
 
         if (recruiter == null)
         {
-            recruiter = await _dbContext.Users.FirstOrDefaultAsync(u => u.Role == UserRoles.Recruiter || u.Role == UserRoles.HRManager)
+            recruiter = await _dbContext.Users.FirstOrDefaultAsync(u => 
+                u.Role == UserRoles.Recruiter || 
+                u.Role == UserRoles.HRManager || 
+                u.Role == UserRoles.NameRecruiter || 
+                u.Role == UserRoles.NameHRManager || 
+                u.UserRoles.Any(ur => ur.Role != null && (ur.Role.Code == RoleCode.RECRUITER || ur.Role.Code == RoleCode.HR_MANAGER)))
                      ?? await _dbContext.Users.FirstOrDefaultAsync();
         }
 
@@ -334,7 +419,12 @@ public class ApplicationsController : Controller
         }
         if (recruiter == null)
         {
-            recruiter = await _dbContext.Users.FirstOrDefaultAsync(u => u.Role == UserRoles.Recruiter || u.Role == UserRoles.HRManager)
+            recruiter = await _dbContext.Users.FirstOrDefaultAsync(u => 
+                u.Role == UserRoles.Recruiter || 
+                u.Role == UserRoles.HRManager || 
+                u.Role == UserRoles.NameRecruiter || 
+                u.Role == UserRoles.NameHRManager || 
+                u.UserRoles.Any(ur => ur.Role != null && (ur.Role.Code == RoleCode.RECRUITER || ur.Role.Code == RoleCode.HR_MANAGER)))
                      ?? await _dbContext.Users.FirstOrDefaultAsync();
         }
 

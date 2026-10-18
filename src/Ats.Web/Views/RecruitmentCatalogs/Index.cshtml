@@ -21,7 +21,7 @@
     <!-- Filter Card & Type Navigation Tabs -->
     <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: #FFFFFF; border: 1px solid #E2E8F0;">
         <div class="card-body p-3">
-            <div class="d-flex flex-wrap gap-2" id="catalogTypeTabs">
+            <div class="mobile-action-bar gap-2" id="catalogTypeTabs">
                 <button type="button" class="btn btn-dark active px-3 py-2 catalog-tab-btn" data-type="ALL" style="border-radius: 8px;">
                     <i class="bi bi-grid-fill me-1"></i> Tất cả (<span id="countAll">@Model.Count()</span>)
                 </button>
@@ -43,17 +43,18 @@
 
     <!-- Table Card -->
     <div class="card border-0 shadow-sm" style="border-radius: 12px; background: #FFFFFF; border: 1px solid #E2E8F0; overflow: hidden;">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" id="catalogTable">
+        <div class="ats-mobile-table-hint px-3 pt-2"><i class="bi bi-arrow-left-right"></i> Vuốt ngang để xem đủ mã, tên, trạng thái & thao tác</div>
+        <div class="ats-mobile-table-wrapper table-responsive mb-0">
+            <table class="table table-hover align-middle mb-0" id="catalogTable" style="min-width: 780px;">
                 <thead style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0;">
                     <tr>
-                        <th class="ps-4 py-3 text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.05em;">Loại danh mục</th>
-                        <th class="py-3 text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.05em;">Mã code</th>
-                        <th class="py-3 text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.05em;">Tên danh mục</th>
-                        <th class="py-3 text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.05em;">Mô tả chi tiết</th>
-                        <th class="py-3 text-secondary text-uppercase text-center" style="font-size: 0.75rem; letter-spacing: 0.05em;">Thứ tự</th>
-                        <th class="py-3 text-secondary text-uppercase text-center" style="font-size: 0.75rem; letter-spacing: 0.05em;">Trạng thái</th>
-                        <th class="pe-4 py-3 text-secondary text-uppercase text-end" style="font-size: 0.75rem; letter-spacing: 0.05em;">Hành động</th>
+                        <th class="ps-4 py-3 text-secondary text-uppercase text-nowrap" style="font-size: 0.75rem; letter-spacing: 0.05em;">Loại danh mục</th>
+                        <th class="py-3 text-secondary text-uppercase text-nowrap" style="font-size: 0.75rem; letter-spacing: 0.05em;">Mã code</th>
+                        <th class="py-3 text-secondary text-uppercase text-nowrap" style="font-size: 0.75rem; letter-spacing: 0.05em; min-width: 180px;">Tên danh mục</th>
+                        <th class="py-3 text-secondary text-uppercase text-nowrap" style="font-size: 0.75rem; letter-spacing: 0.05em; min-width: 150px;">Mô tả chi tiết</th>
+                        <th class="py-3 text-secondary text-uppercase text-center text-nowrap" style="font-size: 0.75rem; letter-spacing: 0.05em;">Thứ tự</th>
+                        <th class="py-3 text-secondary text-uppercase text-center text-nowrap" style="font-size: 0.75rem; letter-spacing: 0.05em;">Trạng thái</th>
+                        <th class="pe-4 py-3 text-secondary text-uppercase text-end text-nowrap" style="font-size: 0.75rem; letter-spacing: 0.05em;">Hành động</th>
                     </tr>
                 </thead>
                 <tbody id="catalogTableBody">
@@ -79,12 +80,6 @@
                         <tr class="catalog-row" data-type="@item.CatalogType" data-id="@item.Id" id="row-@item.Id">
                             <td class="ps-4">
                                 <span class="badge @typeBadgeClass" style="border-radius: 6px; font-weight: 500;">@typeLabel</span>
-                                @if (item.IsSystem)
-                                {
-                                    <span class="badge bg-light text-muted border ms-1" style="border-radius: 6px;" title="Mục hệ thống mặc định">
-                                        <i class="bi bi-shield-lock-fill"></i> Hệ thống
-                                    </span>
-                                }
                             </td>
                             <td>
                                 <code class="fw-semibold text-dark" style="font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;">@item.Code</code>
@@ -120,22 +115,14 @@
                                             data-desc="@item.Description" 
                                             data-order="@item.DisplayOrder" 
                                             data-active="@item.IsActive.ToString().ToLower()" 
-                                            data-system="@item.IsSystem.ToString().ToLower()"
+                                            data-system="false"
+                                            title="Chỉnh sửa danh mục"
                                             style="border-radius: 6px 0 0 6px;">
                                         <i class="bi bi-pencil-fill"></i>
                                     </button>
-                                    @if (!item.IsSystem)
-                                    {
-                                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-catalog" data-id="@item.Id" data-name="@item.Name" style="border-radius: 0 6px 6px 0;">
-                                            <i class="bi bi-trash-fill"></i>
-                                        </button>
-                                    }
-                                    else
-                                    {
-                                        <button type="button" class="btn btn-sm btn-outline-secondary disabled" title="Không thể xóa mục mặc định của hệ thống" style="border-radius: 0 6px 6px 0; opacity: 0.5;">
-                                            <i class="bi bi-lock-fill"></i>
-                                        </button>
-                                    }
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-delete-catalog" data-id="@item.Id" data-name="@item.Name" title="Xóa mục danh mục" style="border-radius: 0 6px 6px 0;">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -370,7 +357,7 @@
                     typeSelect.value = type;
                     typeSelect.disabled = true; // Cannot change type on edit
                     codeInput.value = code;
-                    codeInput.disabled = isSystem; // Protected system items code is read-only
+                    codeInput.disabled = false;
                     nameInput.value = name;
                     descInput.value = desc || '';
                     orderInput.value = order || '0';
@@ -471,7 +458,30 @@
                     }
 
                     const row = document.getElementById(`row-${id}`);
-                    if (row) row.remove();
+                    if (row) {
+                        const type = row.getAttribute('data-type');
+                        row.remove();
+
+                        const countAllEl = document.getElementById('countAll');
+                        if (countAllEl) {
+                            const count = parseInt(countAllEl.textContent || '0', 10);
+                            if (count > 0) countAllEl.textContent = count - 1;
+                        }
+
+                        const typeCountId = type === 'SOURCE' ? 'countSource' :
+                                            type === 'REJECTION_REASON' ? 'countReason' :
+                                            type === 'LOCATION' ? 'countLocation' :
+                                            type === 'WORK_TYPE' ? 'countWorkType' : null;
+                        if (typeCountId) {
+                            const typeEl = document.getElementById(typeCountId);
+                            if (typeEl) {
+                                const count = parseInt(typeEl.textContent || '0', 10);
+                                if (count > 0) typeEl.textContent = count - 1;
+                            }
+                        }
+
+                        applyCatalogPagination();
+                    }
 
                     if (window.NoveraToast) window.NoveraToast.show('Đã xóa mục danh mục thành công!', 'success');
                 } catch (err) {

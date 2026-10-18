@@ -38,14 +38,7 @@
             box-shadow: 0 1px 2px rgba(5, 150, 105, 0.08);
         }
         .feature-highlight-pulse {
-            animation: featurePulse 1.8s ease;
-            border-color: #059669 !important;
-            box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.15) !important;
-        }
-        @@keyframes featurePulse {
-            0% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.4); }
-            70% { box-shadow: 0 0 0 8px rgba(5, 150, 105, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0); }
+            /* Tắt hoàn toàn hiệu ứng chớp tắt gây giật hình */
         }
         .scroll-margin-nav {
             scroll-margin-top: 90px;
@@ -905,15 +898,16 @@
                                         <i class="bi bi-people me-1"></i> Xem tất cả @Model.CandidatePipelineItems.Count ứng viên &rarr;
                                     </button>
                                 </div>
-                                <div class="dashboard-table-responsive">
-                                    <table class="table align-middle mb-0" style="width: 100%; font-size: 0.85rem;">
+                                <div class="ats-mobile-table-hint"><i class="bi bi-arrow-left-right"></i> Vuốt ngang để xem đủ cột</div>
+                                <div class="ats-mobile-table-wrapper dashboard-table-responsive">
+                                    <table class="table align-middle mb-0 table-min-w-650" style="width: 100%; font-size: 0.85rem;">
                                         <thead>
                                             <tr style="border-bottom: 1px solid #E2E8F0; color: #64748B; font-size: 0.72rem; text-transform: uppercase;">
-                                                <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Ứng viên</th>
-                                                <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Vị trí</th>
-                                                <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Giai đoạn</th>
-                                                <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Ngày nộp</th>
-                                                <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-end">Thao tác</th>
+                                                <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-nowrap">Ứng viên</th>
+                                                <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-nowrap">Vị trí</th>
+                                                <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-nowrap">Giai đoạn</th>
+                                                <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-nowrap">Ngày nộp</th>
+                                                <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-end text-nowrap">Thao tác</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1114,44 +1108,6 @@
                             </div>
                         }
 
-                        <!-- Filter Stage Pills (Pipeline Funnel Stepper + Trạng thái đặc biệt) -->
-                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 p-2 rounded-3 bg-light border" id="candidateStageFilterGroup" style="border-color: #E2E8F0 !important;">
-                            <!-- Nhóm các giai đoạn quy trình 6 bước chính -->
-                            <div class="d-flex flex-wrap align-items-center gap-1.5">
-                                <button type="button" class="candidate-stage-pill active" onclick="filterPipelineCandidates('ALL', this)">
-                                    Tất cả <span class="pill-count">@Model.CandidatePipelineItems.Count</span>
-                                </button>
-                                <div class="vr my-auto mx-1 text-muted opacity-25 d-none d-sm-block" style="height: 18px;"></div>
-                                @foreach (var stage in Model.PipelineFunnel.Where(s => !s.IsTerminal))
-                                {
-                                    var count = Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == stage.StageOrder);
-                                    <button type="button" class="candidate-stage-pill @(count == 0 ? "opacity-75" : "")" onclick="filterPipelineCandidates('@stage.StageOrder', this)">
-                                        <span class="opacity-75 font-mono" style="font-size: 0.7rem;">@stage.StageOrder.ToString("D2").</span>
-                                        <span>@(string.IsNullOrWhiteSpace(stage.ShortName) ? stage.StageName : stage.ShortName)</span>
-                                        <span class="pill-count">@count</span>
-                                    </button>
-                                }
-                            </div>
-
-                            <!-- Nhóm trạng thái đặc biệt / phân loại phụ -->
-                            <div class="d-flex flex-wrap align-items-center gap-1.5 ms-auto">
-                                @if (Model.DuplicateCandidatesCount > 0)
-                                {
-                                    <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('DUPLICATE', this)" title="Lọc hồ sơ nghi ngờ trùng lặp">
-                                        <i class="bi bi-intersect text-warning"></i>Cảnh báo trùng <span class="pill-count text-warning fw-bold">@Model.CandidatePipelineItems.Count(x => x.HasDuplicateWarning)</span>
-                                    </button>
-                                }
-                                <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('REFERRAL', this)" title="Hồ sơ được nhân sự nội bộ giới thiệu">
-                                    <i class="bi bi-person-heart text-danger"></i>Giới thiệu <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.IsReferral)</span>
-                                </button>
-                                <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('REJECTED', this)" title="Ứng viên đã từ chối">
-                                    <i class="bi bi-x-circle text-danger"></i>Từ chối <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.Status == "REJECTED")</span>
-                                </button>
-                                <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('WITHDRAWN', this)" title="Ứng viên chủ động rút">
-                                    <i class="bi bi-box-arrow-left text-secondary"></i>Rút hồ sơ <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.Status == "WITHDRAWN")</span>
-                                </button>
-                            </div>
-                        </div>
 
                         <!-- Mobile Column Dots Indicator (Chỉ hiển thị trên thiết bị di động để vuốt nhanh) -->
                         <div class="d-flex d-md-none justify-content-center align-items-center gap-1.5 mt-2 mb-1" id="kanbanMobileDots">
@@ -1426,6 +1382,39 @@
                         <!-- TABLE VIEW CONTAINER (Ẩn mặc định, hiển thị khi chọn chế độ Bảng) -->
                         <!-- ============================================================== -->
                         <div id="candidateTableViewContainer" class="d-none mt-2">
+                            <!-- Filter Stage Pills (Pipeline Funnel Stepper + Trạng thái đặc biệt - Chỉ hiện khi ở chế độ Bảng) -->
+                            <div class="d-flex flex-wrap align-items-center gap-1.5 mb-3 p-2 rounded-3 bg-light border" id="candidateStageFilterGroup" style="border-color: #E2E8F0 !important;">
+                                <button type="button" class="candidate-stage-pill active" onclick="filterPipelineCandidates('ALL', this)">
+                                    Tất cả <span class="pill-count">@Model.CandidatePipelineItems.Count</span>
+                                </button>
+                                <div class="vr my-auto mx-1 text-muted opacity-25 d-none d-sm-block" style="height: 18px;"></div>
+                                @foreach (var stage in Model.PipelineFunnel.Where(s => !s.IsTerminal))
+                                {
+                                    var count = Model.CandidatePipelineItems.Count(x => x.CurrentStageOrder == stage.StageOrder);
+                                    <button type="button" class="candidate-stage-pill @(count == 0 ? "opacity-75" : "")" onclick="filterPipelineCandidates('@stage.StageOrder', this)">
+                                        <span class="opacity-75 font-mono" style="font-size: 0.7rem;">@stage.StageOrder.ToString("D2").</span>
+                                        <span>@(string.IsNullOrWhiteSpace(stage.ShortName) ? stage.StageName : stage.ShortName)</span>
+                                        <span class="pill-count">@count</span>
+                                    </button>
+                                }
+                                <div class="vr my-auto mx-1 text-muted opacity-25 d-none d-sm-block" style="height: 18px;"></div>
+                                @if (Model.DuplicateCandidatesCount > 0)
+                                {
+                                    <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('DUPLICATE', this)" title="Lọc hồ sơ nghi ngờ trùng lặp">
+                                        <i class="bi bi-intersect text-warning"></i>Cảnh báo trùng <span class="pill-count text-warning fw-bold">@Model.CandidatePipelineItems.Count(x => x.HasDuplicateWarning)</span>
+                                    </button>
+                                }
+                                <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('REFERRAL', this)" title="Hồ sơ được nhân sự nội bộ giới thiệu">
+                                    <i class="bi bi-person-heart text-danger"></i>Giới thiệu <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.IsReferral)</span>
+                                </button>
+                                <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('REJECTED', this)" title="Ứng viên đã từ chối">
+                                    <i class="bi bi-x-circle text-danger"></i>Từ chối <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.Status == "REJECTED")</span>
+                                </button>
+                                <button type="button" class="candidate-stage-pill" onclick="filterPipelineCandidates('WITHDRAWN', this)" title="Ứng viên chủ động rút">
+                                    <i class="bi bi-box-arrow-left text-secondary"></i>Rút hồ sơ <span class="pill-count">@Model.CandidatePipelineItems.Count(x => x.Status == "WITHDRAWN")</span>
+                                </button>
+                            </div>
+
                             <div class="dashboard-table-responsive">
                                 <table class="table align-middle mb-0" style="min-width: 900px; font-size: 0.85rem;">
                                     <thead>
@@ -1546,10 +1535,10 @@
                                                                     <i class="bi bi-arrow-right-circle"></i> Duyệt Sơ Loại
                                                                 </button>
                                                             }
-                                                            else if (cand.CurrentStageOrder == 2)
+                                                            else if (cand.CurrentStageOrder == 2 || cand.CurrentStageOrder == 3)
                                                             {
                                                                 <button type="button" class="btn btn-sm btn-primary candidate-action-btn-primary" style="background:#0284C7; border-color:#0284C7;"
-                                                                        onclick="openScheduleModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
+                                                                        onclick="openScheduleModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle', 1)">
                                                                     <i class="bi bi-calendar-plus"></i> Lên Lịch PV
                                                                 </button>
                                                             }
@@ -1611,11 +1600,19 @@
                                                                         </a>
                                                                     </li>
                                                                 }
-                                                                @if (cand.CurrentStageOrder == 4)
+                                                                @if (cand.CurrentStageOrder == 1 || cand.CurrentStageOrder == 2 || cand.CurrentStageOrder == 3 || cand.CurrentStageOrder == 4)
                                                                 {
                                                                     <li>
-                                                                        <a class="dropdown-item" href="javascript:void(0)" onclick="openScheduleModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
-                                                                            <i class="bi bi-calendar-event text-info"></i> Lên lịch phỏng vấn tiếp
+                                                                        <a class="dropdown-item py-1.5 text-info fw-semibold" href="javascript:void(0)" onclick="openScheduleModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle', @(cand.CurrentStageOrder == 4 ? 2 : 1))">
+                                                                            <i class="bi bi-calendar-plus text-info me-2"></i>Lên lịch phỏng vấn@(cand.CurrentStageOrder == 4 ? " tiếp theo" : "")
+                                                                        </a>
+                                                                    </li>
+                                                                }
+                                                                @if (cand.CurrentStageOrder == 3 || cand.CurrentStageOrder == 4)
+                                                                {
+                                                                    <li>
+                                                                        <a class="dropdown-item py-1.5 text-warning fw-semibold" href="javascript:void(0)" onclick="openCreateOfferModal('@cand.ApplicationId', '@cand.CandidateName', '@cand.JobTitle')">
+                                                                            <i class="bi bi-envelope-paper-heart text-warning me-2"></i>Đề xuất Offer
                                                                         </a>
                                                                     </li>
                                                                 }
@@ -1698,7 +1695,7 @@
                                         <i class="bi bi-person-check-fill me-1"></i>Lịch của tôi (@Model.MyUpcomingInterviewsCount)
                                     </a>
                                 </div>
-                                <button type="button" class="btn btn-sm btn-primary" style="border-radius: 8px; font-size: 0.78rem; background: #059669; border-color: #059669;" onclick="switchDashboardFeature('ung-vien', event); filterPipelineCandidates('2');">
+                                <button type="button" class="btn btn-sm btn-primary" style="border-radius: 8px; font-size: 0.78rem; background: #059669; border-color: #059669;" onclick="openScheduleModal('', '', '', 1);">
                                     <i class="bi bi-calendar-plus me-1"></i> Lên lịch phỏng vấn mới
                                 </button>
                                 <span style="font-size:0.75rem; font-weight:600; color:#0F172A; background:#F1F5F9; padding:0.25rem 0.75rem; border-radius:6px; font-family:'JetBrains Mono',monospace; border: 1px solid #E2E8F0;">
@@ -1707,16 +1704,17 @@
                             </div>
                         </div>
 
-                        <div class="dashboard-table-responsive">
+                        <div class="ats-mobile-table-hint"><i class="bi bi-arrow-left-right"></i> Vuốt ngang để xem đủ lịch phỏng vấn & thao tác</div>
+                        <div class="ats-mobile-table-wrapper dashboard-table-responsive mb-0">
                             <table class="table align-middle mb-0" style="min-width: 820px; font-size: 0.85rem;">
                                 <thead>
                                     <tr style="border-bottom: 1px solid #E2E8F0; color: #64748B; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">
-                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold" style="border-top-left-radius: 8px; border-bottom-left-radius: 8px;">Ứng viên</th>
-                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Vị trí ứng tuyển</th>
-                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Thời gian</th>
-                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Hội đồng</th>
-                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold">Trạng thái</th>
-                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-end" style="border-top-right-radius: 8px; border-bottom-right-radius: 8px;">Thao tác</th>
+                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-nowrap" style="border-top-left-radius: 8px; border-bottom-left-radius: 8px;">Ứng viên</th>
+                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-nowrap">Vị trí ứng tuyển</th>
+                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-nowrap">Thời gian</th>
+                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-nowrap">Hội đồng</th>
+                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-nowrap">Trạng thái</th>
+                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-end text-nowrap" style="border-top-right-radius: 8px; border-bottom-right-radius: 8px;">Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody id="interviewTableBody">
@@ -1726,7 +1724,7 @@
                                         {
                                             <tr id="interview-row-@interview.InterviewId" style="border-bottom: 1px solid #F1F5F9; transition: background .15s;"
                                                 onmouseover="this.style.background='#F8FAFC';" onmouseout="this.style.background='#FFFFFF';">
-                                                <td class="py-3 px-3">
+                                                <td class="py-3 px-3 text-nowrap">
                                                     <div class="d-flex align-items-center gap-2.5">
                                                         <div class="d-flex align-items-center justify-content-center fw-bold text-white rounded-circle"
                                                              style="width: 34px; height: 34px; background: #334155; font-size: 0.82rem; flex-shrink: 0;">
@@ -1738,21 +1736,21 @@
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td class="py-3 px-3">
+                                                <td class="py-3 px-3 text-nowrap">
                                                     <span class="fw-semibold text-dark">@interview.JobTitle</span>
                                                 </td>
-                                                <td class="py-3 px-3" style="font-family:'JetBrains Mono',monospace;">
+                                                <td class="py-3 px-3 text-nowrap" style="font-family:'JetBrains Mono',monospace;">
                                                     <div class="fw-bold text-dark" style="font-size: 0.82rem;">
                                                         <i class="bi bi-clock me-1 text-muted"></i>@interview.TimeDisplay
                                                     </div>
                                                     <div class="text-muted" style="font-size: 0.72rem;">@interview.DateDisplay</div>
                                                 </td>
-                                                <td class="py-3 px-3">
+                                                <td class="py-3 px-3 text-nowrap">
                                                     <span style="background: #F1F5F9; color: #475569; font-size: 0.75rem; padding: 2px 8px; border-radius: 6px; border: 1px solid #E2E8F0;">
                                                         @interview.PanelistNames
                                                     </span>
                                                 </td>
-                                                <td class="py-3 px-3">
+                                                <td class="py-3 px-3 text-nowrap">
                                                     <div class="d-flex flex-column gap-1">
                                                         <span class="badge @interview.StatusBadgeClass" style="border-radius: 6px; font-weight: 600; font-size: 0.72rem; width: fit-content;">
                                                             @interview.StatusDisplay
@@ -1779,7 +1777,7 @@
                                                         }
                                                     </div>
                                                 </td>
-                                                <td class="py-3 px-3 text-end">
+                                                <td class="py-3 px-3 text-end text-nowrap">
                                                     <div class="d-flex justify-content-end gap-1.5 flex-wrap">
                                                         @if (!string.IsNullOrWhiteSpace(interview.ConfirmationUrl))
                                                         {
@@ -2672,7 +2670,7 @@
                     <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius: 6px; font-size: 0.75rem;" onclick="loadCandidatesByStage('6', this)">Đã Onboard</button>
                 </div>
                 <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
-                    <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                    <table class="table table-hover align-middle mb-0" style="min-width: 580px; font-size: 0.85rem;">
                         <thead class="table-light">
                             <tr style="font-size: 0.75rem; text-transform: uppercase; color: #64748B;">
                                 <th>Ứng viên</th>
@@ -2704,9 +2702,35 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body py-3">
-                <div class="p-2.5 mb-3" style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px;">
-                    <div class="fw-bold text-dark" id="schedCandidateName" style="font-size: 0.9rem;">-</div>
-                    <div class="text-muted small" id="schedJobTitle">-</div>
+                <div id="schedCandidateBox" class="p-2.5 mb-3" style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-bold text-dark" id="schedCandidateName" style="font-size: 0.92rem;">-</div>
+                            <div class="text-muted small" id="schedJobTitle">-</div>
+                        </div>
+                        <span class="badge bg-light text-primary border" style="font-size: 0.72rem;">
+                            <i class="bi bi-person-badge me-1"></i>Ứng viên được chọn
+                        </span>
+                    </div>
+                </div>
+                <div id="schedCandidateSelectGroup" class="mb-3" style="display: none;">
+                    <label class="form-label small fw-semibold text-dark">
+                        <i class="bi bi-person-check-fill text-success me-1"></i>Chọn ứng viên cần lên lịch <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select form-select-sm" id="schedCandidateSelect" style="border-radius:8px;" onchange="onSchedCandidateSelectChange(this)">
+                        <option value="">-- Chọn ứng viên trong quy trình tuyển dụng --</option>
+                        @foreach (var group in Model.CandidatePipelineItems.Where(x => x.Status != "REJECTED" && x.Status != "WITHDRAWN" && x.CurrentStageOrder != 6).GroupBy(x => x.JobTitle))
+                        {
+                            <optgroup label="@group.Key">
+                                @foreach (var c in group)
+                                {
+                                    <option value="@c.ApplicationId" data-name="@c.CandidateName" data-job="@c.JobTitle" data-stage-order="@c.CurrentStageOrder">
+                                        @c.CandidateName (@c.CurrentStageName)
+                                    </option>
+                                }
+                            </optgroup>
+                        }
+                    </select>
                 </div>
                 <form id="scheduleInterviewForm" onsubmit="handleScheduleInterviewSubmit(event)">
                     <input type="hidden" id="schedApplicationId" />
@@ -2962,17 +2986,7 @@
     </div>
 </div>
 
-<!-- Toast Container để hiển thị phản hồi tức thì (RULE.MD: bottom-right, clean theme) -->
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1090;">
-    <div id="actionToast" class="toast toast-success align-items-center bg-white shadow-lg" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius: 12px; min-width: 320px; max-width: 420px;">
-        <div class="d-flex align-items-center p-2">
-            <div class="toast-body d-flex align-items-center gap-2 flex-grow-1" id="toastMessage" style="font-size: 0.85rem; color: #0F172A; font-weight: 500;">
-                <i class="bi bi-check-circle-fill text-success fs-5"></i> <span>Thao tác thành công.</span>
-            </div>
-            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-    </div>
-</div>
+
 
 @section Scripts {
     <script>
@@ -2981,19 +2995,7 @@
             return input ? input.value : '';
         }
 
-        function showToast(message, isSuccess = true) {
-            var toastEl = document.getElementById('actionToast');
-            var msgEl = document.getElementById('toastMessage');
-            if (isSuccess) {
-                toastEl.className = "toast toast-success align-items-center bg-white shadow-lg";
-                msgEl.innerHTML = '<i class="bi bi-check-circle-fill text-success fs-5"></i> <span>' + message + '</span>';
-            } else {
-                toastEl.className = "toast toast-error align-items-center bg-white shadow-lg";
-                msgEl.innerHTML = '<i class="bi bi-x-circle-fill text-danger fs-5"></i> <span>' + message + '</span>';
-            }
-            var toast = new bootstrap.Toast(toastEl, { delay: 4000 });
-            toast.show();
-        }
+
 
         // 1. Ứng tuyển nhanh Modal
         function openApplyJobModal(id, title, dept) {
@@ -3586,22 +3588,22 @@
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <div class="d-flex align-items-center gap-2">
                                 <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary-subtle text-primary fw-bold" style="width: 32px; height: 32px; font-size: 0.8rem;">
-                                    ${(p.panelistName || 'G').substring(0, 1).toUpperCase()}
+                                    ${escapeHtml((p.panelistName || 'G').substring(0, 1).toUpperCase())}
                                 </div>
                                 <div>
-                                    <div class="fw-bold text-dark small">${p.panelistName}</div>
-                                    <div class="text-muted" style="font-size: 0.7rem;">${p.roleTitle || 'Giám khảo'} • Nộp lúc: ${p.submittedAtDisplay || 'Chưa ghi nhận'}</div>
+                                    <div class="fw-bold text-dark small">${escapeHtml(p.panelistName)}</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">${escapeHtml(p.roleTitle || 'Giám khảo')} • Nộp lúc: ${escapeHtml(p.submittedAtDisplay || 'Chưa ghi nhận')}</div>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center gap-2">
-                                <span class="badge ${recBadgeClass}" style="font-size: 0.75rem;">${recText}</span>
+                                <span class="badge ${recBadgeClass}" style="font-size: 0.75rem;">${escapeHtml(recText)}</span>
                                 <span class="badge bg-light text-dark border" style="font-size: 0.75rem;"><i class="bi bi-star-fill text-warning me-1"></i>${p.overallScore ? p.overallScore.toFixed(1) : '-'} / 5</span>
                                 ${reopenBtn}
                             </div>
                         </div>
-                        ${p.strengths ? `<div class="small text-muted mb-1"><strong>Điểm mạnh:</strong> ${p.strengths}</div>` : ''}
-                        ${p.weaknesses ? `<div class="small text-muted mb-1"><strong>Điểm cải thiện:</strong> ${p.weaknesses}</div>` : ''}
-                        ${p.detailedFeedback ? `<div class="small text-dark p-2 rounded bg-light border-start border-3 border-primary" style="font-size: 0.82rem;">${p.detailedFeedback}</div>` : ''}
+                        ${p.strengths ? `<div class="small text-muted mb-1"><strong>Điểm mạnh:</strong> ${escapeHtml(p.strengths)}</div>` : ''}
+                        ${p.weaknesses ? `<div class="small text-muted mb-1"><strong>Điểm cải thiện:</strong> ${escapeHtml(p.weaknesses)}</div>` : ''}
+                        ${p.detailedFeedback ? `<div class="small text-dark p-2 rounded bg-light border-start border-3 border-primary" style="font-size: 0.82rem;">${escapeHtml(p.detailedFeedback)}</div>` : ''}
                     </div>`;
             });
             html += '</div>';
@@ -3843,12 +3845,12 @@
                     tbody.innerHTML = data.candidates.map(c => `
                         <tr>
                             <td class="py-2.5">
-                                <div class="fw-bold text-dark">${c.candidateName}</div>
-                                <small class="text-muted" style="font-family:'JetBrains Mono',monospace;">${c.candidateEmail} · ${c.candidatePhone}</small>
+                                <div class="fw-bold text-dark">${escapeHtml(c.candidateName)}</div>
+                                <small class="text-muted" style="font-family:'JetBrains Mono',monospace;">${escapeHtml(c.candidateEmail)} · ${escapeHtml(c.candidatePhone)}</small>
                             </td>
-                            <td class="py-2.5"><span class="fw-semibold text-dark">${c.jobTitle}</span></td>
-                            <td class="py-2.5"><span class="badge" style="background:${c.stageColor};color:#fff;border-radius:6px;font-size:0.72rem;">${c.stageName}</span></td>
-                            <td class="py-2.5 text-muted small">${c.appliedDate}</td>
+                            <td class="py-2.5"><span class="fw-semibold text-dark">${escapeHtml(c.jobTitle)}</span></td>
+                            <td class="py-2.5"><span class="badge" style="background:${escapeHtml(c.stageColor)};color:#fff;border-radius:6px;font-size:0.72rem;">${escapeHtml(c.stageName)}</span></td>
+                            <td class="py-2.5 text-muted small">${escapeHtml(c.appliedDate)}</td>
                         </tr>
                     `).join('');
                 } else {
@@ -3878,6 +3880,7 @@
 
             const kanbanContainer = document.getElementById('candidateKanbanViewContainer');
             const tableContainer = document.getElementById('candidateTableViewContainer');
+            const stageFilterGroup = document.getElementById('candidateStageFilterGroup');
             const btnKanban = document.getElementById('btnPipelineKanbanView');
             const btnTable = document.getElementById('btnPipelineTableView');
 
@@ -3893,6 +3896,7 @@
             if (mode === 'kanban') {
                 if (kanbanContainer) kanbanContainer.classList.remove('d-none');
                 if (tableContainer) tableContainer.classList.add('d-none');
+                if (stageFilterGroup) stageFilterGroup.classList.add('d-none');
                 if (btnKanban) {
                     btnKanban.classList.add('active');
                     btnKanban.classList.remove('btn-outline-success');
@@ -3906,6 +3910,7 @@
             } else {
                 if (kanbanContainer) kanbanContainer.classList.add('d-none');
                 if (tableContainer) tableContainer.classList.remove('d-none');
+                if (stageFilterGroup) stageFilterGroup.classList.remove('d-none');
                 if (btnTable) {
                     btnTable.classList.add('active', 'btn-secondary', 'text-white');
                     btnTable.classList.remove('btn-outline-secondary');
@@ -4569,11 +4574,13 @@
                 window.candCurrentPage = 1;
             }
             const input = document.getElementById('candidateSearchInput');
-            const jobSelect = document.getElementById('candidateJobFilter');
+            const jobSelect = document.getElementById('candidateJobFilter') || document.getElementById('kanbanJobFilter');
             const clearBtn = document.getElementById('candidateSearchClearBtn');
             const hint = document.getElementById('candSearchHint');
             const query = (input ? input.value : '').trim();
-            const selectedJob = window.currentPipelineJob || (jobSelect ? jobSelect.value : '') || 'ALL';
+            const stageOrder = window.currentPipelineStage || 'ALL';
+            const selectedJob = window.currentPipelineJob || window.currentPipelineJobId || (jobSelect ? jobSelect.value : '') || 'ALL';
+            const selectedJobId = (selectedJob !== 'ALL' && selectedJob) ? selectedJob : null;
 
             if (clearBtn) {
                 if (query.length > 0) clearBtn.classList.remove('d-none');
@@ -4631,8 +4638,11 @@
             });
 
             // Pagination calculation
+            const pageSizeSelect = document.getElementById('candPageSizeSelect');
+            const pageSize = parseInt(pageSizeSelect ? pageSizeSelect.value : (window.candPageSize || 10), 10) || 10;
+            window.candPageSize = pageSize;
+
             const totalRecords = matchedRows.length;
-            const pageSize = window.candPageSize || 10;
             const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
             if (window.candCurrentPage > totalPages) window.candCurrentPage = totalPages;
             if (window.candCurrentPage < 1) window.candCurrentPage = 1;
@@ -4695,55 +4705,69 @@
             if (!ul) return;
             ul.innerHTML = '';
 
-            if (totalPages <= 1) return;
+            const pages = Math.max(1, totalPages || 1);
+            const curr = Math.max(1, Math.min(currentPage || 1, pages));
 
-            // Previous Button
+            // Previous Button (Chuyển trang trước)
             const prevLi = document.createElement('li');
-            prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
-            prevLi.innerHTML = `<button class="page-link text-dark" type="button" onclick="goToCandidatePage(${currentPage - 1})" style="border-radius: 6px; padding: 0.25rem 0.55rem; font-size: 0.8rem; border-color: #E2E8F0;" aria-label="Trang trước"><i class="bi bi-chevron-left"></i></button>`;
+            const isPrevDisabled = (curr <= 1);
+            prevLi.className = `page-item ${isPrevDisabled ? 'disabled' : ''}`;
+            prevLi.innerHTML = `<button class="page-link ${isPrevDisabled ? 'text-muted' : 'text-dark fw-semibold'}" type="button" ${isPrevDisabled ? 'disabled' : `onclick="goToCandidatePage(${curr - 1})"`} style="border-radius: 6px; padding: 0.28rem 0.6rem; font-size: 0.8rem; border-color: #CBD5E1;" aria-label="Trang trước" title="Trang trước"><i class="bi bi-chevron-left"></i></button>`;
             ul.appendChild(prevLi);
 
             // Page numbers
-            let startP = Math.max(1, currentPage - 2);
-            let endP = Math.min(totalPages, currentPage + 2);
-            if (startP > 1) {
-                const li1 = document.createElement('li');
-                li1.className = 'page-item';
-                li1.innerHTML = `<button class="page-link text-dark" type="button" onclick="goToCandidatePage(1)" style="border-radius: 6px; padding: 0.25rem 0.6rem; font-size: 0.8rem; border-color: #E2E8F0;">1</button>`;
-                ul.appendChild(li1);
-                if (startP > 2) {
-                    const dots = document.createElement('li');
-                    dots.className = 'page-item disabled';
-                    dots.innerHTML = `<span class="page-link text-muted" style="border-radius: 6px; padding: 0.25rem 0.4rem; font-size: 0.8rem; border-color: #E2E8F0;">...</span>`;
-                    ul.appendChild(dots);
+            if (pages <= 7) {
+                for (let p = 1; p <= pages; p++) {
+                    const li = document.createElement('li');
+                    const isActive = (p === curr);
+                    li.className = `page-item ${isActive ? 'active' : ''}`;
+                    li.innerHTML = `<button class="page-link ${isActive ? 'text-white fw-bold' : 'text-dark'}" type="button" ${isActive ? '' : `onclick="goToCandidatePage(${p})"`} style="border-radius: 6px; padding: 0.28rem 0.65rem; font-size: 0.8rem; ${isActive ? 'background-color:#059669; border-color:#059669;' : 'border-color:#CBD5E1;'}">${p}</button>`;
+                    ul.appendChild(li);
+                }
+            } else {
+                let startP = Math.max(1, curr - 2);
+                let endP = Math.min(pages, curr + 2);
+
+                if (startP > 1) {
+                    const li1 = document.createElement('li');
+                    li1.className = 'page-item';
+                    li1.innerHTML = `<button class="page-link text-dark" type="button" onclick="goToCandidatePage(1)" style="border-radius: 6px; padding: 0.28rem 0.65rem; font-size: 0.8rem; border-color: #CBD5E1;">1</button>`;
+                    ul.appendChild(li1);
+                    if (startP > 2) {
+                        const dots = document.createElement('li');
+                        dots.className = 'page-item disabled';
+                        dots.innerHTML = `<span class="page-link text-muted" style="border-radius: 6px; padding: 0.28rem 0.45rem; font-size: 0.8rem; border-color: #CBD5E1;">...</span>`;
+                        ul.appendChild(dots);
+                    }
+                }
+
+                for (let p = startP; p <= endP; p++) {
+                    const li = document.createElement('li');
+                    const isActive = (p === curr);
+                    li.className = `page-item ${isActive ? 'active' : ''}`;
+                    li.innerHTML = `<button class="page-link ${isActive ? 'text-white fw-bold' : 'text-dark'}" type="button" ${isActive ? '' : `onclick="goToCandidatePage(${p})"`} style="border-radius: 6px; padding: 0.28rem 0.65rem; font-size: 0.8rem; ${isActive ? 'background-color:#059669; border-color:#059669;' : 'border-color:#CBD5E1;'}">${p}</button>`;
+                    ul.appendChild(li);
+                }
+
+                if (endP < pages) {
+                    if (endP < pages - 1) {
+                        const dots = document.createElement('li');
+                        dots.className = 'page-item disabled';
+                        dots.innerHTML = `<span class="page-link text-muted" style="border-radius: 6px; padding: 0.28rem 0.45rem; font-size: 0.8rem; border-color: #CBD5E1;">...</span>`;
+                        ul.appendChild(dots);
+                    }
+                    const liLast = document.createElement('li');
+                    liLast.className = 'page-item';
+                    liLast.innerHTML = `<button class="page-link text-dark" type="button" onclick="goToCandidatePage(${pages})" style="border-radius: 6px; padding: 0.28rem 0.65rem; font-size: 0.8rem; border-color: #CBD5E1;">${pages}</button>`;
+                    ul.appendChild(liLast);
                 }
             }
 
-            for (let p = startP; p <= endP; p++) {
-                const li = document.createElement('li');
-                const isActive = (p === currentPage);
-                li.className = `page-item ${isActive ? 'active' : ''}`;
-                li.innerHTML = `<button class="page-link ${isActive ? 'text-white' : 'text-dark'}" type="button" onclick="goToCandidatePage(${p})" style="border-radius: 6px; padding: 0.25rem 0.6rem; font-size: 0.8rem; ${isActive ? 'background-color:#059669; border-color:#059669;' : 'border-color:#E2E8F0;'}">${p}</button>`;
-                ul.appendChild(li);
-            }
-
-            if (endP < totalPages) {
-                if (endP < totalPages - 1) {
-                    const dots = document.createElement('li');
-                    dots.className = 'page-item disabled';
-                    dots.innerHTML = `<span class="page-link text-muted" style="border-radius: 6px; padding: 0.25rem 0.4rem; font-size: 0.8rem; border-color: #E2E8F0;">...</span>`;
-                    ul.appendChild(dots);
-                }
-                const liLast = document.createElement('li');
-                liLast.className = 'page-item';
-                liLast.innerHTML = `<button class="page-link text-dark" type="button" onclick="goToCandidatePage(${totalPages})" style="border-radius: 6px; padding: 0.25rem 0.6rem; font-size: 0.8rem; border-color: #E2E8F0;">${totalPages}</button>`;
-                ul.appendChild(liLast);
-            }
-
-            // Next Button
+            // Next Button (Chuyển trang sau)
             const nextLi = document.createElement('li');
-            nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
-            nextLi.innerHTML = `<button class="page-link text-dark" type="button" onclick="goToCandidatePage(${currentPage + 1})" style="border-radius: 6px; padding: 0.25rem 0.55rem; font-size: 0.8rem; border-color: #E2E8F0;" aria-label="Trang sau"><i class="bi bi-chevron-right"></i></button>`;
+            const isNextDisabled = (curr >= pages);
+            nextLi.className = `page-item ${isNextDisabled ? 'disabled' : ''}`;
+            nextLi.innerHTML = `<button class="page-link ${isNextDisabled ? 'text-muted' : 'text-dark fw-semibold'}" type="button" ${isNextDisabled ? 'disabled' : `onclick="goToCandidatePage(${curr + 1})"`} style="border-radius: 6px; padding: 0.28rem 0.6rem; font-size: 0.8rem; border-color: #CBD5E1;" aria-label="Trang sau" title="Trang sau"><i class="bi bi-chevron-right"></i></button>`;
             ul.appendChild(nextLi);
         }
 
@@ -4800,7 +4824,7 @@
         // SCRUM-328: Xuất danh sách ứng viên rút gọn ra file Excel cho Trưởng bộ phận theo bộ lọc đang áp dụng
         function exportCandidateShortlistExcel() {
             const stageOrder = window.currentPipelineStage || 'ALL';
-            const jobSelect = document.getElementById('candidateJobFilter');
+            const jobSelect = document.getElementById('candidateJobFilter') || document.getElementById('kanbanJobFilter');
             const jobId = (jobSelect ? jobSelect.value : '') || (window.currentPipelineJobId || '');
             const searchInput = document.getElementById('candidateSearchInput');
             const search = (searchInput ? searchInput.value : '').trim();
@@ -4820,7 +4844,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             const candInput = document.getElementById('candidateSearchInput');
             const candClearBtn = document.getElementById('candidateSearchClearBtn');
-            const candJobSelect = document.getElementById('candidateJobFilter');
+            const candJobSelect = document.getElementById('candidateJobFilter') || document.getElementById('kanbanJobFilter');
 
             if (candInput) {
                 const debouncedSearch = window.NoveraInstantSearch
@@ -4857,6 +4881,7 @@
                 }
                 if (candJobSelect && params.cand_job !== undefined) {
                     candJobSelect.value = params.cand_job;
+                    window.currentPipelineJob = params.cand_job;
                     window.currentPipelineJobId = params.cand_job;
                 }
                 if (params.cand_page !== undefined) {
@@ -4972,10 +4997,71 @@
             }
         }
 
-        async function openScheduleModal(applicationId, candidateName, jobTitle) {
-            document.getElementById('schedApplicationId').value = applicationId;
-            document.getElementById('schedCandidateName').textContent = candidateName || 'Ứng viên';
-            document.getElementById('schedJobTitle').textContent = jobTitle || 'Vị trí';
+        function onSchedCandidateSelectChange(select) {
+            var selectedOpt = select.options[select.selectedIndex];
+            if (!selectedOpt || !selectedOpt.value) {
+                document.getElementById('schedApplicationId').value = '';
+                document.getElementById('schedCandidateName').textContent = '-';
+                document.getElementById('schedJobTitle').textContent = '-';
+                return;
+            }
+            var appId = selectedOpt.value;
+            var candName = selectedOpt.getAttribute('data-name') || '';
+            var jobTitle = selectedOpt.getAttribute('data-job') || '';
+            var stageOrder = parseInt(selectedOpt.getAttribute('data-stage-order') || '1', 10);
+
+            document.getElementById('schedApplicationId').value = appId;
+            document.getElementById('schedCandidateName').textContent = candName;
+            document.getElementById('schedJobTitle').textContent = jobTitle;
+
+            var defaultRound = stageOrder >= 4 ? 2 : 1;
+            var roundSelect = document.getElementById('schedRoundNumber');
+            if (roundSelect) {
+                roundSelect.value = String(defaultRound);
+                if (typeof onSchedRoundChange === 'function') {
+                    onSchedRoundChange(defaultRound);
+                }
+            }
+        }
+
+        async function openScheduleModal(applicationId, candidateName, jobTitle, roundNumber) {
+            // Option 2: Chuyển hướng sang Trang Chuyên Biệt Wizard (/phong-van/dat-lich)
+            if (applicationId && String(applicationId).trim() !== '') {
+                window.location.href = '/phong-van/dat-lich?applicationId=' + encodeURIComponent(applicationId);
+                return;
+            } else {
+                window.location.href = '/phong-van/dat-lich';
+                return;
+            }
+
+            var candidateBox = document.getElementById('schedCandidateBox');
+            var candidateSelectGroup = document.getElementById('schedCandidateSelectGroup');
+            var candidateSelect = document.getElementById('schedCandidateSelect');
+
+            if (applicationId && String(applicationId).trim() !== '') {
+                document.getElementById('schedApplicationId').value = applicationId;
+                document.getElementById('schedCandidateName').textContent = candidateName || 'Ứng viên';
+                document.getElementById('schedJobTitle').textContent = jobTitle || 'Vị trí';
+                if (candidateBox) candidateBox.style.display = 'block';
+                if (candidateSelectGroup) candidateSelectGroup.style.display = 'none';
+            } else {
+                document.getElementById('schedApplicationId').value = '';
+                document.getElementById('schedCandidateName').textContent = '-';
+                document.getElementById('schedJobTitle').textContent = '-';
+                if (candidateBox) candidateBox.style.display = 'none';
+                if (candidateSelectGroup) candidateSelectGroup.style.display = 'block';
+                if (candidateSelect) candidateSelect.value = '';
+            }
+
+            if (roundNumber) {
+                var roundSelect = document.getElementById('schedRoundNumber');
+                if (roundSelect) {
+                    roundSelect.value = String(roundNumber);
+                    if (typeof onSchedRoundChange === 'function') {
+                        onSchedRoundChange(roundNumber);
+                    }
+                }
+            }
 
             // Set default date to tomorrow at 09:00 and min to now
             var now = new Date();
@@ -5031,6 +5117,12 @@
 
         async function handleScheduleInterviewSubmit(e) {
             e.preventDefault();
+
+            var appId = document.getElementById('schedApplicationId')?.value;
+            if (!appId || appId.trim() === '') {
+                showToast('Vui lòng chọn ứng viên cần lên lịch phỏng vấn.', false);
+                return;
+            }
 
             if (!validateSchedDateTime()) {
                 showToast('Không thể đặt lịch trong quá khứ. Vui lòng chọn ngày giờ trong tương lai.', false);
@@ -5526,12 +5618,6 @@
                 var el = document.getElementById(targetId);
                 if (el) {
                     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    el.classList.remove('feature-highlight-pulse');
-                    void el.offsetWidth;
-                    el.classList.add('feature-highlight-pulse');
-                    setTimeout(function () {
-                        el.classList.remove('feature-highlight-pulse');
-                    }, 2200);
                 }
             } else {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -5544,11 +5630,6 @@
         });
 
         document.addEventListener('DOMContentLoaded', function () {
-            if (activeFeature && activeFeature !== 'tong-quan') {
-                setTimeout(function () {
-                    scrollToFeatureSection(activeFeature);
-                }, 350);
-            }
 
             // Đăng ký sự kiện nạp dữ liệu và xử lý dải lương cho Modal Đề xuất tuyển dụng
             var reqModalEl = document.getElementById('createRequisitionModal');

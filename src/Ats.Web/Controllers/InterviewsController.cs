@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Ats.Web.Constants;
+using Ats.Web.Models.DTOs;
 using Ats.Web.Models.ViewModels.CandidateComparison;
 using Ats.Web.Models.ViewModels.Interviews;
 using Ats.Web.Services.Interfaces;
@@ -9,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Ats.Web.Controllers;
 
 /// <summary>
-/// Controller điều phối nghiệp vụ Phỏng vấn & Đánh giá ứng viên (EP-06_InterviewEvaluation / Scrum - Số 57 & SCRUM-336 / Scrum - Số 58)
+/// Controller điều phối nghiệp vụ Phỏng vấn, Đặt lịch Wizard & Đánh giá ứng viên (EP-06)
 /// Tuân thủ quy chuẩn: Primary Constructor, kebab-case routing, ValidateAntiForgeryToken, phân tách Service layer.
 /// </summary>
 [Authorize]
@@ -18,10 +19,12 @@ namespace Ats.Web.Controllers;
 public class InterviewsController(
     IInterviewEvaluationService evaluationService,
     ICandidateEvaluationComparisonService comparisonService,
+    IInterviewService interviewService,
     ILogger<InterviewsController> logger) : Controller
 {
     private readonly IInterviewEvaluationService _evaluationService = evaluationService;
     private readonly ICandidateEvaluationComparisonService _comparisonService = comparisonService;
+    private readonly IInterviewService _interviewService = interviewService;
     private readonly ILogger<InterviewsController> _logger = logger;
 
     /// <summary>
@@ -212,6 +215,157 @@ public class InterviewsController(
         var model = await _comparisonService.GetEvaluationComparisonAsync(jobId, stage, sortBy, cancellationToken);
         return Json(new { success = true, data = model });
     }
+
+    #region Option 2: Trang Chuyên Biệt Lên Lịch Phỏng Vấn (Wizard 4 Bước)
+
+    /// <summary>
+    /// GET: /phong-van/dat-lich hoặc /interviews/dat-lich hoặc /interviews/schedule-wizard
+    /// Mở trang Wizard toàn màn hình 4 bước để lên lịch phỏng vấn chuyên biệt (Option 2).
+    /// </summary>
+    [HttpGet("dat-lich")]
+    [HttpGet("schedule-wizard")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},{UserRoles.HiringManager},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng,Quản lý tuyển dụng")]
+    public async Task<IActionResult> ScheduleWizard(
+        [FromQuery] Guid? applicationId,
+        CancellationToken cancellationToken = default)
+    {
+        var model = await _interviewService.GetScheduleWizardDataAsync(applicationId, cancellationToken);
+        return View(model);
+    }
+
+    /// <summary>
+    /// GET: /phong-van/api/candidate-dossier/{applicationId}
+    /// API trả về thông tin chi tiết hồ sơ ứng viên (Dossier) khi chuyển đổi ứng viên ở Bước 1 của Wizard.
+    /// </summary>
+    [HttpGet("api/candidate-dossier/{applicationId:guid}")]
+    public async Task<IActionResult> GetCandidateDossierJson(
+        Guid applicationId,
+        CancellationToken cancellationToken = default)
+    {
+        var dossier = await _interviewService.GetCandidateWizardDetailAsync(applicationId, cancellationToken);
+        if (dossier == null)
+        {
+            return NotFound(new { success = false, message = "Không tìm thấy thông tin hồ sơ ứng viên." });
+        }
+        return Json(new { success = true, data = dossier });
+    }
+
+    /// <summary>
+    /// GET: /phong-van/api/check-interviewer-busy
+    /// API kiểm tra tình trạng trống lịch / trùng lịch của các giám khảo ở Bước 2 của Wizard.
+    /// </summary>
+    [HttpGet("api/check-interviewer-busy")]
+    public async Task<IActionResult> CheckInterviewerBusyJson(
+        [FromQuery] string? interviewerIds,
+        [FromQuery] DateTime? startTime,
+        [FromQuery] int durationMinutes = 60,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(interviewerIds))
+        {
+            return Json(new { success = true, data = new List<object>() });
+        }
+
+        var ids = interviewerIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => Guid.TryParse(s.Trim(), out var id) ? id : Guid.Empty)
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList();
+
+        if (!ids.Any())
+        {
+            return Json(new { success = true, data = new List<object>() });
+        }
+
+        var effectiveStart = startTime ?? DateTime.UtcNow.AddDays(1);
+        var startUtc = new DateTimeOffset(DateTime.SpecifyKind(effectiveStart, DateTimeKind.Utc));
+        var endUtc = startUtc.AddMinutes(durationMinutes > 0 ? durationMinutes : 60);
+
+        var busyList = await _interviewService.CheckInterviewersAvailabilityAsync(ids, startUtc, endUtc, cancellationToken);
+        return Json(new { success = true, data = busyList });
+    }
+
+    /// <summary>
+    /// POST: /phong-van/dat-lich hoặc /interviews/dat-lich hoặc /interviews/schedule-wizard
+    /// Tiếp nhận lệnh chốt lịch từ Bước 4 của Wizard, tự động tạo lịch, gán hội đồng và gửi thư mời email.
+    /// </summary>
+    [HttpPost("dat-lich")]
+    [HttpPost("schedule-wizard")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},{UserRoles.HiringManager},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng,Quản lý tuyển dụng")]
+    public async Task<IActionResult> SubmitScheduleWizard(
+        [FromForm] ScheduleInterviewInputModel model,
+        CancellationToken cancellationToken = default)
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .ToList();
+
+            var firstErr = errors.FirstOrDefault() ?? "Dữ liệu đặt lịch phỏng vấn không hợp lệ.";
+
+            if (IsAjaxRequest())
+            {
+                return BadRequest(new { success = false, message = firstErr, errors });
+            }
+
+            TempData["ErrorMessage"] = firstErr;
+            return RedirectToAction(nameof(ScheduleWizard), new { applicationId = model.ApplicationId });
+        }
+
+        var currentUserId = GetCurrentUserId();
+        var isRecruiterOnly = User.IsInRole(UserRoles.Recruiter) &&
+                              !User.IsInRole(UserRoles.Admin) &&
+                              !User.IsInRole(UserRoles.HRManager) &&
+                              !User.IsInRole("Quản trị viên") &&
+                              !User.IsInRole("Trưởng phòng nhân sự");
+
+        var result = await _interviewService.ScheduleInterviewAsync(model, currentUserId, isRecruiterOnly, cancellationToken);
+
+        if (!result.Success)
+        {
+            if (IsAjaxRequest())
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = result.Message,
+                    errors = result.Errors
+                });
+            }
+
+            TempData["ErrorMessage"] = result.Message;
+            return RedirectToAction(nameof(ScheduleWizard), new { applicationId = model.ApplicationId });
+        }
+
+        if (IsAjaxRequest())
+        {
+            return Ok(new
+            {
+                success = true,
+                message = result.Message,
+                interviewId = result.InterviewId,
+                roundNumber = result.RoundNumber,
+                title = result.Title,
+                startTime = result.StartTimeDisplay,
+                endTime = result.EndTimeDisplay,
+                redirectUrl = $"/dashboard/ung-vien?scheduledAppId={model.ApplicationId}"
+            });
+        }
+
+        TempData["SuccessMessage"] = result.Message;
+        return RedirectToAction("Index", "Home", new { tab = "pipeline" });
+    }
+
+    private bool IsAjaxRequest()
+    {
+        return Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+               Request.Headers["Accept"].ToString().Contains("application/json", StringComparison.OrdinalIgnoreCase);
+    }
+
+    #endregion
 
     private Guid GetCurrentUserId()
     {

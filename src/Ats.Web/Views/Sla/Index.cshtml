@@ -2,143 +2,317 @@
 @{
     ViewData["Title"] = "Cấu hình Ngưỡng SLA Tuyển dụng";
     Layout = "_Layout";
+
+    var totalStages = Model.Count;
+    var activeSlaStages = Model.Count(s => s.IsSlaEnabled);
+    var totalCandidatesInPipeline = Model.Sum(s => s.ActiveCandidateCount);
+    var totalOverdueCandidates = Model.Sum(s => s.OverdueCandidateCount);
 }
 
 @Html.AntiForgeryToken()
 
 <div class="container-fluid px-3 px-md-4 py-4" style="max-width: 1200px;">
-    <!-- Breadcrumb -->
-    <div class="mb-3">
-        <a href="/dashboard/ung-vien" class="text-decoration-none text-muted small d-inline-flex align-items-center gap-1 hover-text-primary">
-            <i class="bi bi-arrow-left"></i> Quay lại Kanban Pipeline
+    <!-- Breadcrumb & Back Link -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
+                <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Trang chủ</a></li>
+                <li class="breadcrumb-item"><span class="text-muted">Cơ cấu &amp; Tiêu chuẩn</span></li>
+                <li class="breadcrumb-item active text-emerald-700 fw-semibold" aria-current="page">Cấu hình Ngưỡng SLA</li>
+            </ol>
+        </nav>
+        <a href="/dashboard/ung-vien" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1.5" style="border-radius: 8px;">
+            <i class="bi bi-kanban"></i> Quay lại Kanban Pipeline
         </a>
     </div>
 
-    <!-- Header Banner -->
-    <div class="card border-0 shadow-sm mb-4 overflow-hidden" style="border-radius: 14px; background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #F8FAFC;">
-        <div class="card-body p-4 p-md-4">
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
-                <div>
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                        <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #6EE7B7; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase;">
-                            <i class="bi bi-stopwatch me-1"></i> SCRUM-327
-                        </span>
-                        <span class="text-white-50 small">·</span>
-                        <span class="text-white-50 small">Cam kết chất lượng vận hành tuyển dụng (Service Level Agreement)</span>
+    <!-- Page Header (NoveraTech Emerald Design System) -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge px-2.5 py-1 fw-semibold text-uppercase" 
+                      style="font-size: 0.72rem; letter-spacing: 0.05em; background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; border-radius: 6px;">
+                    <i class="bi bi-clock-history me-1"></i>Tiêu chuẩn Vận hành
+                </span>
+                <h1 class="h3 fw-bold text-slate-900 mb-0" style="color: #0F172A;">Cấu hình Ngưỡng SLA Giai đoạn</h1>
+            </div>
+            <p class="text-muted small mb-0">
+                Thiết lập thời hạn cam kết xử lý tối đa cho từng giai đoạn ứng tuyển. Hồ sơ chậm tiến độ sẽ tự động gắn cờ cảnh báo trên Kanban.
+            </p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <button type="button" class="btn btn-outline-secondary btn-sm px-3 d-inline-flex align-items-center gap-1.5" 
+                    id="btnScanNow" onclick="triggerScanSlaNow()" style="border-radius: 8px; font-weight: 500;">
+                <i class="bi bi-lightning-charge text-amber-600"></i> Quét quá hạn ngay
+            </button>
+            <button type="button" class="btn btn-success btn-sm px-3.5 d-inline-flex align-items-center gap-1.5 shadow-sm" 
+                    id="btnSaveAll" onclick="saveAllSlaConfigs()" 
+                    style="background: #059669; border-color: #059669; border-radius: 8px; font-weight: 600;">
+                <i class="bi bi-check2-circle"></i> Lưu cấu hình
+            </button>
+        </div>
+    </div>
+
+    <!-- 4 Executive KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
+                <div class="card-body p-3 d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
+                         style="width: 44px; height: 44px; background: #F1F5F9; color: #475569; font-size: 1.25rem;">
+                        <i class="bi bi-layers"></i>
                     </div>
-                    <h2 class="fw-bold text-white mb-1" style="font-size: 1.45rem;">
-                        Cấu hình Ngưỡng SLA cho Giai đoạn Tuyển dụng
-                    </h2>
-                    <p class="text-white-50 mb-0 small" style="max-width: 680px; line-height: 1.5;">
-                        Thiết lập thời gian xử lý tối đa cho từng vòng ứng tuyển. Khi hồ sơ nằm im quá thời hạn cam kết, hệ thống sẽ tự động gắn cờ cảnh báo trên Kanban và gửi nhắc việc cho chuyên viên tuyển dụng mỗi ngày một lần.
-                    </p>
+                    <div>
+                        <div class="text-muted small fw-medium" style="font-size: 0.78rem;">Tổng giai đoạn</div>
+                        <div class="h4 fw-bold mb-0 text-slate-900" style="font-family: 'JetBrains Mono', monospace; color: #0F172A;">
+                            @totalStages
+                        </div>
+                    </div>
                 </div>
-                <div class="d-flex gap-2 flex-wrap">
-                    <button type="button" class="btn btn-outline-danger d-inline-flex align-items-center gap-1.5 shadow-sm" id="btnScanNow" onclick="triggerScanSlaNow()" style="border-radius: 8px; font-size: 0.85rem;">
-                        <i class="bi bi-lightning-charge-fill"></i> Quét quá hạn SLA ngay
-                    </button>
-                    <button type="button" class="btn btn-success d-inline-flex align-items-center gap-1.5 shadow-sm" id="btnSaveAll" onclick="saveAllSlaConfigs()" style="background: #059669; border-color: #059669; border-radius: 8px; font-size: 0.85rem;">
-                        <i class="bi bi-check2-circle"></i> Lưu cấu hình
-                    </button>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
+                <div class="card-body p-3 d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
+                         style="width: 44px; height: 44px; background: #ECFDF5; color: #059669; font-size: 1.25rem;">
+                        <i class="bi bi-stopwatch"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-medium" style="font-size: 0.78rem;">Đang áp dụng SLA</div>
+                        <div class="h4 fw-bold mb-0 text-emerald-600" style="font-family: 'JetBrains Mono', monospace;">
+                            @activeSlaStages <span class="text-muted fw-normal fs-6">/ @Model.Count(s => s.StageOrder != 6 && s.StageOrder != 7)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
+                <div class="card-body p-3 d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
+                         style="width: 44px; height: 44px; background: #EFF6FF; color: #2563EB; font-size: 1.25rem;">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-medium" style="font-size: 0.78rem;">Hồ sơ trong Pipeline</div>
+                        <div class="h4 fw-bold mb-0 text-slate-900" style="font-family: 'JetBrains Mono', monospace; color: #0F172A;">
+                            @totalCandidatesInPipeline
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
+                <div class="card-body p-3 d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
+                         style="width: 44px; height: 44px; background: @(totalOverdueCandidates > 0 ? "#FEF2F2" : "#ECFDF5"); color: @(totalOverdueCandidates > 0 ? "#DC2626" : "#059669"); font-size: 1.25rem;">
+                        <i class="bi @(totalOverdueCandidates > 0 ? "bi-exclamation-octagon" : "bi-check-circle")"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-medium" style="font-size: 0.78rem;">Hồ sơ trễ hạn SLA</div>
+                        <div class="h4 fw-bold mb-0 @(totalOverdueCandidates > 0 ? "text-danger" : "text-emerald-600")" style="font-family: 'JetBrains Mono', monospace;">
+                            @totalOverdueCandidates
+                            @if (totalOverdueCandidates == 0)
+                            {
+                                <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 ms-1 fw-normal" style="font-size: 0.7rem;">Chuẩn cam kết</span>
+                            }
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Alert Note Box -->
-    <div class="alert alert-info border-0 shadow-sm d-flex align-items-start gap-3 p-3.5 mb-4" style="background: #F0FDF4; border: 1px solid #BBF7D0 !important; border-radius: 12px;">
-        <i class="bi bi-info-circle-fill text-success fs-5 flex-shrink-0 mt-0.5"></i>
-        <div class="small text-dark" style="line-height: 1.6;">
-            <strong>Quy tắc cảnh báo SLA tự động:</strong>
-            <ul class="mb-0 ps-3 mt-1 text-muted">
-                <li>Ví dụ: Hồ sơ mới ở giai đoạn <strong>Sàng lọc CV</strong> có ngưỡng <strong>3 ngày</strong>. Nếu sau 3 ngày kể từ khi ứng tuyển mà chưa chuyển vòng, hồ sơ sẽ được gắn cờ đỏ <code>Quá hạn SLA</code>.</li>
-                <li><strong>Cơ chế chống làm phiền:</strong> Tác vụ nền quét định kỳ mỗi ngày 1 lần. Hồ sơ quá hạn chỉ gửi 1 thông báo và 1 email cho Recruiter phụ trách trong cùng ngày.</li>
-                <li>Các giai đoạn kết thúc quy trình như <em>Tuyển dụng thành công</em> hoặc <em>Từ chối</em> được mặc định tắt SLA.</li>
-            </ul>
+    <!-- Compact Guideline Bar (Collapsible, no clutter) -->
+    <div class="card border-0 mb-4 shadow-sm" style="background: #F8FAFC; border: 1px solid #E2E8F0 !important; border-radius: 10px;">
+        <div class="card-body py-2.5 px-3.5 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+            <div class="d-flex align-items-center gap-2 small text-slate-700">
+                <i class="bi bi-info-circle-fill text-emerald-600 flex-shrink-0"></i>
+                <span>Tác vụ nền tự động kiểm tra mỗi 24 giờ và gửi thông báo nhắc việc tới Recruiter phụ trách khi hồ sơ quá hạn.</span>
+            </div>
+            <button class="btn btn-link btn-sm text-emerald-700 p-0 text-decoration-none fw-semibold d-inline-flex align-items-center gap-1 flex-shrink-0" 
+                    type="button" data-bs-toggle="collapse" data-bs-target="#slaRuleDetails" aria-expanded="false" style="font-size: 0.8rem;">
+                <span>Chi tiết quy tắc</span>
+                <i class="bi bi-chevron-down" style="font-size: 0.75rem;"></i>
+            </button>
+        </div>
+        <div class="collapse" id="slaRuleDetails">
+            <div class="px-3.5 pb-3 pt-1 border-top" style="border-color: #E2E8F0 !important; font-size: 0.82rem; color: #475569;">
+                <div class="row g-2 pt-2">
+                    <div class="col-md-4">
+                        <div class="p-2.5 rounded bg-white border border-slate-200 h-100">
+                            <div class="fw-semibold text-slate-800 mb-1"><i class="bi bi-flag text-danger me-1"></i>Cảnh báo trực quan</div>
+                            Hồ sơ nằm tại vòng quá số ngày cam kết sẽ được gắn cờ đỏ cảnh báo trực tiếp trên thẻ Kanban ứng viên.
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-2.5 rounded bg-white border border-slate-200 h-100">
+                            <div class="fw-semibold text-slate-800 mb-1"><i class="bi bi-bell text-amber-600 me-1"></i>Cơ chế nhắc việc</div>
+                            Hệ thống quét định kỳ gửi tối đa 1 thông báo và email/ngày cho Recruiter nhằm hạn chế spam tin nhắn.
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-2.5 rounded bg-white border border-slate-200 h-100">
+                            <div class="fw-semibold text-slate-800 mb-1"><i class="bi bi-shield-slash text-slate-500 me-1"></i>Giai đoạn đóng luồng</div>
+                            Các giai đoạn kết thúc quy trình tuyển dụng (Tuyển dụng thành công, Từ chối) mặc định không áp dụng SLA.
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Main Configuration Card -->
-    <div class="card border-0 shadow-sm bg-white overflow-hidden mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 14px;">
-        <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center">
-            <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
-                <i class="bi bi-sliders me-1.5 text-primary"></i> Danh sách Giai đoạn &amp; Ngưỡng xử lý
-            </h5>
-            <span class="badge bg-light text-muted border font-mono small">
-                @Model.Count giai đoạn
-            </span>
+    <div class="card border-0 shadow-sm bg-white overflow-hidden mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+        <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <h5 class="fw-bold mb-0 text-slate-900" style="font-size: 0.98rem; color: #0F172A;">
+                    <i class="bi bi-sliders me-1.5 text-emerald-600"></i> Bảng cấu hình SLA từng giai đoạn
+                </h5>
+                <p class="text-muted small mb-0 mt-0.5">Điều chỉnh số ngày xử lý tối đa và trạng thái theo dõi cho từng bước tuyển dụng.</p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="applyDefaultSla(3)" style="border-radius: 6px; font-size: 0.78rem;">
+                    Mặc định 3 ngày
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="applyDefaultSla(5)" style="border-radius: 6px; font-size: 0.78rem;">
+                    Mặc định 5 ngày
+                </button>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0" id="slaTable">
-                    <thead style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: #64748B;">
+                    <thead style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748B;">
                         <tr>
-                            <th class="ps-4 py-3" style="width: 80px;">Thứ tự</th>
-                            <th class="py-3" style="min-width: 220px;">Tên giai đoạn</th>
-                            <th class="py-3 text-center" style="width: 160px;">Theo dõi SLA</th>
-                            <th class="py-3" style="min-width: 220px;">Ngưỡng cam kết (SLA)</th>
-                            <th class="py-3 text-center" style="width: 140px;">Hồ sơ hiện tại</th>
-                            <th class="pe-4 py-3 text-center" style="width: 150px;">Đang trễ hạn</th>
+                            <th class="ps-4 py-3" style="width: 70px;">Thứ tự</th>
+                            <th class="py-3" style="min-width: 230px;">Giai đoạn tuyển dụng</th>
+                            <th class="py-3 text-center" style="width: 140px;">Theo dõi SLA</th>
+                            <th class="py-3" style="min-width: 240px;">Ngưỡng cam kết (SLA)</th>
+                            <th class="py-3 text-center" style="width: 130px;">Hồ sơ hiện tại</th>
+                            <th class="pe-4 py-3 text-center" style="width: 160px;">Tình trạng tiến độ</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var stage in Model)
                         {
                             var isTerminal = stage.StageOrder == 6 || stage.StageOrder == 7;
-                            <tr data-stage-id="@stage.Id" class="sla-row @(isTerminal ? "table-light text-muted" : "")">
-                                <td class="ps-4 fw-bold font-mono text-secondary">
-                                    #@stage.StageOrder
+                            <tr data-stage-id="@stage.Id" class="sla-row @(isTerminal ? "table-light text-muted" : "")" style="transition: background-color 0.15s ease;">
+                                <td class="ps-4">
+                                    <span class="badge bg-light text-secondary border font-monospace" style="font-size: 0.8rem; font-family: 'JetBrains Mono', monospace;">
+                                        #@stage.StageOrder
+                                    </span>
                                 </td>
                                 <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="d-inline-block rounded-circle" style="width: 12px; height: 12px; background: @(stage.ColorCode ?? "#059669");"></span>
-                                        <span class="fw-bold text-dark" style="font-size: 0.92rem;">@stage.Name</span>
+                                    <div class="d-flex align-items-center gap-2.5">
+                                        <span class="d-inline-block rounded-circle flex-shrink-0" 
+                                              style="width: 10px; height: 10px; background: @(stage.ColorCode ?? "#059669"); box-shadow: 0 0 0 2px rgba(0,0,0,0.04);"></span>
+                                        <span class="fw-semibold text-slate-900" style="font-size: 0.92rem; color: #0F172A;">@stage.Name</span>
                                         @if (stage.StageOrder == 1)
                                         {
                                             <span class="badge" style="background:#EFF6FF; color:#1D4ED8; font-size: 0.68rem; border: 1px solid #BFDBFE;">Tiếp nhận</span>
                                         }
                                         else if (isTerminal)
                                         {
-                                            <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.68rem;">Đóng luồng</span>
+                                            <span class="badge bg-slate-100 text-slate-500 border border-slate-200" style="font-size: 0.68rem;">Đóng luồng</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-slate-50 text-slate-600 border border-slate-200" style="font-size: 0.68rem;">Đánh giá</span>
                                         }
                                     </div>
                                 </td>
                                 <td class="text-center">
-                                    <div class="form-check form-switch d-inline-block mb-0">
-                                        <input class="form-check-input sla-toggle" type="checkbox" id="toggle-@stage.Id"
-                                               @(stage.IsSlaEnabled ? "checked" : "")
-                                               @(isTerminal ? "disabled" : "")
-                                               onchange="onToggleSlaChange('@stage.Id')">
-                                    </div>
+                                    @if (isTerminal)
+                                    {
+                                        <span class="badge bg-light text-muted border" style="font-size: 0.72rem; font-weight: 500;">Không áp dụng</span>
+                                        <input class="form-check-input sla-toggle d-none" type="checkbox" id="toggle-@stage.Id" disabled>
+                                    }
+                                    else
+                                    {
+                                        <div class="form-check form-switch d-inline-block mb-0">
+                                            <input class="form-check-input sla-toggle" type="checkbox" id="toggle-@stage.Id"
+                                                   @(stage.IsSlaEnabled ? "checked" : "")
+                                                   style="cursor: pointer; width: 2.4em; height: 1.25em;"
+                                                   onchange="onToggleSlaChange('@stage.Id')">
+                                        </div>
+                                    }
                                 </td>
                                 <td>
-                                    <div class="d-flex align-items-center gap-2" style="max-width: 180px;">
-                                        <input type="number" class="form-control form-control-sm text-center fw-bold font-mono sla-days-input"
-                                               id="days-@stage.Id"
-                                               value="@stage.SlaDays"
-                                               min="1" max="90"
-                                               @(stage.IsSlaEnabled ? "" : "disabled")
-                                               @(isTerminal ? "disabled" : "")
-                                               style="border-radius: 8px; border-color: #CBD5E1; font-size: 0.9rem;">
-                                        <span class="text-muted small fw-semibold">ngày</span>
-                                    </div>
+                                    @if (isTerminal)
+                                    {
+                                        <span class="text-muted small italic">—</span>
+                                        <input type="hidden" class="sla-days-input" id="days-@stage.Id" value="0">
+                                    }
+                                    else
+                                    {
+                                        <div class="d-flex align-items-center gap-2">
+                                            <!-- Sleek Stepper Input -->
+                                            <div class="input-group input-group-sm" style="max-width: 140px;">
+                                                <button class="btn btn-outline-secondary px-2" type="button" 
+                                                        onclick="stepDays('@stage.Id', -1)"
+                                                        @(stage.IsSlaEnabled ? "" : "disabled")
+                                                        id="btn-minus-@stage.Id">
+                                                    <i class="bi bi-dash"></i>
+                                                </button>
+                                                <input type="number" class="form-control text-center fw-bold font-monospace sla-days-input"
+                                                       id="days-@stage.Id"
+                                                       value="@stage.SlaDays"
+                                                       min="1" max="90"
+                                                       @(stage.IsSlaEnabled ? "" : "disabled")
+                                                       style="font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; border-color: #CBD5E1;">
+                                                <button class="btn btn-outline-secondary px-2" type="button" 
+                                                        onclick="stepDays('@stage.Id', 1)"
+                                                        @(stage.IsSlaEnabled ? "" : "disabled")
+                                                        id="btn-plus-@stage.Id">
+                                                    <i class="bi bi-plus"></i>
+                                                </button>
+                                            </div>
+                                            <span class="text-muted small fw-medium">ngày</span>
+
+                                            <!-- Quick Presets -->
+                                            <div class="d-none d-sm-flex align-items-center gap-1 ms-1">
+                                                <button type="button" class="btn btn-sm btn-light border py-0 px-1.5 text-muted" 
+                                                        style="font-size: 0.72rem; border-radius: 4px;" 
+                                                        onclick="setDays('@stage.Id', 2)"
+                                                        @(stage.IsSlaEnabled ? "" : "disabled")>2d</button>
+                                                <button type="button" class="btn btn-sm btn-light border py-0 px-1.5 text-muted" 
+                                                        style="font-size: 0.72rem; border-radius: 4px;" 
+                                                        onclick="setDays('@stage.Id', 3)"
+                                                        @(stage.IsSlaEnabled ? "" : "disabled")>3d</button>
+                                                <button type="button" class="btn btn-sm btn-light border py-0 px-1.5 text-muted" 
+                                                        style="font-size: 0.72rem; border-radius: 4px;" 
+                                                        onclick="setDays('@stage.Id', 5)"
+                                                        @(stage.IsSlaEnabled ? "" : "disabled")>5d</button>
+                                            </div>
+                                        </div>
+                                    }
                                 </td>
-                                <td class="text-center font-mono">
-                                    <span class="badge bg-light text-dark border px-2.5 py-1.5" style="font-size: 0.8rem;">
-                                        <i class="bi bi-people me-1 text-muted"></i>@stage.ActiveCandidateCount
+                                <td class="text-center font-monospace">
+                                    <span class="badge bg-light text-slate-700 border px-2.5 py-1.5" style="font-size: 0.8rem; font-family: 'JetBrains Mono', monospace;">
+                                        <i class="bi bi-person me-1 text-muted"></i>@stage.ActiveCandidateCount
                                     </span>
                                 </td>
                                 <td class="pe-4 text-center">
                                     @if (stage.OverdueCandidateCount > 0)
                                     {
-                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1.5" style="font-size: 0.8rem; font-weight: 700;">
-                                            <i class="bi bi-flag-fill me-1"></i>@stage.OverdueCandidateCount hồ sơ
+                                        <a href="/dashboard/ung-vien" class="text-decoration-none badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1.5 d-inline-flex align-items-center gap-1" 
+                                           style="font-size: 0.78rem; font-weight: 600;" title="Bấm để xem trên Kanban">
+                                            <i class="bi bi-flag-fill"></i> @stage.OverdueCandidateCount trễ hạn
+                                        </a>
+                                    }
+                                    else if (stage.ActiveCandidateCount > 0)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1.5 d-inline-flex align-items-center gap-1" style="font-size: 0.75rem; font-weight: 500;">
+                                            <i class="bi bi-check-circle-fill"></i> Đúng tiến độ
                                         </span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size: 0.75rem;">
-                                            <i class="bi bi-check-lg me-1"></i>Đúng hạn
+                                        <span class="badge bg-light text-muted border px-2 py-1" style="font-size: 0.72rem;">
+                                            Trống
                                         </span>
                                     }
                                 </td>
@@ -148,36 +322,45 @@
                 </table>
             </div>
         </div>
-        <div class="card-footer bg-light py-3 px-4 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
-            <div class="text-muted small">
-                <i class="bi bi-clock-history me-1"></i> Tác vụ quét nền chạy định kỳ mỗi 24 giờ. Bạn có thể nhấn <strong>Quét quá hạn SLA ngay</strong> để kiểm tra tức thì.
+        <div class="card-footer bg-light py-3 px-4 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 border-top" style="border-color: #E2E8F0 !important;">
+            <div class="text-muted small d-flex align-items-center gap-1.5">
+                <i class="bi bi-shield-check text-emerald-600"></i>
+                <span>Cấu hình SLA sẽ tự động áp dụng ngay cho toàn bộ pipeline Kanban tuyển dụng sau khi lưu.</span>
             </div>
             <div class="d-flex gap-2 w-100 w-sm-auto justify-content-end">
-                <button type="button" class="btn btn-success fw-semibold px-4" onclick="saveAllSlaConfigs()" style="background: #059669; border-color: #059669; border-radius: 8px; font-size: 0.85rem;">
-                    <i class="bi bi-check2-circle me-1"></i> Lưu cấu hình
+                <button type="button" class="btn btn-success fw-semibold px-4 d-inline-flex align-items-center gap-1.5 shadow-sm" 
+                        onclick="saveAllSlaConfigs()" 
+                        style="background: #059669; border-color: #059669; border-radius: 8px; font-size: 0.85rem;">
+                    <i class="bi bi-check2-circle"></i> Lưu cấu hình
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal: Báo cáo kết quả quét SLA -->
+<!-- Modal: Báo cáo kết quả quét SLA (Refined Emerald Theme) -->
 <div class="modal fade" id="scanResultModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
-            <div class="modal-header text-white p-3.5" style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);">
+            <div class="modal-header py-3 px-4 bg-white border-bottom d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-lightning-charge-fill text-warning fs-5"></i>
-                    <h5 class="modal-title fw-bold text-white mb-0" style="font-size: 1.05rem;">Kết quả quét SLA Tuyển dụng</h5>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                         style="width: 36px; height: 36px; background: #ECFDF5; color: #059669;">
+                        <i class="bi bi-lightning-charge-fill"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-slate-900 mb-0" style="font-size: 1.05rem; color: #0F172A;">Kết quả kiểm tra SLA Ứng viên</h5>
+                        <p class="text-muted small mb-0">Báo cáo tình trạng hồ sơ quá hạn và tác vụ nhắc việc tự động.</p>
+                    </div>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4" id="scanModalBody">
                 <!-- Nội dung kết quả render bằng JS -->
             </div>
             <div class="modal-footer bg-light border-top p-3 d-flex justify-content-between">
-                <a href="/dashboard/ung-vien" class="btn btn-outline-primary btn-sm fw-semibold" style="border-radius: 8px;">
-                    <i class="bi bi-kanban me-1"></i> Mở Kanban Pipeline
+                <a href="/dashboard/ung-vien" class="btn btn-outline-primary btn-sm fw-semibold d-inline-flex align-items-center gap-1.5" style="border-radius: 8px;">
+                    <i class="bi bi-kanban"></i> Mở Kanban Pipeline
                 </a>
                 <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal" style="border-radius: 8px;">
                     Đóng
@@ -187,17 +370,88 @@
     </div>
 </div>
 
+<!-- Modern Toast Notification Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;">
+    <div id="slaToast" class="toast align-items-center border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius: 10px;">
+        <div class="d-flex p-1">
+            <div class="toast-body d-flex align-items-center gap-2" id="slaToastBody" style="font-size: 0.88rem;">
+                <i class="bi bi-check-circle-fill text-emerald-600 fs-5" id="slaToastIcon"></i>
+                <span id="slaToastMessage" class="fw-medium"></span>
+            </div>
+            <button type="button" class="btn-close me-2 m-auto shadow-none" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
+        function showSlaToast(message, isSuccess = true) {
+            var toastEl = document.getElementById('slaToast');
+            var icon = document.getElementById('slaToastIcon');
+            var msg = document.getElementById('slaToastMessage');
+            
+            if (!toastEl || !icon || !msg) return;
+
+            msg.textContent = message;
+            if (isSuccess) {
+                toastEl.style.backgroundColor = '#ECFDF5';
+                toastEl.style.color = '#065F46';
+                toastEl.style.borderLeft = '4px solid #059669';
+                icon.className = 'bi bi-check-circle-fill text-emerald-600 fs-5';
+            } else {
+                toastEl.style.backgroundColor = '#FEF2F2';
+                toastEl.style.color = '#991B1B';
+                toastEl.style.borderLeft = '4px solid #DC2626';
+                icon.className = 'bi bi-exclamation-triangle-fill text-danger fs-5';
+            }
+
+            var toast = new bootstrap.Toast(toastEl, { delay: 3500 });
+            toast.show();
+        }
+
         function onToggleSlaChange(stageId) {
             var toggle = document.getElementById('toggle-' + stageId);
             var daysInput = document.getElementById('days-' + stageId);
+            var btnMinus = document.getElementById('btn-minus-' + stageId);
+            var btnPlus = document.getElementById('btn-plus-' + stageId);
+
             if (toggle && daysInput) {
-                daysInput.disabled = !toggle.checked;
-                if (toggle.checked && (!daysInput.value || parseInt(daysInput.value) <= 0)) {
+                var isEnabled = toggle.checked;
+                daysInput.disabled = !isEnabled;
+                if (btnMinus) btnMinus.disabled = !isEnabled;
+                if (btnPlus) btnPlus.disabled = !isEnabled;
+
+                if (isEnabled && (!daysInput.value || parseInt(daysInput.value) <= 0)) {
                     daysInput.value = 3;
                 }
             }
+        }
+
+        function stepDays(stageId, delta) {
+            var input = document.getElementById('days-' + stageId);
+            if (!input || input.disabled) return;
+            var current = parseInt(input.value) || 0;
+            var newVal = Math.max(1, Math.min(90, current + delta));
+            input.value = newVal;
+        }
+
+        function setDays(stageId, val) {
+            var input = document.getElementById('days-' + stageId);
+            if (!input || input.disabled) return;
+            input.value = val;
+        }
+
+        function applyDefaultSla(days) {
+            var rows = document.querySelectorAll('.sla-row');
+            rows.forEach(function (row) {
+                var stageId = row.getAttribute('data-stage-id');
+                var toggle = document.getElementById('toggle-' + stageId);
+                var daysInput = document.getElementById('days-' + stageId);
+                if (toggle && !toggle.disabled && toggle.checked && daysInput && !daysInput.disabled) {
+                    daysInput.value = days;
+                }
+            });
+            showSlaToast('Đã áp dụng ngưỡng ' + days + ' ngày cho các giai đoạn đang bật SLA.');
         }
 
         async function saveAllSlaConfigs() {
@@ -214,11 +468,12 @@
                 var toggle = document.getElementById('toggle-' + stageId);
                 var daysInput = document.getElementById('days-' + stageId);
 
-                if (stageId && toggle && daysInput) {
+                if (stageId && daysInput) {
+                    var isEnabled = toggle ? toggle.checked : false;
                     configs.push({
                         id: stageId,
-                        slaDays: parseInt(daysInput.value) || 0,
-                        isSlaEnabled: toggle.checked
+                        slaDays: isEnabled ? (parseInt(daysInput.value) || 0) : 0,
+                        isSlaEnabled: isEnabled
                     });
                 }
             });
@@ -238,13 +493,15 @@
 
                 var res = await response.json();
                 if (res.success) {
-                    alert('✅ ' + (res.message || 'Lưu cấu hình SLA thành công!'));
-                    window.location.reload();
+                    showSlaToast(res.message || 'Lưu cấu hình SLA thành công!');
+                    setTimeout(function () {
+                        window.location.reload();
+                    }, 1000);
                 } else {
-                    alert('❌ Lỗi: ' + (res.message || 'Không thể lưu cấu hình.'));
+                    showSlaToast(res.message || 'Không thể lưu cấu hình.', false);
                 }
             } catch (err) {
-                alert('❌ Lỗi kết nối máy chủ: ' + err.message);
+                showSlaToast('Lỗi kết nối máy chủ: ' + err.message, false);
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
@@ -255,7 +512,7 @@
             var btn = document.getElementById('btnScanNow');
             var originalHtml = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status"></span>Đang quét SLA...';
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status"></span>Đang quét...';
 
             try {
                 var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
@@ -276,30 +533,33 @@
                     var itemsHtml = '';
                     if (data.overdueItems && data.overdueItems.length > 0) {
                         itemsHtml = `
-                            <div class="table-responsive mt-3" style="max-height: 280px; overflow-y: auto;">
-                                <table class="table table-sm table-bordered align-middle mb-0" style="font-size: 0.82rem;">
-                                    <thead class="table-light">
+                            <div class="table-responsive mt-3" style="max-height: 320px; overflow-y: auto;">
+                                <table class="table table-sm align-middle mb-0" style="font-size: 0.82rem;">
+                                    <thead style="background: #F8FAFC; color: #64748B;">
                                         <tr>
-                                            <th>Ứng viên</th>
-                                            <th>Vị trí</th>
-                                            <th>Giai đoạn</th>
-                                            <th>Đã ở</th>
-                                            <th>Ngưỡng SLA</th>
-                                            <th>Nhắc Recruiter</th>
+                                            <th class="ps-3 py-2">Ứng viên</th>
+                                            <th class="py-2">Vị trí tuyển dụng</th>
+                                            <th class="py-2">Giai đoạn</th>
+                                            <th class="py-2 text-center">Thời gian ở vòng</th>
+                                            <th class="py-2 text-center">Ngưỡng SLA</th>
+                                            <th class="pe-3 py-2 text-center">Trạng thái thông báo</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         ${data.overdueItems.map(item => `
-                                            <tr>
-                                                <td class="fw-bold">${item.candidateName}<br><span class="text-muted small font-mono">${item.candidateEmail}</span></td>
-                                                <td>${item.jobTitle}</td>
-                                                <td><span class="badge bg-secondary-subtle text-secondary">${item.stageName}</span></td>
-                                                <td class="text-danger fw-bold font-mono">${item.daysInStage} ngày</td>
-                                                <td class="font-mono">${item.slaDays} ngày</td>
-                                                <td>
+                                            <tr style="border-bottom: 1px solid #F1F5F9;">
+                                                <td class="ps-3 py-2.5">
+                                                    <div class="fw-semibold text-slate-900">${item.candidateName}</div>
+                                                    <div class="text-muted font-monospace" style="font-size: 0.75rem;">${item.candidateEmail}</div>
+                                                </td>
+                                                <td class="py-2.5 text-slate-700">${item.jobTitle}</td>
+                                                <td class="py-2.5"><span class="badge bg-slate-100 text-slate-700 border border-slate-200">${item.stageName}</span></td>
+                                                <td class="py-2.5 text-center text-danger fw-bold font-monospace">${item.daysInStage} ngày</td>
+                                                <td class="py-2.5 text-center font-monospace">${item.slaDays} ngày</td>
+                                                <td class="pe-3 py-2.5 text-center">
                                                     ${item.isAlreadyAlertedToday 
                                                         ? '<span class="badge bg-light text-muted border">Đã nhắc hôm nay</span>' 
-                                                        : '<span class="badge bg-success-subtle text-success border border-success-subtle">Đã tạo nhắc việc</span>'}
+                                                        : '<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-bell-fill me-1"></i>Đã tạo nhắc việc</span>'}
                                                 </td>
                                             </tr>
                                         `).join('')}
@@ -309,9 +569,12 @@
                         `;
                     } else {
                         itemsHtml = `
-                            <div class="text-center py-4 text-success">
-                                <i class="bi bi-shield-check fs-1 d-block mb-2"></i>
-                                <div class="fw-bold">Tuyệt vời! Không có hồ sơ nào quá hạn SLA.</div>
+                            <div class="text-center py-4 text-emerald-600">
+                                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
+                                     style="width: 54px; height: 54px; background: #ECFDF5; color: #059669; font-size: 1.6rem;">
+                                    <i class="bi bi-shield-check"></i>
+                                </div>
+                                <div class="fw-bold fs-6 text-slate-900">Tuyệt vời! Không có hồ sơ nào quá hạn SLA.</div>
                                 <div class="text-muted small">Tất cả các hồ sơ đang được xử lý đúng theo tiến độ cam kết.</div>
                             </div>
                         `;
@@ -321,36 +584,34 @@
                         <div class="row g-3 text-center mb-3">
                             <div class="col-4">
                                 <div class="p-3 bg-light rounded-3 border">
-                                    <div class="text-muted small">Tổng đã quét</div>
-                                    <div class="fs-4 fw-bold font-mono text-dark">${data.totalScanned}</div>
+                                    <div class="text-muted small" style="font-size: 0.78rem;">Tổng đã quét</div>
+                                    <div class="h4 fw-bold font-monospace text-slate-900 mb-0">${data.totalScanned}</div>
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="p-3 bg-danger-subtle rounded-3 border border-danger-subtle">
-                                    <div class="text-danger small fw-semibold">Quá hạn SLA</div>
-                                    <div class="fs-4 fw-bold font-mono text-danger">${data.overdueCount}</div>
+                                <div class="p-3 rounded-3 border" style="background: #FEF2F2; border-color: #FECACA !important;">
+                                    <div class="text-danger small fw-semibold" style="font-size: 0.78rem;">Quá hạn SLA</div>
+                                    <div class="h4 fw-bold font-monospace text-danger mb-0">${data.overdueCount}</div>
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="p-3 bg-success-subtle rounded-3 border border-success-subtle">
-                                    <div class="text-success small fw-semibold">Nhắc việc tạo mới</div>
-                                    <div class="fs-4 fw-bold font-mono text-success">${data.notificationsCreated}</div>
+                                <div class="p-3 rounded-3 border" style="background: #ECFDF5; border-color: #A7F3D0 !important;">
+                                    <div class="text-emerald-700 small fw-semibold" style="font-size: 0.78rem;">Nhắc việc mới</div>
+                                    <div class="h4 fw-bold font-monospace text-emerald-700 mb-0">${data.notificationsCreated}</div>
                                 </div>
                             </div>
                         </div>
-                        <h6 class="fw-bold text-dark mt-3 mb-1" style="font-size: 0.9rem;">
-                            <i class="bi bi-list-check me-1"></i> Danh sách chi tiết hồ sơ quá hạn:
-                        </h6>
                         ${itemsHtml}
                     `;
 
                     var modal = new bootstrap.Modal(document.getElementById('scanResultModal'));
                     modal.show();
+                    showSlaToast('Hoàn tất quét SLA: Phát hiện ' + data.overdueCount + ' hồ sơ quá hạn.');
                 } else {
-                    alert('❌ ' + (res.message || 'Lỗi khi quét SLA.'));
+                    showSlaToast(res.message || 'Lỗi khi quét SLA.', false);
                 }
             } catch (err) {
-                alert('❌ Lỗi kết nối máy chủ: ' + err.message);
+                showSlaToast('Lỗi kết nối máy chủ: ' + err.message, false);
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;

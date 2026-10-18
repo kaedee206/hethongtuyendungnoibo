@@ -13,6 +13,8 @@ public interface IEmailService
         string location,
         string userAgent,
         DateTimeOffset loginTime,
+        bool isCandidate = false,
+        string? roleName = null,
         CancellationToken cancellationToken = default);
 
     Task<bool> SendApplicationReceivedAsync(

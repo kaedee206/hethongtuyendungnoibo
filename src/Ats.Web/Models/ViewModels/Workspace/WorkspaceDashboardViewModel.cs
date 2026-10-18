@@ -97,6 +97,7 @@ public class CandidatePipelineItemDto
     public string CandidateName { get; set; } = string.Empty;
     public string CandidateEmail { get; set; } = string.Empty;
     public string CandidatePhone { get; set; } = string.Empty;
+    public string? AvatarUrl { get; set; }
     public string JobTitle { get; set; } = string.Empty;
     public Guid CurrentStageId { get; set; }
     public string CurrentStageName { get; set; } = string.Empty;

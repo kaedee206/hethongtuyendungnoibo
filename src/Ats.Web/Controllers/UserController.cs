@@ -1,11 +1,13 @@
 using Ats.Web.Data;
 using Ats.Web.Models.DTOs;
 using Ats.Web.Models.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ats.Web.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/tai-khoan")]
 public class UserController : ControllerBase
@@ -31,13 +33,18 @@ public class UserController : ControllerBase
             return Unauthorized(new { isSuccess = false, message = "Vui lòng đăng nhập để thực hiện chức năng này." });
         }
 
-        var isStaffAdmin = User.IsInRole("Admin") || User.IsInRole("HRManager") || User.IsInRole("HR_MANAGER") ||
-                           User.IsInRole("Quản trị viên") || User.IsInRole("Trưởng phòng nhân sự");
+        var isStaffAdmin = User.IsInRole(Ats.Web.Constants.UserRoles.Admin) || 
+                           User.IsInRole(Ats.Web.Constants.UserRoles.HRManager) ||
+                           User.IsInRole(Ats.Web.Constants.UserRoles.NameAdmin) || 
+                           User.IsInRole(Ats.Web.Constants.UserRoles.NameHRManager) ||
+                           User.IsInRole("Quản trị viên") || 
+                           User.IsInRole("Trưởng phòng nhân sự");
 
         if (!isStaffAdmin)
         {
             var currentUser = await _dbContext.Users.FindAsync(currentUserId);
-            if (currentUser == null || (currentUser.Role != "Admin" && currentUser.Role != "HRManager" && currentUser.Role != "Quản trị viên" && currentUser.Role != "Trưởng phòng nhân sự"))
+            var normRole = Ats.Web.Constants.UserRoles.NormalizeRole(currentUser?.Role);
+            if (currentUser == null || (normRole != Ats.Web.Constants.UserRoles.Admin && normRole != Ats.Web.Constants.UserRoles.HRManager))
             {
                 return StatusCode(StatusCodes.Status403Forbidden, new { isSuccess = false, message = "Bạn không có quyền xem thông tin danh sách tài khoản." });
             }
@@ -59,7 +66,9 @@ public class UserController : ControllerBase
         // Lọc theo Role
         if (!string.IsNullOrWhiteSpace(role))
         {
-            query = query.Where(u => u.Role == role);
+            var norm = Ats.Web.Constants.UserRoles.NormalizeRole(role);
+            var aliases = Ats.Web.Constants.UserRoles.GetAllRoleAliases(norm);
+            query = query.Where(u => u.Role == norm || aliases.Contains(u.Role));
         }
 
         // Lọc theo Status (ACTIVE, INACTIVE, etc.)

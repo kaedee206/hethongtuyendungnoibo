@@ -645,6 +645,8 @@ public class HomeController : Controller
                     .ThenInclude(c => c.Resumes)
                 .Include(a => a.Candidate)
                     .ThenInclude(c => c.ReferrerUser)
+                .Include(a => a.Candidate)
+                    .ThenInclude(c => c.User)
                 .Include(a => a.ReferrerUser)
                 .Include(a => a.JobPosting)
                     .ThenInclude(j => j.Requisition)
@@ -711,6 +713,7 @@ public class HomeController : Controller
                     CandidateName = candName,
                     CandidateEmail = a.Candidate.Email,
                     CandidatePhone = a.Candidate.Phone ?? "Chưa có",
+                    AvatarUrl = a.Candidate.User?.AvatarUrl,
                     JobTitle = a.JobPosting?.Title ?? "Vị trí tuyển dụng",
                     CurrentStageId = a.CurrentStageId,
                     CurrentStageName = a.CurrentStage?.Name ?? "Chưa phân loại",
@@ -786,6 +789,8 @@ public class HomeController : Controller
                 .ThenInclude(c => c.Resumes)
             .Include(a => a.Candidate)
                 .ThenInclude(c => c.ReferrerUser)
+            .Include(a => a.Candidate)
+                .ThenInclude(c => c.User)
             .Include(a => a.ReferrerUser)
             .Include(a => a.JobPosting)
             .Include(a => a.CurrentStage)
@@ -877,6 +882,7 @@ public class HomeController : Controller
                 CandidateName = candName,
                 CandidateEmail = a.Candidate.Email,
                 CandidatePhone = a.Candidate.Phone ?? "Chưa có",
+                AvatarUrl = a.Candidate.User?.AvatarUrl,
                 JobTitle = a.JobPosting.Title,
                 CurrentStageId = a.CurrentStageId,
                 CurrentStageName = a.CurrentStage.Name,
@@ -952,14 +958,28 @@ public class HomeController : Controller
     }
 
     [HttpPost("/api/notifications/mark-read/{id}")]
+    [Authorize]
     public async Task<IActionResult> MarkNotificationRead(Guid id)
     {
-        var notif = await _dbContext.Notifications.FirstOrDefaultAsync(n => n.Id == id);
-        if (notif != null)
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdStr, out var currentUserId))
         {
-            notif.IsRead = true;
-            await _dbContext.SaveChangesAsync();
+            return Unauthorized(new { success = false, message = "Chưa xác thực người dùng." });
         }
+
+        var notif = await _dbContext.Notifications.FirstOrDefaultAsync(n => n.Id == id);
+        if (notif == null)
+        {
+            return NotFound(new { success = false, message = "Không tìm thấy thông báo." });
+        }
+
+        if (notif.UserId != currentUserId)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Bạn không có quyền sửa đổi thông báo của người khác." });
+        }
+
+        notif.IsRead = true;
+        await _dbContext.SaveChangesAsync();
         return Ok(new { success = true });
     }
 

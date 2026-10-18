@@ -307,14 +307,18 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
         foreach (var roleName in rolesToAssign)
         {
             var normalized = UserRoles.NormalizeRole(roleName);
-            var roleEntity = allDbRoles.FirstOrDefault(r => r.Name == roleName || UserRoles.NormalizeRole(r.Name) == normalized);
+            var displayName = UserRoles.GetDisplayName(normalized);
+            var roleEntity = allDbRoles.FirstOrDefault(r => 
+                string.Equals(r.Name, displayName, StringComparison.OrdinalIgnoreCase) || 
+                string.Equals(r.Name, roleName, StringComparison.OrdinalIgnoreCase) || 
+                UserRoles.NormalizeRole(r.Name) == normalized);
             if (roleEntity == null)
             {
                 roleEntity = new Role
                 {
                     Id = Guid.NewGuid(),
-                    Name = roleName,
-                    Description = UserRoles.GetDisplayName(roleName),
+                    Name = displayName,
+                    Description = UserRoles.GetWho(normalized),
                     IsSystem = true
                 };
                 _dbContext.Roles.Add(roleEntity);
@@ -328,7 +332,13 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
             });
         }
 
-        user.Role = UserRoles.NormalizeRole(model.SelectedRoles?.FirstOrDefault() ?? user.Role);
+        user.Role = UserRoles.GetPrimaryRole(rolesToAssign);
+        var primaryCanonical = user.Role;
+        var primaryEntity = allDbRoles.FirstOrDefault(r => 
+            string.Equals(r.Name, UserRoles.GetDisplayName(primaryCanonical), StringComparison.OrdinalIgnoreCase) || 
+            string.Equals(r.Name, primaryCanonical, StringComparison.OrdinalIgnoreCase) ||
+            UserRoles.NormalizeRole(r.Name) == primaryCanonical);
+        user.RoleId = primaryEntity?.Id ?? user.UserRoles.FirstOrDefault()?.RoleId;
 
         // Nếu trạng thái đổi sang LOCKED -> thu hồi toàn bộ phiên
         if (user.Status == "LOCKED")
@@ -475,16 +485,9 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
             };
         }
 
-        var availableRoles = new List<(string Code, string Name, string Description)>
-        {
-            ("Admin", "Quản trị viên", "Toàn quyền quản trị hệ thống"),
-            ("HRManager", "Quản lý nhân sự", "Quản lý tuyển dụng, duyệt yêu cầu và offer"),
-            ("HiringManager", "Quản lý tuyển dụng", "Tạo yêu cầu tuyển dụng, tham gia phỏng vấn"),
-            ("Interviewer", "Người phỏng vấn", "Tham gia phỏng vấn và đánh giá ứng viên"),
-            ("Recruiter", "Chuyên viên tuyển dụng", "Đăng tin, lọc hồ sơ, xếp lịch phỏng vấn"),
-            ("Approver", "Người phê duyệt", "Phê duyệt yêu cầu tuyển dụng và offer"),
-            ("Candidate", "Ứng viên", "Ứng viên nội bộ hoặc portal")
-        };
+        var availableRoles = Ats.Web.Constants.UserRoles.Definitions
+            .Select(d => (Code: d.Code, Name: d.Name, Description: $"{d.Who} ({d.Goal})"))
+            .ToList();
 
         var headerBgColor = XLColor.FromArgb(30, 64, 175); // #1E40AF (Navy)
         var borderColor = XLColor.FromArgb(209, 213, 219);
@@ -871,15 +874,16 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
                 };
 
                 var roleNames = row.Roles.Split(',').Select(r => r.Trim()).Where(r => !string.IsNullOrEmpty(r)).ToList();
-                if (roleNames.Any())
-                {
-                    newUser.Role = Ats.Web.Constants.UserRoles.NormalizeRole(roleNames.First()); 
-                }
+                newUser.Role = Ats.Web.Constants.UserRoles.GetPrimaryRole(roleNames);
 
                 foreach (var roleName in roleNames)
                 {
-                    var normalizedName = Ats.Web.Constants.UserRoles.NormalizeRole(roleName);
-                    var matchedRole = allRoles.FirstOrDefault(r => r.Name == normalizedName);
+                    var canonicalCode = Ats.Web.Constants.UserRoles.NormalizeRole(roleName);
+                    var displayName = Ats.Web.Constants.UserRoles.GetDisplayName(canonicalCode);
+                    var matchedRole = allRoles.FirstOrDefault(r => 
+                        string.Equals(r.Name, displayName, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(r.Name, canonicalCode, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(Ats.Web.Constants.UserRoles.NormalizeRole(r.Name), canonicalCode, StringComparison.OrdinalIgnoreCase));
                     if (matchedRole != null)
                     {
                         newUser.UserRoles.Add(new UserRole
@@ -888,7 +892,7 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
                             RoleId = matchedRole.Id
                         });
                         
-                        if (newUser.RoleId == null)
+                        if (newUser.RoleId == null || canonicalCode == newUser.Role)
                         {
                             newUser.RoleId = matchedRole.Id;
                         }

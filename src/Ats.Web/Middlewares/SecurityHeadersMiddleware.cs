@@ -60,6 +60,12 @@ public class SecurityHeadersMiddleware(RequestDelegate next)
                 "frame-ancestors 'self';");
         }
 
+        // 7. Strict-Transport-Security (HSTS): Ép buộc trình duyệt luôn sử dụng giao thức HTTPS bảo mật
+        if (!context.Response.Headers.ContainsKey("Strict-Transport-Security"))
+        {
+            context.Response.Headers.Append("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+        }
+
         await _next(context);
     }
 }

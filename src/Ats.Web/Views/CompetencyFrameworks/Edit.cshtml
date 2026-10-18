@@ -36,13 +36,7 @@
         </div>
     </div>
 
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger border-0 shadow-sm d-flex align-items-center gap-2 mb-4" style="border-radius: 12px;">
-            <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
-            <div>@TempData["ErrorMessage"]</div>
-        </div>
-    }
+
 
     <form asp-action="Edit" asp-route-id="@Model.Id" method="post" id="frameworkForm">
         @Html.AntiForgeryToken()

@@ -31,4 +31,27 @@ public interface IInterviewService
     Task<List<InterviewScheduleResultDto>> GetApplicationInterviewsAsync(
         Guid applicationId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Chuẩn bị toàn bộ dữ liệu khởi tạo cho Trang Wizard Lên lịch phỏng vấn chuyên biệt (Option 2).
+    /// </summary>
+    Task<Ats.Web.Models.ViewModels.Interviews.ScheduleInterviewWizardViewModel> GetScheduleWizardDataAsync(
+        Guid? applicationId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lấy thông tin chi tiết hồ sơ ứng viên (Dossier) phục vụ hiển thị thẻ tóm tắt và cập nhật động qua AJAX ở Bước 1.
+    /// </summary>
+    Task<Ats.Web.Models.ViewModels.Interviews.CandidateWizardDetailDto?> GetCandidateWizardDetailAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Kiểm tra lịch trống/trùng lịch phỏng vấn của danh sách giám khảo trong khung giờ chỉ định ở Bước 2.
+    /// </summary>
+    Task<List<Ats.Web.Models.ViewModels.Interviews.InterviewerBusyCheckDto>> CheckInterviewersAvailabilityAsync(
+        List<Guid> interviewerIds,
+        DateTimeOffset startTime,
+        DateTimeOffset endTime,
+        CancellationToken cancellationToken = default);
 }

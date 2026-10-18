@@ -7,9 +7,14 @@ using Microsoft.EntityFrameworkCore;
 
 using Ats.Web.Models.Entities;
 using Ats.Web.Data;
+using Ats.Web.Constants;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Ats.Web.Controllers;
 
+[Authorize]
+[EnableRateLimiting("AuthRateLimit")]
 [ApiController]
 [Route("api/xac-thuc")]
 public class AuthController(IAuthService authService, ApplicationDbContext dbContext, IEmailService emailService) : ControllerBase
@@ -22,6 +27,8 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
     /// API Đăng nhập tài khoản nội bộ (POST: /api/xac-thuc/dang-nhap)
     /// </summary>
     [HttpPost("dang-nhap")]
+    [AllowAnonymous]
+    [EnableRateLimiting("AuthRateLimit")]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
@@ -249,6 +256,8 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
     /// API Yêu cầu đặt lại mật khẩu (POST: /api/xac-thuc/quen-mat-khau)
     /// </summary>
     [HttpPost("quen-mat-khau")]
+    [AllowAnonymous]
+    [EnableRateLimiting("AuthRateLimit")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto request)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -327,6 +336,8 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
     /// API Kiểm tra Token đặt lại mật khẩu (GET: /api/xac-thuc/kiem-tra-token-dat-lai-mat-khau)
     /// </summary>
     [HttpGet("kiem-tra-token-dat-lai-mat-khau")]
+    [AllowAnonymous]
+    [EnableRateLimiting("AuthRateLimit")]
     public async Task<IActionResult> VerifyResetToken([FromQuery] string email, [FromQuery] string token)
     {
         var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == email);
@@ -357,6 +368,8 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
     /// API Đặt lại mật khẩu mới (POST: /api/xac-thuc/dat-lai-mat-khau)
     /// </summary>
     [HttpPost("dat-lai-mat-khau")]
+    [AllowAnonymous]
+    [EnableRateLimiting("AuthRateLimit")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto request)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -635,6 +648,7 @@ public class AuthController(IAuthService authService, ApplicationDbContext dbCon
     /// API Tạo tài khoản nội bộ (POST: /api/xac-thuc/tao-tai-khoan)
     /// </summary>
     [HttpPost("tao-tai-khoan")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager}")]
     public async Task<IActionResult> CreateAccount([FromBody] CreateAccountRequestDto request)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);

@@ -90,6 +90,50 @@ public class RequisitionAssignmentListViewModel
     public List<string> Departments { get; set; } = new();
     public List<RequisitionAssignmentItemViewModel> Items { get; set; } = new();
     public List<RecruiterOptionViewModel> AvailableRecruiters { get; set; } = new();
+    public List<RecruiterWorkloadViewModel> RecruiterWorkloads { get; set; } = new();
+
+    public int AssignedPercentage => TotalOpenRequisitions > 0
+        ? (int)Math.Round((double)AssignedRequisitionsCount * 100 / TotalOpenRequisitions)
+        : 0;
+}
+
+/// <summary>
+/// Thống kê khối lượng công việc và năng lực tiếp nhận của từng Chuyên viên tuyển dụng.
+/// Giúp Trưởng phòng Nhân sự cân đối tải công việc minh bạch và công bằng.
+/// </summary>
+public class RecruiterWorkloadViewModel
+{
+    public Guid RecruiterId { get; set; }
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string? JobTitle { get; set; }
+    public string? DepartmentName { get; set; }
+    public string AvatarLetter => !string.IsNullOrWhiteSpace(FullName) ? FullName.Trim()[0].ToString().ToUpper() : "R";
+    public int LeadCount { get; set; }
+    public int SupportCount { get; set; }
+    public int TotalActivePositions => LeadCount + SupportCount;
+    public int TotalCandidatesInPipeline { get; set; }
+
+    /// <summary>
+    /// Đánh giá tình trạng tải công việc
+    /// </summary>
+    public string WorkloadLevel => LeadCount switch
+    {
+        0 => "Sẵn sàng nhận việc",
+        <= 2 => "Tải nhẹ",
+        <= 5 => "Tải cân bằng",
+        _ => "Tải cao"
+    };
+
+    public string WorkloadBadgeClass => LeadCount switch
+    {
+        0 => "bg-emerald-50 text-emerald-700 border-emerald-200",
+        <= 2 => "bg-blue-50 text-blue-700 border-blue-200",
+        <= 5 => "bg-teal-50 text-teal-700 border-teal-200",
+        _ => "bg-amber-50 text-amber-700 border-amber-200"
+    };
+
+    public List<RequisitionAssignmentItemViewModel> AssignedPositions { get; set; } = new();
 }
 
 /// <summary>

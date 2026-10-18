@@ -1,3 +1,4 @@
+using Ats.Web.Constants;
 using Ats.Web.Models.Entities;
 using Ats.Web.Models.Enums;
 using Ats.Web.Services;
@@ -9,22 +10,40 @@ public static class DatabaseSeeder
 {
     public static async Task SeedAsync(ApplicationDbContext context)
     {
-        // 1. Seed Roles
-        if (!await context.Roles.AnyAsync())
+        // 1. Seed & Đồng bộ 7 Vai trò chuẩn doanh nghiệp (Rule 11)
+        var standardRoles = new List<(RoleCode Code, string Name, string Description)>
         {
-            var roles = new List<Role>
+            (RoleCode.CANDIDATE, UserRoles.NameCandidate, "Người nộp hồ sơ từ bên ngoài, không có tài khoản nội bộ"),
+            (RoleCode.RECRUITER, UserRoles.NameRecruiter, "Người vận hành tuyển dụng hằng ngày"),
+            (RoleCode.HIRING_MANAGER, UserRoles.NameHiringManager, "Người cần người, sở hữu vị trí tuyển dụng"),
+            (RoleCode.INTERVIEWER, UserRoles.NameInterviewer, "Nhân sự được mời tham gia một vòng phỏng vấn"),
+            (RoleCode.HR_MANAGER, UserRoles.NameHRManager, "Chủ sở hữu toàn bộ hoạt động tuyển dụng"),
+            (RoleCode.APPROVER, UserRoles.NameApprover, "Ban giám đốc hoặc cấp duyệt theo hạn mức"),
+            (RoleCode.ADMIN, UserRoles.NameAdmin, "Người vận hành ứng dụng")
+        };
+
+        foreach (var sr in standardRoles)
+        {
+            var existingRole = await context.Roles.FirstOrDefaultAsync(r => r.Code == sr.Code);
+            if (existingRole == null)
             {
-                new() { Id = Guid.NewGuid(), Code = RoleCode.ADMIN, Name = "Quản trị viên hệ thống", Description = "Toàn quyền trên hệ thống", IsSystem = true },
-                new() { Id = Guid.NewGuid(), Code = RoleCode.HR_MANAGER, Name = "Trưởng phòng nhân sự", Description = "Quản lý tuyển dụng, duyệt yêu cầu và offer", IsSystem = true },
-                new() { Id = Guid.NewGuid(), Code = RoleCode.RECRUITER, Name = "Chuyên viên tuyển dụng", Description = "Đăng tin, lọc hồ sơ, xếp lịch phỏng vấn", IsSystem = true },
-                new() { Id = Guid.NewGuid(), Code = RoleCode.HIRING_MANAGER, Name = "Quản lý chuyên môn", Description = "Tạo yêu cầu tuyển dụng, tham gia phỏng vấn", IsSystem = true },
-                new() { Id = Guid.NewGuid(), Code = RoleCode.INTERVIEWER, Name = "Người phỏng vấn", Description = "Tham gia phỏng vấn và đánh giá ứng viên", IsSystem = true },
-                new() { Id = Guid.NewGuid(), Code = RoleCode.APPROVER, Name = "Người phê duyệt", Description = "Phê duyệt yêu cầu tuyển dụng và offer", IsSystem = true },
-                new() { Id = Guid.NewGuid(), Code = RoleCode.CANDIDATE, Name = "Ứng viên nội bộ", Description = "Xem và ứng tuyển các vị trí nội bộ", IsSystem = true }
-            };
-            await context.Roles.AddRangeAsync(roles);
-            await context.SaveChangesAsync();
+                await context.Roles.AddAsync(new Role
+                {
+                    Id = Guid.NewGuid(),
+                    Code = sr.Code,
+                    Name = sr.Name,
+                    Description = sr.Description,
+                    IsSystem = true
+                });
+            }
+            else
+            {
+                existingRole.Name = sr.Name;
+                existingRole.Description = sr.Description;
+                existingRole.IsSystem = true;
+            }
         }
+        await context.SaveChangesAsync();
 
         // 2. Seed Departments
         if (!await context.Departments.AnyAsync())
@@ -189,6 +208,9 @@ public static class DatabaseSeeder
         foreach (var item in seedUsers)
         {
             var user = await context.Users.FirstOrDefaultAsync(u => u.Email == item.Email);
+            var canonicalRole = UserRoles.NormalizeRole(item.Role.ToString());
+            Guid? assignedRoleId = rolesMap.TryGetValue(item.Role, out var rId) ? rId : null;
+
             if (user == null)
             {
                 user = new User
@@ -198,7 +220,9 @@ public static class DatabaseSeeder
                     FullName = item.FullName,
                     PasswordHash = item.Password,
                     Status = "ACTIVE",
-                    UserType = UserType.INTERNAL,
+                    UserType = item.Role == RoleCode.CANDIDATE ? UserType.EXTERNAL_CANDIDATE : UserType.INTERNAL,
+                    Role = canonicalRole,
+                    RoleId = assignedRoleId,
                     DepartmentId = item.DeptCode != null && deptsMap.TryGetValue(item.DeptCode, out var dId) ? dId : null,
                     JobPositionId = item.PosCode != null && posMap.TryGetValue(item.PosCode, out var pId) ? pId : null,
                     CreatedAt = DateTimeOffset.UtcNow,
@@ -208,12 +232,12 @@ public static class DatabaseSeeder
                 await context.Users.AddAsync(user);
                 await context.SaveChangesAsync();
 
-                if (rolesMap.TryGetValue(item.Role, out var roleId))
+                if (assignedRoleId.HasValue)
                 {
                     await context.UserRoles.AddAsync(new UserRole
                     {
                         UserId = user.Id,
-                        RoleId = roleId
+                        RoleId = assignedRoleId.Value
                     });
                     await context.SaveChangesAsync();
                 }
@@ -247,8 +271,49 @@ public static class DatabaseSeeder
                     user.FullName = item.FullName;
                     user.UpdatedAt = DateTimeOffset.UtcNow;
                 }
+                user.Role = canonicalRole;
+                if (assignedRoleId.HasValue)
+                {
+                    user.RoleId = assignedRoleId.Value;
+                }
                 user.LockedUntil = null;
                 user.FailedLoginAttempts = 0;
+
+                // Đồng bộ quan hệ UserRole
+                if (assignedRoleId.HasValue)
+                {
+                    var hasUr = await context.UserRoles.AnyAsync(ur => ur.UserId == user.Id && ur.RoleId == assignedRoleId.Value);
+                    if (!hasUr)
+                    {
+                        await context.UserRoles.AddAsync(new UserRole
+                        {
+                            UserId = user.Id,
+                            RoleId = assignedRoleId.Value
+                        });
+                    }
+                }
+            }
+        }
+        await context.SaveChangesAsync();
+
+        // Đồng bộ đồng loạt Role và RoleId cho tất cả người dùng trong hệ thống
+        var allDbUsers = await context.Users
+            .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+            .ToListAsync();
+
+        foreach (var u in allDbUsers)
+        {
+            if (u.UserRoles.Any())
+            {
+                var primaryUr = u.UserRoles
+                    .OrderBy(ur => ur.Role != null ? UserRoles.GetRolePriority(ur.Role.Name) : 99)
+                    .First();
+                if (primaryUr.Role != null)
+                {
+                    u.Role = UserRoles.NormalizeRole(primaryUr.Role.Name);
+                    u.RoleId = primaryUr.Role.Id;
+                }
             }
         }
         await context.SaveChangesAsync();
@@ -940,6 +1005,15 @@ public static class DatabaseSeeder
                     for (int i = 0; i < count; i++)
                     {
                         var req = requisitions[i];
+
+                        // Để lại 2 vị trí cuối chưa phân công (Unassigned) để hiển thị thực tế trạng thái cần xử lý gấp
+                        if (i >= count - 2)
+                        {
+                            req.AssignedRecruiterId = null;
+                            req.UpdatedAt = DateTimeOffset.UtcNow;
+                            continue;
+                        }
+
                         var isLead1 = i % 2 == 0;
                         var lead = isLead1 ? recruiter1 : recruiter2;
                         var support = isLead1 ? recruiter2 : recruiter1;
@@ -956,7 +1030,7 @@ public static class DatabaseSeeder
                             IsPrimary = true,
                             AssignedAt = DateTimeOffset.UtcNow.AddDays(-15),
                             AssignedById = hrManager.Id,
-                            Notes = "Chỉ định phụ trách chính chịu trách nhiệm chạy tới cùng."
+                            Notes = "Chuyên viên tuyển dụng phụ trách chính."
                         });
 
                         // Add Support (for even requisitions)

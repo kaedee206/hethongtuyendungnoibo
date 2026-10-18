@@ -1369,7 +1369,7 @@ public class RequisitionService : IRequisitionService
         {
             hrUser = await _dbContext.Users
                 .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
-                .FirstOrDefaultAsync(u => u.Role == UserRoles.HRManager || u.UserRoles.Any(ur => ur.Role != null && ur.Role.Name == UserRoles.HRManager), cancellationToken);
+                .FirstOrDefaultAsync(u => u.Role == UserRoles.HRManager || u.UserRoles.Any(ur => ur.Role != null && (ur.Role.Code == RoleCode.HR_MANAGER || ur.Role.Name == UserRoles.HRManager || ur.Role.Name == UserRoles.NameHRManager)), cancellationToken);
         }
 
         // 2. BOD / Approver (Step 2)
@@ -1381,7 +1381,7 @@ public class RequisitionService : IRequisitionService
         {
             bodUser = await _dbContext.Users
                 .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
-                .FirstOrDefaultAsync(u => u.Role == UserRoles.Approver || u.UserRoles.Any(ur => ur.Role != null && ur.Role.Name == UserRoles.Approver), cancellationToken);
+                .FirstOrDefaultAsync(u => u.Role == UserRoles.Approver || u.UserRoles.Any(ur => ur.Role != null && (ur.Role.Code == RoleCode.APPROVER || ur.Role.Name == UserRoles.Approver || ur.Role.Name == UserRoles.NameApprover)), cancellationToken);
         }
 
         var defaultAdmin = await _dbContext.Users.FirstOrDefaultAsync(cancellationToken);

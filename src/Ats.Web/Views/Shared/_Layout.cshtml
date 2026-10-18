@@ -89,6 +89,23 @@
                                         <i class="bi bi-stars me-1 text-warning"></i> Kho tiềm năng
                                     </a>
                                 </li>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link ats-nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-calendar2-check me-1 text-success"></i> Phỏng vấn
+                                    </a>
+                                    <ul class="dropdown-menu shadow-sm border-0" style="border: 1px solid #E2E8F0 !important; border-radius: 8px;">
+                                        <li>
+                                            <a class="dropdown-item py-2" href="/phong-van/dat-lich">
+                                                <i class="bi bi-calendar-plus me-2 text-success"></i>Lên lịch phỏng vấn (Wizard)
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item py-2" href="/phong-van/so-sanh-ung-vien">
+                                                <i class="bi bi-bar-chart-line me-2 text-primary"></i>So sánh đánh giá ứng viên
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
                                 <li class="nav-item">
                                     <a class="nav-link ats-nav-link" asp-controller="Jobs" asp-action="Create">
                                         <i class="bi bi-megaphone me-1"></i> + Đăng tin tuyển dụng
@@ -374,35 +391,7 @@
         <div class="ats-layout-container">
             @await Html.PartialAsync("_Sidebar")
             <div class="ats-main-area">
-                <!-- Global Alert Banners -->
-                <div class="container-fluid px-3 px-md-4 pt-3">
-                    @if (TempData["SuccessMessage"] != null)
-                    {
-                        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 d-flex align-items-center" role="alert">
-                            <i class="bi bi-check-circle-fill me-2 fs-5"></i>
-                            <div class="flex-grow-1">@TempData["SuccessMessage"]</div>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    }
 
-                    @if (TempData["WarningMessage"] != null)
-                    {
-                        <div class="alert alert-warning alert-dismissible fade show border-0 shadow-sm rounded-3 d-flex align-items-center" role="alert">
-                            <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
-                            <div class="flex-grow-1">@TempData["WarningMessage"]</div>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    }
-
-                    @if (TempData["ErrorMessage"] != null)
-                    {
-                        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 d-flex align-items-center" role="alert">
-                            <i class="bi bi-x-circle-fill me-2 fs-5"></i>
-                            <div class="flex-grow-1">@TempData["ErrorMessage"]</div>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    }
-                </div>
 
                 <main role="main">
                     @RenderBody()
@@ -427,35 +416,7 @@
     }
     else
     {
-        <!-- Global Alert Banners -->
-        <div class="container-fluid px-3 px-md-4 pt-3">
-            @if (TempData["SuccessMessage"] != null)
-            {
-                <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 d-flex align-items-center" role="alert">
-                    <i class="bi bi-check-circle-fill me-2 fs-5"></i>
-                    <div class="flex-grow-1">@TempData["SuccessMessage"]</div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            }
 
-            @if (TempData["WarningMessage"] != null)
-            {
-                <div class="alert alert-warning alert-dismissible fade show border-0 shadow-sm rounded-3 d-flex align-items-center" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
-                    <div class="flex-grow-1">@TempData["WarningMessage"]</div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            }
-
-            @if (TempData["ErrorMessage"] != null)
-            {
-                <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 d-flex align-items-center" role="alert">
-                    <i class="bi bi-x-circle-fill me-2 fs-5"></i>
-                    <div class="flex-grow-1">@TempData["ErrorMessage"]</div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            }
-        </div>
 
         <main role="main">
             @RenderBody()
@@ -541,5 +502,6 @@
         </script>
     }
 
+    @await Html.PartialAsync("_ToastNotifications")
 </body>
 </html>

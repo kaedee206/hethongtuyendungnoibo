@@ -129,7 +129,12 @@ public class SlaService : ISlaService
 
         // Fallback recruiter mặc định nếu phiếu chưa gán recruiter cụ thể
         var fallbackRecruiters = await _dbContext.Users
-            .Where(u => u.Status == "ACTIVE" && (u.Role == UserRoles.Recruiter || u.Role == UserRoles.HRManager))
+            .Where(u => u.Status == "ACTIVE" && (
+                u.Role == UserRoles.Recruiter || 
+                u.Role == UserRoles.HRManager || 
+                u.Role == UserRoles.NameRecruiter || 
+                u.Role == UserRoles.NameHRManager || 
+                u.UserRoles.Any(ur => ur.Role != null && (ur.Role.Code == RoleCode.RECRUITER || ur.Role.Code == RoleCode.HR_MANAGER))))
             .ToListAsync(cancellationToken);
 
         foreach (var app in applications)

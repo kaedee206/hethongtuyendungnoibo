@@ -1,72 +1,77 @@
 @model Ats.Web.Models.ViewModels.Applications.WithdrawApplicationViewModel
 @{
-    ViewData["Title"] = "Rút hồ sơ thành công";
+    ViewData["Title"] = "Đã hoàn tất rút hồ sơ - NoveraTech Careers";
     Layout = "_Layout";
 }
 
-<div class="container py-5" style="max-width: 680px;">
-    <div class="card border-0 shadow-sm bg-white text-center p-4 p-md-5" style="border: 1px solid #E2E8F0 !important; border-radius: 16px;">
-        <!-- Success Icon Pulse -->
+<div class="container py-4 py-md-5" style="max-width: 580px;">
+    <!-- Breadcrumb link -->
+    <div class="mb-3">
+        <a href="/gioi-thieu" class="text-decoration-none text-muted small d-inline-flex align-items-center" style="transition: color 0.15s ease;">
+            <i class="bi bi-arrow-left me-1.5"></i> Quay lại Cổng thông tin Tuyển dụng
+        </a>
+    </div>
+
+    <div class="card border-0 bg-white p-4 p-md-5 text-center" style="border: 1px solid #E2E8F0 !important; border-radius: 12px; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);">
+        <!-- Success Icon -->
         <div class="d-inline-flex align-items-center justify-content-center mx-auto mb-3"
-             style="width: 72px; height: 72px; border-radius: 50%; background: #ECFDF5; color: #059669; border: 2px solid #A7F3D0;">
-            <i class="bi bi-check2-circle" style="font-size: 2.4rem;"></i>
+             style="width: 52px; height: 52px; border-radius: 10px; background: #ECFDF5; color: #059669; border: 1px solid #D1FAE5;">
+            <i class="bi bi-check2" style="font-size: 1.75rem;"></i>
         </div>
 
-        <h3 class="fw-bold text-dark mb-2" style="font-size: 1.45rem;">
+        <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+            <img src="/img/logo-dark-transparent.png" alt="NoveraTech" style="height: 22px; width: auto; max-width: 120px; object-fit: contain;" />
+            <span class="text-muted small">·</span>
+            <span class="text-muted small fw-medium">Careers</span>
+        </div>
+
+        <h1 class="fw-bold text-dark mb-2" style="font-size: 1.3rem; letter-spacing: -0.01em;">
             Đã hoàn tất rút hồ sơ ứng tuyển
-        </h3>
-        <p class="text-muted small mb-4" style="max-width: 480px; margin: 0 auto; line-height: 1.6;">
-            Cảm ơn bạn <strong class="text-dark">@Model.CandidateName</strong> đã thẳng thắn thông báo. Quá trình tuyển dụng cho vị trí này đã chính thức dừng lại theo yêu cầu của bạn.
+        </h1>
+        <p class="text-muted small mb-4" style="line-height: 1.55;">
+            Cảm ơn bạn <strong class="text-dark">@Model.CandidateName</strong> đã thông báo cho NoveraTech. Quá trình xét duyệt cho vị trí này đã chính thức dừng lại theo yêu cầu của bạn.
         </p>
 
         <!-- Summary Receipt Box -->
-        <div class="p-3.5 mb-4 text-start" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px;">
-            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-                <span class="text-muted small">Mã đơn ứng tuyển:</span>
-                <span class="fw-bold font-mono text-dark small">@Model.ApplicationCode</span>
+        <div class="p-3 mb-4 text-start small" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;">
+            <div class="d-flex justify-content-between align-items-center py-1.5 border-bottom" style="border-color: #F1F5F9 !important;">
+                <span class="text-muted">Mã đơn ứng tuyển:</span>
+                <span class="font-mono text-dark fw-medium">@Model.ApplicationCode</span>
             </div>
-            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-                <span class="text-muted small">Vị trí ứng tuyển:</span>
-                <span class="fw-bold text-dark small">@Model.JobTitle</span>
+            <div class="d-flex justify-content-between align-items-center py-1.5 border-bottom" style="border-color: #F1F5F9 !important;">
+                <span class="text-muted">Vị trí:</span>
+                <span class="fw-semibold text-dark">@Model.JobTitle</span>
             </div>
-            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-                <span class="text-muted small">Thời gian xác nhận rút:</span>
-                <span class="font-mono text-dark small">@(Model.WithdrawnAt?.ToString("dd/MM/yyyy HH:mm") ?? DateTimeOffset.UtcNow.ToString("dd/MM/yyyy HH:mm"))</span>
+            <div class="d-flex justify-content-between align-items-center py-1.5 border-bottom" style="border-color: #F1F5F9 !important;">
+                <span class="text-muted">Thời gian xác nhận:</span>
+                <span class="text-dark">@(Model.WithdrawnAt?.ToString("dd/MM/yyyy HH:mm") ?? DateTimeOffset.UtcNow.ToString("dd/MM/yyyy HH:mm"))</span>
             </div>
-            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-                <span class="text-muted small">Trạng thái hồ sơ:</span>
-                <span class="badge" style="background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 0.75rem;">
-                    <i class="bi bi-person-x me-1"></i>Ứng viên rút (WITHDRAWN)
+            <div class="d-flex justify-content-between align-items-center py-1.5 @(!string.IsNullOrWhiteSpace(Model.ExistingReason) ? "border-bottom" : "")" style="border-color: #F1F5F9 !important;">
+                <span class="text-muted">Trạng thái:</span>
+                <span class="badge" style="background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; border-radius: 6px; font-size: 0.75rem; font-weight: 500;">
+                    Đã rút hồ sơ
                 </span>
             </div>
             @if (!string.IsNullOrWhiteSpace(Model.ExistingReason))
             {
-                <div class="d-flex justify-content-between align-items-start pt-1">
-                    <span class="text-muted small">Lý do ghi nhận:</span>
-                    <span class="text-dark small text-end" style="max-width: 60%;">@Model.ExistingReason</span>
+                <div class="d-flex justify-content-between align-items-start pt-1.5">
+                    <span class="text-muted">Lý do:</span>
+                    <span class="text-dark text-end" style="max-width: 65%;">@Model.ExistingReason</span>
                 </div>
             }
         </div>
 
-        <!-- Recruiter Notification Status -->
-        <div class="p-3 mb-4 d-flex align-items-center gap-2.5 text-start" style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px;">
-            <i class="bi bi-bell-fill text-primary fs-5 flex-shrink-0"></i>
-            <div class="small text-primary" style="line-height: 1.5;">
-                <strong>Đã gửi thông báo đến Chuyên viên Tuyển dụng phụ trách:</strong> Hệ thống đã tự động cập nhật pipeline và gửi email xác nhận đến hòm thư <strong class="font-mono">@Model.CandidateEmail</strong>.
-            </div>
-        </div>
-
-        <p class="text-muted small mb-4" style="line-height: 1.6;">
-            NoveraTech trân trọng sự đóng góp và chúc bạn gặt hái nhiều bước tiến rực rỡ trên hành trình sự nghiệp! Chúng tôi luôn sẵn sàng đón chào bạn ở các cơ hội phù hợp trong tương lai.
+        <p class="text-muted small mb-4" style="line-height: 1.55;">
+            Hệ thống đã gửi email xác nhận đến hòm thư <strong class="text-dark font-mono">@Model.CandidateEmail</strong>. Chúc bạn luôn thành công và NoveraTech luôn sẵn sàng đón chào bạn ở các cơ hội phù hợp sau này.
         </p>
 
         <!-- Action Links -->
-        <div class="d-flex flex-column flex-sm-row justify-content-center gap-2.5">
-            <a href="/Jobs" class="btn btn-success fw-semibold px-4 py-2" style="border-radius: 8px; font-size: 0.85rem; background: #059669; border-color: #059669;">
-                <i class="bi bi-briefcase me-1"></i> Khám phá các vị trí khác
+        <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
+            <a href="/Jobs" class="btn text-white fw-semibold px-4 py-2" style="background: #059669; border-radius: 8px; font-size: 0.85rem;">
+                <i class="bi bi-briefcase me-1.5"></i> Khám phá vị trí khác
             </a>
-            <a href="/gioi-thieu" class="btn btn-light border px-4 py-2" style="border-radius: 8px; font-size: 0.85rem;">
-                <i class="bi bi-house me-1"></i> Trang chủ Tuyển dụng
+            <a href="/gioi-thieu" class="btn btn-light border px-4 py-2 text-muted" style="border-color: #CBD5E1 !important; border-radius: 8px; font-size: 0.85rem;">
+                Trang chủ Tuyển dụng
             </a>
         </div>
     </div>

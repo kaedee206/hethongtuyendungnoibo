@@ -76,7 +76,7 @@ public class JobsController : Controller
     // GET: /Jobs/quan-ly hoặc /Jobs/Manage (Scrum-38: Màn hình quản lý tin đăng cho Recruiter/HR/Admin)
     [HttpGet("quan-ly")]
     [HttpGet("Manage")]
-    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter}")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng,Quản trị viên hệ thống")]
     public async Task<IActionResult> Manage(
         [FromQuery] string? search,
         [FromQuery] JobPostingStatus? status,
@@ -94,7 +94,7 @@ public class JobsController : Controller
     // POST: /Jobs/unpublish (Scrum-38 Yêu cầu 1: Gỡ tin thủ công bất cứ lúc nào, tin biến mất khỏi trang công khai ngay)
     [HttpPost("unpublish")]
     [ValidateAntiForgeryToken]
-    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter}")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng,Quản trị viên hệ thống")]
     public async Task<IActionResult> Unpublish([FromForm] UnpublishJobRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.JobId))
@@ -125,7 +125,7 @@ public class JobsController : Controller
     // POST: /Jobs/republish (Kích hoạt lại / Gia hạn tin đăng)
     [HttpPost("republish")]
     [ValidateAntiForgeryToken]
-    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter}")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng,Quản trị viên hệ thống")]
     public async Task<IActionResult> Republish([FromForm] RepublishJobRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.JobId))
@@ -157,7 +157,7 @@ public class JobsController : Controller
     // POST: /Jobs/trigger-scan (Scrum-38 Yêu cầu 2: Kích hoạt quét tự động tin quá hạn ngay lập tức để kiểm thử & đối soát)
     [HttpPost("trigger-scan")]
     [ValidateAntiForgeryToken]
-    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter}")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng,Quản trị viên hệ thống")]
     public async Task<IActionResult> TriggerExpirationScan()
     {
         var result = await _expirationService.ProcessExpiredJobPostingsAsync();
@@ -622,7 +622,7 @@ public class JobsController : Controller
     /// RBAC Policy Guard: (user.role == 'Recruiter' || user.department == 'HR') && (isAuthor || isAdmin)
     /// </summary>
     [HttpPatch("/api/jobs/{id}")]
-    [Authorize]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},{UserRoles.HiringManager}")]
     [IgnoreAntiforgeryToken]
     public async Task<IActionResult> PatchJob(string id, [FromBody] PatchJobPostingDto dto)
     {
@@ -767,7 +767,7 @@ public class JobsController : Controller
     // POST: /Jobs/UpdatePosting
     [HttpPost("UpdatePosting")]
     [ValidateAntiForgeryToken]
-    [Authorize]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},{UserRoles.HiringManager}")]
     public async Task<IActionResult> UpdatePosting([FromForm] UpdateJobPostingRequest model)
     {
         if (string.IsNullOrWhiteSpace(model.JobId) || string.IsNullOrWhiteSpace(model.Title))
@@ -863,6 +863,14 @@ public class JobsController : Controller
             }
             else
             {
+                if (!isRecruiterOrHr && !isAdmin)
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, new { 
+                        success = false, 
+                        message = "Bạn không có quyền tạo mới vị trí và bài đăng tuyển dụng." 
+                    });
+                }
+
                 // Vị trí mẫu chuẩn (mock) -> Khởi tạo thật vào DB để lưu các sửa đổi trực tiếp
                 var deptName = string.IsNullOrWhiteSpace(model.Department) ? "Công nghệ Thông tin (IT)" : model.Department.Trim();
                 var dept = await _dbContext.Departments.FirstOrDefaultAsync(d => d.Name.ToLower() == deptName.ToLower())

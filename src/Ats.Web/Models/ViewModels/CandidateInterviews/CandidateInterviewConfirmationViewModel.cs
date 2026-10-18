@@ -14,6 +14,7 @@ public class CandidateInterviewConfirmationViewModel
 
     public string CandidateName { get; set; } = string.Empty;
     public string CandidateEmail { get; set; } = string.Empty;
+    public Guid? CandidateUserId { get; set; }
 
     public string JobTitle { get; set; } = string.Empty;
     public string DepartmentName { get; set; } = string.Empty;

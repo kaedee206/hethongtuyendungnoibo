@@ -9,7 +9,7 @@ using Ats.Web.Services.Interfaces;
 
 namespace Ats.Web.Controllers;
 
-[Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager}")]
+[Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},Quản trị viên,Trưởng phòng nhân sự,Quản trị viên hệ thống")]
 [Route("recruitment-catalogs")]
 [Route("danh-muc-tuyen-dung")]
 public class RecruitmentCatalogsController : Controller
@@ -32,6 +32,18 @@ public class RecruitmentCatalogsController : Controller
     public async Task<IActionResult> Index()
     {
         await EnsureSeedCatalogsAsync();
+
+        // Ensure any previously seeded items with IsSystem flag are unblocked for full editing/deletion
+        var systemItems = await _dbContext.RecruitmentCatalogs.Where(c => c.IsSystem).ToListAsync();
+        if (systemItems.Count > 0)
+        {
+            foreach (var si in systemItems)
+            {
+                si.IsSystem = false;
+            }
+            await _dbContext.SaveChangesAsync();
+        }
+
         var catalogs = await _dbContext.RecruitmentCatalogs
             .OrderBy(c => c.CatalogType)
             .ThenBy(c => c.DisplayOrder)
@@ -48,6 +60,12 @@ public class RecruitmentCatalogsController : Controller
         if (string.IsNullOrWhiteSpace(type))
         {
             return BadRequest(new { message = "Loại danh mục là bắt buộc." });
+        }
+
+        // Bảo vệ danh mục nội bộ: Lý do từ chối (REJECTION_REASON) chỉ dành cho cán bộ nhân sự đã đăng nhập
+        if (type.Equals("REJECTION_REASON", StringComparison.OrdinalIgnoreCase) && !(User.Identity?.IsAuthenticated == true))
+        {
+            return Forbid();
         }
 
         var items = await _catalogService.GetByTypeAsync(type, true);
@@ -159,8 +177,8 @@ public class RecruitmentCatalogsController : Controller
             return NotFound(new { message = "Không tìm thấy danh mục yêu cầu." });
         }
 
-        // If system, cannot change Code or CatalogType
-        if (!item.IsSystem && !string.IsNullOrWhiteSpace(dto.Code))
+        // Allow updating code
+        if (!string.IsNullOrWhiteSpace(dto.Code))
         {
             var cleanCode = dto.Code.Trim().ToUpperInvariant();
             var codeExists = await _dbContext.RecruitmentCatalogs
@@ -176,6 +194,7 @@ public class RecruitmentCatalogsController : Controller
         item.Description = dto.Description?.Trim();
         item.DisplayOrder = dto.DisplayOrder;
         item.IsActive = dto.IsActive;
+        item.IsSystem = false;
         item.UpdatedAt = DateTimeOffset.UtcNow;
 
         await _dbContext.SaveChangesAsync();
@@ -191,11 +210,6 @@ public class RecruitmentCatalogsController : Controller
         if (item == null)
         {
             return NotFound(new { message = "Không tìm thấy mục danh mục cần xóa." });
-        }
-
-        if (item.IsSystem)
-        {
-            return StatusCode(409, new { message = "Mục danh mục hệ thống mặc định được bảo vệ và không thể xóa. Bạn có thể vô hiệu hóa trạng thái để ẩn." });
         }
 
         var catType = item.CatalogType;
@@ -231,30 +245,30 @@ public class RecruitmentCatalogsController : Controller
         var defaults = new List<RecruitmentCatalog>
         {
             // Nguồn ứng viên
-            new() { CatalogType = "SOURCE", Code = "LINKEDIN", Name = "LinkedIn Recruiter", Description = "Mạng xã hội nghề nghiệp LinkedIn", DisplayOrder = 1, IsSystem = true },
-            new() { CatalogType = "SOURCE", Code = "TOPCV", Name = "TopCV Platform", Description = "Cổng thông tin việc làm TopCV", DisplayOrder = 2, IsSystem = true },
-            new() { CatalogType = "SOURCE", Code = "VIETNAMWORKS", Name = "VietnamWorks", Description = "Cổng việc làm VietnamWorks", DisplayOrder = 3, IsSystem = true },
-            new() { CatalogType = "SOURCE", Code = "INTERNAL_REFERRAL", Name = "Nội bộ giới thiệu", Description = "Ứng viên do nhân sự NoveraTech giới thiệu", DisplayOrder = 4, IsSystem = true },
-            new() { CatalogType = "SOURCE", Code = "DIRECT_PORTAL", Name = "Website tuyển dụng trực tiếp", Description = "Ứng viên nộp trực tiếp qua trang /gioi-thieu", DisplayOrder = 5, IsSystem = true },
+            new() { CatalogType = "SOURCE", Code = "LINKEDIN", Name = "LinkedIn Recruiter", Description = "Mạng xã hội nghề nghiệp LinkedIn", DisplayOrder = 1, IsSystem = false },
+            new() { CatalogType = "SOURCE", Code = "TOPCV", Name = "TopCV Platform", Description = "Cổng thông tin việc làm TopCV", DisplayOrder = 2, IsSystem = false },
+            new() { CatalogType = "SOURCE", Code = "VIETNAMWORKS", Name = "VietnamWorks", Description = "Cổng việc làm VietnamWorks", DisplayOrder = 3, IsSystem = false },
+            new() { CatalogType = "SOURCE", Code = "INTERNAL_REFERRAL", Name = "Nội bộ giới thiệu", Description = "Ứng viên do nhân sự NoveraTech giới thiệu", DisplayOrder = 4, IsSystem = false },
+            new() { CatalogType = "SOURCE", Code = "DIRECT_PORTAL", Name = "Website tuyển dụng trực tiếp", Description = "Ứng viên nộp trực tiếp qua trang /gioi-thieu", DisplayOrder = 5, IsSystem = false },
 
             // Lý do từ chối
-            new() { CatalogType = "REJECTION_REASON", Code = "SKILL_MISMATCH", Name = "Chuyên môn chưa phù hợp", Description = "Kỹ năng thực tế chưa đáp ứng yêu cầu vị trí", DisplayOrder = 1, IsSystem = true },
-            new() { CatalogType = "REJECTION_REASON", Code = "SALARY_OVER_BAND", Name = "Kỳ vọng lương vượt khung", Description = "Mức lương mong muốn vượt quá dải lương quy định", DisplayOrder = 2, IsSystem = true },
-            new() { CatalogType = "REJECTION_REASON", Code = "CULTURE_MISMATCH", Name = "Chưa tương thích văn hóa đội ngũ", Description = "Không đồng điệu với giá trị cốt lõi & văn hóa công ty", DisplayOrder = 3, IsSystem = true },
-            new() { CatalogType = "REJECTION_REASON", Code = "CANDIDATE_DECLINED", Name = "Ứng viên từ chối Offer", Description = "Ứng viên quyết định chọn cơ hội khác", DisplayOrder = 4, IsSystem = true },
-            new() { CatalogType = "REJECTION_REASON", Code = "NO_RESPONSE", Name = "Ứng viên không phản hồi", Description = "Không liên lạc được sau nhiều lần liên hệ", DisplayOrder = 5, IsSystem = true },
+            new() { CatalogType = "REJECTION_REASON", Code = "SKILL_MISMATCH", Name = "Chuyên môn chưa phù hợp", Description = "Kỹ năng thực tế chưa đáp ứng yêu cầu vị trí", DisplayOrder = 1, IsSystem = false },
+            new() { CatalogType = "REJECTION_REASON", Code = "SALARY_OVER_BAND", Name = "Kỳ vọng lương vượt khung", Description = "Mức lương mong muốn vượt quá dải lương quy định", DisplayOrder = 2, IsSystem = false },
+            new() { CatalogType = "REJECTION_REASON", Code = "CULTURE_MISMATCH", Name = "Chưa tương thích văn hóa đội ngũ", Description = "Không đồng điệu với giá trị cốt lõi & văn hóa công ty", DisplayOrder = 3, IsSystem = false },
+            new() { CatalogType = "REJECTION_REASON", Code = "CANDIDATE_DECLINED", Name = "Ứng viên từ chối Offer", Description = "Ứng viên quyết định chọn cơ hội khác", DisplayOrder = 4, IsSystem = false },
+            new() { CatalogType = "REJECTION_REASON", Code = "NO_RESPONSE", Name = "Ứng viên không phản hồi", Description = "Không liên lạc được sau nhiều lần liên hệ", DisplayOrder = 5, IsSystem = false },
 
             // Địa điểm làm việc
-            new() { CatalogType = "LOCATION", Code = "HN_HQ", Name = "Hà Nội — Trụ sở chính", Description = "Tòa nhà Novera Tower, Cầu Giấy, Hà Nội", DisplayOrder = 1, IsSystem = true },
-            new() { CatalogType = "LOCATION", Code = "HCM_BRANCH", Name = "TP. Hồ Chí Minh — Chi nhánh", Description = "Tòa nhà Bitexco / Quận 1, TP. HCM", DisplayOrder = 2, IsSystem = true },
-            new() { CatalogType = "LOCATION", Code = "DN_HUB", Name = "Đà Nẵng — R&D Hub", Description = "Công viên phần mềm Đà Nẵng", DisplayOrder = 3, IsSystem = true },
-            new() { CatalogType = "LOCATION", Code = "REMOTE_VN", Name = "Remote toàn quốc (Việt Nam)", Description = "Làm việc từ xa mọi nơi tại Việt Nam", DisplayOrder = 4, IsSystem = true },
+            new() { CatalogType = "LOCATION", Code = "HN_HQ", Name = "Hà Nội — Trụ sở chính", Description = "Tòa nhà Novera Tower, Cầu Giấy, Hà Nội", DisplayOrder = 1, IsSystem = false },
+            new() { CatalogType = "LOCATION", Code = "HCM_BRANCH", Name = "TP. Hồ Chí Minh — Chi nhánh", Description = "Tòa nhà Bitexco / Quận 1, TP. HCM", DisplayOrder = 2, IsSystem = false },
+            new() { CatalogType = "LOCATION", Code = "DN_HUB", Name = "Đà Nẵng — R&D Hub", Description = "Công viên phần mềm Đà Nẵng", DisplayOrder = 3, IsSystem = false },
+            new() { CatalogType = "LOCATION", Code = "REMOTE_VN", Name = "Remote toàn quốc (Việt Nam)", Description = "Làm việc từ xa mọi nơi tại Việt Nam", DisplayOrder = 4, IsSystem = false },
 
             // Hình thức làm việc
-            new() { CatalogType = "WORK_TYPE", Code = "FULL_TIME", Name = "Toàn thời gian (Full-time)", Description = "40 giờ/tuần, hưởng đầy đủ chế độ", DisplayOrder = 1, IsSystem = true },
-            new() { CatalogType = "WORK_TYPE", Code = "HYBRID", Name = "Hybrid (2 ngày WFH/tuần)", Description = "Linh hoạt giữa văn phòng và từ xa", DisplayOrder = 2, IsSystem = true },
-            new() { CatalogType = "WORK_TYPE", Code = "PART_TIME", Name = "Bán thời gian (Part-time)", Description = "20-25 giờ/tuần", DisplayOrder = 3, IsSystem = true },
-            new() { CatalogType = "WORK_TYPE", Code = "CONTRACT", Name = "Hợp đồng dự án (Contractor)", Description = "Theo tiến độ dự án 6-12 tháng", DisplayOrder = 4, IsSystem = true }
+            new() { CatalogType = "WORK_TYPE", Code = "FULL_TIME", Name = "Toàn thời gian (Full-time)", Description = "40 giờ/tuần, hưởng đầy đủ chế độ", DisplayOrder = 1, IsSystem = false },
+            new() { CatalogType = "WORK_TYPE", Code = "HYBRID", Name = "Hybrid (2 ngày WFH/tuần)", Description = "Linh hoạt giữa văn phòng và từ xa", DisplayOrder = 2, IsSystem = false },
+            new() { CatalogType = "WORK_TYPE", Code = "PART_TIME", Name = "Bán thời gian (Part-time)", Description = "20-25 giờ/tuần", DisplayOrder = 3, IsSystem = false },
+            new() { CatalogType = "WORK_TYPE", Code = "CONTRACT", Name = "Hợp đồng dự án (Contractor)", Description = "Theo tiến độ dự án 6-12 tháng", DisplayOrder = 4, IsSystem = false }
         };
 
         foreach (var d in defaults)

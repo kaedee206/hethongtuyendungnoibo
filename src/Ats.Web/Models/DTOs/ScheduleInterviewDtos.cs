@@ -26,6 +26,8 @@ public class ScheduleInterviewInputModel
 
     public string InterviewType { get; set; } = "ONLINE_MEET";
 
+    public string InterviewFormat { get; set; } = "MEET";
+
     [Required(ErrorMessage = "Vui lòng cung cấp phòng họp hoặc liên kết họp trực tuyến.")]
     public string LocationOrLink { get; set; } = string.Empty;
 
@@ -100,5 +102,6 @@ public class InterviewerLookupDto
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
-    public string DisplayText => $"{FullName} ({Role}) - {Email}";
+    public string DisplayRole => Ats.Web.Constants.UserRoles.GetDisplayName(Role);
+    public string DisplayText => $"{FullName} ({DisplayRole}) - {Email}";
 }

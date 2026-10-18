@@ -38,21 +38,7 @@
         </div>
     </div>
 
-    <!-- ── THÔNG BÁO FLASH MESSAGE ── -->
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 mb-3" style="border-radius: 8px;" role="alert">
-            <i class="bi bi-check-circle-fill text-success"></i>
-            <div>
-                @TempData["SuccessMessage"]
-                @if (TempData["TrackingCode"] != null)
-                {
-                    <span class="ms-2">Mã tra cứu: <strong style="font-family:'JetBrains Mono',monospace;">@TempData["TrackingCode"]</strong></span>
-                }
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
+
 
     <!-- ── 4 THẺ KPI TỔNG QUAN TIẾN ĐỘ ── -->
     <div class="row g-3 mb-4">

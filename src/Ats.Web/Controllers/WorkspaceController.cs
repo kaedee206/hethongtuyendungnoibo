@@ -405,15 +405,23 @@ public class WorkspaceController : Controller
     {
         try
         {
+            var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(currentUserIdStr, out var currentUserId);
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+            var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "";
+            bool isStaff = userRole == UserRoles.Admin || userRole == UserRoles.HRManager || userRole == UserRoles.Recruiter || userRole == UserRoles.Interviewer;
+
             Interview? interview = null;
             if (interviewId.HasValue && interviewId.Value != Guid.Empty)
             {
-                interview = await _dbContext.Interviews.FirstOrDefaultAsync(i => i.Id == interviewId.Value);
+                interview = await _dbContext.Interviews
+                    .Include(i => i.Application)
+                        .ThenInclude(a => a.Candidate)
+                    .FirstOrDefaultAsync(i => i.Id == interviewId.Value);
             }
 
             if (interview == null)
             {
-                var userEmail = User.FindFirstValue(ClaimTypes.Email);
                 interview = await _dbContext.Interviews
                     .Include(i => i.Application)
                         .ThenInclude(a => a.Candidate)
@@ -425,6 +433,18 @@ public class WorkspaceController : Controller
             if (interview == null)
             {
                 return Json(new { success = false, message = "Không tìm thấy phiên phỏng vấn cần đổi lịch." });
+            }
+
+            // BOLA / IDOR Protection: Xác thực quyền sở hữu nếu không phải nhân sự nội bộ
+            if (!isStaff && interview.Application?.Candidate != null)
+            {
+                var cand = interview.Application.Candidate;
+                bool isOwner = (cand.UserId.HasValue && cand.UserId.Value == currentUserId) ||
+                               (!string.IsNullOrEmpty(userEmail) && string.Equals(cand.Email, userEmail, StringComparison.OrdinalIgnoreCase));
+                if (!isOwner)
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Bạn không có quyền thay đổi lịch phỏng vấn của ứng viên khác." });
+                }
             }
 
             interview.CandidateConfirmed = CandidateConfirmStatus.DECLINED;
@@ -457,10 +477,31 @@ public class WorkspaceController : Controller
     {
         try
         {
-            var interview = await _dbContext.Interviews.FirstOrDefaultAsync(i => i.Id == interviewId);
+            var interview = await _dbContext.Interviews
+                .Include(i => i.Application)
+                    .ThenInclude(a => a.Candidate)
+                .FirstOrDefaultAsync(i => i.Id == interviewId);
             if (interview == null)
             {
                 return Json(new { success = false, message = "Không tìm thấy lịch phỏng vấn yêu cầu." });
+            }
+
+            var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(currentUserIdStr, out var currentUserId);
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+            var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "";
+            bool isStaff = userRole == UserRoles.Admin || userRole == UserRoles.HRManager || userRole == UserRoles.Recruiter || userRole == UserRoles.Interviewer;
+
+            // BOLA / IDOR Protection: Xác thực quyền sở hữu nếu không phải nhân sự nội bộ
+            if (!isStaff && interview.Application?.Candidate != null)
+            {
+                var cand = interview.Application.Candidate;
+                bool isOwner = (cand.UserId.HasValue && cand.UserId.Value == currentUserId) ||
+                               (!string.IsNullOrEmpty(userEmail) && string.Equals(cand.Email, userEmail, StringComparison.OrdinalIgnoreCase));
+                if (!isOwner)
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Bạn không có quyền xác nhận lịch phỏng vấn của ứng viên khác." });
+                }
             }
 
             interview.CandidateConfirmed = CandidateConfirmStatus.ACCEPTED;
@@ -1171,6 +1212,16 @@ public class WorkspaceController : Controller
             if (interviewerIds.Any())
             {
                 var interviewers = await _dbContext.Users.Where(u => interviewerIds.Contains(u.Id)).ToListAsync(cancellationToken);
+                
+                // Rule 12: Chặn tuyệt đối ứng viên tham gia hội đồng phỏng vấn
+                var invalidCandidates = interviewers
+                    .Where(u => u.UserType != Ats.Web.Models.Enums.UserType.INTERNAL || !Ats.Web.Constants.UserRoles.CanBeInterviewer(u.Role))
+                    .ToList();
+                if (invalidCandidates.Any())
+                {
+                    return BadRequest(new { success = false, message = "Vi phạm bảo mật (Rule 12): Ứng viên (Candidate) tuyệt đối không được phép tham gia hội đồng phỏng vấn." });
+                }
+
                 foreach (var inv in interviewers)
                 {
                     await _dbContext.InterviewPanelists.AddAsync(new InterviewPanelist
@@ -1182,7 +1233,8 @@ public class WorkspaceController : Controller
                         CreatedAt = DateTimeOffset.UtcNow,
                         UpdatedAt = DateTimeOffset.UtcNow
                     }, cancellationToken);
-                    panelistNames.Add($"{inv.FullName} ({inv.Role})");
+                    var displayRole = Ats.Web.Constants.UserRoles.GetDisplayName(inv.Role);
+                    panelistNames.Add($"{inv.FullName} ({displayRole})");
                 }
             }
             if (!panelistNames.Any())
@@ -1611,8 +1663,8 @@ public class WorkspaceController : Controller
         {
             var interviewers = _interviewService != null
                 ? await _interviewService.GetAvailableInterviewersAsync(cancellationToken)
-                : await _dbContext.Users
-                    .Where(u => u.Status == "ACTIVE")
+                : (await _dbContext.Users
+                    .Where(u => u.Status == "ACTIVE" && u.UserType == Ats.Web.Models.Enums.UserType.INTERNAL)
                     .OrderBy(u => u.FullName)
                     .Select(u => new InterviewerLookupDto
                     {
@@ -1621,7 +1673,9 @@ public class WorkspaceController : Controller
                         Email = u.Email,
                         Role = u.Role
                     })
-                    .ToListAsync(cancellationToken);
+                    .ToListAsync(cancellationToken))
+                    .Where(u => Ats.Web.Constants.UserRoles.CanBeInterviewer(u.Role))
+                    .ToList();
 
             var list = interviewers.Select(u => new
             {
@@ -1752,6 +1806,7 @@ public class WorkspaceController : Controller
     /// SCRUM-328: Xuất danh sách ứng viên rút gọn ra file Excel cho Trưởng bộ phận theo các bộ lọc đang áp dụng
     /// </summary>
     [HttpGet("ExportCandidates")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},{UserRoles.HiringManager}")]
     public async Task<IActionResult> ExportCandidates(
         [FromQuery] Guid? jobId,
         [FromQuery] string? stage,
@@ -1879,6 +1934,7 @@ public class WorkspaceController : Controller
     [HttpGet("/dashboard/trung-lap")]
     [HttpGet("HoSoTrungLap")]
     [HttpGet("CandidateDuplicates")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter}")]
     public async Task<IActionResult> CandidateDuplicates([FromQuery] string tab = "duplicates")
     {
         var model = await _mergeService.GetDuplicateOverviewAsync();
@@ -1893,6 +1949,7 @@ public class WorkspaceController : Controller
     [HttpGet("SoSanhHoSo")]
     [HttpGet("CompareCandidates")]
     [HttpGet("/dashboard/so-sanh-ung-vien")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter}")]
     public async Task<IActionResult> CompareCandidates([FromQuery] Guid primaryId, [FromQuery] Guid? secondaryId)
     {
         if (primaryId == Guid.Empty)
@@ -1935,6 +1992,7 @@ public class WorkspaceController : Controller
     [HttpPost("GopHoSo")]
     [HttpPost("MergeCandidates")]
     [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter}")]
     public async Task<IActionResult> MergeCandidates([FromForm] MergeCandidatesRequestModel model)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -1973,6 +2031,7 @@ public class WorkspaceController : Controller
     [HttpPost("HoanTacGop")]
     [HttpPost("UndoMerge")]
     [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter}")]
     public async Task<IActionResult> UndoMerge([FromForm] Guid historyId)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -2008,6 +2067,7 @@ public class WorkspaceController : Controller
     /// </summary>
     [HttpGet("NhatKyTuongTac")]
     [HttpGet("CandidateTimeline")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},{UserRoles.HiringManager}")]
     public async Task<IActionResult> CandidateTimeline(
         [FromQuery] Guid? candidateId,
         [FromQuery] Guid? applicationId,
@@ -2044,6 +2104,7 @@ public class WorkspaceController : Controller
     /// API AJAX nạp dòng thời gian tương tác phục vụ Modal/Drawer
     /// </summary>
     [HttpGet("GetCandidateTimelineJson")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},{UserRoles.HiringManager}")]
     public async Task<IActionResult> GetCandidateTimelineJson(
         [FromQuery] Guid? candidateId,
         [FromQuery] Guid? applicationId,
@@ -2079,6 +2140,7 @@ public class WorkspaceController : Controller
     /// </summary>
     [HttpPost("AddCandidateInteraction")]
     [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},{UserRoles.HiringManager}")]
     public async Task<IActionResult> AddCandidateInteraction([FromForm] AddCandidateInteractionInputModel model)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);

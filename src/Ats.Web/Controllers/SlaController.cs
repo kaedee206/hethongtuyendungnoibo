@@ -9,7 +9,7 @@ namespace Ats.Web.Controllers;
 /// <summary>
 /// Controller quản lý cấu hình và kiểm tra quá hạn SLA giai đoạn tuyển dụng (SCRUM-327).
 /// </summary>
-[Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter}")]
+[Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng,Quản trị viên hệ thống")]
 public class SlaController : Controller
 {
     private readonly ISlaService _slaService;

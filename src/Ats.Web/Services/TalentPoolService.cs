@@ -356,6 +356,16 @@ public class TalentPoolService(
             })
             .ToListAsync(cancellationToken);
 
+        // Thu thập các kỹ năng công nghệ thực tế xuất hiện trong yêu cầu tuyển dụng
+        var allKnownSkills = poolCandidates
+            .SelectMany(tp => (tp.Skills ?? string.Empty)
+                .Split([',', ';', '|'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Concat(tp.Candidate.Tags.Select(t => t.TagName)))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Where(sk => sk.Length >= 2 && jobRequirementsText.Contains(sk.ToLower()))
+            .OrderBy(sk => sk)
+            .ToList();
+
         return new TalentPoolSuggestionListViewModel
         {
             JobPostingId = jobPosting.Id,
@@ -369,7 +379,7 @@ public class TalentPoolService(
             JobDescription = jobPosting.JobDescription,
             PublishedAt = jobPosting.PublishedAt,
             TotalPoolCandidates = poolCandidates.Count,
-            SkillsRequired = jobTitleTokens.Take(10).ToList(),
+            SkillsRequired = allKnownSkills.Take(8).ToList(),
             AvailableOpenJobs = openJobsList,
             Suggestions = suggestions
         };
@@ -683,9 +693,10 @@ public class TalentPoolService(
         char[] separators = [' ', ',', '.', '/', '-', '(', ')', '[', ']', ':', '+'];
         var stopWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "và", "hoặc", "của", "cho", "các", "các", "những", "trong", "về", "với", "tại", "là", "được", "có", "theo",
+            "và", "hoặc", "của", "cho", "các", "những", "trong", "về", "với", "tại", "là", "được", "có", "theo",
             "kèm", "yêu", "cầu", "tuyển", "dụng", "vị", "trí", "nhân", "viên", "bộ", "phận", "phòng", "ban", "level",
-            "senior", "junior", "middle", "lead", "chính", "thức", "kinh", "nghiệm", "năm"
+            "senior", "junior", "middle", "lead", "chính", "thức", "kinh", "nghiệm", "năm",
+            "chuyên", "cao", "cấp", "bảo", "mật", "hệ", "thống", "đã", "đóng", "mở", "mới"
         };
 
         return text.Split(separators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)

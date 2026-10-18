@@ -40,7 +40,7 @@ public class RequisitionAssignmentService : IRequisitionAssignmentService
         model.AvailableRecruiters = await GetAvailableRecruitersAsync(cancellationToken);
         model.TotalActiveRecruitersCount = model.AvailableRecruiters.Count;
 
-        // 2. Query JobRequisitions (Bỏ qua bản nháp và đã hủy)
+        // 2. Query JobRequisitions (Bỏ qua bản nháp, đã hủy, và đã từ chối)
         var query = _dbContext.JobRequisitions
             .AsNoTracking()
             .Include(r => r.JobPosition)
@@ -49,7 +49,10 @@ public class RequisitionAssignmentService : IRequisitionAssignmentService
             .Include(r => r.RequisitionRecruiters.Where(rr => !rr.IsDeleted))
                 .ThenInclude(rr => rr.Recruiter)
             .Include(r => r.HandoverHistories.Where(h => !h.IsDeleted))
-            .Where(r => !r.IsDeleted && r.Status != RequisitionStatus.DRAFT && r.Status != RequisitionStatus.CANCELLED);
+            .Where(r => !r.IsDeleted && 
+                        r.Status != RequisitionStatus.DRAFT && 
+                        r.Status != RequisitionStatus.CANCELLED &&
+                        r.Status != RequisitionStatus.REJECTED);
 
         // Đếm tổng số vị trí đang mở trên toàn hệ thống trước khi lọc
         model.TotalOpenRequisitions = await query.CountAsync(cancellationToken);
@@ -161,6 +164,28 @@ public class RequisitionAssignmentService : IRequisitionAssignmentService
             };
         }).ToList();
 
+        // 3. Populate RecruiterWorkloads (Góc nhìn Khối lượng công việc & Năng lực tiếp nhận của từng Recruiter)
+        model.RecruiterWorkloads = model.AvailableRecruiters.Select(rec =>
+        {
+            var leadJobs = model.Items.Where(i => i.LeadRecruiterId == rec.Id).ToList();
+            var supportJobs = model.Items.Where(i => i.SupportingRecruiters.Any(s => s.RecruiterId == rec.Id)).ToList();
+            var allAssigned = leadJobs.Concat(supportJobs).DistinctBy(i => i.RequisitionId).ToList();
+            var totalPipeline = allAssigned.Sum(i => i.InProcessCandidatesCount);
+
+            return new RecruiterWorkloadViewModel
+            {
+                RecruiterId = rec.Id,
+                FullName = rec.FullName,
+                Email = rec.Email,
+                JobTitle = rec.JobTitle,
+                DepartmentName = rec.DepartmentName,
+                LeadCount = leadJobs.Count,
+                SupportCount = supportJobs.Count,
+                TotalCandidatesInPipeline = totalPipeline,
+                AssignedPositions = allAssigned
+            };
+        }).OrderByDescending(w => w.LeadCount).ThenBy(w => w.FullName).ToList();
+
         return model;
     }
 
@@ -241,7 +266,7 @@ public class RequisitionAssignmentService : IRequisitionAssignmentService
 
         if (model.LeadRecruiterId == Guid.Empty)
         {
-            return (false, "Vui lòng chỉ định một Recruiter chính chịu trách nhiệm chạy tới cùng.");
+            return (false, "Vui lòng chỉ định Chuyên viên tuyển dụng phụ trách chính.");
         }
 
         // Tải requisition kèm các quan hệ
@@ -267,7 +292,6 @@ public class RequisitionAssignmentService : IRequisitionAssignmentService
         var previousLeadId = requisition.AssignedRecruiterId;
         var isLeadChanged = previousLeadId.HasValue && previousLeadId.Value != model.LeadRecruiterId;
 
-        // YÊU CẦU NGHIỆP VỤ SCRUM 26: Có ghi lịch sử chuyển giao khi đổi người phụ trách
         // Nếu thay đổi người phụ trách chính thì BẮT BUỘC phải có lý do chuyển giao
         if (isLeadChanged && string.IsNullOrWhiteSpace(model.Reason))
         {
@@ -356,7 +380,7 @@ public class RequisitionAssignmentService : IRequisitionAssignmentService
             primaryAssignment.AssignedById = currentUserId;
             primaryAssignment.AssignedAt = now;
             primaryAssignment.UpdatedAt = now;
-            primaryAssignment.Note = "Recruiter chính (chịu trách nhiệm chạy tới cùng)";
+            primaryAssignment.Note = "Chuyên viên tuyển dụng phụ trách chính";
         }
         else
         {
@@ -368,7 +392,7 @@ public class RequisitionAssignmentService : IRequisitionAssignmentService
                 IsPrimary = true,
                 AssignedById = currentUserId,
                 AssignedAt = now,
-                Note = "Recruiter chính (chịu trách nhiệm chạy tới cùng)",
+                Note = "Chuyên viên tuyển dụng phụ trách chính",
                 CreatedAt = now,
                 UpdatedAt = now
             };

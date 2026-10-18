@@ -44,7 +44,33 @@ public class AccountController(
         return string.IsNullOrWhiteSpace(userAgent) ? "Trình duyệt Web (Không xác định)" : userAgent;
     }
 
-    private void DispatchLoginSuccessAlert(string email, string fullName)
+    private static void PopulateRoleClaims(List<Claim> claims, IEnumerable<string>? roles, string? primaryRole)
+    {
+        var addedRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        void AddRole(string? r)
+        {
+            if (string.IsNullOrWhiteSpace(r)) return;
+            foreach (var alias in UserRoles.GetAllRoleAliases(r))
+            {
+                if (addedRoles.Add(alias))
+                {
+                    claims.Add(new Claim(ClaimTypes.Role, alias));
+                }
+            }
+        }
+
+        if (roles != null)
+        {
+            foreach (var r in roles)
+            {
+                AddRole(r);
+            }
+        }
+        AddRole(primaryRole);
+    }
+
+    private void DispatchLoginSuccessAlert(string email, string fullName, bool isCandidate = false, string? roleName = null)
     {
         var ip = GetClientIp();
         var userAgent = GetClientDevice();
@@ -58,7 +84,9 @@ public class AccountController(
                     ip,
                     "Việt Nam",
                     userAgent,
-                    DateTimeOffset.UtcNow);
+                    DateTimeOffset.UtcNow,
+                    isCandidate,
+                    roleName);
             }
             catch (Exception ex)
             {
@@ -139,26 +167,7 @@ public class AccountController(
             new Claim(ClaimTypes.Name, userInfo.FullName)
         };
 
-        foreach (var role in userInfo.Roles)
-        {
-            claims.Add(new Claim(ClaimTypes.Role, role));
-            var norm = UserRoles.NormalizeRole(role);
-            if (!string.Equals(norm, role, StringComparison.OrdinalIgnoreCase))
-            {
-                claims.Add(new Claim(ClaimTypes.Role, norm));
-            }
-        }
-
-        // Đảm bảo Primary Role cũng có mặt trong claim role
-        if (!userInfo.Roles.Contains(userInfo.Role, StringComparer.OrdinalIgnoreCase))
-        {
-            claims.Add(new Claim(ClaimTypes.Role, userInfo.Role));
-        }
-        var normPrimary = UserRoles.NormalizeRole(userInfo.Role);
-        if (!claims.Any(c => c.Type == ClaimTypes.Role && string.Equals(c.Value, normPrimary, StringComparison.OrdinalIgnoreCase)))
-        {
-            claims.Add(new Claim(ClaimTypes.Role, normPrimary));
-        }
+        PopulateRoleClaims(claims, userInfo.Roles, userInfo.Role);
 
         var claimsIdentity = new ClaimsIdentity(claims, "AtsCookieScheme");
         var authProperties = new AuthenticationProperties
@@ -180,8 +189,19 @@ public class AccountController(
             Details = $"Đăng nhập thành công với chức danh và vai trò: {userInfo.Role}"
         });
 
+        var isCandidate = userInfo.Roles.All(r => UserRoles.NormalizeRole(r) == UserRoles.Candidate);
+        var staffRoleName = UserRoles.GetDisplayName(userInfo.Role);
         _logger.LogInformation("Người dùng {Email} đăng nhập thành công từ IP {Ip}.", PiiMaskingHelper.MaskEmail(model.Email), ip);
-        DispatchLoginSuccessAlert(userInfo.Email, userInfo.FullName);
+        DispatchLoginSuccessAlert(userInfo.Email, userInfo.FullName, isCandidate: isCandidate, roleName: staffRoleName);
+
+        if (isCandidate)
+        {
+            TempData["SuccessMessage"] = $"Đăng nhập Cổng Ứng viên thành công! Chào mừng bạn, {userInfo.FullName}.";
+        }
+        else
+        {
+            TempData["SuccessMessage"] = $"Đăng nhập Cổng Quản trị Nội bộ thành công! Xin chào {userInfo.FullName} ({staffRoleName}).";
+        }
 
         if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
         {
@@ -308,7 +328,7 @@ public class AccountController(
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Logout()
+    public async Task<IActionResult> Logout(string? returnUrl = null)
     {
         var userIdString = HttpContext.Session.GetString("UserId") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
         var sessionId = HttpContext.Session.Id;
@@ -326,7 +346,37 @@ public class AccountController(
         Response.Cookies.Delete(".AspNetCore.Session");
 
         TempData["SuccessMessage"] = "Bạn đã đăng xuất khỏi hệ thống thành công.";
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
         return RedirectToAction(nameof(Login));
+    }
+
+    /// <summary>
+    /// GET /Account/SwitchCandidateAccount?returnUrl={returnUrl}
+    /// Đăng xuất phiên hiện tại và chuyển hướng thẳng sang Cổng đăng nhập Ứng viên (CandidateAuth).
+    /// </summary>
+    [HttpGet("/Account/SwitchCandidateAccount")]
+    public async Task<IActionResult> SwitchCandidateAccount(string? returnUrl = null)
+    {
+        var userIdString = HttpContext.Session.GetString("UserId") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var sessionId = HttpContext.Session.Id;
+
+        if (Guid.TryParse(userIdString, out var userId))
+        {
+            await _authService.LogoutAsync(userId, sessionId);
+        }
+
+        HttpContext.Session.Clear();
+        await HttpContext.SignOutAsync("AtsCookieScheme");
+
+        Response.Cookies.Delete("Ats.Session");
+        Response.Cookies.Delete("Ats.AuthCookie");
+        Response.Cookies.Delete(".AspNetCore.Session");
+
+        TempData["WarningMessage"] = "Vui lòng đăng nhập bằng tài khoản Ứng viên của bạn để tiếp tục.";
+        return RedirectToAction(nameof(CandidateAuth), new { returnUrl });
     }
 
     #endregion
@@ -386,9 +436,9 @@ public class AccountController(
             return View(model);
         }
 
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+        var ip = GetClientIp();
         var loginDto = new LoginRequestDto(model.LoginInput.Email, model.LoginInput.Password);
-        var result = await _authService.AuthenticateAsync(loginDto);
+        var result = await _authService.AuthenticateAsync(loginDto, ip);
 
         if (!result.IsSuccess || result.Data == null)
         {
@@ -416,25 +466,7 @@ public class AccountController(
             new Claim(ClaimTypes.Name, userInfo.FullName)
         };
 
-        foreach (var role in userInfo.Roles)
-        {
-            claims.Add(new Claim(ClaimTypes.Role, role));
-            var norm = UserRoles.NormalizeRole(role);
-            if (!string.Equals(norm, role, StringComparison.OrdinalIgnoreCase))
-            {
-                claims.Add(new Claim(ClaimTypes.Role, norm));
-            }
-        }
-
-        if (!userInfo.Roles.Contains(userInfo.Role, StringComparer.OrdinalIgnoreCase))
-        {
-            claims.Add(new Claim(ClaimTypes.Role, userInfo.Role));
-        }
-        var normPrimary = UserRoles.NormalizeRole(userInfo.Role);
-        if (!claims.Any(c => c.Type == ClaimTypes.Role && string.Equals(c.Value, normPrimary, StringComparison.OrdinalIgnoreCase)))
-        {
-            claims.Add(new Claim(ClaimTypes.Role, normPrimary));
-        }
+        PopulateRoleClaims(claims, userInfo.Roles, userInfo.Role);
 
         var claimsIdentity = new ClaimsIdentity(claims, "AtsCookieScheme");
         var authProperties = new AuthenticationProperties
@@ -445,8 +477,11 @@ public class AccountController(
 
         await HttpContext.SignInAsync("AtsCookieScheme", new ClaimsPrincipal(claimsIdentity), authProperties);
 
-        _logger.LogInformation("Nhân sự {Email} đăng nhập qua StaffPortal từ IP {Ip}.", model.LoginInput.Email, ip);
-        DispatchLoginSuccessAlert(userInfo.Email, userInfo.FullName);
+        var staffRoleName = UserRoles.GetDisplayName(userInfo.Role);
+        _logger.LogInformation("Nhân sự {Email} ({Role}) đăng nhập qua StaffPortal từ IP {Ip}.", model.LoginInput.Email, staffRoleName, ip);
+        DispatchLoginSuccessAlert(userInfo.Email, userInfo.FullName, isCandidate: false, roleName: staffRoleName);
+
+        TempData["SuccessMessage"] = $"Đăng nhập Cổng Quản trị Nội bộ thành công! Xin chào {userInfo.FullName} ({staffRoleName}).";
 
         if (!string.IsNullOrEmpty(model.LoginInput.ReturnUrl) && Url.IsLocalUrl(model.LoginInput.ReturnUrl))
         {
@@ -559,30 +594,7 @@ public class AccountController(
             new Claim(ClaimTypes.Name, userInfo.FullName)
         };
 
-        foreach (var role in userInfo.Roles)
-        {
-            claims.Add(new Claim(ClaimTypes.Role, role));
-            var norm = UserRoles.NormalizeRole(role);
-            if (!string.Equals(norm, role, StringComparison.OrdinalIgnoreCase))
-            {
-                identityClaimsAdd(norm);
-            }
-        }
-
-        void identityClaimsAdd(string role)
-        {
-            claims.Add(new Claim(ClaimTypes.Role, role));
-        }
-
-        if (!userInfo.Roles.Contains(userInfo.Role, StringComparer.OrdinalIgnoreCase))
-        {
-            claims.Add(new Claim(ClaimTypes.Role, userInfo.Role));
-        }
-        var normPrimary = UserRoles.NormalizeRole(userInfo.Role);
-        if (!claims.Any(c => c.Type == ClaimTypes.Role && string.Equals(c.Value, normPrimary, StringComparison.OrdinalIgnoreCase)))
-        {
-            claims.Add(new Claim(ClaimTypes.Role, normPrimary));
-        }
+        PopulateRoleClaims(claims, userInfo.Roles, userInfo.Role);
 
         var claimsIdentity = new ClaimsIdentity(claims, "AtsCookieScheme");
         var authProperties = new AuthenticationProperties
@@ -593,8 +605,10 @@ public class AccountController(
 
         await HttpContext.SignInAsync("AtsCookieScheme", new ClaimsPrincipal(claimsIdentity), authProperties);
 
-        _logger.LogInformation("Ứng viên {Email} đăng nhập từ IP {Ip}.", PiiMaskingHelper.MaskEmail(model.LoginInput.Email), ip);
-        DispatchLoginSuccessAlert(userInfo.Email, userInfo.FullName);
+        _logger.LogInformation("Ứng viên {Email} đăng nhập Cổng Ứng viên từ IP {Ip}.", PiiMaskingHelper.MaskEmail(model.LoginInput.Email), ip);
+        DispatchLoginSuccessAlert(userInfo.Email, userInfo.FullName, isCandidate: true, roleName: "Ứng viên");
+
+        TempData["SuccessMessage"] = $"Đăng nhập Cổng Ứng viên thành công! Chào mừng bạn, {userInfo.FullName}.";
 
         if (!string.IsNullOrEmpty(model.LoginInput.ReturnUrl) && Url.IsLocalUrl(model.LoginInput.ReturnUrl))
         {
@@ -904,8 +918,13 @@ public class AccountController(
 
         if (!isConfigured)
         {
-            // Nếu chưa điền Google Client ID thực tế vào .env, chuyển tới trang hướng dẫn cấu hình chi tiết
-            return RedirectToAction(nameof(GoogleConfigGuide), new { returnUrl, userType });
+            if (_webHostEnvironment != null && _webHostEnvironment.IsDevelopment())
+            {
+                return RedirectToAction(nameof(GoogleConfigGuide), new { returnUrl, userType });
+            }
+
+            TempData["ErrorMessage"] = "Phương thức đăng nhập qua Google hiện chưa được kích hoạt trên hệ thống. Vui lòng đăng nhập bằng Email và Mật khẩu.";
+            return RedirectToAction(userType == "staff" ? "StaffLogin" : "CandidateAuth", new { returnUrl });
         }
 
         var redirectUrl = Url.Action(nameof(ExternalCallback), "Account", new { returnUrl, userType, provider = "Google" });
@@ -961,6 +980,19 @@ public class AccountController(
             return RedirectToAction(redirectLoginAction, new { returnUrl });
         }
 
+        // Xác thực cờ email_verified từ Google OAuth để chống giả mạo email
+        if (!isOidc)
+        {
+            var emailVerified = claims.FirstOrDefault(c => c.Type == "email_verified")?.Value;
+            if (!string.Equals(emailVerified, "true", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("Từ chối đăng nhập Google: email chưa được Google xác thực ({Email})", email);
+                TempData["ErrorMessage"] = "Email Google của bạn chưa được xác thực bởi Google.";
+                await HttpContext.SignOutAsync("ExternalCookieScheme");
+                return RedirectToAction(redirectLoginAction, new { returnUrl });
+            }
+        }
+
         // Kiểm tra an ninh bắt buộc cho Cổng Nhân sự Nội bộ
         if (userType.Equals("staff", StringComparison.OrdinalIgnoreCase) || isOidc)
         {
@@ -986,6 +1018,16 @@ public class AccountController(
 
         var userInfo = result.Data;
 
+        // Chặn leo thang đặc quyền: Cổng đăng nhập ứng viên không được phép đăng nhập vào tài khoản có vai trò nhân sự
+        if (userType.Equals("candidate", StringComparison.OrdinalIgnoreCase) && 
+            userInfo.Roles.Any(r => r != "Candidate" && r != "Ứng viên nội bộ"))
+        {
+            _logger.LogWarning("Ngăn chặn truy cập vai trò nhân sự qua cổng đăng nhập ứng viên đối với email: {Email}", email);
+            TempData["ErrorMessage"] = "Tài khoản nhân sự không được phép đăng nhập qua cổng ứng viên. Vui lòng sử dụng Cổng Nhân Sự.";
+            await HttpContext.SignOutAsync("ExternalCookieScheme");
+            return RedirectToAction(nameof(CandidateLogin), new { returnUrl });
+        }
+
         // Thiết lập Session
         HttpContext.Session.SetString("UserId", userInfo.Id.ToString());
         HttpContext.Session.SetString("UserEmail", userInfo.Email);
@@ -1004,25 +1046,7 @@ public class AccountController(
             new Claim(ClaimTypes.Name, userInfo.FullName)
         };
 
-        foreach (var role in userInfo.Roles)
-        {
-            identityClaims.Add(new Claim(ClaimTypes.Role, role));
-            var norm = UserRoles.NormalizeRole(role);
-            if (!string.Equals(norm, role, StringComparison.OrdinalIgnoreCase))
-            {
-                identityClaims.Add(new Claim(ClaimTypes.Role, norm));
-            }
-        }
-
-        if (!userInfo.Roles.Contains(userInfo.Role, StringComparer.OrdinalIgnoreCase))
-        {
-            identityClaims.Add(new Claim(ClaimTypes.Role, userInfo.Role));
-        }
-        var normPrimary = UserRoles.NormalizeRole(userInfo.Role);
-        if (!identityClaims.Any(c => c.Type == ClaimTypes.Role && string.Equals(c.Value, normPrimary, StringComparison.OrdinalIgnoreCase)))
-        {
-            identityClaims.Add(new Claim(ClaimTypes.Role, normPrimary));
-        }
+        PopulateRoleClaims(identityClaims, userInfo.Roles, userInfo.Role);
 
         var claimsIdentity = new ClaimsIdentity(identityClaims, "AtsCookieScheme");
         var authProperties = new AuthenticationProperties
@@ -1034,8 +1058,20 @@ public class AccountController(
         await HttpContext.SignInAsync("AtsCookieScheme", new ClaimsPrincipal(claimsIdentity), authProperties);
         await HttpContext.SignOutAsync("ExternalCookieScheme");
 
+        var isCandidateUser = userInfo.Roles.All(r => UserRoles.NormalizeRole(r) == UserRoles.Candidate);
+        var roleDisplayName = UserRoles.GetDisplayName(userInfo.Role);
+
         _logger.LogInformation("Người dùng {Email} đăng nhập thành công qua {Provider}.", email, providerName);
-        DispatchLoginSuccessAlert(userInfo.Email, userInfo.FullName);
+        DispatchLoginSuccessAlert(userInfo.Email, userInfo.FullName, isCandidate: isCandidateUser, roleName: roleDisplayName);
+
+        if (isCandidateUser)
+        {
+            TempData["SuccessMessage"] = $"Đăng nhập Cổng Ứng viên thành công qua tài khoản {providerName}! Chào mừng bạn, {userInfo.FullName}.";
+        }
+        else
+        {
+            TempData["SuccessMessage"] = $"Đăng nhập Cổng Quản trị Nội bộ thành công qua {providerName}! Chào mừng {userInfo.FullName} ({roleDisplayName}).";
+        }
 
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
         {
@@ -1058,6 +1094,11 @@ public class AccountController(
     [AllowAnonymous]
     public IActionResult GoogleConfigGuide(string? returnUrl = null, string userType = "candidate")
     {
+        if (_webHostEnvironment == null || !_webHostEnvironment.IsDevelopment())
+        {
+            return NotFound();
+        }
+
         var googleClientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID")?.Trim();
         var googleClientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET")?.Trim();
         bool isConfigured = !string.IsNullOrWhiteSpace(googleClientId) && 
@@ -1149,25 +1190,7 @@ public class AccountController(
             new Claim(ClaimTypes.Name, userInfo.FullName)
         };
 
-        foreach (var role in userInfo.Roles)
-        {
-            identityClaims.Add(new Claim(ClaimTypes.Role, role));
-            var norm = UserRoles.NormalizeRole(role);
-            if (!string.Equals(norm, role, StringComparison.OrdinalIgnoreCase))
-            {
-                identityClaims.Add(new Claim(ClaimTypes.Role, norm));
-            }
-        }
-
-        if (!userInfo.Roles.Contains(userInfo.Role, StringComparer.OrdinalIgnoreCase))
-        {
-            identityClaims.Add(new Claim(ClaimTypes.Role, userInfo.Role));
-        }
-        var normPrimary = UserRoles.NormalizeRole(userInfo.Role);
-        if (!identityClaims.Any(c => c.Type == ClaimTypes.Role && string.Equals(c.Value, normPrimary, StringComparison.OrdinalIgnoreCase)))
-        {
-            identityClaims.Add(new Claim(ClaimTypes.Role, normPrimary));
-        }
+        PopulateRoleClaims(identityClaims, userInfo.Roles, userInfo.Role);
 
         var claimsIdentity = new ClaimsIdentity(identityClaims, "AtsCookieScheme");
         var authProperties = new AuthenticationProperties
@@ -1178,8 +1201,20 @@ public class AccountController(
 
         await HttpContext.SignInAsync("AtsCookieScheme", new ClaimsPrincipal(claimsIdentity), authProperties);
 
+        var isCandidateMock = userInfo.Roles.All(r => UserRoles.NormalizeRole(r) == UserRoles.Candidate);
+        var mockRoleName = UserRoles.GetDisplayName(userInfo.Role);
+
         _logger.LogInformation("Đăng nhập thử nghiệm Google Mock thành công cho tài khoản {Email}.", email);
-        TempData["SuccessMessage"] = $"Đăng nhập thành công với tài khoản Google ({email})!";
+        DispatchLoginSuccessAlert(userInfo.Email, userInfo.FullName, isCandidate: isCandidateMock, roleName: mockRoleName);
+
+        if (isCandidateMock)
+        {
+            TempData["SuccessMessage"] = $"Đăng nhập Cổng Ứng viên thành công với tài khoản Google ({email})! Chào mừng bạn, {userInfo.FullName}.";
+        }
+        else
+        {
+            TempData["SuccessMessage"] = $"Đăng nhập Cổng Quản trị Nội bộ thành công với tài khoản Google ({email})! Chào mừng {userInfo.FullName} ({mockRoleName}).";
+        }
 
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
         {

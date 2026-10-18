@@ -61,16 +61,17 @@
     <!-- Danh sách câu hỏi -->
     <div class="card border-0 shadow-sm" style="border-radius: 12px;">
         <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+            <div class="ats-mobile-table-hint px-3 pt-2"><i class="bi bi-arrow-left-right"></i> Vuốt ngang để xem đủ nội dung câu hỏi, khung năng lực & thao tác</div>
+            <div class="ats-mobile-table-wrapper table-responsive mb-0">
+                <table class="table table-hover align-middle mb-0" style="min-width: 780px;">
                     <thead style="background-color: #F8FAFC;">
                         <tr>
-                            <th class="py-3 px-4 text-secondary fw-semibold" style="width: 50px;">STT</th>
-                            <th class="py-3 px-4 text-secondary fw-semibold" style="width: 40%;">Nội dung câu hỏi</th>
-                            <th class="py-3 px-4 text-secondary fw-semibold">Khung năng lực</th>
-                            <th class="py-3 px-4 text-secondary fw-semibold text-center">Mức độ khó</th>
-                            <th class="py-3 px-4 text-secondary fw-semibold text-center">Trạng thái</th>
-                            <th class="py-3 px-4 text-secondary fw-semibold text-end">Thao tác</th>
+                            <th class="py-3 px-4 text-secondary fw-semibold text-nowrap" style="width: 50px;">STT</th>
+                            <th class="py-3 px-4 text-secondary fw-semibold" style="min-width: 250px;">Nội dung câu hỏi</th>
+                            <th class="py-3 px-4 text-secondary fw-semibold text-nowrap">Khung năng lực</th>
+                            <th class="py-3 px-4 text-secondary fw-semibold text-center text-nowrap">Mức độ khó</th>
+                            <th class="py-3 px-4 text-secondary fw-semibold text-center text-nowrap">Trạng thái</th>
+                            <th class="py-3 px-4 text-secondary fw-semibold text-end text-nowrap">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody id="questionTableBody">
@@ -194,17 +195,7 @@
     </div>
 </div>
 
-<!-- Toast Notification -->
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
-    <div id="actionToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="d-flex">
-            <div class="toast-body" id="toastMessage">
-                Thành công!
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-    </div>
-</div>
+
 
 @section Scripts {
     <script>
@@ -216,18 +207,8 @@
 
         $(document).ready(function () {
             questionModal = new bootstrap.Modal(document.getElementById('questionModal'));
-            deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-            toastObj = new bootstrap.Toast(document.getElementById('actionToast'), { delay: 4000 });
-            
             fetchQuestions();
         });
-
-        function showToast(message, isSuccess = true) {
-            const toastEl = document.getElementById('actionToast');
-            toastEl.className = 'toast align-items-center shadow-lg border-0 ' + (isSuccess ? 'toast-success' : 'toast-error');
-            document.getElementById('toastMessage').innerText = message;
-            toastObj.show();
-        }
 
         function getDifficultyBadge(level) {
             switch(level) {

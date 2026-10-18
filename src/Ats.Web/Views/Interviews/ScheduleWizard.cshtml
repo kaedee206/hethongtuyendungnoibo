@@ -1,0 +1,2050 @@
+@model Ats.Web.Models.ViewModels.Interviews.ScheduleInterviewWizardViewModel
+@{
+    ViewData["Title"] = "Đặt lịch phỏng vấn chuyên biệt (Wizard) - NoveraTech ATS";
+    Layout = "_Layout";
+}
+
+<style>
+    /* ═══════════════════════════════════════════════════════════════════
+       INTERVIEW SCHEDULING WIZARD STYLES (Tuân thủ RULE.md)
+       Màu chủ đạo: Slate & Emerald (#059669), Bo góc 12px card, 8px button
+       ═══════════════════════════════════════════════════════════════════ */
+    .wizard-page-container {
+        max-width: 1560px;
+        margin: 0 auto;
+        padding-bottom: 90px; /* Chừa khoảng trống cho sticky navigation footer */
+    }
+
+    /* Top Breadcrumb & Header */
+    .wizard-header-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    }
+
+    /* Step Progress Indicator */
+    .wizard-progress-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    }
+
+    .wizard-steps-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+    }
+
+    .wizard-step-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: transparent;
+        border: none;
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: left;
+        color: #64748B;
+        position: relative;
+        z-index: 2;
+    }
+
+    .wizard-step-item:hover:not(.disabled) {
+        background: #F8FAFC;
+        color: #0F172A;
+    }
+
+    .wizard-step-circle {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: #F1F5F9;
+        color: #64748B;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        border: 1px solid #CBD5E1;
+    }
+
+    .wizard-step-item.active .wizard-step-circle {
+        background: #059669;
+        color: #FFFFFF;
+        border-color: #059669;
+        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+    }
+
+    .wizard-step-item.active {
+        color: #0F172A;
+    }
+
+    .wizard-step-item.completed .wizard-step-circle {
+        background: #ECFDF5;
+        color: #059669;
+        border-color: #10B981;
+    }
+
+    .wizard-step-connector {
+        flex: 1;
+        height: 2px;
+        background: #E2E8F0;
+        margin: 0 0.5rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .wizard-step-connector.completed {
+        background: #10B981;
+    }
+
+    /* Cards & Containers */
+    .step-section-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+
+    .step-section-header {
+        background: #FAFAFA;
+        border-bottom: 1px solid #E2E8F0;
+        padding: 1rem 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .step-section-body {
+        padding: 1.25rem;
+    }
+
+    /* Step 1: Candidate Selection Cards */
+    .cand-select-card {
+        border: 1px solid #E2E8F0;
+        border-radius: 10px;
+        padding: 0.9rem;
+        margin-bottom: 0.75rem;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        background: #FFFFFF;
+    }
+
+    .cand-select-card:hover {
+        border-color: #94A3B8;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    }
+
+    .cand-select-card.selected {
+        border-color: #059669;
+        background: #F0FDF4;
+        box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2);
+    }
+
+    .candidate-avatar-badge {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: #0F172A;
+        color: #FFFFFF;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.15rem;
+        flex-shrink: 0;
+    }
+
+    /* Step 2: Time & Room Presets */
+    #interviewTypeTabs .nav-link {
+        color: #475569;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid transparent;
+        background: transparent;
+    }
+
+    #interviewTypeTabs .nav-link:hover {
+        background: #F1F5F9;
+        color: #0F172A;
+    }
+
+    #interviewTypeTabs .nav-link.active {
+        background: #FFFFFF !important;
+        box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+    }
+
+    #tab-meet.active {
+        border-color: #10B981 !important;
+        color: #065F46 !important;
+        background: #F0FDF4 !important;
+    }
+
+    #tab-teams.active {
+        border-color: #3B82F6 !important;
+        color: #1E40AF !important;
+        background: #EFF6FF !important;
+    }
+
+    #tab-offline.active {
+        border-color: #F59E0B !important;
+        color: #92400E !important;
+        background: #FFFBEB !important;
+    }
+
+    .preset-room-badge {
+        border: 1px solid #CBD5E1;
+        border-radius: 8px;
+        padding: 0.85rem 1rem;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        background: #FFFFFF;
+        margin-bottom: 0.65rem;
+    }
+
+    .preset-room-badge:hover {
+        border-color: #059669;
+        background: #F8FAFC;
+    }
+
+    .preset-room-badge.active {
+        border-color: #059669;
+        background: #ECFDF5;
+        box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2);
+    }
+
+    .preset-room-badge[data-platform="TEAMS"].active {
+        border-color: #3B82F6;
+        background: #EFF6FF;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+
+    .preset-room-badge[data-platform="OFFLINE"].active {
+        border-color: #F59E0B;
+        background: #FFFBEB;
+        box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+    }
+
+    .duration-pill-btn {
+        border: 1px solid #CBD5E1;
+        border-radius: 8px;
+        padding: 0.45rem 0.9rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #334155;
+        background: #FFFFFF;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .duration-pill-btn:hover {
+        border-color: #059669;
+        color: #059669;
+    }
+
+    .duration-pill-btn.active {
+        background: #059669;
+        color: #FFFFFF;
+        border-color: #059669;
+    }
+
+    /* Panelist Checkbox Item */
+    .panelist-select-row {
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #FFFFFF;
+        transition: all 0.15s ease;
+    }
+
+    .panelist-select-row:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .panelist-select-row.selected {
+        background: #F0FDF4;
+        border-color: #A7F3D0;
+    }
+
+    /* Step 3: Email Live Preview Mockup */
+    .email-mockup-wrapper {
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        background: #FFFFFF;
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+        overflow: hidden;
+    }
+
+    .email-mockup-topbar {
+        background: #F8FAFC;
+        border-bottom: 1px solid #E2E8F0;
+        padding: 0.75rem 1rem;
+        font-size: 0.8rem;
+        color: #64748B;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .email-mockup-body {
+        padding: 1.5rem;
+        background: #F1F5F9;
+        min-height: 480px;
+    }
+
+    .email-rendered-letter {
+        max-width: 580px;
+        margin: 0 auto;
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    }
+
+    /* Step 4: Summary Dashboard */
+    .summary-metric-box {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 10px;
+        padding: 1rem 1.15rem;
+        height: 100%;
+    }
+
+    /* Sticky Bottom Footer Navigation */
+    .wizard-sticky-nav-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #FFFFFF;
+        border-top: 1px solid #E2E8F0;
+        padding: 0.85rem 2rem;
+        box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.06);
+        z-index: 1020;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    /* Timeline Badges */
+    .timeline-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #059669;
+        display: inline-block;
+        margin-right: 8px;
+    }
+
+    /* Responsive */
+    @@media (max-width: 991px) {
+        .wizard-steps-nav {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        .wizard-step-connector {
+            display: none;
+        }
+        .wizard-step-item {
+            width: 100%;
+        }
+    }
+    @@media (max-width: 767.98px) {
+        .wizard-sticky-nav-footer {
+            padding: 0.6rem 0.85rem;
+            gap: 0.4rem;
+        }
+        .wizard-sticky-nav-footer #footerStepIndicatorBadge {
+            font-size: 0.72rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .wizard-sticky-nav-footer #btnNextStep {
+            font-size: 0.8rem;
+            padding: 0.45rem 0.75rem;
+            white-space: nowrap;
+        }
+        .wizard-sticky-nav-footer #btnPrevStep {
+            font-size: 0.8rem;
+            padding: 0.45rem 0.75rem;
+            white-space: nowrap;
+        }
+        .wizard-page-container {
+            padding-bottom: 120px;
+        }
+    }
+</style>
+
+<div class="container-fluid px-3 px-lg-4 py-3 wizard-page-container">
+
+    <!-- ── Top Header & Return Action ── -->
+    <div class="wizard-header-card d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="/dashboard/ung-vien" class="btn btn-sm btn-outline-secondary rounded-2 py-1 px-2.5" title="Quay lại Pipeline">
+                    <i class="bi bi-arrow-left me-1"></i>Trở về Pipeline
+                </a>
+                <span class="badge rounded-2 px-2.5 py-1 text-white" style="background: #059669; font-size: 0.75rem; font-weight: 600;">
+                    <i class="bi bi-calendar-check-fill me-1"></i>QUY TRÌNH WIZARD 4 BƯỚC
+                </span>
+            </div>
+            <h4 class="fw-bold text-dark mb-0" style="letter-spacing: -0.3px;">Thiết Lập Lịch Phỏng Vấn Chuyên Biệt</h4>
+            <div class="text-muted small mt-1" style="font-size: 0.82rem;">
+                Hệ thống điều phối phỏng vấn chuẩn mực NoveraTech ATS · Tự động kiểm tra lịch trống giám khảo và phát hành thư mời bảo mật
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="/phong-van/so-sanh-ung-vien" class="btn btn-sm btn-outline-primary rounded-2">
+                <i class="bi bi-bar-chart me-1"></i>So sánh ứng viên
+            </a>
+            <a href="/ung-vien" class="btn btn-sm btn-outline-secondary rounded-2">
+                <i class="bi bi-people me-1"></i>Danh sách ứng viên
+            </a>
+        </div>
+    </div>
+
+    <!-- ── Wizard Step Progress Indicator ── -->
+    <div class="wizard-progress-card">
+        <div class="wizard-steps-nav">
+            <!-- Step 1 Button -->
+            <button type="button" class="wizard-step-item active" id="stepNavBtn-1" onclick="navigateToStep(1)">
+                <div class="wizard-step-circle" id="stepCircle-1">1</div>
+                <div>
+                    <div class="fw-bold" style="font-size: 0.85rem;">Bước 1: Chọn đối tượng</div>
+                    <div class="small text-muted" style="font-size: 0.75rem;">Ứng viên, vị trí & tóm tắt CV</div>
+                </div>
+            </button>
+
+            <div class="wizard-step-connector" id="stepConnector-1"></div>
+
+            <!-- Step 2 Button -->
+            <button type="button" class="wizard-step-item" id="stepNavBtn-2" onclick="navigateToStep(2)">
+                <div class="wizard-step-circle" id="stepCircle-2">2</div>
+                <div>
+                    <div class="fw-bold" style="font-size: 0.85rem;">Bước 2: Thời gian & Hội đồng</div>
+                    <div class="small text-muted" style="font-size: 0.75rem;">Lịch trống, phòng họp & giám khảo</div>
+                </div>
+            </button>
+
+            <div class="wizard-step-connector" id="stepConnector-2"></div>
+
+            <!-- Step 3 Button -->
+            <button type="button" class="wizard-step-item" id="stepNavBtn-3" onclick="navigateToStep(3)">
+                <div class="wizard-step-circle" id="stepCircle-3">3</div>
+                <div>
+                    <div class="fw-bold" style="font-size: 0.85rem;">Bước 3: Soạn & Xem trước</div>
+                    <div class="small text-muted" style="font-size: 0.75rem;">Live Email Preview thời gian thực</div>
+                </div>
+            </button>
+
+            <div class="wizard-step-connector" id="stepConnector-3"></div>
+
+            <!-- Step 4 Button -->
+            <button type="button" class="wizard-step-item" id="stepNavBtn-4" onclick="navigateToStep(4)">
+                <div class="wizard-step-circle" id="stepCircle-4">4</div>
+                <div>
+                    <div class="fw-bold" style="font-size: 0.85rem;">Bước 4: Xác nhận & Chốt lịch</div>
+                    <div class="small text-muted" style="font-size: 0.75rem;">Kiểm duyệt tổng thể & Phát lệnh</div>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Alerts Notification Block ── -->
+    <div id="wizardAlertContainer" class="d-none mb-3">
+        <div id="wizardAlertBox" class="alert alert-dismissible fade show rounded-2 py-2.5 px-3 mb-0 border-0 shadow-sm" role="alert">
+            <div class="d-flex align-items-center">
+                <i id="wizardAlertIcon" class="bi bi-info-circle-fill me-2 fs-5"></i>
+                <span id="wizardAlertText" class="small fw-semibold"></span>
+            </div>
+            <button type="button" class="btn-close" onclick="closeWizardAlert()"></button>
+        </div>
+    </div>
+
+    <!-- ── MAIN FORM WIZARD (Gửi POST về /phong-van/dat-lich) ── -->
+    <form id="interviewWizardForm" method="post" action="/phong-van/dat-lich" onsubmit="handleWizardFormSubmit(event)">
+        @Html.AntiForgeryToken()
+
+        <!-- Hidden Inputs đồng bộ -->
+        <input type="hidden" id="formApplicationId" name="ApplicationId" value="@(Model.SelectedCandidate?.ApplicationId ?? Guid.Empty)" />
+        <input type="hidden" id="formRoundNumber" name="RoundNumber" value="@(Model.SelectedCandidate?.NextRoundNumber ?? 1)" />
+        <input type="hidden" id="formRoundTitle" name="RoundTitle" value="@(Model.SelectedCandidate?.SuggestedRoundTitle ?? "Phỏng vấn Vòng 1")" />
+        <input type="hidden" id="formDurationMinutes" name="DurationMinutes" value="60" />
+        <input type="hidden" id="formInterviewType" name="InterviewType" value="ONLINE_MEET" />
+        <input type="hidden" id="formInterviewFormat" name="InterviewFormat" value="MEET" />
+        <input type="hidden" id="formLocationOrLink" name="LocationOrLink" value="https://meet.google.com/nvr-atsw-int" />
+        <input type="hidden" id="formNote" name="Note" value="" />
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- BƯỚC 1: CHỌN ĐỐI TƯỢNG (ỨNG VIÊN & VỊ TRÍ)                          -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div id="wizardStepPane-1" class="wizard-pane">
+            <div class="row g-4">
+                <!-- Cột trái: Bộ lọc & Danh sách ứng viên trong Pipeline -->
+                <div class="col-12 col-lg-5 col-xl-5">
+                    <div class="step-section-card">
+                        <div class="step-section-header">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-person-lines-fill text-success fs-5"></i>
+                                <span class="fw-bold text-dark" style="font-size: 0.92rem;">Ứng viên trong Pipeline Tuyển Dụng</span>
+                            </div>
+                            <span class="badge bg-light text-muted border" id="candCountBadge">@Model.PipelineCandidates.Count hồ sơ</span>
+                        </div>
+                        <div class="step-section-body">
+                            <!-- Bộ lọc nhanh -->
+                            <div class="mb-3">
+                                <div class="input-group input-group-sm mb-2">
+                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                    <input type="text" id="searchCandidateInput" class="form-control border-start-0" placeholder="Tìm theo họ tên, email, vị trí..." oninput="filterCandidateList()" />
+                                </div>
+                                <select id="filterStageDropdown" class="form-select form-select-sm text-muted" onchange="filterCandidateList()">
+                                    <option value="">-- Tất cả giai đoạn tuyển dụng --</option>
+                                    <option value="Ứng tuyển">Ứng tuyển mới</option>
+                                    <option value="Sơ loại">Sơ loại hồ sơ</option>
+                                    <option value="Phỏng vấn">Phỏng vấn</option>
+                                    <option value="Đánh giá">Đánh giá chuyên môn</option>
+                                </select>
+                            </div>
+
+                            <!-- Danh sách cuộn ứng viên -->
+                            <div id="candidateListScroll" style="max-height: 520px; overflow-y: auto; padding-right: 4px;">
+                                @if (Model.PipelineCandidates.Any())
+                                {
+                                    @foreach (var c in Model.PipelineCandidates)
+                                    {
+                                        var isSelected = Model.SelectedCandidate != null && Model.SelectedCandidate.ApplicationId == c.ApplicationId;
+                                        <div class="cand-select-card @(isSelected ? "selected" : "")" 
+                                             id="candCard-@c.ApplicationId"
+                                             data-app-id="@c.ApplicationId"
+                                             data-name="@c.FullName"
+                                             data-email="@c.Email"
+                                             data-job="@c.JobTitle"
+                                             data-stage="@c.CurrentStageName"
+                                             onclick="selectCandidate('@c.ApplicationId')">
+                                            <div class="d-flex align-items-start gap-2.5">
+                                                <div class="candidate-avatar-badge">
+                                                    @c.InitialLetter
+                                                </div>
+                                                <div class="flex-grow-1 min-w-0">
+                                                    <div class="d-flex align-items-center justify-content-between">
+                                                        <h6 class="fw-bold text-dark mb-0 text-truncate" style="font-size: 0.9rem;">@c.FullName</h6>
+                                                        @if (c.MatchScore.HasValue)
+                                                        {
+                                                            <span class="badge rounded-2" style="background:#ECFDF5; color:#047857; font-size: 0.72rem; border: 1px solid #A7F3D0;">
+                                                                ⭐ @c.MatchScore% Match
+                                                            </span>
+                                                        }
+                                                    </div>
+                                                    <div class="text-muted small text-truncate mt-0.5" style="font-size: 0.78rem;">
+                                                        <i class="bi bi-briefcase me-1 text-secondary"></i>@c.JobTitle
+                                                    </div>
+                                                    <div class="d-flex align-items-center gap-2 mt-1.5 flex-wrap" style="font-size: 0.72rem;">
+                                                        <span class="badge bg-light text-dark border">@c.CurrentStageName</span>
+                                                        <span class="text-muted"><i class="bi bi-clock me-0.5"></i>@c.FormattedAppliedDate</span>
+                                                        @if (c.TotalInterviewsCount > 0)
+                                                        {
+                                                            <span class="text-info fw-semibold"><i class="bi bi-chat-dots me-0.5"></i>@c.TotalInterviewsCount vòng đã xếp</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="text-center py-5 text-muted">
+                                        <i class="bi bi-people fs-1 text-secondary opacity-50 mb-2"></i>
+                                        <p class="small mb-0">Hiện chưa có ứng viên nào sẵn sàng trong Pipeline.</p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cột phải: Thẻ Tóm Tắt Hồ Sơ Ứng Viên (Candidate Dossier Card) -->
+                <div class="col-12 col-lg-7 col-xl-7">
+                    <div class="step-section-card" id="candidateDossierCard">
+                        <div class="step-section-header">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-person-badge text-primary fs-5"></i>
+                                <span class="fw-bold text-dark" style="font-size: 0.92rem;">Tóm Tắt Hồ Sơ & Lịch Sử Tuyển Dụng</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <a id="dossierCvPreviewBtn" href="@(Model.SelectedCandidate?.ActiveResumeId.HasValue == true ? $"/Candidates/PreviewCv?resumeId={Model.SelectedCandidate.ActiveResumeId.Value}" : "javascript:void(0)")" 
+                                   target="_blank" class="btn btn-sm btn-outline-primary rounded-2 @(Model.SelectedCandidate?.ActiveResumeId.HasValue == true ? "" : "disabled")" style="font-size: 0.78rem;">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>Xem CV trực tiếp
+                                </a>
+                                <a id="dossierCandidateDetailBtn" href="@(Model.SelectedCandidate != null ? $"/Candidates/Details/{Model.SelectedCandidate.CandidateId}" : "javascript:void(0)")" 
+                                   target="_blank" class="btn btn-sm btn-outline-secondary rounded-2" style="font-size: 0.78rem;">
+                                    <i class="bi bi-box-arrow-up-right me-1"></i>Hồ sơ chi tiết
+                                </a>
+                            </div>
+                        </div>
+                        <div class="step-section-body" id="dossierBodyContent">
+                            @if (Model.SelectedCandidate != null)
+                            {
+                                <!-- Thông tin cơ bản -->
+                                <div class="d-flex align-items-start gap-3 p-3 rounded-3 mb-3" style="background: #F8FAFC; border: 1px solid #E2E8F0;">
+                                    <div class="d-flex align-items-center justify-content-center text-white fw-bold shadow-sm flex-shrink-0"
+                                         style="width: 58px; height: 58px; border-radius: 12px; background: #0F172A; font-size: 1.4rem;">
+                                        <span id="dossierInitials">@Model.SelectedCandidate.InitialLetter</span>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                            <h5 class="fw-bold text-dark mb-0" id="dossierFullName">@Model.SelectedCandidate.FullName</h5>
+                                            <span class="badge bg-success text-white rounded-2 px-2.5 py-1" id="dossierStageBadge">
+                                                @Model.SelectedCandidate.CurrentStageName
+                                            </span>
+                                        </div>
+                                        <div class="text-muted small mt-1" id="dossierHeadline">
+                                            @Model.SelectedCandidate.CurrentTitle tại @Model.SelectedCandidate.CurrentCompany
+                                        </div>
+                                        <div class="d-flex flex-wrap align-items-center gap-3 text-muted small mt-2" style="font-size: 0.8rem;">
+                                            <span><i class="bi bi-envelope me-1 text-secondary"></i><span id="dossierEmail">@Model.SelectedCandidate.Email</span></span>
+                                            <span><i class="bi bi-telephone me-1 text-secondary"></i><span id="dossierPhone">@(string.IsNullOrWhiteSpace(Model.SelectedCandidate.Phone) ? "Chưa có SĐT" : Model.SelectedCandidate.Phone)</span></span>
+                                            <span><i class="bi bi-building me-1 text-secondary"></i><span id="dossierDepartment">@Model.SelectedCandidate.DepartmentName</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Thông tin vị trí & Đề xuất vòng tiếp theo -->
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <div class="p-3 rounded-2 border bg-white h-100">
+                                            <div class="text-muted small mb-1"><i class="bi bi-briefcase me-1 text-primary"></i>Vị trí ứng tuyển</div>
+                                            <div class="fw-bold text-dark" id="dossierJobTitle">@Model.SelectedCandidate.JobTitle</div>
+                                            <div class="text-secondary small mt-0.5">Cấp bậc: <span class="fw-medium text-dark" id="dossierJobLevel">@Model.SelectedCandidate.JobLevel</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="p-3 rounded-2 border h-100" style="background:#F0FDF4; border-color:#BBF7D0 !important;">
+                                            <div class="text-success small fw-semibold mb-1"><i class="bi bi-lightning-charge-fill me-1"></i>Đề xuất vòng kế tiếp</div>
+                                            <div class="fw-bold text-dark" id="dossierNextRoundDisplay">Vòng @Model.SelectedCandidate.NextRoundNumber: Phỏng vấn chuyên sâu</div>
+                                            <div class="text-muted small mt-0.5">Tự động điền dữ liệu sang Bước 2</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Lịch sử các vòng phỏng vấn trước đó -->
+                                <div class="mt-4">
+                                    <h6 class="fw-bold text-dark mb-2.5" style="font-size: 0.88rem;">
+                                        <i class="bi bi-clock-history me-1.5 text-secondary"></i>Lịch sử các vòng phỏng vấn đã xếp
+                                    </h6>
+                                    <div id="dossierHistoryContainer">
+                                        @if (Model.SelectedCandidate.InterviewHistory.Any())
+                                        {
+                                            @foreach (var h in Model.SelectedCandidate.InterviewHistory)
+                                            {
+                                                <div class="p-3 mb-2 rounded-2 border bg-white" style="border-left: 4px solid #059669 !important;">
+                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                        <span class="fw-bold text-dark" style="font-size: 0.88rem;">@h.Title</span>
+                                                        <span class="badge bg-light text-dark border">@h.StatusDisplay</span>
+                                                    </div>
+                                                    <div class="d-flex flex-wrap align-items-center gap-3 text-muted small" style="font-size: 0.78rem;">
+                                                        <span><i class="bi bi-calendar3 me-1"></i>@h.FormattedTimeRange</span>
+                                                        <span><i class="bi bi-geo-alt me-1"></i>@h.InterviewTypeDisplay</span>
+                                                        <span><i class="bi bi-people me-1"></i>Hội đồng: @h.PanelistsDisplay</span>
+                                                    </div>
+                                                    @if (h.AverageScore.HasValue || !string.IsNullOrWhiteSpace(h.FinalConclusion))
+                                                    {
+                                                        <div class="d-flex align-items-center gap-2 mt-2 pt-2 border-top" style="font-size: 0.78rem;">
+                                                            @if (h.AverageScore.HasValue)
+                                                            {
+                                                                <span class="badge bg-primary text-white">Điểm TB: @h.AverageScore / 5.0</span>
+                                                            }
+                                                            @if (!string.IsNullOrWhiteSpace(h.FinalConclusion))
+                                                            {
+                                                                <span class="badge bg-info text-dark">Kết luận: @h.FinalConclusion</span>
+                                                            }
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <div class="text-center py-4 bg-light rounded-2 border text-muted">
+                                                <i class="bi bi-chat-square-dots text-secondary opacity-50 fs-3 mb-1 d-block"></i>
+                                                <span class="small">Ứng viên chưa tham gia vòng phỏng vấn nào trước đó. Buổi hẹn này sẽ là Vòng 1.</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center py-5 text-muted">
+                                    <i class="bi bi-arrow-left-circle fs-1 text-secondary opacity-50 mb-2"></i>
+                                    <p class="small mb-0">Vui lòng chọn một ứng viên trong danh sách bên trái để xem tóm tắt hồ sơ.</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- BƯỚC 2: THỜI GIAN & HỘI ĐỒNG PHỎNG VẤN                              -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div id="wizardStepPane-2" class="wizard-pane d-none">
+            <div class="row g-4">
+                <!-- Cột trái: Thiết lập Thời gian, Vòng & Địa điểm -->
+                <div class="col-12 col-lg-6">
+                    <div class="step-section-card">
+                        <div class="step-section-header">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-clock-fill text-primary fs-5"></i>
+                                <span class="fw-bold text-dark" style="font-size: 0.92rem;">Thời Gian & Hình Thức Phỏng Vấn</span>
+                            </div>
+                            <span class="badge bg-light text-muted border">Múi giờ GMT+7</span>
+                        </div>
+                        <div class="step-section-body">
+                            <!-- Vòng & Tiêu đề -->
+                            <div class="row g-2 mb-3">
+                                <div class="col-3">
+                                    <label class="form-label small fw-semibold text-dark">Số vòng <span class="text-danger">*</span></label>
+                                    <input type="number" id="inputRoundNumber" class="form-control form-control-sm text-center fw-bold" min="1" max="10" 
+                                           value="@(Model.SelectedCandidate?.NextRoundNumber ?? 1)" onchange="onRoundNumberChange(this.value)" />
+                                </div>
+                                <div class="col-9">
+                                    <label class="form-label small fw-semibold text-dark">Tiêu đề buổi phỏng vấn <span class="text-danger">*</span></label>
+                                    <input type="text" id="inputRoundTitle" class="form-control form-control-sm fw-medium" 
+                                           value="@(Model.SelectedCandidate?.SuggestedRoundTitle ?? "Phỏng vấn Vòng 1")" oninput="onRoundTitleChange(this.value)" />
+                                </div>
+                            </div>
+
+                            <!-- Thời gian bắt đầu -->
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-dark">
+                                    Thời điểm bắt đầu phỏng vấn <span class="text-danger">*</span>
+                                </label>
+                                <input type="datetime-local" id="inputStartTime" name="StartTime" class="form-control form-control-sm fw-medium" 
+                                       value="@Model.FormInput.StartTime?.ToString("yyyy-MM-ddTHH:mm")" 
+                                       min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" 
+                                       onchange="onStartTimeChange(this.value)" required />
+                                <div class="form-text text-muted" style="font-size: 0.75rem;">
+                                    <i class="bi bi-shield-check text-success me-1"></i>Hệ thống tự động chặn lựa chọn ngày giờ trong quá khứ.
+                                </div>
+                            </div>
+
+                            <!-- Thời lượng phỏng vấn -->
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-dark mb-1.5">Thời lượng dự kiến</label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button type="button" class="duration-pill-btn" data-minutes="30" onclick="selectDuration(30)">30 phút</button>
+                                    <button type="button" class="duration-pill-btn" data-minutes="45" onclick="selectDuration(45)">45 phút</button>
+                                    <button type="button" class="duration-pill-btn active" data-minutes="60" onclick="selectDuration(60)">60 phút (Chuẩn)</button>
+                                    <button type="button" class="duration-pill-btn" data-minutes="90" onclick="selectDuration(90)">90 phút</button>
+                                    <button type="button" class="duration-pill-btn" data-minutes="120" onclick="selectDuration(120)">120 phút</button>
+                                </div>
+                            </div>
+
+                            <!-- Hình thức phỏng vấn & Phòng họp -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1.5">
+                                    <label class="form-label small fw-semibold text-dark mb-0">
+                                        Hình thức tổ chức phỏng vấn <span class="text-danger">*</span>
+                                    </label>
+                                    <span class="badge bg-light text-secondary border font-monospace" style="font-size: 0.72rem;" id="formatSelectionBadge">
+                                        <i class="bi bi-camera-video-fill text-success me-1"></i>Google Meet
+                                    </span>
+                                </div>
+                                <ul class="nav nav-pills nav-fill bg-light p-1 rounded-3 mb-2.5 gap-1" id="interviewTypeTabs" role="tablist" style="border: 1px solid #E2E8F0;">
+                                    <li class="nav-item">
+                                        <button class="nav-link active py-2 text-dark fw-semibold d-flex align-items-center justify-content-center gap-1.5" 
+                                                id="tab-meet" type="button" onclick="setInterviewFormat('MEET')" style="font-size: 0.82rem; border-radius: 6px;">
+                                            <i class="bi bi-camera-video-fill text-success"></i>
+                                            <span>Google Meet</span>
+                                        </button>
+                                    </li>
+                                    <li class="nav-item">
+                                        <button class="nav-link py-2 text-dark fw-semibold d-flex align-items-center justify-content-center gap-1.5" 
+                                                id="tab-teams" type="button" onclick="setInterviewFormat('TEAMS')" style="font-size: 0.82rem; border-radius: 6px;">
+                                            <i class="bi bi-microsoft text-primary"></i>
+                                            <span>MS Teams</span>
+                                        </button>
+                                    </li>
+                                    <li class="nav-item">
+                                        <button class="nav-link py-2 text-dark fw-semibold d-flex align-items-center justify-content-center gap-1.5" 
+                                                id="tab-offline" type="button" onclick="setInterviewFormat('OFFLINE')" style="font-size: 0.82rem; border-radius: 6px;">
+                                            <i class="bi bi-building text-warning-emphasis"></i>
+                                            <span>Trực tiếp văn phòng</span>
+                                        </button>
+                                    </li>
+                                </ul>
+
+                                <!-- Preset phòng họp có sẵn theo hình thức đã lọc -->
+                                <div class="d-flex justify-content-between align-items-center mb-1.5">
+                                    <label class="form-label small text-muted mb-0" id="roomPresetLabel">
+                                        Chọn mẫu cấu hình sẵn cho Google Meet:
+                                    </label>
+                                    <span class="text-xs text-muted" id="roomPresetCount">Khả dụng</span>
+                                </div>
+                                <div id="roomPresetList">
+                                    @foreach (var room in Model.RoomPresets)
+                                    {
+                                        var platform = !string.IsNullOrEmpty(room.Platform) 
+                                            ? room.Platform 
+                                            : (room.Type == "ONLINE_MEET" ? (room.LocationOrLink.Contains("teams") ? "TEAMS" : "MEET") : "OFFLINE");
+                                        var isInitialActive = room.IsDefault && platform == "MEET";
+                                        var badgeColorClass = platform switch
+                                        {
+                                            "MEET" => "bg-success-subtle text-success border border-success-subtle",
+                                            "TEAMS" => "bg-primary-subtle text-primary border border-primary-subtle",
+                                            _ => "bg-warning-subtle text-warning-emphasis border border-warning-subtle"
+                                        };
+                                        var platformIcon = platform switch
+                                        {
+                                            "MEET" => "bi-camera-video-fill text-success",
+                                            "TEAMS" => "bi-microsoft text-primary",
+                                            _ => "bi-door-closed-fill text-warning-emphasis"
+                                        };
+
+                                        <div class="preset-room-badge @(isInitialActive ? "active" : "") @(platform == "MEET" ? "" : "d-none")" 
+                                             id="roomBadge-@room.Id"
+                                             data-room-id="@room.Id"
+                                             data-platform="@platform"
+                                             data-room-type="@room.Type"
+                                             data-location="@room.LocationOrLink"
+                                             onclick="selectRoomPreset('@room.Id', '@room.Type', '@room.LocationOrLink', '@platform')">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div class="fw-semibold text-dark" style="font-size: 0.85rem;">
+                                                    <i class="bi @platformIcon me-1.5"></i>
+                                                    @room.Name
+                                                </div>
+                                                <span class="badge @badgeColorClass" style="font-size: 0.72rem;">@room.BadgeText</span>
+                                            </div>
+                                            <div class="text-muted small mt-1 text-truncate" style="font-size: 0.76rem;">
+                                                <i class="bi bi-info-circle me-1"></i>@room.Capacity · @room.Description
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+
+                                <!-- Input địa điểm / link tùy chỉnh -->
+                                <div class="mt-2.5">
+                                    <label class="form-label small fw-semibold text-dark d-flex align-items-center gap-1" id="locationLabel">
+                                        <i class="bi bi-link-45deg text-success"></i>
+                                        <span id="locationLabelText">Liên kết cuộc họp Google Meet</span>
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-light text-muted" id="locationInputPrepend">
+                                            <i class="bi bi-camera-video text-success" id="locationPrependIcon"></i>
+                                        </span>
+                                        <input type="text" id="inputLocationOrLink" class="form-control" 
+                                               value="https://meet.google.com/nvr-atsw-int" 
+                                               placeholder="https://meet.google.com/xxx-yyyy-zzz"
+                                               oninput="onLocationOrLinkChange(this.value)" required />
+                                    </div>
+                                    <div class="form-text text-muted" style="font-size: 0.74rem;" id="locationHelpText">
+                                        <i class="bi bi-info-circle me-1"></i>Đường link Google Meet sẽ được gửi kèm trong email thư mời và hiển thị trên lịch ứng viên.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cột phải: Chọn Hội đồng phỏng vấn & Kiểm tra Lịch trống (Smart Availability Engine) -->
+                <div class="col-12 col-lg-6">
+                    <div class="step-section-card">
+                        <div class="step-section-header">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-people-fill text-success fs-5"></i>
+                                <span class="fw-bold text-dark" style="font-size: 0.92rem;">Hội Đồng Phỏng Vấn (Panelists)</span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-success rounded-2 py-0.5 px-2" onclick="checkAllInterviewersAvailability()" title="Kiểm tra lại lịch trống">
+                                <i class="bi bi-arrow-repeat me-1"></i>Kiểm tra lịch trống
+                            </button>
+                        </div>
+                        <div class="step-section-body">
+                            <div class="alert alert-info py-2 px-2.5 mb-3 rounded-2 border-0" style="background:#EFF6FF; color:#1E40AF; font-size: 0.8rem;">
+                                <i class="bi bi-info-circle-fill me-1"></i>
+                                Chọn ít nhất <strong>01 giám khảo</strong>. Hệ thống sẽ tự động đối soát lịch để tránh trùng lịch phỏng vấn khác trong cùng khung giờ.
+                            </div>
+
+                            <!-- Danh sách giám khảo -->
+                            <div id="interviewerListScroll" style="max-height: 480px; overflow-y: auto; padding-right: 4px;">
+                                @if (Model.AvailableInterviewers.Any())
+                                {
+                                    @for (int i = 0; i < Model.AvailableInterviewers.Count; i++)
+                                    {
+                                        var inv = Model.AvailableInterviewers[i];
+                                        if (!Ats.Web.Constants.UserRoles.CanBeInterviewer(inv.Role)) { continue; }
+                                        var isPrechecked = i < 2; // Chọn mẫu 2 người đầu trong danh sách giám khảo hợp lệ
+                                        var displayRole = Ats.Web.Constants.UserRoles.GetDisplayName(inv.Role);
+                                        <div class="panelist-select-row @(isPrechecked ? "selected" : "")" id="panelistRow-@inv.Id">
+                                            <div class="d-flex align-items-center gap-2.5">
+                                                <input type="checkbox" class="form-check-input panelist-checkbox" 
+                                                       id="chkInv-@inv.Id" 
+                                                       name="InterviewerIds" 
+                                                       value="@inv.Id" 
+                                                       data-name="@inv.FullName"
+                                                       data-role="@displayRole"
+                                                       @(isPrechecked ? "checked" : "") 
+                                                       onchange="togglePanelistSelect('@inv.Id')" />
+                                                <div>
+                                                    <div class="fw-bold text-dark" style="font-size: 0.86rem;">@inv.FullName</div>
+                                                    <div class="text-muted small" style="font-size: 0.76rem;">
+                                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1" style="font-size: 0.72rem;">@displayRole</span>
+                                                        @inv.Email
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="badge rounded-2 availability-badge" id="availBadge-@inv.Id" 
+                                                      style="background:#ECFDF5; color:#065F46; border: 1px solid #A7F3D0; font-size: 0.72rem;">
+                                                    <i class="bi bi-check2-circle me-1"></i>Sẵn sàng (Trống lịch)
+                                                </span>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="text-center py-4 text-muted">
+                                        <i class="bi bi-person-x fs-2 text-secondary mb-1"></i>
+                                        <p class="small mb-0">Chưa tìm thấy nhân sự khả dụng để phân công.</p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- BƯỚC 3: SOẠN THẢO & XEM TRƯỚC THƯ MỜI (LIVE EMAIL PREVIEW)          -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div id="wizardStepPane-3" class="wizard-pane d-none">
+            <div class="row g-4">
+                <!-- Cột trái: Cấu hình nội dung thư mời -->
+                <div class="col-12 col-lg-5">
+                    <div class="step-section-card">
+                        <div class="step-section-header">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-pencil-square text-primary fs-5"></i>
+                                <span class="fw-bold text-dark" style="font-size: 0.92rem;">Cấu Hình Nội Dung Thư Mời Email</span>
+                            </div>
+                            <span class="badge bg-light text-muted border">Tự động đồng bộ</span>
+                        </div>
+                        <div class="step-section-body">
+                            <!-- Tiêu đề Email -->
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-dark">Tiêu đề thư mời (Subject)</label>
+                                <input type="text" id="emailSubjectInput" class="form-control form-control-sm" 
+                                       value="📅 [Thư mời phỏng vấn] Vị trí @(Model.SelectedCandidate?.JobTitle ?? "Chuyên môn") — NoveraTech" 
+                                       oninput="updateEmailLivePreview()" />
+                            </div>
+
+                            <!-- Lời mở đầu -->
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-dark">Lời chào & Đoạn mở đầu</label>
+                                <textarea id="emailOpeningInput" class="form-control form-control-sm" rows="3" oninput="updateEmailLivePreview()">NoveraTech trân trọng kính mời bạn tham gia phiên phỏng vấn chính thức. Ban tuyển dụng rất ấn tượng với năng lực và kinh nghiệm chuyên môn của bạn.</textarea>
+                            </div>
+
+                            <!-- Hướng dẫn chuẩn bị -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label small fw-semibold text-dark mb-0">Hướng dẫn chuẩn bị cho ứng viên</label>
+                                    <button type="button" class="btn btn-link p-0 text-success text-decoration-none small" style="font-size: 0.75rem;" onclick="resetDefaultPreparationGuide()">
+                                        <i class="bi bi-arrow-clockwise me-0.5"></i>Khôi phục mẫu chuẩn
+                                    </button>
+                                </div>
+                                <textarea id="emailGuideInput" class="form-control form-control-sm" rows="5" oninput="updateEmailLivePreview()">@Model.DefaultPreparationGuide</textarea>
+                            </div>
+
+                            <!-- Thông tin liên hệ HR -->
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-dark">Thông tin hỗ trợ nhân sự (Chân trang)</label>
+                                <input type="text" id="emailHrContactInput" class="form-control form-control-sm" 
+                                       value="@Model.DefaultHrContactNote" oninput="updateEmailLivePreview()" />
+                            </div>
+
+                            <!-- Ghi chú nội bộ -->
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold text-dark">Ghi chú lưu hành nội bộ (Chỉ Hội đồng xem)</label>
+                                <textarea id="inputInternalNotes" class="form-control form-control-sm" rows="2" placeholder="Ví dụ: Ứng viên mong muốn phỏng vấn tập trung vào System Architecture..." oninput="onNoteChange(this.value)"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cột phải: Khung Xem Trước Trực Quan Email (Live Interactive Preview) -->
+                <div class="col-12 col-lg-7">
+                    <div class="email-mockup-wrapper">
+                        <!-- Top Bar mô phỏng ứng dụng Email -->
+                        <div class="email-mockup-topbar">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-1.5">
+                                    <span style="width: 10px; height: 10px; border-radius: 50%; background: #EF4444; display: inline-block;"></span>
+                                    <span style="width: 10px; height: 10px; border-radius: 50%; background: #F59E0B; display: inline-block;"></span>
+                                    <span style="width: 10px; height: 10px; border-radius: 50%; background: #10B981; display: inline-block;"></span>
+                                    <span class="ms-2 fw-semibold text-dark" style="font-size: 0.78rem;">Khung xem trước Thư mời Email thực tế</span>
+                                </div>
+                                <span class="badge bg-light text-success border" style="font-size: 0.72rem;">
+                                    <i class="bi bi-eye-fill me-1"></i>Live Preview
+                                </span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 text-muted" style="font-size: 0.78rem;">
+                                <span class="fw-semibold text-secondary">Từ:</span>
+                                <span>Phòng Tuyển Dụng NoveraTech &lt;tuyendung@noveratech.digital&gt;</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 text-muted" style="font-size: 0.78rem;">
+                                <span class="fw-semibold text-secondary">Đến:</span>
+                                <span class="fw-bold text-dark" id="previewRecipientEmail">@(Model.SelectedCandidate?.Email ?? "ungvien@email.com")</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 text-muted" style="font-size: 0.78rem;">
+                                <span class="fw-semibold text-secondary">Tiêu đề:</span>
+                                <span class="fw-bold text-primary" id="previewSubjectText">📅 [Thư mời phỏng vấn] Vị trí @(Model.SelectedCandidate?.JobTitle ?? "Chuyên môn") — NoveraTech</span>
+                            </div>
+                        </div>
+
+                        <!-- Khung nội dung Email hiển thị thời gian thực -->
+                        <div class="email-mockup-body">
+                            <div class="email-rendered-letter">
+                                <!-- Email Header Banner -->
+                                <div style="background: #0F172A; padding: 22px; text-align: center;">
+                                    <h5 style="color: #FFFFFF; margin: 0; font-size: 1.15rem; font-weight: 700; letter-spacing: 0.5px;">THƯ MỜI PHỎNG VẤN CHÍNH THỨC</h5>
+                                    <div style="color: #10B981; font-size: 0.78rem; font-weight: 600; margin-top: 4px;">NOVERATECH CAREERS & ENGINEERING</div>
+                                </div>
+
+                                <!-- Email Body Content -->
+                                <div style="padding: 24px;">
+                                    <p style="font-size: 0.95rem; color: #0F172A; margin-top: 0;">
+                                        Xin chào <strong id="previewCandidateName">@(Model.SelectedCandidate?.FullName ?? "Ứng viên")</strong>,
+                                    </p>
+                                    <p style="color: #475569; font-size: 0.88rem; line-height: 1.6;" id="previewOpeningText">
+                                        NoveraTech trân trọng kính mời bạn tham gia phiên phỏng vấn chính thức. Ban tuyển dụng rất ấn tượng với năng lực và kinh nghiệm chuyên môn của bạn.
+                                    </p>
+
+                                    <!-- Bảng chi tiết buổi phỏng vấn -->
+                                    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px 16px; margin: 18px 0; font-size: 0.84rem;">
+                                        <table style="width: 100%; border-collapse: collapse;">
+                                            <tr>
+                                                <td style="padding: 5px 0; color: #64748B; width: 130px;">Vị trí ứng tuyển:</td>
+                                                <td style="padding: 5px 0; color: #0F172A; font-weight: 700;" id="previewTableJob">@(Model.SelectedCandidate?.JobTitle ?? "Chuyên môn")</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 5px 0; color: #64748B;">Vòng phỏng vấn:</td>
+                                                <td style="padding: 5px 0; color: #0F172A; font-weight: 700;" id="previewTableRound">Phỏng vấn Vòng 1</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 5px 0; color: #64748B;">Thời gian:</td>
+                                                <td style="padding: 5px 0; color: #059669; font-weight: 700;" id="previewTableTime">Chưa chọn ngày giờ</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 5px 0; color: #64748B;">Hình thức / Phòng:</td>
+                                                <td style="padding: 5px 0; color: #0F172A; font-weight: 600;" id="previewTableLocation">Google Meet (Trực tuyến)</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 5px 0; color: #64748B;">Hội đồng phỏng vấn:</td>
+                                                <td style="padding: 5px 0; color: #0F172A; font-weight: 600;" id="previewTablePanelists">Ban Tuyển Dụng NoveraTech</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+
+                                    <!-- Hướng dẫn chuẩn bị -->
+                                    <div style="background: #FFFFFF; border: 1px dashed #CBD5E1; border-radius: 8px; padding: 12px 14px; margin-bottom: 20px; font-size: 0.82rem; color: #334155; line-height: 1.6;">
+                                        <div style="font-weight: 700; color: #0F172A; margin-bottom: 4px;">Lưu ý chuẩn bị:</div>
+                                        <div id="previewGuideText">
+                                            • Kiểm tra camera, micro và đường truyền internet ổn định trước giờ hẹn 5 - 10 phút.<br/>
+                                            • Chuẩn bị sẵn CV, Portfolio hoặc source code dự án tiêu biểu.<br/>
+                                            • Trang phục lịch sự, chuyên nghiệp.
+                                        </div>
+                                    </div>
+
+                                    <!-- Interactive Buttons -->
+                                    <div style="text-align: center; margin: 24px 0 16px 0;">
+                                        <a href="javascript:void(0)" style="display: inline-block; background: #059669; color: #FFFFFF; text-decoration: none; padding: 10px 22px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; margin-right: 8px;">
+                                            ✓ Xác nhận tham dự
+                                        </a>
+                                        <a href="javascript:void(0)" style="display: inline-block; background: #F8FAFC; color: #D97706; text-decoration: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; border: 1px solid #FCD34D;">
+                                            📅 Đề nghị đổi lịch
+                                        </a>
+                                    </div>
+                                    <div style="text-align: center; margin-bottom: 16px;">
+                                        <span style="color: #2563EB; font-size: 0.8rem; text-decoration: underline;">
+                                            Xem chi tiết buổi phỏng vấn & hướng dẫn trực tuyến &rarr;
+                                        </span>
+                                    </div>
+
+                                    <div style="background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 8px; padding: 8px 12px; font-size: 0.74rem; color: #64748B; text-align: center;">
+                                        🔒 <strong>Bảo mật HMAC:</strong> Thư mời được cấp khóa điện tử định danh riêng cho ứng viên này.
+                                    </div>
+                                </div>
+
+                                <!-- Email Footer -->
+                                <div style="background: #F1F5F9; padding: 12px; text-align: center; font-size: 0.72rem; color: #64748B; border-top: 1px solid #E2E8F0;" id="previewFooterText">
+                                    @Model.DefaultHrContactNote
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- BƯỚC 4: XÁC NHẬN & CHỐT LỊCH (DOSSIER SUMMARY & PHÁT LỆNH)          -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div id="wizardStepPane-4" class="wizard-pane d-none">
+            <div class="step-section-card">
+                <div class="step-section-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-check text-success fs-5"></i>
+                        <span class="fw-bold text-dark" style="font-size: 0.95rem;">Kiểm Duyệt Tổng Thể & Phát Lệnh Lên Lịch</span>
+                    </div>
+                    <span class="badge bg-success text-white rounded-2 px-2.5 py-1">Sẵn sàng phát hành</span>
+                </div>
+                <div class="step-section-body">
+                    <!-- 4 Khối Tóm Tắt Thông Tin -->
+                    <div class="row g-3 mb-4">
+                        <!-- Khối 1: Ứng viên & Vị trí -->
+                        <div class="col-12 col-md-6 col-xl-3">
+                            <div class="summary-metric-box">
+                                <div class="text-muted small fw-semibold mb-2">
+                                    <i class="bi bi-person-fill text-primary me-1"></i>1. ỨNG VIÊN MỤC TIÊU
+                                </div>
+                                <div class="fw-bold text-dark fs-6" id="summaryCandName">@(Model.SelectedCandidate?.FullName ?? "Ứng viên")</div>
+                                <div class="text-secondary small mt-0.5" id="summaryCandEmail">@(Model.SelectedCandidate?.Email ?? "ungvien@email.com")</div>
+                                <div class="mt-2 pt-2 border-top text-muted small" style="font-size: 0.78rem;">
+                                    Vị trí: <strong class="text-dark" id="summaryJobTitle">@(Model.SelectedCandidate?.JobTitle ?? "Chuyên môn")</strong><br/>
+                                    Phòng ban: <span id="summaryDepartment">@(Model.SelectedCandidate?.DepartmentName ?? "Ban Công Nghệ")</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Khối 2: Lịch trình & Địa điểm -->
+                        <div class="col-12 col-md-6 col-xl-3">
+                            <div class="summary-metric-box">
+                                <div class="text-muted small fw-semibold mb-2">
+                                    <i class="bi bi-calendar-event-fill text-success me-1"></i>2. THỜI GIAN & HỌP
+                                </div>
+                                <div class="fw-bold text-success fs-6" id="summaryTimeDisplay">Chưa chọn ngày giờ</div>
+                                <div class="text-secondary small mt-0.5" id="summaryDurationDisplay">Thời lượng: 60 phút</div>
+                                <div class="mt-2 pt-2 border-top text-muted small" style="font-size: 0.78rem;">
+                                    Hình thức: <span class="badge bg-light text-dark border" id="summaryTypeBadge">Trực tuyến</span><br/>
+                                    Địa điểm: <span class="text-truncate d-inline-block mw-100" id="summaryLocationDisplay">Meet Link</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Khối 3: Hội đồng phỏng vấn -->
+                        <div class="col-12 col-md-6 col-xl-3">
+                            <div class="summary-metric-box">
+                                <div class="text-muted small fw-semibold mb-2">
+                                    <i class="bi bi-people-fill text-info me-1"></i>3. HỘI ĐỒNG PHỎNG VẤN
+                                </div>
+                                <div class="fw-bold text-dark fs-6" id="summaryPanelistCount">0 Giám khảo</div>
+                                <div class="text-secondary small mt-0.5 text-truncate" id="summaryPanelistNames">Chưa chọn</div>
+                                <div class="mt-2 pt-2 border-top text-muted small" style="font-size: 0.78rem;">
+                                    Tình trạng lịch: <span class="badge bg-success text-white" id="summaryConflictBadge">Không trùng lịch</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Khối 4: Thư mời & Thông báo -->
+                        <div class="col-12 col-md-6 col-xl-3">
+                            <div class="summary-metric-box">
+                                <div class="text-muted small fw-semibold mb-2">
+                                    <i class="bi bi-envelope-check-fill text-warning me-1"></i>4. THƯ MỜI & THÔNG BÁO
+                                </div>
+                                <div class="fw-bold text-dark fs-6">Tự động phát hành</div>
+                                <div class="text-secondary small mt-0.5">Kèm mã bảo mật HMAC</div>
+                                <div class="mt-2 pt-2 border-top text-muted small" style="font-size: 0.78rem;">
+                                    Email ứng viên: <span class="text-success fw-semibold">Sẽ gửi ngay</span><br/>
+                                    Lịch nội bộ: <span class="text-dark">Đồng bộ lịch giám khảo</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cam kết xác nhận -->
+                    <div class="p-3 rounded-2 border bg-light mb-4" style="border-left: 4px solid #059669 !important;">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="confirmAccuracyCheckbox" required checked />
+                            <label class="form-check-label text-dark fw-semibold small" for="confirmAccuracyCheckbox">
+                                Tôi xác nhận đã kiểm tra kỹ toàn bộ thông tin lịch hẹn, thời gian, hội đồng phỏng vấn và đồng ý phát lệnh gửi thư mời chính thức đến ứng viên.
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Nút Chốt Lịch Lớn Nổi Bật -->
+                    <div class="text-center py-2">
+                        <button type="submit" id="btnFinalSubmitSchedule" class="btn btn-lg text-white fw-bold px-4 py-2.5 shadow-sm" 
+                                style="background: #059669; border-color: #059669; border-radius: 8px; font-size: 1.05rem;">
+                            <i class="bi bi-send-check-fill me-2"></i>XÁC NHẬN & PHÁT LỆNH LÊN LỊCH PHỎNG VẤN
+                        </button>
+                        <div class="text-muted small mt-2" style="font-size: 0.78rem;">
+                            Hồ sơ sẽ tự động chuyển giai đoạn tuyển dụng sang "Phỏng vấn" nếu chưa có mặt tại giai đoạn này.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </form>
+
+    <!-- ── SUCCESS OVERLAY / MODAL (Hiện sau khi submit thành công) ── -->
+    <div id="scheduleSuccessModal" class="d-none position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50" style="z-index: 1050; display: flex; align-items: center; justify-content: center;">
+        <div class="card border-0 shadow-lg" style="max-width: 520px; width: 90%; border-radius: 14px; overflow: hidden;">
+            <div class="p-4 text-center" style="background: #ECFDF5; border-bottom: 1px solid #A7F3D0;">
+                <div class="d-inline-flex align-items-center justify-content-center text-white mb-3" style="width: 64px; height: 64px; border-radius: 50%; background: #059669; font-size: 2rem;">
+                    <i class="bi bi-check-lg"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-1">Lên Lịch Phỏng Vấn Thành Công!</h4>
+                <p class="text-muted small mb-0" id="successModalMessage">Thư mời phỏng vấn đã được gửi tự động đến ứng viên.</p>
+            </div>
+            <div class="p-4 bg-white">
+                <div class="p-3 rounded-2 bg-light border mb-4" style="font-size: 0.85rem;">
+                    <div class="d-flex justify-content-between mb-1.5">
+                        <span class="text-muted">Ứng viên:</span>
+                        <strong class="text-dark" id="successModalCandName">-</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1.5">
+                        <span class="text-muted">Vòng phỏng vấn:</span>
+                        <strong class="text-dark" id="successModalRoundTitle">-</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1.5">
+                        <span class="text-muted">Thời gian:</span>
+                        <strong class="text-success" id="successModalTime">-</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Phòng họp / Link:</span>
+                        <span class="text-primary text-truncate ms-2" id="successModalLink">-</span>
+                    </div>
+                </div>
+                <div class="d-flex flex-column gap-2">
+                    <a id="btnGoToPipeline" href="/dashboard/ung-vien" class="btn text-white fw-semibold rounded-2 py-2" style="background:#059669;">
+                        <i class="bi bi-kanban me-1.5"></i>Xem trên Pipeline Tuyển Dụng
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary rounded-2 py-2" onclick="resetWizardForNewSchedule()">
+                        <i class="bi bi-plus-circle me-1.5"></i>Tiếp tục lên lịch cho ứng viên khác
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ── STICKY FOOTER NAVIGATION (Điều hướng 4 bước) ── -->
+<div class="wizard-sticky-nav-footer">
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-light text-dark border px-2.5 py-1.5" style="font-size: 0.82rem;" id="footerStepIndicatorBadge">
+            Bước 1 / 4: Chọn đối tượng
+        </span>
+        <span class="text-muted small d-none d-md-inline" id="footerStepHintText">Chọn ứng viên cần phỏng vấn từ danh sách pipeline</span>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-outline-secondary rounded-2 px-3 py-1.5 d-none" id="btnPrevStep" onclick="goPreviousStep()">
+            <i class="bi bi-arrow-left me-1"></i>Quay lại bước trước
+        </button>
+        <button type="button" class="btn text-white fw-semibold rounded-2 px-4 py-1.5 shadow-sm" id="btnNextStep" style="background: #059669; border-color: #059669;" onclick="goNextStep()">
+            Tiếp tục sang bước tiếp theo <i class="bi bi-arrow-right ms-1"></i>
+        </button>
+    </div>
+</div>
+
+<script>
+    /* ═══════════════════════════════════════════════════════════════════
+       JAVASCRIPT ĐIỀU PHỐI WIZARD ĐẶT LỊCH PHỎNG VẤN 4 BƯỚC
+       ═══════════════════════════════════════════════════════════════════ */
+    let currentStep = 1;
+    let selectedApplicationId = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SelectedCandidate?.ApplicationId.ToString() ?? ""));
+    let selectedCandidateName = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SelectedCandidate?.FullName ?? ""));
+    let selectedJobTitle = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SelectedCandidate?.JobTitle ?? ""));
+    let selectedEmail = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SelectedCandidate?.Email ?? ""));
+    let selectedRoundNumber = @(Model.SelectedCandidate?.NextRoundNumber ?? 1);
+    let selectedRoundTitle = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SelectedCandidate?.SuggestedRoundTitle ?? "Phỏng vấn Vòng 1"));
+    let selectedDurationMinutes = 60;
+    let selectedInterviewFormat = 'MEET';
+    let selectedInterviewType = 'ONLINE_MEET';
+    let selectedLocationOrLink = 'https://meet.google.com/nvr-atsw-int';
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Khởi tạo ngày giờ mặc định nếu chưa có
+        const timeInput = document.getElementById('inputStartTime');
+        if (!timeInput.value) {
+            const tmr = new Date();
+            tmr.setDate(tmr.getDate() + 1);
+            tmr.setHours(9, 0, 0, 0);
+            timeInput.value = formatDateTimeLocal(tmr);
+        }
+
+        // Khởi tạo bộ lọc hình thức phỏng vấn (Mặc định: Google Meet)
+        setInterviewFormat(selectedInterviewFormat);
+
+        updateEmailLivePreview();
+        updateSummaryDashboard();
+    });
+
+    function formatDateTimeLocal(date) {
+        const pad = (n) => n < 10 ? '0' + n : n;
+        return date.getFullYear() + '-' +
+            pad(date.getMonth() + 1) + '-' +
+            pad(date.getDate()) + 'T' +
+            pad(date.getHours()) + ':' +
+            pad(date.getMinutes());
+    }
+
+    // ── Điều hướng Step ──
+    function navigateToStep(stepNumber) {
+        if (stepNumber < 1 || stepNumber > 4) return;
+
+        // Validation trước khi chuyển bước tiếp theo
+        if (stepNumber > currentStep) {
+            if (!validateStep(currentStep)) return;
+        }
+
+        currentStep = stepNumber;
+
+        // Ẩn/Hiện Panes
+        for (let i = 1; i <= 4; i++) {
+            const pane = document.getElementById(`wizardStepPane-${i}`);
+            const btn = document.getElementById(`stepNavBtn-${i}`);
+            const circle = document.getElementById(`stepCircle-${i}`);
+            const connector = document.getElementById(`stepConnector-${i}`);
+
+            if (pane) {
+                if (i === currentStep) {
+                    pane.classList.remove('d-none');
+                } else {
+                    pane.classList.add('d-none');
+                }
+            }
+
+            if (btn && circle) {
+                btn.classList.remove('active', 'completed');
+                if (i === currentStep) {
+                    btn.classList.add('active');
+                } else if (i < currentStep) {
+                    btn.classList.add('completed');
+                }
+            }
+
+            if (connector) {
+                if (i < currentStep) {
+                    connector.classList.add('completed');
+                } else {
+                    connector.classList.remove('completed');
+                }
+            }
+        }
+
+        // Cập nhật Sticky Footer
+        const prevBtn = document.getElementById('btnPrevStep');
+        const nextBtn = document.getElementById('btnNextStep');
+        const badge = document.getElementById('footerStepIndicatorBadge');
+        const hint = document.getElementById('footerStepHintText');
+
+        if (currentStep === 1) {
+            prevBtn.classList.add('d-none');
+            nextBtn.classList.remove('d-none');
+            nextBtn.innerHTML = 'Tiếp tục: Thời gian & Hội đồng <i class="bi bi-arrow-right ms-1"></i>';
+            badge.textContent = 'Bước 1 / 4: Chọn đối tượng';
+            hint.textContent = 'Chọn ứng viên cần phỏng vấn từ danh sách pipeline';
+        } else if (currentStep === 2) {
+            prevBtn.classList.remove('d-none');
+            nextBtn.classList.remove('d-none');
+            nextBtn.innerHTML = 'Tiếp tục: Soạn thảo & Xem trước <i class="bi bi-arrow-right ms-1"></i>';
+            badge.textContent = 'Bước 2 / 4: Thời gian & Hội đồng';
+            hint.textContent = 'Chọn ngày giờ, thời lượng, phòng họp và giám khảo';
+            // Tự động kiểm tra lịch bận khi sang bước 2
+            checkAllInterviewersAvailability();
+        } else if (currentStep === 3) {
+            prevBtn.classList.remove('d-none');
+            nextBtn.classList.remove('d-none');
+            nextBtn.innerHTML = 'Tiếp tục: Xác nhận & Chốt lịch <i class="bi bi-arrow-right ms-1"></i>';
+            badge.textContent = 'Bước 3 / 4: Soạn & Xem trước';
+            hint.textContent = 'Kiểm tra bức thư mời email thực tế mà ứng viên sẽ nhận được';
+            updateEmailLivePreview();
+        } else if (currentStep === 4) {
+            prevBtn.classList.remove('d-none');
+            nextBtn.classList.add('d-none'); // Ở bước 4 người dùng bấm nút Chốt lịch lớn trong form
+            badge.textContent = 'Bước 4 / 4: Xác nhận & Chốt lịch';
+            hint.textContent = 'Kiểm duyệt toàn bộ thông tin trước khi phát lệnh';
+            updateSummaryDashboard();
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function goNextStep() {
+        if (currentStep < 4) {
+            navigateToStep(currentStep + 1);
+        }
+    }
+
+    function goPreviousStep() {
+        if (currentStep > 1) {
+            navigateToStep(currentStep - 1);
+        }
+    }
+
+    // ── Validation từng bước ──
+    function validateStep(step) {
+        closeWizardAlert();
+
+        if (step === 1) {
+            if (!selectedApplicationId || selectedApplicationId === '@Guid.Empty') {
+                showWizardAlert('Vui lòng chọn một ứng viên trong danh sách trước khi tiếp tục.', 'warning');
+                return false;
+            }
+            return true;
+        }
+
+        if (step === 2) {
+            const timeVal = document.getElementById('inputStartTime').value;
+            if (!timeVal) {
+                showWizardAlert('Vui lòng chọn ngày giờ bắt đầu phỏng vấn.', 'warning');
+                document.getElementById('inputStartTime').focus();
+                return false;
+            }
+
+            const chosenDate = new Date(timeVal);
+            if (chosenDate <= new Date()) {
+                showWizardAlert('Không thể đặt lịch phỏng vấn trong quá khứ. Vui lòng chọn thời gian trong tương lai.', 'danger');
+                document.getElementById('inputStartTime').focus();
+                return false;
+            }
+
+            const loc = document.getElementById('inputLocationOrLink').value.trim();
+            if (!loc) {
+                const locMsg = (selectedInterviewFormat === 'OFFLINE')
+                    ? 'Vui lòng cung cấp địa chỉ phòng họp trực tiếp tại văn phòng.'
+                    : `Vui lòng cung cấp liên kết cuộc họp ${selectedInterviewFormat === 'MEET' ? 'Google Meet' : 'Microsoft Teams'}.`;
+                showWizardAlert(locMsg, 'warning');
+                document.getElementById('inputLocationOrLink').focus();
+                return false;
+            }
+
+            if (selectedInterviewFormat !== 'OFFLINE' && !loc.startsWith('http://') && !loc.startsWith('https://')) {
+                showWizardAlert(`Liên kết cuộc họp ${selectedInterviewFormat === 'MEET' ? 'Google Meet' : 'Microsoft Teams'} phải là đường dẫn URL hợp lệ (bắt đầu bằng https://).`, 'warning');
+                document.getElementById('inputLocationOrLink').focus();
+                return false;
+            }
+
+            const checkedPanelists = document.querySelectorAll('.panelist-checkbox:checked');
+            if (checkedPanelists.length === 0) {
+                showWizardAlert('Hội đồng phỏng vấn bắt buộc có ít nhất 01 thành viên. Vui lòng chọn giám khảo.', 'warning');
+                return false;
+            }
+
+            return true;
+        }
+
+        if (step === 3) {
+            const subj = document.getElementById('emailSubjectInput').value.trim();
+            if (!subj) {
+                showWizardAlert('Tiêu đề thư mời không được để trống.', 'warning');
+                document.getElementById('emailSubjectInput').focus();
+                return false;
+            }
+            return true;
+        }
+
+        return true;
+    }
+
+    // ── Bước 1: Chọn ứng viên & Tải Dossier ──
+    async function selectCandidate(appId) {
+        if (!appId || appId === selectedApplicationId) return;
+
+        // Cập nhật class selected
+        document.querySelectorAll('.cand-select-card').forEach(el => el.classList.remove('selected'));
+        const targetCard = document.getElementById(`candCard-${appId}`);
+        if (targetCard) targetCard.classList.add('selected');
+
+        selectedApplicationId = appId;
+        document.getElementById('formApplicationId').value = appId;
+
+        // Gọi API nạp thông tin chi tiết ứng viên
+        try {
+            const res = await fetch(`/phong-van/api/candidate-dossier/${appId}`);
+            const result = await res.json();
+            if (result.success && result.data) {
+                const d = result.data;
+                selectedCandidateName = d.fullName;
+                selectedJobTitle = d.jobTitle;
+                selectedEmail = d.email;
+                selectedRoundNumber = d.nextRoundNumber;
+                selectedRoundTitle = d.suggestedRoundTitle;
+
+                // Cập nhật DOM Dossier
+                document.getElementById('dossierInitials').textContent = d.initialLetter || 'C';
+                document.getElementById('dossierFullName').textContent = d.fullName;
+                document.getElementById('dossierStageBadge').textContent = d.currentStageName;
+                document.getElementById('dossierHeadline').textContent = `${d.currentTitle} tại ${d.currentCompany}`;
+                document.getElementById('dossierEmail').textContent = d.email;
+                document.getElementById('dossierPhone').textContent = d.phone || 'Chưa có SĐT';
+                document.getElementById('dossierDepartment').textContent = d.departmentName;
+                document.getElementById('dossierJobTitle').textContent = d.jobTitle;
+                document.getElementById('dossierJobLevel').textContent = d.jobLevel;
+                document.getElementById('dossierNextRoundDisplay').textContent = `Vòng ${d.nextRoundNumber}: ${d.suggestedRoundTitle}`;
+
+                // Nút CV và Chi tiết
+                const cvBtn = document.getElementById('dossierCvPreviewBtn');
+                if (d.activeResumeId) {
+                    cvBtn.href = `/Candidates/PreviewCv?resumeId=${d.activeResumeId}`;
+                    cvBtn.classList.remove('disabled');
+                } else {
+                    cvBtn.href = 'javascript:void(0)';
+                    cvBtn.classList.add('disabled');
+                }
+                document.getElementById('dossierCandidateDetailBtn').href = `/Candidates/Details/${d.candidateId}`;
+
+                // Cập nhật Inputs Bước 2
+                document.getElementById('formRoundNumber').value = d.nextRoundNumber;
+                document.getElementById('inputRoundNumber').value = d.nextRoundNumber;
+                document.getElementById('formRoundTitle').value = d.suggestedRoundTitle;
+                document.getElementById('inputRoundTitle').value = d.suggestedRoundTitle;
+
+                // Cập nhật Thư mời & Dashboard
+                document.getElementById('emailSubjectInput').value = `📅 [Thư mời phỏng vấn] Vị trí ${d.jobTitle} — NoveraTech`;
+                updateEmailLivePreview();
+                updateSummaryDashboard();
+
+                // Lịch sử
+                renderDossierHistory(d.interviewHistory);
+            }
+        } catch (err) {
+            console.error('Lỗi khi tải chi tiết hồ sơ ứng viên:', err);
+        }
+    }
+
+    function renderDossierHistory(historyList) {
+        const container = document.getElementById('dossierHistoryContainer');
+        if (!container) return;
+
+        if (!historyList || historyList.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-4 bg-light rounded-2 border text-muted">
+                    <i class="bi bi-chat-square-dots text-secondary opacity-50 fs-3 mb-1 d-block"></i>
+                    <span class="small">Ứng viên chưa tham gia vòng phỏng vấn nào trước đó. Buổi hẹn này sẽ là Vòng 1.</span>
+                </div>`;
+            return;
+        }
+
+        let html = '';
+        historyList.forEach(h => {
+            html += `
+                <div class="p-3 mb-2 rounded-2 border bg-white" style="border-left: 4px solid #059669 !important;">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-bold text-dark" style="font-size: 0.88rem;">${h.title}</span>
+                        <span class="badge bg-light text-dark border">${h.statusDisplay}</span>
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center gap-3 text-muted small" style="font-size: 0.78rem;">
+                        <span><i class="bi bi-calendar3 me-1"></i>${h.formattedTimeRange}</span>
+                        <span><i class="bi bi-geo-alt me-1"></i>${h.interviewTypeDisplay}</span>
+                        <span><i class="bi bi-people me-1"></i>Hội đồng: ${h.panelistsDisplay}</span>
+                    </div>
+                    ${h.averageScore ? `<span class="badge bg-primary text-white mt-2 me-2">Điểm TB: ${h.averageScore}/5.0</span>` : ''}
+                    ${h.finalConclusion ? `<span class="badge bg-info text-dark mt-2">Kết luận: ${h.finalConclusion}</span>` : ''}
+                </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function filterCandidateList() {
+        const query = document.getElementById('searchCandidateInput').value.toLowerCase().trim();
+        const stage = document.getElementById('filterStageDropdown').value.toLowerCase().trim();
+        const cards = document.querySelectorAll('.cand-select-card');
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            const name = (card.getAttribute('data-name') || '').toLowerCase();
+            const email = (card.getAttribute('data-email') || '').toLowerCase();
+            const job = (card.getAttribute('data-job') || '').toLowerCase();
+            const candStage = (card.getAttribute('data-stage') || '').toLowerCase();
+
+            const matchQuery = !query || name.includes(query) || email.includes(query) || job.includes(query);
+            const matchStage = !stage || candStage.includes(stage);
+
+            if (matchQuery && matchStage) {
+                card.style.display = '';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        document.getElementById('candCountBadge').textContent = `${visibleCount} hồ sơ`;
+    }
+
+    // ── Bước 2: Thời gian & Hội đồng ──
+    function onRoundNumberChange(val) {
+        selectedRoundNumber = parseInt(val) || 1;
+        document.getElementById('formRoundNumber').value = selectedRoundNumber;
+        updateEmailLivePreview();
+        updateSummaryDashboard();
+    }
+
+    function onRoundTitleChange(val) {
+        selectedRoundTitle = val.trim();
+        document.getElementById('formRoundTitle').value = selectedRoundTitle;
+        updateEmailLivePreview();
+        updateSummaryDashboard();
+    }
+
+    function onStartTimeChange(val) {
+        updateEmailLivePreview();
+        updateSummaryDashboard();
+        checkAllInterviewersAvailability();
+    }
+
+    function selectDuration(minutes) {
+        selectedDurationMinutes = minutes;
+        document.getElementById('formDurationMinutes').value = minutes;
+        document.querySelectorAll('.duration-pill-btn').forEach(btn => {
+            if (parseInt(btn.getAttribute('data-minutes')) === minutes) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        updateEmailLivePreview();
+        updateSummaryDashboard();
+        checkAllInterviewersAvailability();
+    }
+
+    const ONLINE_DEFAULT_GUIDE = "• Kiểm tra camera, micro và đường truyền internet ổn định trước giờ hẹn 5 - 10 phút.\n" +
+        "• Chuẩn bị sẵn CV, Portfolio hoặc source code dự án tiêu biểu để sẵn sàng trao đổi cùng Hội đồng.\n" +
+        "• Trang phục lịch sự, chuyên nghiệp; lựa chọn không gian yên tĩnh.";
+
+    const OFFLINE_DEFAULT_GUIDE = "• Vui lòng có mặt tại Lễ tân Tòa nhà NoveraTech (Tầng 1, 72 Trần Duy Hưng, Cầu Giấy, Hà Nội) trước giờ hẹn 10 - 15 phút.\n" +
+        "• Mang theo CCCD/CMND để làm thủ tục nhận thẻ khách ra vào thang máy tòa nhà.\n" +
+        "• Trang phục lịch sự, chuyên nghiệp; mang theo bản in CV hoặc thiết bị cá nhân nếu cần demo.";
+
+    function suggestDefaultGuideIfUnchanged(mode) {
+        const guideEl = document.getElementById('emailGuideInput');
+        if (!guideEl) return;
+        const curVal = guideEl.value.trim();
+        if (!curVal || curVal === ONLINE_DEFAULT_GUIDE.trim() || curVal === OFFLINE_DEFAULT_GUIDE.trim()) {
+            guideEl.value = (mode === 'OFFLINE') ? OFFLINE_DEFAULT_GUIDE : ONLINE_DEFAULT_GUIDE;
+        }
+    }
+
+    function setInterviewFormat(format) {
+        selectedInterviewFormat = format;
+        selectedInterviewType = (format === 'OFFLINE') ? 'OFFLINE_OFFICE' : 'ONLINE_MEET';
+
+        const formTypeEl = document.getElementById('formInterviewType');
+        if (formTypeEl) formTypeEl.value = selectedInterviewType;
+
+        const formFormatEl = document.getElementById('formInterviewFormat');
+        if (formFormatEl) formFormatEl.value = format;
+
+        // Cập nhật tab active
+        const tabMeet = document.getElementById('tab-meet');
+        const tabTeams = document.getElementById('tab-teams');
+        const tabOffline = document.getElementById('tab-offline');
+
+        if (tabMeet) tabMeet.classList.toggle('active', format === 'MEET');
+        if (tabTeams) tabTeams.classList.toggle('active', format === 'TEAMS');
+        if (tabOffline) tabOffline.classList.toggle('active', format === 'OFFLINE');
+
+        // Cập nhật nhãn và thông tin hướng dẫn theo hình thức
+        const formatBadge = document.getElementById('formatSelectionBadge');
+        const roomPresetLabel = document.getElementById('roomPresetLabel');
+        const roomPresetCount = document.getElementById('roomPresetCount');
+        const locationLabelText = document.getElementById('locationLabelText');
+        const locationPrependIcon = document.getElementById('locationPrependIcon');
+        const inputLocation = document.getElementById('inputLocationOrLink');
+        const locationHelpText = document.getElementById('locationHelpText');
+
+        // Lọc danh sách preset phòng họp theo platform
+        const roomBadges = document.querySelectorAll('.preset-room-badge');
+        let visibleCount = 0;
+        let firstVisibleBadge = null;
+        let currentlyActiveVisible = false;
+
+        roomBadges.forEach(badge => {
+            const platform = badge.getAttribute('data-platform');
+            if (platform === format) {
+                badge.classList.remove('d-none');
+                visibleCount++;
+                if (!firstVisibleBadge) firstVisibleBadge = badge;
+                if (badge.classList.contains('active')) {
+                    currentlyActiveVisible = true;
+                }
+            } else {
+                badge.classList.add('d-none');
+                badge.classList.remove('active');
+            }
+        });
+
+        if (roomPresetCount) {
+            roomPresetCount.textContent = `${visibleCount} mẫu khả dụng`;
+        }
+
+        if (format === 'MEET') {
+            if (formatBadge) formatBadge.innerHTML = '<i class="bi bi-camera-video-fill text-success me-1"></i>Google Meet';
+            if (roomPresetLabel) roomPresetLabel.textContent = 'Chọn mẫu cấu hình sẵn cho Google Meet:';
+            if (locationLabelText) locationLabelText.textContent = 'Liên kết cuộc họp Google Meet';
+            if (locationPrependIcon) locationPrependIcon.className = 'bi bi-camera-video text-success';
+            if (inputLocation) inputLocation.placeholder = 'https://meet.google.com/xxx-yyyy-zzz';
+            if (locationHelpText) locationHelpText.innerHTML = '<i class="bi bi-info-circle me-1"></i>Đường link Google Meet sẽ được gửi kèm trong email thư mời và hiển thị trên lịch ứng viên.';
+
+            if (!currentlyActiveVisible && firstVisibleBadge) {
+                const rId = firstVisibleBadge.getAttribute('data-room-id');
+                const rType = firstVisibleBadge.getAttribute('data-room-type');
+                const rLoc = firstVisibleBadge.getAttribute('data-location');
+                selectRoomPreset(rId, rType, rLoc, format);
+            }
+            suggestDefaultGuideIfUnchanged('ONLINE');
+        } else if (format === 'TEAMS') {
+            if (formatBadge) formatBadge.innerHTML = '<i class="bi bi-microsoft text-primary me-1"></i>Microsoft Teams';
+            if (roomPresetLabel) roomPresetLabel.textContent = 'Chọn mẫu cấu hình sẵn cho Microsoft Teams:';
+            if (locationLabelText) locationLabelText.textContent = 'Liên kết cuộc họp Microsoft Teams';
+            if (locationPrependIcon) locationPrependIcon.className = 'bi bi-microsoft text-primary';
+            if (inputLocation) inputLocation.placeholder = 'https://teams.microsoft.com/l/meetup-join/...';
+            if (locationHelpText) locationHelpText.innerHTML = '<i class="bi bi-info-circle me-1"></i>Đường link Microsoft Teams sẽ được gửi kèm trong email thư mời và tối ưu chia sẻ màn hình kỹ thuật.';
+
+            if (!currentlyActiveVisible && firstVisibleBadge) {
+                const rId = firstVisibleBadge.getAttribute('data-room-id');
+                const rType = firstVisibleBadge.getAttribute('data-room-type');
+                const rLoc = firstVisibleBadge.getAttribute('data-location');
+                selectRoomPreset(rId, rType, rLoc, format);
+            }
+            suggestDefaultGuideIfUnchanged('ONLINE');
+        } else {
+            // OFFLINE
+            if (formatBadge) formatBadge.innerHTML = '<i class="bi bi-building text-warning-emphasis me-1"></i>Trực tiếp văn phòng';
+            if (roomPresetLabel) roomPresetLabel.textContent = 'Chọn phòng họp trực tiếp tại văn phòng NoveraTech:';
+            if (locationLabelText) locationLabelText.textContent = 'Địa điểm & Phòng họp trực tiếp tại văn phòng';
+            if (locationPrependIcon) locationPrependIcon.className = 'bi bi-building text-warning-emphasis';
+            if (inputLocation) inputLocation.placeholder = 'Nhập địa chỉ, tầng, tên phòng họp trực tiếp tại văn phòng...';
+            if (locationHelpText) locationHelpText.innerHTML = '<i class="bi bi-geo-alt me-1"></i>Địa chỉ văn phòng cụ thể sẽ được in rõ ràng trong thư mời gửi ứng viên và giám khảo.';
+
+            if (!currentlyActiveVisible && firstVisibleBadge) {
+                const rId = firstVisibleBadge.getAttribute('data-room-id');
+                const rType = firstVisibleBadge.getAttribute('data-room-type');
+                const rLoc = firstVisibleBadge.getAttribute('data-location');
+                selectRoomPreset(rId, rType, rLoc, format);
+            }
+            suggestDefaultGuideIfUnchanged('OFFLINE');
+        }
+
+        updateEmailLivePreview();
+        updateSummaryDashboard();
+    }
+
+    function setInterviewType(type) {
+        if (type === 'OFFLINE_OFFICE') {
+            setInterviewFormat('OFFLINE');
+        } else {
+            setInterviewFormat('MEET');
+        }
+    }
+
+    function selectRoomPreset(roomId, type, location, platform) {
+        selectedLocationOrLink = location;
+        if (platform) {
+            selectedInterviewFormat = platform;
+        }
+        selectedInterviewType = type;
+
+        const formLocEl = document.getElementById('formLocationOrLink');
+        if (formLocEl) formLocEl.value = location;
+
+        const inputLocEl = document.getElementById('inputLocationOrLink');
+        if (inputLocEl) inputLocEl.value = location;
+
+        document.querySelectorAll('.preset-room-badge').forEach(el => el.classList.remove('active'));
+        const activeBadge = document.getElementById(`roomBadge-${roomId}`);
+        if (activeBadge) activeBadge.classList.add('active');
+
+        updateEmailLivePreview();
+        updateSummaryDashboard();
+    }
+
+    function onLocationOrLinkChange(val) {
+        selectedLocationOrLink = val.trim();
+        document.getElementById('formLocationOrLink').value = selectedLocationOrLink;
+        updateEmailLivePreview();
+        updateSummaryDashboard();
+    }
+
+    function onNoteChange(val) {
+        document.getElementById('formNote').value = val.trim();
+    }
+
+    function togglePanelistSelect(id) {
+        const chk = document.getElementById(`chkInv-${id}`);
+        const row = document.getElementById(`panelistRow-${id}`);
+        if (chk && row) {
+            if (chk.checked) {
+                row.classList.add('selected');
+            } else {
+                row.classList.remove('selected');
+            }
+        }
+        updateEmailLivePreview();
+        updateSummaryDashboard();
+    }
+
+    // Smart Availability Check
+    async function checkAllInterviewersAvailability() {
+        const checkedPanelists = Array.from(document.querySelectorAll('.panelist-checkbox:checked')).map(el => el.value);
+        if (checkedPanelists.length === 0) return;
+
+        const startTimeVal = document.getElementById('inputStartTime').value;
+        if (!startTimeVal) return;
+
+        try {
+            const url = `/phong-van/api/check-interviewer-busy?interviewerIds=${checkedPanelists.join(',')}&startTime=${encodeURIComponent(startTimeVal)}&durationMinutes=${selectedDurationMinutes}`;
+            const res = await fetch(url);
+            const json = await res.json();
+            if (json.success && json.data) {
+                json.data.forEach(item => {
+                    const badge = document.getElementById(`availBadge-${item.interviewerId}`);
+                    if (badge) {
+                        if (item.isBusy) {
+                            badge.style.background = '#FEF3C7';
+                            badge.style.color = '#92400E';
+                            badge.style.borderColor = '#FCD34D';
+                            badge.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>Trùng: ${item.conflictTitle || 'Lịch khác'} (${item.conflictTimeDisplay || ''})`;
+                        } else {
+                            badge.style.background = '#ECFDF5';
+                            badge.style.color = '#065F46';
+                            badge.style.borderColor = '#A7F3D0';
+                            badge.innerHTML = `<i class="bi bi-check2-circle me-1"></i>Sẵn sàng (Trống lịch)`;
+                        }
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn('Lỗi khi kiểm tra lịch trống:', e);
+        }
+    }
+
+    // ── Bước 3: Live Interactive Email Preview ──
+    function updateEmailLivePreview() {
+        // Cập nhật người nhận
+        const recipient = document.getElementById('previewRecipientEmail');
+        if (recipient) recipient.textContent = selectedEmail || 'ungvien@email.com';
+
+        // Cập nhật tiêu đề
+        const subj = document.getElementById('emailSubjectInput').value;
+        const subjPreview = document.getElementById('previewSubjectText');
+        if (subjPreview) subjPreview.textContent = subj;
+
+        // Cập nhật tên ứng viên
+        const candName = document.getElementById('previewCandidateName');
+        if (candName) candName.textContent = selectedCandidateName || 'Ứng viên';
+
+        // Lời mở đầu
+        const opening = document.getElementById('emailOpeningInput').value;
+        const openingPreview = document.getElementById('previewOpeningText');
+        if (openingPreview) openingPreview.textContent = opening;
+
+        // Bảng chi tiết
+        document.getElementById('previewTableJob').textContent = selectedJobTitle || 'Vị trí chuyên môn';
+        document.getElementById('previewTableRound').textContent = selectedRoundTitle || `Phỏng vấn Vòng ${selectedRoundNumber}`;
+
+        const startTimeVal = document.getElementById('inputStartTime').value;
+        if (startTimeVal) {
+            const dt = new Date(startTimeVal);
+            const endDt = new Date(dt.getTime() + selectedDurationMinutes * 60000);
+            const dateStr = dt.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+            const timeStr = `${pad(dt.getHours())}:${pad(dt.getMinutes())} - ${pad(endDt.getHours())}:${pad(endDt.getMinutes())} (GMT+7)`;
+            document.getElementById('previewTableTime').textContent = `${dateStr} (${timeStr})`;
+        } else {
+            document.getElementById('previewTableTime').textContent = 'Chưa chọn ngày giờ';
+        }
+
+        const locationPreviewEl = document.getElementById('previewTableLocation');
+        if (locationPreviewEl) {
+            if (selectedInterviewFormat === 'MEET') {
+                locationPreviewEl.innerHTML = `<span class="badge bg-success-subtle text-success border border-success-subtle me-1.5"><i class="bi bi-camera-video me-1"></i>Google Meet</span> <span class="text-dark fw-semibold">${selectedLocationOrLink || 'Chưa cấu hình'}</span>`;
+            } else if (selectedInterviewFormat === 'TEAMS') {
+                locationPreviewEl.innerHTML = `<span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1.5"><i class="bi bi-microsoft me-1"></i>MS Teams</span> <span class="text-dark fw-semibold">${selectedLocationOrLink || 'Chưa cấu hình'}</span>`;
+            } else {
+                locationPreviewEl.innerHTML = `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle me-1.5"><i class="bi bi-building me-1"></i>Trực tiếp văn phòng</span> <span class="text-dark fw-semibold">${selectedLocationOrLink || 'Chưa cấu hình'}</span>`;
+            }
+        }
+
+        // Danh sách giám khảo
+        const checkedPanelistNames = Array.from(document.querySelectorAll('.panelist-checkbox:checked')).map(el => el.getAttribute('data-name'));
+        document.getElementById('previewTablePanelists').textContent = checkedPanelistNames.length > 0 ? checkedPanelistNames.join(', ') : 'Ban Tuyển Dụng NoveraTech';
+
+        // Hướng dẫn chuẩn bị
+        const guide = document.getElementById('emailGuideInput').value;
+        document.getElementById('previewGuideText').innerHTML = guide.replace(/\n/g, '<br/>');
+
+        // Chân trang
+        document.getElementById('previewFooterText').textContent = document.getElementById('emailHrContactInput').value;
+    }
+
+    function resetDefaultPreparationGuide() {
+        const defaultGuideEl = document.getElementById('emailGuideInput');
+        if (defaultGuideEl) {
+            defaultGuideEl.value = (selectedInterviewFormat === 'OFFLINE') ? OFFLINE_DEFAULT_GUIDE : ONLINE_DEFAULT_GUIDE;
+        }
+        updateEmailLivePreview();
+    }
+
+    function pad(n) {
+        return n < 10 ? '0' + n : n;
+    }
+
+    // ── Bước 4: Summary Dashboard ──
+    function updateSummaryDashboard() {
+        document.getElementById('summaryCandName').textContent = selectedCandidateName || 'Ứng viên';
+        document.getElementById('summaryCandEmail').textContent = selectedEmail || 'ungvien@email.com';
+        document.getElementById('summaryJobTitle').textContent = selectedJobTitle || 'Chuyên môn';
+
+        const startTimeVal = document.getElementById('inputStartTime').value;
+        if (startTimeVal) {
+            const dt = new Date(startTimeVal);
+            const dateStr = dt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const timeStr = `${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+            document.getElementById('summaryTimeDisplay').textContent = `${timeStr} ngày ${dateStr}`;
+        }
+        document.getElementById('summaryDurationDisplay').textContent = `Thời lượng: ${selectedDurationMinutes} phút`;
+        
+        const typeBadgeEl = document.getElementById('summaryTypeBadge');
+        if (typeBadgeEl) {
+            if (selectedInterviewFormat === 'MEET') {
+                typeBadgeEl.className = 'badge bg-success-subtle text-success border border-success-subtle py-1 px-2.5';
+                typeBadgeEl.innerHTML = '<i class="bi bi-camera-video me-1"></i>Trực tuyến (Google Meet)';
+            } else if (selectedInterviewFormat === 'TEAMS') {
+                typeBadgeEl.className = 'badge bg-primary-subtle text-primary border border-primary-subtle py-1 px-2.5';
+                typeBadgeEl.innerHTML = '<i class="bi bi-microsoft me-1"></i>Trực tuyến (MS Teams)';
+            } else {
+                typeBadgeEl.className = 'badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-1 px-2.5';
+                typeBadgeEl.innerHTML = '<i class="bi bi-building me-1"></i>Trực tiếp tại văn phòng';
+            }
+        }
+        document.getElementById('summaryLocationDisplay').textContent = selectedLocationOrLink;
+
+        const checkedPanelists = Array.from(document.querySelectorAll('.panelist-checkbox:checked'));
+        document.getElementById('summaryPanelistCount').textContent = `${checkedPanelists.length} Giám khảo`;
+        const names = checkedPanelists.map(el => el.getAttribute('data-name')).join(', ');
+        document.getElementById('summaryPanelistNames').textContent = names || 'Chưa chọn';
+    }
+
+    // ── Form Submission ──
+    async function handleWizardFormSubmit(event) {
+        event.preventDefault();
+        closeWizardAlert();
+
+        if (!validateStep(1) || !validateStep(2) || !validateStep(3)) {
+            return;
+        }
+
+        const confirmCheck = document.getElementById('confirmAccuracyCheckbox');
+        if (!confirmCheck.checked) {
+            showWizardAlert('Vui lòng tích xác nhận cam kết thông tin trước khi phát lệnh.', 'warning');
+            confirmCheck.focus();
+            return;
+        }
+
+        const submitBtn = document.getElementById('btnFinalSubmitSchedule');
+        const originalHtml = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>ĐANG PHÁT LỆNH & GỬI THƯ MỜI...';
+
+        const form = document.getElementById('interviewWizardForm');
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                // Hiển thị Success Modal
+                document.getElementById('successModalCandName').textContent = selectedCandidateName;
+                document.getElementById('successModalRoundTitle').textContent = result.title || selectedRoundTitle;
+                document.getElementById('successModalTime').textContent = result.startTime ? `${result.startTime} - ${result.endTime}` : document.getElementById('summaryTimeDisplay').textContent;
+                document.getElementById('successModalLink').textContent = selectedLocationOrLink;
+                if (result.redirectUrl) {
+                    document.getElementById('btnGoToPipeline').href = result.redirectUrl;
+                }
+
+                document.getElementById('scheduleSuccessModal').classList.remove('d-none');
+            } else {
+                const msg = result.message || 'Đã xảy ra lỗi khi tạo lịch phỏng vấn.';
+                showWizardAlert(msg, 'danger');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalHtml;
+            }
+        } catch (error) {
+            console.error('Lỗi Submit Wizard:', error);
+            showWizardAlert('Không thể kết nối máy chủ để hoàn tất đặt lịch. Vui lòng thử lại.', 'danger');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalHtml;
+        }
+    }
+
+    function resetWizardForNewSchedule() {
+        document.getElementById('scheduleSuccessModal').classList.add('d-none');
+        window.location.href = '/phong-van/dat-lich';
+    }
+
+    function showWizardAlert(message, type) {
+        const box = document.getElementById('wizardAlertBox');
+        const text = document.getElementById('wizardAlertText');
+        const icon = document.getElementById('wizardAlertIcon');
+        const container = document.getElementById('wizardAlertContainer');
+
+        box.className = `alert alert-${type} alert-dismissible fade show rounded-2 py-2.5 px-3 mb-0 border-0 shadow-sm`;
+        if (type === 'danger') {
+            box.style.background = '#FEF2F2';
+            box.style.color = '#991B1B';
+            box.style.borderLeft = '4px solid #DC2626';
+            icon.className = 'bi bi-exclamation-octagon-fill me-2 fs-5 text-danger';
+        } else if (type === 'warning') {
+            box.style.background = '#FFFBEB';
+            box.style.color = '#92400E';
+            box.style.borderLeft = '4px solid #F59E0B';
+            icon.className = 'bi bi-exclamation-triangle-fill me-2 fs-5 text-warning';
+        } else {
+            box.style.background = '#ECFDF5';
+            box.style.color = '#065F46';
+            box.style.borderLeft = '4px solid #059669';
+            icon.className = 'bi bi-check-circle-fill me-2 fs-5 text-success';
+        }
+
+        text.textContent = message;
+        container.classList.remove('d-none');
+        container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function closeWizardAlert() {
+        document.getElementById('wizardAlertContainer').classList.add('d-none');
+    }
+</script>
