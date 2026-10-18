@@ -796,8 +796,8 @@ public class InterviewService(
     /// <inheritdoc/>
     public async Task<InterviewDetailForEditDto?> GetInterviewDetailForEditAsync(
         Guid interviewId,
-        Guid currentUserId,
-        bool isRecruiterOnly,
+        Guid currentUserId = default,
+        bool isRecruiterOnly = false,
         CancellationToken cancellationToken = default)
     {
         var interview = await _dbContext.Interviews
@@ -1116,7 +1116,7 @@ public class InterviewService(
             Id = Guid.NewGuid(),
             ApplicationId = interview.ApplicationId,
             FromStageId = interview.Application?.CurrentStageId,
-            ToStageId = interview.Application?.CurrentStageId,
+            ToStageId = interview.Application?.CurrentStageId ?? Guid.Empty,
             ChangedByUserId = currentUserId != Guid.Empty ? currentUserId : Guid.Empty,
             Comment = $"Đã dời lịch {interview.Title}: từ {oldStartUtc.ToOffset(TimeSpan.FromHours(7)):dd/MM/yyyy HH:mm} sang {startUtc.ToOffset(TimeSpan.FromHours(7)):dd/MM/yyyy HH:mm}{reasonComment}.",
             CreatedAt = DateTimeOffset.UtcNow
@@ -1337,7 +1337,7 @@ public class InterviewService(
             Id = Guid.NewGuid(),
             ApplicationId = interview.ApplicationId,
             FromStageId = interview.Application?.CurrentStageId,
-            ToStageId = interview.Application?.CurrentStageId,
+            ToStageId = interview.Application?.CurrentStageId ?? Guid.Empty,
             ChangedByUserId = currentUserId != Guid.Empty ? currentUserId : Guid.Empty,
             Comment = $"Đã huỷ {interview.Title} ({scheduledTime.ToOffset(TimeSpan.FromHours(7)):dd/MM/yyyy HH:mm}). Lý do: {cleanReason}.",
             CreatedAt = DateTimeOffset.UtcNow
