@@ -552,4 +552,163 @@ public class EmailService : IEmailService
 
         return await SendEmailAsync(new SendEmailRequestDto(recruiterEmail, subject, body), cancellationToken);
     }
+
+    public async Task<bool> SendInterviewRescheduledAsync(
+        string recipientEmail,
+        string recipientName,
+        bool isCandidate,
+        string candidateName,
+        string jobTitle,
+        string roundTitle,
+        DateTimeOffset oldStartTime,
+        DateTimeOffset newStartTime,
+        DateTimeOffset newEndTime,
+        string newLocationOrLink,
+        string newInterviewTypeDisplay,
+        string panelistNames,
+        string? rescheduleReason,
+        CancellationToken cancellationToken = default)
+    {
+        var subject = $"🔄 [Thông báo dời lịch phỏng vấn] Vị trí {jobTitle} — NoveraTech";
+        var oldTimeVn = oldStartTime.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm, dddd dd/MM/yyyy");
+        var newDateVn = newStartTime.ToOffset(TimeSpan.FromHours(7)).ToString("dddd, dd/MM/yyyy");
+        var newTimeVn = $"{newStartTime.ToOffset(TimeSpan.FromHours(7)):HH:mm} - {newEndTime.ToOffset(TimeSpan.FromHours(7)):HH:mm} (GMT+7)";
+
+        var greeting = isCandidate
+            ? $"Xin chào <strong>{recipientName}</strong>,"
+            : $"Kính gửi giám khảo <strong>{recipientName}</strong> (Hội đồng phỏng vấn),";
+
+        var targetNotice = isCandidate
+            ? $"NoveraTech xin thông báo buổi phỏng vấn của bạn cho vị trí <strong>{jobTitle}</strong> đã được điều chỉnh thời gian sang khung giờ mới để đảm bảo sự có mặt đầy đủ của Hội đồng chuyên môn."
+            : $"Ban Tuyển dụng NoveraTech xin thông báo phiên phỏng vấn ứng viên <strong>{candidateName}</strong> cho vị trí <strong>{jobTitle}</strong> đã được điều chỉnh sang lịch mới.";
+
+        var body = $@"
+        <div style=""font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden;"">
+            <div style=""background: #0F172A; padding: 22px; text-align: center;"">
+                <h2 style=""color: #F59E0B; margin: 0; font-size: 1.25rem; font-weight: 700;"">THÔNG BÁO DỜI LỊCH PHỎNG VẤN</h2>
+                <div style=""color: #94A3B8; font-size: 0.82rem; margin-top: 4px;"">NOVERATECH CAREERS & ENGINEERING</div>
+            </div>
+            <div style=""padding: 26px 22px;"">
+                <p style=""font-size: 0.95rem; color: #0F172A; margin-top: 0;"">{greeting}</p>
+                <p style=""color: #475569; font-size: 0.9rem; line-height: 1.6;"">
+                    {targetNotice}
+                </p>
+                
+                {(!string.IsNullOrWhiteSpace(rescheduleReason) ? $@"
+                <div style=""background: #FFFBEB; border: 1px solid #FDE68A; border-left: 4px solid #D97706; border-radius: 8px; padding: 12px 16px; margin: 16px 0; font-size: 0.88rem; color: #92400E;"">
+                    <strong>Lý do điều chỉnh:</strong> {rescheduleReason}
+                </div>" : "")}
+
+                <div style=""background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin: 18px 0; font-size: 0.88rem;"">
+                    <div style=""font-weight: 700; color: #0F172A; margin-bottom: 10px; font-size: 0.9rem; border-bottom: 1px solid #E2E8F0; padding-bottom: 6px;"">
+                        Chi tiết lịch phỏng vấn mới:
+                    </div>
+                    <table style=""width: 100%; border-collapse: collapse;"">
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B; width: 140px;"">Ứng viên:</td>
+                            <td style=""padding: 6px 0; color: #0F172A; font-weight: 700;"">{candidateName}</td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Vị trí:</td>
+                            <td style=""padding: 6px 0; color: #0F172A; font-weight: 600;"">{jobTitle}</td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Vòng phỏng vấn:</td>
+                            <td style=""padding: 6px 0; color: #0F172A; font-weight: 600;"">{roundTitle}</td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #DC2626;"">Lịch cũ:</td>
+                            <td style=""padding: 6px 0; color: #DC2626; text-decoration: line-through;"">{oldTimeVn}</td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #059669; font-weight: 700;"">Khung giờ mới:</td>
+                            <td style=""padding: 6px 0; color: #059669; font-weight: 700; font-size: 0.95rem;"">{newTimeVn} ({newDateVn})</td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Hình thức:</td>
+                            <td style=""padding: 6px 0; color: #0F172A;"">{newInterviewTypeDisplay}</td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Địa điểm / Link họp:</td>
+                            <td style=""padding: 6px 0;"">
+                                <a href=""{newLocationOrLink}"" style=""color: #2563EB; font-weight: 600; text-decoration: underline;"">{newLocationOrLink}</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Hội đồng phỏng vấn:</td>
+                            <td style=""padding: 6px 0; color: #0F172A; font-weight: 600;"">{panelistNames}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <p style=""color: #475569; font-size: 0.88rem; line-height: 1.6;"">
+                    Rất mong nhận được sự thông cảm của bạn vì sự bất tiện này. Nếu có bất kỳ câu hỏi nào, vui lòng phản hồi trực tiếp qua email này.
+                </p>
+            </div>
+            <div style=""background: #F1F5F9; padding: 14px; text-align: center; font-size: 0.75rem; color: #64748B; border-top: 1px solid #E2E8F0;"">
+                NoveraTech Careers · Phòng Tuyển dụng & Quản trị Nhân tài Nội bộ
+            </div>
+        </div>";
+
+        return await SendEmailAsync(new SendEmailRequestDto(recipientEmail, subject, body), cancellationToken);
+    }
+
+    public async Task<bool> SendInterviewCancelledAsync(
+        string recipientEmail,
+        string recipientName,
+        bool isCandidate,
+        string candidateName,
+        string jobTitle,
+        string roundTitle,
+        DateTimeOffset scheduledStartTime,
+        string cancellationReason,
+        CancellationToken cancellationToken = default)
+    {
+        var subject = $"⚠️ [Thông báo huỷ lịch phỏng vấn] Vị trí {jobTitle} — NoveraTech";
+        var timeVn = scheduledStartTime.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm, dddd dd/MM/yyyy");
+
+        var greeting = isCandidate
+            ? $"Xin chào <strong>{recipientName}</strong>,"
+            : $"Kính gửi giám khảo <strong>{recipientName}</strong> (Hội đồng phỏng vấn),";
+
+        var targetNotice = isCandidate
+            ? $"NoveraTech rất tiếc phải thông báo rằng buổi phỏng vấn cho vị trí <strong>{jobTitle}</strong> đã bị huỷ vì lý do đột xuất."
+            : $"Ban Tuyển dụng NoveraTech xin thông báo buổi phỏng vấn ứng viên <strong>{candidateName}</strong> cho vị trí <strong>{jobTitle}</strong> dự kiến vào <strong>{timeVn}</strong> đã bị huỷ.";
+
+        var body = $@"
+        <div style=""font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden;"">
+            <div style=""background: #0F172A; padding: 22px; text-align: center;"">
+                <h2 style=""color: #EF4444; margin: 0; font-size: 1.25rem; font-weight: 700;"">THÔNG BÁO HUỶ BUỔI PHỎNG VẤN</h2>
+                <div style=""color: #94A3B8; font-size: 0.82rem; margin-top: 4px;"">NOVERATECH CAREERS & ENGINEERING</div>
+            </div>
+            <div style=""padding: 26px 22px;"">
+                <p style=""font-size: 0.95rem; color: #0F172A; margin-top: 0;"">{greeting}</p>
+                <p style=""color: #475569; font-size: 0.9rem; line-height: 1.6;"">
+                    {targetNotice}
+                </p>
+
+                <div style=""background: #FEF2F2; border: 1px solid #FECACA; border-left: 4px solid #EF4444; border-radius: 8px; padding: 14px 16px; margin: 18px 0; font-size: 0.88rem; color: #991B1B;"">
+                    <div style=""font-weight: 700; margin-bottom: 4px;"">Lý do huỷ buổi phỏng vấn:</div>
+                    <div style=""line-height: 1.5;"">{cancellationReason}</div>
+                </div>
+
+                <div style=""background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px; margin: 16px 0; font-size: 0.85rem; color: #475569;"">
+                    <div><strong>Thông tin buổi phỏng vấn:</strong></div>
+                    <div style=""margin-top: 4px;"">• Ứng viên: <strong>{candidateName}</strong></div>
+                    <div>• Vị trí: <strong>{jobTitle}</strong></div>
+                    <div>• Vòng: <strong>{roundTitle}</strong></div>
+                    <div>• Khung giờ dự kiến ban đầu: <strong>{timeVn}</strong></div>
+                </div>
+
+                <p style=""color: #475569; font-size: 0.88rem; line-height: 1.6;"">
+                    Ban Tuyển dụng thành thật cáo lỗi vì sự bất tiện này. Chúng tôi sẽ sớm cập nhật kế hoạch tuyển dụng tiếp theo qua email hoặc điện thoại.
+                </p>
+            </div>
+            <div style=""background: #F1F5F9; padding: 14px; text-align: center; font-size: 0.75rem; color: #64748B; border-top: 1px solid #E2E8F0;"">
+                NoveraTech Careers · Phòng Tuyển dụng & Quản trị Nhân tài Nội bộ
+            </div>
+        </div>";
+
+        return await SendEmailAsync(new SendEmailRequestDto(recipientEmail, subject, body), cancellationToken);
+    }
 }
