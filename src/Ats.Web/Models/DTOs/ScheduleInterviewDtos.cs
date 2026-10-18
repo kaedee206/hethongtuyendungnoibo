@@ -206,6 +206,7 @@ public class InterviewCancelResultDto
     public string Message { get; set; } = string.Empty;
     public Guid? InterviewId { get; set; }
     public string? CancellationReason { get; set; }
+    public string? Reason { get => CancellationReason; set => CancellationReason = value; }
     public List<string> Errors { get; set; } = new();
 }
 
