@@ -10,11 +10,21 @@
 **/[Dd]ebug/
 
 tests/
+**/tests/
+**/Tests/
 **/TestResults/
 **/*.Tests/
 coverage/
 
 Migrations_Backup/
+note/
+phonescreenshot/
+screenshots/
+docs/
+scratch/
+.agents/
+.agent/
+.playwright-mcp/
 
 **/node_modules/
 package.json
@@ -42,6 +52,7 @@ appsettings.Development.local.json
 **/*.log
 **/*.tmp
 **/*.md
+*.sql
 init_database.sql
 
 compose*.yaml

@@ -1,0 +1,18 @@
+<Project>
+  <PropertyGroup>
+    <!-- Tối ưu hiệu năng biên dịch & MSBuild Incremental Build -->
+    <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
+    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+    <TieredPGO>true</TieredPGO>
+    <TieredCompilation>true</TieredCompilation>
+    
+    <!-- Tắt phân tích mã nguồn thừa làm chậm quá trình build hàng ngày -->
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    
+    <!-- Tránh quét transitive audit thừa trong mỗi lần fast build nội bộ -->
+    <NuGetAuditMode>direct</NuGetAuditMode>
+  </PropertyGroup>
+</Project>
