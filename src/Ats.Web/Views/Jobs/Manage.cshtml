@@ -411,6 +411,14 @@
                                             <i class="bi bi-eye"></i>
                                         </a>
 
+                                        <!-- SCRUM-56: Bảng so sánh năng lực ứng viên -->
+                                        @if (User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Admin) || User.IsInRole("Trưởng phòng nhân sự") || User.IsInRole("Quản trị viên"))
+                                        {
+                                            <a href="/so-sanh-ung-vien/@item.Id" class="btn btn-sm btn-outline-info btn-action-icon" title="Bảng so sánh năng lực ứng viên (SCRUM-56)">
+                                                <i class="bi bi-bar-chart-line text-info"></i>
+                                            </a>
+                                        }
+
                                         @if (item.IsPublished)
                                         {
                                             <!-- Nút gỡ tin nhanh -->
@@ -450,7 +458,14 @@
                                                     <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)" onclick="copyJobUrl('@(item.Slug ?? item.Id.ToString())')">
                                                         <i class="bi bi-link-45deg text-secondary"></i> Sao chép link JD
                                                     </a>
-                                                </li>
+                                                @if (User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Admin) || User.IsInRole("Trưởng phòng nhân sự") || User.IsInRole("Quản trị viên"))
+                                                {
+                                                    <li>
+                                                        <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="/so-sanh-ung-vien/@item.Id">
+                                                            <i class="bi bi-bar-chart-line text-info"></i> Bảng so sánh năng lực
+                                                        </a>
+                                                    </li>
+                                                }
                                                 @if (item.IsPublished)
                                                 {
                                                     <li><hr class="dropdown-divider my-1"></li>

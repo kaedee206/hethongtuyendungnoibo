@@ -1,0 +1,185 @@
+@model Ats.Web.Models.ViewModels.Evaluations.EvaluationDetailViewModel
+@{
+    ViewData["Title"] = $"Chi Tiết Phiếu Đánh Giá — {Model.CandidateName}";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid px-3 px-lg-4 py-3" style="max-width: 1100px;">
+    <!-- ── Breadcrumb ── -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted"><i class="bi bi-house-door me-1"></i>Trang chủ</a></li>
+            <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none text-muted">Bàn làm việc</a></li>
+            <li class="breadcrumb-item"><a href="/ung-vien/@Model.ApplicationId" class="text-decoration-none text-muted">Hồ sơ: @Model.CandidateName</a></li>
+            <li class="breadcrumb-item active fw-semibold text-dark" aria-current="page">Chi tiết đánh giá</li>
+        </ol>
+    </nav>
+
+    <!-- ── Header Banner ── -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4" style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #F8FAFC;">
+        <div class="card-body p-3 p-md-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                <div>
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 rounded-2 fw-medium">
+                            <i class="bi bi-calendar2-event me-1"></i>Vòng phỏng vấn @Model.InterviewRound
+                        </span>
+                        <span class="badge bg-light text-dark px-2.5 py-1 rounded-2 fw-medium">
+                            @Model.JobTitle
+                        </span>
+                        <span class="badge bg-success px-2.5 py-1 rounded-2">
+                            <i class="bi bi-lock-fill me-1"></i>ĐÃ NỘP & KHÓA BẤT BIẾN
+                        </span>
+                    </div>
+                    <h3 class="fw-bold mb-1 text-white">@Model.CandidateName</h3>
+                    <div class="small text-slate-300" style="color: #94A3B8;">
+                        <span><i class="bi bi-person-badge me-1"></i>Người phỏng vấn: <b class="text-white">@Model.EvaluatorName</b> (@Model.EvaluatorEmail)</span>
+                        @if (Model.SubmittedAt.HasValue)
+                        {
+                            <span class="mx-1.5">•</span>
+                            <span><i class="bi bi-clock me-1"></i>Thời gian nộp: <b>@Model.SubmittedAt.Value.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm") (UTC+7)</b></span>
+                        }
+                    </div>
+                </div>
+
+                <!-- Điểm tổng nổi bật -->
+                <div class="text-center text-md-end bg-slate-800 p-3 rounded-3 border border-secondary border-opacity-25" style="background: rgba(30, 41, 59, 0.7); min-width: 180px;">
+                    <div class="small text-uppercase fw-semibold" style="color: #38BDF8; font-size: 0.72rem; letter-spacing: 0.5px;">
+                        ĐIỂM BÌNH QUÂN GIA QUYỀN
+                    </div>
+                    <div class="display-6 fw-bold text-white mt-1">@Model.TotalScore.ToString("F2") <span class="fs-5 text-muted">/ 5.0</span></div>
+                    <div class="badge bg-dark text-muted border border-secondary mt-1" style="font-family: monospace; font-size: 0.68rem;">
+                        SNAPSHOT v@Model.SnapshotVersion
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Danh sách tiêu chí đánh giá snapshot ── -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4 bg-white" style="border: 1px solid #E2E8F0 !important;">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold text-dark mb-0">
+                <i class="bi bi-card-checklist text-primary me-2"></i>Chi Tiết Điểm Từng Tiêu Chí
+            </h5>
+            <span class="badge bg-light text-muted border px-2.5 py-1">
+                @Model.Items.Count tiêu chí
+            </span>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3 py-3" style="width: 40px;">#</th>
+                            <th class="py-3" style="min-width: 250px;">Tiêu chí năng lực</th>
+                            <th class="text-center py-3" style="width: 120px;">Trọng số</th>
+                            <th class="text-center py-3" style="width: 130px;">Điểm số (1-5)</th>
+                            <th class="text-center py-3" style="width: 130px;">Điểm quy đổi</th>
+                            <th class="py-3" style="min-width: 250px;">Nhận xét & Dẫn chứng</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Model.Items.Count; i++)
+                        {
+                            var it = Model.Items[i];
+                            var scoreColor = it.Score >= 4 ? "text-success" : (it.Score == 3 ? "text-primary" : "text-danger");
+                            <tr>
+                                <td class="ps-3 fw-bold text-muted">@(i + 1)</td>
+                                <td>
+                                    <div class="fw-bold text-dark">@it.CriteriaName</div>
+                                    @if (!string.IsNullOrWhiteSpace(it.CriteriaDescription))
+                                    {
+                                        <div class="small text-muted" style="font-size: 0.76rem;">@it.CriteriaDescription</div>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-secondary border px-2 py-1">
+                                        @it.Weight.ToString("G29")%
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="fw-bold fs-6 @scoreColor">
+                                        @it.Score <span class="small text-muted fw-normal">/ 5</span>
+                                    </span>
+                                </td>
+                                <td class="text-center font-monospace fw-semibold">
+                                    @it.WeightedScore.ToString("F2")
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(it.Comment))
+                                    {
+                                        <div class="fst-italic text-dark">"@it.Comment"</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Không có nhận xét</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Kết luận & Đề xuất ── -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4 bg-white" style="border: 1px solid #E2E8F0 !important;">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h5 class="fw-bold text-dark mb-0">
+                <i class="bi bi-chat-square-quote-fill text-primary me-2"></i>Kết luận & Đề xuất Tuyển dụng
+            </h5>
+        </div>
+        <div class="card-body p-3 p-md-4">
+            <div class="row g-3">
+                <div class="col-12 col-md-5">
+                    <label class="small text-muted fw-semibold text-uppercase d-block" style="font-size: 0.72rem;">ĐỀ XUẤT TUYỂN DỤNG</label>
+                    <div class="mt-1">
+                        @if (Model.OverallRecommendation == "STRONG_HIRE")
+                        {
+                            <span class="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-2 fs-6">
+                                🟢 KHUYẾN NGHỊ TUYỂN DỤNG CAO (Strong Hire)
+                            </span>
+                        }
+                        else if (Model.OverallRecommendation == "HIRE")
+                        {
+                            <span class="badge bg-primary-subtle text-primary border border-primary px-3 py-2 rounded-2 fs-6">
+                                🟢 ĐẠT YÊU CẦU - NÊN TUYỂN (Hire)
+                            </span>
+                        }
+                        else if (Model.OverallRecommendation == "CONSIDER")
+                        {
+                            <span class="badge bg-warning-subtle text-warning border border-warning px-3 py-2 rounded-2 fs-6">
+                                🟡 CẦN CÂN NHẮC / PHỎNG VẤN THÊM (Consider)
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger-subtle text-danger border border-danger px-3 py-2 rounded-2 fs-6">
+                                🔴 KHÔNG PHÙ HỢP - LOẠI (Strong No Hire)
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-7">
+                    <label class="small text-muted fw-semibold text-uppercase d-block" style="font-size: 0.72rem;">NHẬN XÉT TỔNG THỂ</label>
+                    <div class="mt-1 p-2.5 bg-light rounded-2 border text-dark" style="font-size: 0.85rem;">
+                        @(string.IsNullOrWhiteSpace(Model.GeneralNotes) ? "Không có nhận xét tổng thể." : Model.GeneralNotes)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center pb-4">
+        <a href="/ung-vien/@Model.ApplicationId" class="btn btn-outline-secondary rounded-2 px-3">
+            <i class="bi bi-arrow-left me-1"></i>Quay lại hồ sơ ứng viên
+        </a>
+        <button type="button" class="btn btn-outline-primary rounded-2 px-3" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i>In phiếu đánh giá
+        </button>
+    </div>
+</div>

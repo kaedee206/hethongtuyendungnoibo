@@ -356,6 +356,17 @@
                                                                         }
                                                                     </div>
                                                                 }
+                                                                <div class="mt-2 pt-2 border-top d-flex align-items-center justify-content-between">
+                                                                    <a href="/danh-gia/@iv.InterviewId" class="btn btn-sm btn-outline-primary py-1 px-2.5 rounded-2" style="font-size: 0.76rem;" target="_blank">
+                                                                        <i class="bi bi-clipboard2-check me-1"></i>Phiếu đánh giá năng lực
+                                                                    </a>
+                                                                    @if (iv.OverallScore.HasValue)
+                                                                    {
+                                                                        <span class="text-success small fw-semibold" style="font-size: 0.72rem;">
+                                                                            <i class="bi bi-check-circle-fill me-1"></i>Đã có điểm
+                                                                        </span>
+                                                                    }
+                                                                </div>
                                                             </div>
                                                         }
                                                     }

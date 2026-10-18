@@ -416,6 +416,12 @@
                             <a href="/kho-tiem-nang/goi-y/@job.Id" class="btn btn-outline-warning text-dark fw-bold w-100 shadow-sm d-flex align-items-center justify-content-center gap-1.5" style="border-radius: var(--radius-button); padding: 0.65rem 1rem;" title="Xem danh sách ứng viên phù hợp từ Kho tiềm năng (Scrum 45)">
                                 <i class="bi bi-stars text-warning"></i> Gợi ý từ Kho tiềm năng
                             </a>
+                            @if (isAdmin)
+                            {
+                                <a href="/so-sanh-ung-vien/@job.Id" class="btn btn-outline-info text-dark fw-bold w-100 shadow-sm d-flex align-items-center justify-content-center gap-1.5" style="border-radius: var(--radius-button); padding: 0.65rem 1rem;" title="Bảng so sánh năng lực ứng viên (SCRUM-56)">
+                                    <i class="bi bi-bar-chart-line text-info"></i> Bảng so sánh ứng viên
+                                </a>
+                            }
                             <button type="button" class="btn btn-warning text-dark fw-bold flex-grow-1 shadow-sm d-flex align-items-center justify-content-center gap-1.5" data-bs-toggle="modal" data-bs-target="#editJobPostingModal" style="border-radius: var(--radius-button); padding: 0.65rem 1rem;">
                                 <i class="bi bi-pencil-square"></i> Chỉnh sửa
                             </button>
