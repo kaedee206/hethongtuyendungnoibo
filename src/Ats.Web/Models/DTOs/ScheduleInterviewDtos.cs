@@ -40,6 +40,21 @@ public class ScheduleInterviewInputModel
     public DateTime? ScheduledDate { get; set; }
 
     /// <summary>
+    /// Mã phòng họp được chọn từ danh mục (nếu có - SCRUM-53).
+    /// </summary>
+    public Guid? MeetingRoomId { get; set; }
+
+    /// <summary>
+    /// Đánh dấu người dùng chủ động ghi đè cảnh báo trùng lịch (SCRUM-53).
+    /// </summary>
+    public bool IsOverridden { get; set; } = false;
+
+    /// <summary>
+    /// Lý do ghi đè bắt buộc nhập khi IsOverridden = true (tối thiểu 10 ký tự để phục vụ AuditLog - SCRUM-53).
+    /// </summary>
+    public string? OverrideReason { get; set; }
+
+    /// <summary>
     /// Chuẩn hóa danh sách ID người phỏng vấn được chọn từ cả 2 alias (InterviewerIds / PanelistIds).
     /// </summary>
     public List<Guid> GetNormalizedInterviewerIds()
@@ -101,4 +116,15 @@ public class InterviewerLookupDto
     public string Email { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
     public string DisplayText => $"{FullName} ({Role}) - {Email}";
+}
+
+/// <summary>
+/// DTO chứa thông tin phòng họp phục vụ đặt lịch phỏng vấn trực tiếp (SCRUM-53).
+/// </summary>
+public class MeetingRoomLookupDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Code { get; set; }
+    public string? Location { get; set; }
 }

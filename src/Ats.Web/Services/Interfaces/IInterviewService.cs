@@ -1,19 +1,40 @@
 using Ats.Web.Models.DTOs;
+using Ats.Web.Models.ViewModels.Interviews;
 
 namespace Ats.Web.Services.Interfaces;
 
 /// <summary>
-/// Interface định nghĩa nghiệp vụ Đặt lịch phỏng vấn và Phân công hội đồng phỏng vấn (Scrum - Số 51 / EP-06).
+/// Interface định nghĩa nghiệp vụ Đặt lịch phỏng vấn và Phân công hội đồng phỏng vấn (Scrum - Số 51 & SCRUM-53 / EP-06).
 /// Tuân thủ nguyên tắc Clean Service Layer, C# 12 and async patterns.
 /// </summary>
 public interface IInterviewService
 {
     /// <summary>
+    /// Kiểm tra xung đột lịch phỏng vấn đối với Người phỏng vấn và Phòng họp (SCRUM-53).
+    /// Công thức xung đột: A.StartTime &lt; B.EndTime &amp;&amp; A.EndTime &gt; B.StartTime.
+    /// Bỏ qua các buổi phỏng vấn đã hủy (CANCELLED) và loại trừ chính ID buổi phỏng vấn đang sửa nếu có.
+    /// </summary>
+    Task<InterviewConflictCheckResultViewModel> CheckScheduleConflictAsync(
+        InterviewConflictCheckInputModel input,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Đặt lịch phỏng vấn cho một ứng viên trong một lần thao tác.
-    /// Kiểm tra nghiêm ngặt: không đặt lịch ở quá khứ, bắt buộc chọn người phỏng vấn, thời lượng hợp lệ.
-    /// Tự động cập nhật giai đoạn tuyển dụng, phân công hội đồng và gửi thư mời email.
+    /// Tự động chạy kiểm tra xung đột thời gian. Nếu có xung đột mà không ghi đè sẽ ném BusinessRuleValidationException.
+    /// Mọi thao tác ghi dữ liệu thực thi trong Database Transaction và ghi AuditLog chi tiết khi ghi đè.
     /// </summary>
     Task<InterviewScheduleResultDto> ScheduleInterviewAsync(
+        ScheduleInterviewInputModel model,
+        Guid currentUserId,
+        bool isRecruiterOnly,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Cập nhật / Đổi lịch phỏng vấn đã có (SCRUM-53).
+    /// Tự động kiểm tra xung đột (loại trừ chính interviewId này khỏi tập kiểm tra).
+    /// </summary>
+    Task<InterviewScheduleResultDto> RescheduleInterviewAsync(
+        Guid interviewId,
         ScheduleInterviewInputModel model,
         Guid currentUserId,
         bool isRecruiterOnly,
@@ -26,9 +47,16 @@ public interface IInterviewService
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Lấy danh sách các phòng họp khả dụng phục vụ phỏng vấn trực tiếp (SCRUM-53).
+    /// </summary>
+    Task<List<MeetingRoomLookupDto>> GetAvailableMeetingRoomsAsync(
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Lấy danh sách tất cả các vòng phỏng vấn của một đơn ứng tuyển.
     /// </summary>
     Task<List<InterviewScheduleResultDto>> GetApplicationInterviewsAsync(
         Guid applicationId,
         CancellationToken cancellationToken = default);
 }
+

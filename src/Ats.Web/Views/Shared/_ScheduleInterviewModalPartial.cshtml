@@ -1,0 +1,183 @@
+@model Ats.Web.Models.ViewModels.Interviews.InterviewScheduleInputModel?
+@*
+    Partial View: _ScheduleInterviewModalPartial.cshtml
+    Mục đích: Modal đặt lịch và đổi lịch phỏng vấn (Schedule / Reschedule Interview) theo SCRUM-53.
+    Tuân thủ quy chuẩn: Tag Helpers (asp-for, asp-validation-for, asp-controller, asp-action),
+                       kebab-case assets, real-time debounce conflict check, Hard block with override.
+*@
+
+<div class="modal fade" id="scheduleInterviewModal" tabindex="-1" aria-labelledby="scheduleInterviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-0 pb-0">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 rounded-2" style="background:#ECFDF5; color:#059669;">
+                        <i class="bi bi-calendar-plus-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="scheduleInterviewModalLabel" style="font-size: 1.05rem;">
+                            Đặt Lịch Phỏng Vấn Ứng Viên
+                        </h5>
+                        <small class="text-muted" style="font-size: 0.78rem;">Đồng bộ lịch hội đồng, phòng họp và kiểm tra xung đột thời gian thực (SCRUM-53)</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form id="scheduleInterviewModalForm" asp-controller="Workspace" asp-action="ScheduleInterview" method="post" onsubmit="handleScheduleInterviewModalSubmit(event)">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="ApplicationId" id="schedModalAppId" />
+                <input type="hidden" asp-for="InterviewId" id="schedModalInterviewId" />
+
+                <div class="modal-body py-3">
+                    <!-- Thông tin Ứng viên & Vị trí ứng tuyển -->
+                    <div class="p-2.5 mb-3 rounded-2" style="background:#F8FAFC; border:1px solid #E2E8F0;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-bold text-dark" id="schedModalCandidateName" style="font-size: 0.92rem;">Ứng viên</span>
+                                <span class="text-muted small mx-1.5">•</span>
+                                <span class="text-secondary small" id="schedModalJobTitle">Vị trí ứng tuyển</span>
+                            </div>
+                            <span class="badge rounded-2 bg-light text-dark border px-2 py-1" style="font-size: 0.72rem;">
+                                <i class="bi bi-shield-check text-success me-1"></i>Hệ thống ATS
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Vòng phỏng vấn & Tiêu đề -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-5">
+                            <label asp-for="RoundNumber" class="form-label small fw-semibold text-dark">
+                                Vòng phỏng vấn <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="RoundNumber" id="schedModalRoundNumber" class="form-select form-select-sm rounded-2" onchange="onSchedModalRoundChange(this.value)">
+                                <option value="1">Vòng 1: Phỏng vấn sơ loại (HR)</option>
+                                <option value="2">Vòng 2: Phỏng vấn chuyên môn (Technical)</option>
+                                <option value="3">Vòng 3: Phỏng vấn Văn hóa &amp; Lãnh đạo</option>
+                                <option value="4">Vòng 4: Đánh giá thực chiến / Bài tập</option>
+                                <option value="5">Vòng 5: Thương thảo đãi ngộ (Offer)</option>
+                            </select>
+                            <span asp-validation-for="RoundNumber" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-7">
+                            <label asp-for="RoundTitle" class="form-label small fw-semibold text-dark">
+                                Tiêu đề buổi phỏng vấn <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="RoundTitle" id="schedModalRoundTitle" class="form-control form-control-sm rounded-2"
+                                   placeholder="Vd: Phỏng vấn chuyên môn .NET &amp; Kiến trúc hệ thống" required />
+                            <span asp-validation-for="RoundTitle" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <!-- Ngày giờ, Thời lượng & Hình thức -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-5">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <label asp-for="StartTime" class="form-label small fw-semibold text-dark mb-1">
+                                    Ngày &amp; Giờ bắt đầu <span class="text-danger">*</span>
+                                </label>
+                                <span class="conflict-loading-spinner spinner-border spinner-border-sm text-primary d-none" role="status" title="Đang kiểm tra trùng lịch..."></span>
+                            </div>
+                            <input asp-for="StartTime" id="schedModalStartTime" type="datetime-local" class="form-control form-control-sm rounded-2" required onchange="validateSchedModalDateTime()" />
+                            <span asp-validation-for="StartTime" class="text-danger small"></span>
+                            <div id="schedModalPastError" class="text-danger small mt-1 d-none" style="font-size: 0.75rem;">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>Không thể đặt lịch trong quá khứ. Vui lòng chọn ngày giờ trong tương lai.
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="DurationMinutes" class="form-label small fw-semibold text-dark">
+                                Thời lượng <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="DurationMinutes" id="schedModalDuration" class="form-select form-select-sm rounded-2">
+                                <option value="30">30 phút</option>
+                                <option value="45">45 phút</option>
+                                <option value="60" selected>60 phút (Chuẩn)</option>
+                                <option value="90">90 phút</option>
+                                <option value="120">120 phút (2 tiếng)</option>
+                            </select>
+                            <span asp-validation-for="DurationMinutes" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="InterviewType" class="form-label small fw-semibold text-dark">
+                                Hình thức <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="InterviewType" id="schedModalInterviewType" class="form-select form-select-sm rounded-2" onchange="onSchedModalTypeChange(this.value)">
+                                <option value="ONLINE_MEET">Trực tuyến (Meet / Teams)</option>
+                                <option value="OFFLINE_OFFICE">Trực tiếp tại văn phòng</option>
+                            </select>
+                            <span asp-validation-for="InterviewType" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <!-- Chọn Phòng họp (Khi trực tiếp) -->
+                    <div class="mb-3" id="schedModalRoomSelectionGroup" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label asp-for="MeetingRoomId" class="form-label small fw-semibold text-dark mb-0">
+                                Phòng họp phỏng vấn trực tiếp <span class="text-danger">*</span>
+                            </label>
+                            <span class="conflict-loading-spinner spinner-border spinner-border-sm text-primary d-none" role="status" title="Đang kiểm tra xung đột phòng họp..."></span>
+                        </div>
+                        <select asp-for="MeetingRoomId" id="schedModalMeetingRoomId" class="form-select form-select-sm rounded-2" onchange="onSchedModalRoomChange(this)">
+                            <option value="">-- Chọn phòng họp khả dụng --</option>
+                        </select>
+                        <span asp-validation-for="MeetingRoomId" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Địa điểm hoặc Link họp -->
+                    <div class="mb-3">
+                        <label asp-for="LocationOrLink" class="form-label small fw-semibold text-dark" id="schedModalLocationLabel">
+                            Liên kết họp trực tuyến (Google Meet / MS Teams / Zoom) <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light rounded-start-2 border-end-0" id="schedModalLocationIcon">
+                                <i class="bi bi-link-45deg text-primary"></i>
+                            </span>
+                            <input asp-for="LocationOrLink" id="schedModalLocationOrLink" class="form-control form-control-sm rounded-end-2"
+                                   placeholder="https://meet.google.com/nov-interview-room" required />
+                        </div>
+                        <span asp-validation-for="LocationOrLink" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Chọn Hội đồng phỏng vấn (Panelists) -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1.5">
+                            <label class="form-label small fw-semibold text-dark mb-0">
+                                Người phỏng vấn tham gia (Panelists) <span class="text-danger">*</span>
+                            </label>
+                            <small class="text-muted" style="font-size: 0.74rem;">Chọn một hoặc nhiều người phỏng vấn để đồng bộ lịch</small>
+                        </div>
+                        <div id="schedModalPanelistsContainer" class="border rounded-2 p-2.5 bg-light" style="max-height: 160px; overflow-y: auto; border-color: #E2E8F0 !important;">
+                            <div class="text-muted small py-2 text-center" id="schedModalPanelistsLoading">
+                                <span class="spinner-border spinner-border-sm me-1 text-primary"></span>Đang tải danh sách người phỏng vấn...
+                            </div>
+                        </div>
+                        <div id="schedModalPanelistError" class="text-danger small mt-1 d-none" style="font-size: 0.75rem;">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>Vui lòng chọn ít nhất một người phỏng vấn cho buổi họp.
+                        </div>
+                    </div>
+
+                    <!-- Ghi chú / Lời dặn dò gửi ứng viên -->
+                    <div class="mb-2">
+                        <label asp-for="Note" class="form-label small fw-semibold text-dark">
+                            Ghi chú chuẩn bị &amp; Lời dặn dò gửi ứng viên
+                        </label>
+                        <textarea asp-for="Note" id="schedModalNotes" class="form-control form-control-sm rounded-2" rows="2"
+                                  placeholder="Vui lòng mang theo laptop cá nhân và bản cứng CV hoặc chuẩn bị sẵn slide demo..."></textarea>
+                        <span asp-validation-for="Note" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Khung cảnh báo xung đột trực quan & Mở khóa Ghi đè (SCRUM-53) -->
+                    <partial name="_InterviewConflictAlertPartial" />
+                </div>
+
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-sm btn-light rounded-2 px-3" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" id="btnSchedModalSubmit" class="btn btn-sm btn-primary rounded-2 px-4 fw-semibold text-white" style="background:#059669; border-color:#059669;">
+                        <span class="spinner-border spinner-border-sm me-1 d-none" id="schedModalSpinner"></span>
+                        <i class="bi bi-calendar-check me-1"></i>Xác nhận &amp; Đặt lịch phỏng vấn
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

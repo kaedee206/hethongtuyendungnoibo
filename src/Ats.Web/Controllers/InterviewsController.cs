@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Ats.Web.Constants;
+using Ats.Web.Models.DTOs;
 using Ats.Web.Models.ViewModels.CandidateComparison;
 using Ats.Web.Models.ViewModels.Interviews;
 using Ats.Web.Services.Interfaces;
@@ -18,10 +19,12 @@ namespace Ats.Web.Controllers;
 public class InterviewsController(
     IInterviewEvaluationService evaluationService,
     ICandidateEvaluationComparisonService comparisonService,
+    IInterviewService interviewService,
     ILogger<InterviewsController> logger) : Controller
 {
     private readonly IInterviewEvaluationService _evaluationService = evaluationService;
     private readonly ICandidateEvaluationComparisonService _comparisonService = comparisonService;
+    private readonly IInterviewService _interviewService = interviewService;
     private readonly ILogger<InterviewsController> _logger = logger;
 
     /// <summary>
@@ -211,6 +214,136 @@ public class InterviewsController(
     {
         var model = await _comparisonService.GetEvaluationComparisonAsync(jobId, stage, sortBy, cancellationToken);
         return Json(new { success = true, data = model });
+    }
+
+    /// <summary>
+    /// POST: /interviews/kiem-tra-trung-lich hoặc /interviews/check-conflict
+    /// Kiểm tra xung đột lịch phỏng vấn đối với Người phỏng vấn hoặc Phòng họp (SCRUM-53).
+    /// </summary>
+    [HttpPost("kiem-tra-trung-lich")]
+    [HttpPost("check-conflict")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng")]
+    public async Task<IActionResult> CheckConflict(
+        [FromForm] InterviewConflictCheckInputModel? formInput,
+        CancellationToken cancellationToken = default)
+    {
+        InterviewConflictCheckInputModel? input = formInput;
+        if (Request.HasJsonContentType())
+        {
+            try
+            {
+                Request.EnableBuffering();
+                using var reader = new System.IO.StreamReader(Request.Body, System.Text.Encoding.UTF8, leaveOpen: true);
+                var bodyText = await reader.ReadToEndAsync(cancellationToken);
+                Request.Body.Position = 0;
+                if (!string.IsNullOrWhiteSpace(bodyText))
+                {
+                    input = System.Text.Json.JsonSerializer.Deserialize<InterviewConflictCheckInputModel>(
+                        bodyText,
+                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Lỗi đọc JSON payload check-conflict");
+            }
+        }
+
+        if (input == null || !input.StartTime.HasValue)
+        {
+            return BadRequest(new { success = false, message = "Vui lòng chọn ngày giờ bắt đầu phỏng vấn." });
+        }
+
+        var result = await _interviewService.CheckScheduleConflictAsync(input, cancellationToken);
+        return Ok(new
+        {
+            success = true,
+            data = result
+        });
+    }
+
+    /// <summary>
+    /// GET: /interviews/danh-sach-phong-hop hoặc /interviews/meeting-rooms
+    /// Lấy danh sách các phòng họp phục vụ chọn phòng phỏng vấn trực tiếp (SCRUM-53).
+    /// </summary>
+    [HttpGet("danh-sach-phong-hop")]
+    [HttpGet("meeting-rooms")]
+    public async Task<IActionResult> GetMeetingRooms(CancellationToken cancellationToken = default)
+    {
+        var rooms = await _interviewService.GetAvailableMeetingRoomsAsync(cancellationToken);
+        return Json(new { success = true, data = rooms });
+    }
+
+    /// <summary>
+    /// POST: /interviews/{id}/doi-lich hoặc /interviews/{id}/reschedule
+    /// Cập nhật / Đổi lịch phỏng vấn đã có (SCRUM-53).
+    /// </summary>
+    [HttpPost("{id:guid}/doi-lich")]
+    [HttpPost("{id:guid}/reschedule")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng")]
+    public async Task<IActionResult> Reschedule(
+        Guid id,
+        [FromForm] ScheduleInterviewInputModel? formInput,
+        CancellationToken cancellationToken = default)
+    {
+        ScheduleInterviewInputModel? model = formInput;
+        if (Request.HasJsonContentType())
+        {
+            try
+            {
+                Request.EnableBuffering();
+                using var reader = new System.IO.StreamReader(Request.Body, System.Text.Encoding.UTF8, leaveOpen: true);
+                var bodyText = await reader.ReadToEndAsync(cancellationToken);
+                Request.Body.Position = 0;
+                if (!string.IsNullOrWhiteSpace(bodyText))
+                {
+                    model = System.Text.Json.JsonSerializer.Deserialize<ScheduleInterviewInputModel>(
+                        bodyText,
+                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Lỗi đọc JSON payload reschedule");
+            }
+        }
+
+        if (model == null)
+        {
+            return BadRequest(new { success = false, message = "Dữ liệu đổi lịch không hợp lệ." });
+        }
+
+        var currentUserId = GetCurrentUserId();
+        var isRecruiterOnly = User?.Identity?.IsAuthenticated == true &&
+                              User.IsInRole(UserRoles.Recruiter) &&
+                              !User.IsInRole(UserRoles.Admin) &&
+                              !User.IsInRole(UserRoles.HRManager) &&
+                              !User.IsInRole("Quản trị viên") &&
+                              !User.IsInRole("Trưởng phòng nhân sự");
+
+        try
+        {
+            var result = await _interviewService.RescheduleInterviewAsync(id, model, currentUserId, isRecruiterOnly, cancellationToken);
+            return Ok(new
+            {
+                success = result.Success,
+                message = result.Message,
+                data = result
+            });
+        }
+        catch (Ats.Web.Exceptions.BusinessRuleValidationException ex)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                isConflict = true,
+                message = ex.Message,
+                errors = ex.ValidationErrors,
+                data = ex.ErrorData
+            });
+        }
     }
 
     private Guid GetCurrentUserId()

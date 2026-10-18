@@ -818,9 +818,12 @@
                     <!-- Ngày giờ, Thời lượng & Hình thức -->
                     <div class="row g-2 mb-3">
                         <div class="col-md-5">
-                            <label class="form-label small fw-semibold text-dark">
-                                Ngày &amp; Giờ bắt đầu <span class="text-danger">*</span>
-                            </label>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label small fw-semibold text-dark mb-0">
+                                    Ngày &amp; Giờ bắt đầu <span class="text-danger">*</span>
+                                </label>
+                                <span class="conflict-loading-spinner spinner-border spinner-border-sm text-primary d-none" role="status" title="Đang kiểm tra trùng lịch..."></span>
+                            </div>
                             <input type="datetime-local" id="candSchedStartTime" name="StartTime" class="form-control form-control-sm rounded-2" required onchange="validateCandidateScheduleDateTime()" />
                             <div id="candSchedPastError" class="text-danger small mt-1 d-none" style="font-size: 0.75rem;">
                                 <i class="bi bi-exclamation-triangle-fill me-1"></i>Không thể đặt lịch trong quá khứ. Vui lòng chọn ngày giờ trong tương lai.
@@ -847,6 +850,19 @@
                                 <option value="OFFLINE_OFFICE">Trực tiếp tại văn phòng</option>
                             </select>
                         </div>
+                    </div>
+
+                    <!-- Chọn Phòng họp (Khi trực tiếp tại văn phòng - SCRUM-53) -->
+                    <div class="mb-3" id="candSchedMeetingRoomGroup" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label small fw-semibold text-dark mb-0">
+                                Phòng họp phỏng vấn trực tiếp <span class="text-danger">*</span>
+                            </label>
+                            <span class="conflict-loading-spinner spinner-border spinner-border-sm text-primary d-none" role="status" title="Đang kiểm tra xung đột phòng họp..."></span>
+                        </div>
+                        <select id="candSchedMeetingRoomId" name="MeetingRoomId" class="form-select form-select-sm rounded-2" onchange="onCandidateMeetingRoomChange(this)">
+                            <option value="">-- Chọn phòng họp khả dụng --</option>
+                        </select>
                     </div>
 
                     <!-- Địa điểm hoặc Link họp -->
@@ -889,6 +905,9 @@
                         <textarea id="candSchedNotes" name="Notes" class="form-control form-control-sm rounded-2" rows="2" 
                                   placeholder="Vui lòng mang theo laptop cá nhân và bản cứng CV hoặc chuẩn bị sẵn slide demo..."></textarea>
                     </div>
+
+                    <!-- Khung cảnh báo xung đột trực quan & Mở khóa Ghi đè (SCRUM-53) -->
+                    <partial name="_InterviewConflictAlertPartial" />
                 </div>
 
                 <div class="modal-footer border-0 pt-0">
@@ -904,6 +923,7 @@
 </div>
 
 @section Scripts {
+<script src="~/js/interview-conflict.js"></script>
 <script>
     const candidateId = '@Model.CandidateId';
 
@@ -1213,9 +1233,11 @@
         const label = document.getElementById('candSchedLocationLabel');
         const icon = document.getElementById('candSchedLocationIcon');
         const input = document.getElementById('candSchedLocationOrLink');
+        const roomGroup = document.getElementById('candSchedMeetingRoomGroup');
         if (!label || !input) return;
 
         if (typeVal === 'ONLINE_MEET') {
+            if (roomGroup) roomGroup.style.display = 'none';
             label.innerHTML = 'Liên kết họp trực tuyến (Google Meet / MS Teams / Zoom) <span class="text-danger">*</span>';
             icon.innerHTML = '<i class="bi bi-link-45deg text-primary"></i>';
             input.placeholder = 'https://meet.google.com/nov-interview-room';
@@ -1223,6 +1245,10 @@
                 input.value = 'https://meet.google.com/nov-' + Math.random().toString(36).substring(2, 6) + '-' + Math.random().toString(36).substring(2, 5);
             }
         } else {
+            if (roomGroup) {
+                roomGroup.style.display = 'block';
+                loadCandidateMeetingRooms();
+            }
             label.innerHTML = 'Phòng họp & Địa điểm phỏng vấn trực tiếp <span class="text-danger">*</span>';
             icon.innerHTML = '<i class="bi bi-building text-info"></i>';
             input.placeholder = 'Phòng Họp Tầng 12 - Tòa nhà NoveraTech, Cầu Giấy, Hà Nội';
@@ -1230,6 +1256,59 @@
                 input.value = 'Phòng Hội nghị Tầng 12 - Trụ sở NoveraTech';
             }
         }
+
+        triggerCandConflictCheck();
+    }
+
+    let candMeetingRoomsLoaded = false;
+    async function loadCandidateMeetingRooms() {
+        if (candMeetingRoomsLoaded) return;
+        const select = document.getElementById('candSchedMeetingRoomId');
+        if (!select) return;
+
+        try {
+            const res = await fetch('/interviews/danh-sach-phong-hop', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const json = await res.json();
+            const list = json.data || json;
+            if (Array.isArray(list) && list.length > 0) {
+                select.innerHTML = '<option value="">-- Chọn phòng họp khả dụng --</option>' +
+                    list.map(r => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
+                candMeetingRoomsLoaded = true;
+            }
+        } catch (e) {
+            console.warn('Lỗi khi tải danh sách phòng họp:', e);
+        }
+    }
+
+    function onCandidateMeetingRoomChange(selectEl) {
+        if (!selectEl) return;
+        const selectedText = selectEl.options[selectEl.selectedIndex]?.text;
+        const locInput = document.getElementById('candSchedLocationOrLink');
+        if (locInput && selectEl.value && selectedText && !selectedText.startsWith('--')) {
+            locInput.value = selectedText;
+        }
+        triggerCandConflictCheck();
+    }
+
+    function triggerCandConflictCheck() {
+        if (!window.interviewConflict) return;
+        const timeVal = document.getElementById('candSchedStartTime')?.value;
+        const durationVal = document.getElementById('candSchedDuration')?.value || 60;
+        const locVal = document.getElementById('candSchedLocationOrLink')?.value;
+        const roomIdVal = document.getElementById('candSchedMeetingRoomId')?.value;
+        const checkboxes = document.querySelectorAll('.cand-interviewer-checkbox:checked');
+        const interviewerIds = Array.from(checkboxes).map(c => c.value);
+
+        window.interviewConflict.scheduleCheck({
+            startTime: timeVal,
+            durationMinutes: durationVal,
+            interviewerIds: interviewerIds,
+            meetingRoomId: roomIdVal,
+            locationOrLink: locVal,
+            submitBtnId: 'btnCandidateSchedSubmit'
+        });
     }
 
     function validateCandidateScheduleDateTime() {
@@ -1253,6 +1332,7 @@
             if (errEl) errEl.classList.add('d-none');
             timeInput.classList.remove('is-invalid');
             if (submitBtn) submitBtn.disabled = false;
+            triggerCandConflictCheck();
             return true;
         }
     }
@@ -1268,9 +1348,9 @@
             return false;
         } else {
             if (errEl) errEl.classList.add('d-none');
-            // Re-check date validity before enabling submit
             const isDateValid = validateCandidateScheduleDateTime();
             if (submitBtn) submitBtn.disabled = !isDateValid;
+            triggerCandConflictCheck();
             return true;
         }
     }
@@ -1305,6 +1385,11 @@
         // Default location
         onCandidateInterviewTypeChange('ONLINE_MEET');
 
+        // Reset conflict alert state
+        if (window.interviewConflict) {
+            window.interviewConflict.resetAlert();
+        }
+
         // Clear errors
         document.getElementById('candSchedPastError')?.classList.add('d-none');
         document.getElementById('candSchedPanelistError')?.classList.add('d-none');
@@ -1312,6 +1397,18 @@
 
         // Load interviewers
         loadCandidateInterviewers();
+
+        // Gắn lắng nghe sự kiện thay đổi để kiểm tra xung đột theo thời gian thực (SCRUM-53)
+        const durationSelect = document.getElementById('candSchedDuration');
+        if (durationSelect && !durationSelect.dataset.conflictBound) {
+            durationSelect.addEventListener('change', triggerCandConflictCheck);
+            durationSelect.dataset.conflictBound = 'true';
+        }
+        const locInput = document.getElementById('candSchedLocationOrLink');
+        if (locInput && !locInput.dataset.conflictBound) {
+            locInput.addEventListener('input', triggerCandConflictCheck);
+            locInput.dataset.conflictBound = 'true';
+        }
 
         const modalEl = document.getElementById('candidateScheduleInterviewModal');
         const modal = new bootstrap.Modal(modalEl);
@@ -1344,6 +1441,9 @@
         const durationMin = parseInt(document.getElementById('candSchedDuration').value, 10) || 60;
         const interviewType = document.getElementById('candSchedInterviewType').value;
         const locationOrLink = document.getElementById('candSchedLocationOrLink').value.trim();
+        const meetingRoomId = document.getElementById('candSchedMeetingRoomId')?.value || null;
+        const isOverridden = document.getElementById('chkIsOverridden')?.checked || false;
+        const overrideReason = document.getElementById('txtOverrideReason')?.value?.trim() || '';
         const notes = document.getElementById('candSchedNotes').value.trim();
 
         const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
@@ -1357,6 +1457,9 @@
             durationMinutes: durationMin,
             interviewType: interviewType,
             locationOrLink: locationOrLink,
+            meetingRoomId: (meetingRoomId && meetingRoomId !== '') ? meetingRoomId : null,
+            isOverridden: isOverridden,
+            overrideReason: overrideReason,
             interviewerIds: interviewerIds,
             panelistIds: interviewerIds,
             notes: notes,
@@ -1416,7 +1519,14 @@
                 // Auto reload after brief moment to refresh server-side badges
                 setTimeout(() => window.location.reload(), 1000);
             } else {
-                alert(data.message || 'Lỗi khi lên lịch phỏng vấn.');
+                if (data.isConflict) {
+                    if (window.interviewConflict) {
+                        window.interviewConflict.renderResult(data.data || data);
+                    }
+                    alert(data.message || 'Phát hiện xung đột lịch phỏng vấn! Vui lòng kiểm tra các ca trùng hoặc xác nhận ghi đè.');
+                } else {
+                    alert(data.message || 'Lỗi khi lên lịch phỏng vấn.');
+                }
             }
         } catch (err) {
             alert('Lỗi kết nối: ' + err.message);
