@@ -1313,12 +1313,22 @@ public class WorkspaceController : Controller
                 return Json(new { success = false, message = "Mã buổi phỏng vấn không hợp lệ." });
             }
 
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+            var isRecruiterOnly = User?.Identity?.IsAuthenticated == true &&
+                                  User.IsInRole(UserRoles.Recruiter) &&
+                                  !User.IsInRole(UserRoles.Admin) &&
+                                  !User.IsInRole(UserRoles.HRManager) &&
+                                  !User.IsInRole("Quản trị viên") &&
+                                  !User.IsInRole("Trưởng phòng nhân sự");
+
             if (_interviewService != null)
             {
-                var detail = await _interviewService.GetInterviewDetailForEditAsync(id, cancellationToken);
-                if (!detail.Success)
+                var detail = await _interviewService.GetInterviewDetailForEditAsync(id, currentUserId, isRecruiterOnly, cancellationToken);
+                if (detail == null)
                 {
-                    return Json(new { success = false, message = detail.Message });
+                    return Json(new { success = false, message = "Không tìm thấy buổi phỏng vấn hoặc bạn không có quyền xem." });
                 }
 
                 return Json(new
