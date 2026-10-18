@@ -182,6 +182,14 @@ public class UpcomingInterviewDto
     public Guid? CurrentUserEvaluationId { get; set; }
     public Guid? FirstEvaluationId { get; set; }
     public bool IsReopened { get; set; }
+
+    // Scrum - Số 55: Dời và huỷ lịch phỏng vấn
+    public bool HasSubmittedEvaluation { get; set; }
+    public bool CanRescheduleOrCancel { get; set; }
+    public string? CancellationReason { get; set; }
+    public string? RescheduleReason { get; set; }
+    public string InterviewTypeString { get; set; } = "ONLINE_MEET";
+    public List<Guid> InterviewerIds { get; set; } = new();
 }
 
 public class PendingOfferDto
