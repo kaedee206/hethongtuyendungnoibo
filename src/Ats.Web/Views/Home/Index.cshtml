@@ -1077,9 +1077,19 @@
                                             <a class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-2" href="/cai-dat-sla">
                                                 <i class="bi bi-sliders text-muted"></i> Cấu hình thời gian SLA
                                             </a>
+                                        <li>
+                                            <a class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-2" href="javascript:void(0)" onclick="openBatchScheduleModal()">
+                                                <i class="bi bi-calendar-range text-success"></i> Đặt lịch phỏng vấn hàng loạt (SCRUM-52)
+                                            </a>
                                         </li>
                                     </ul>
                                 </div>
+
+                                <!-- SCRUM-52: Nút đặt lịch phỏng vấn hàng loạt nhanh trên Toolbar -->
+                                <button type="button" id="btnBatchScheduleInterview" class="btn btn-sm btn-outline-success fw-semibold d-inline-flex align-items-center gap-1.5" style="border-radius: 8px; font-size: 0.82rem; padding: 0.35rem 0.75rem; border-color: #059669; color: #059669; white-space: nowrap;" onclick="openBatchScheduleModal()" title="Đặt lịch phỏng vấn tập trung hàng loạt cho nhiều ứng viên (Scrum-52)">
+                                    <i class="bi bi-calendar-range" style="font-size: 0.95rem; color: #059669;"></i>
+                                    <span>Đặt lịch hàng loạt</span>
+                                </button>
                             </div>
                         </div>
 
@@ -1697,6 +1707,9 @@
                                 </div>
                                 <button type="button" class="btn btn-sm btn-primary" style="border-radius: 8px; font-size: 0.78rem; background: #059669; border-color: #059669;" onclick="openScheduleModal('', '', '', 1);">
                                     <i class="bi bi-calendar-plus me-1"></i> Lên lịch phỏng vấn mới
+                                </button>
+                                <button type="button" class="btn btn-sm text-white fw-semibold" style="border-radius: 8px; font-size: 0.78rem; background: #059669; border: 1px solid #047857;" onclick="openBatchScheduleModal()" title="Đặt lịch hàng loạt cho nhiều ứng viên trong cùng một buổi chiều (Scrum-52)">
+                                    <i class="bi bi-calendar-range me-1"></i> Đặt lịch hàng loạt
                                 </button>
                                 <span style="font-size:0.75rem; font-weight:600; color:#0F172A; background:#F1F5F9; padding:0.25rem 0.75rem; border-radius:6px; font-family:'JetBrains Mono',monospace; border: 1px solid #E2E8F0;">
                                     @Model.UpcomingInterviews.Count phiên họp

@@ -1340,6 +1340,196 @@ public class WorkspaceController : Controller
     }
 
     /// <summary>
+    /// Xem trước danh sách các khe thời gian phỏng vấn liên tiếp cho nhiều ứng viên (Scrum - Số 52).
+    /// Hỗ trợ cả Form submit và JSON payload từ modal đặt lịch hàng loạt.
+    /// </summary>
+    [HttpPost("PreviewBatchSchedule")]
+    [HttpPost("/ung-vien/xem-truoc-dat-lich-hang-loat")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng")]
+    public async Task<IActionResult> PreviewBatchSchedule(
+        [FromForm] BatchSchedulePreviewInputModel? formInput,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var model = formInput;
+            if (Request.HasJsonContentType())
+            {
+                try
+                {
+                    Request.EnableBuffering();
+                    using var reader = new System.IO.StreamReader(Request.Body, System.Text.Encoding.UTF8, leaveOpen: true);
+                    var bodyText = await reader.ReadToEndAsync(cancellationToken);
+                    Request.Body.Position = 0;
+                    if (!string.IsNullOrWhiteSpace(bodyText))
+                    {
+                        model = System.Text.Json.JsonSerializer.Deserialize<BatchSchedulePreviewInputModel>(
+                            bodyText,
+                            new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    }
+                }
+                catch (Exception jsonEx)
+                {
+                    _logger.LogWarning(jsonEx, "Lỗi khi đọc JSON payload PreviewBatchSchedule");
+                }
+            }
+
+            if (model == null || model.ApplicationIds == null || !model.ApplicationIds.Any())
+            {
+                return Json(new { success = false, message = "Vui lòng chọn ít nhất một ứng viên để đặt lịch hàng loạt." });
+            }
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+            var isRecruiterOnly = User?.Identity?.IsAuthenticated == true &&
+                                  User.IsInRole(UserRoles.Recruiter) &&
+                                  !User.IsInRole(UserRoles.Admin) &&
+                                  !User.IsInRole(UserRoles.HRManager) &&
+                                  !User.IsInRole("Quản trị viên") &&
+                                  !User.IsInRole("Trưởng phòng nhân sự");
+
+            if (_interviewService != null)
+            {
+                var result = await _interviewService.PreviewBatchScheduleAsync(model, currentUserId, isRecruiterOnly, cancellationToken);
+                return Json(new
+                {
+                    success = result.Success,
+                    message = result.Message,
+                    totalCandidates = result.TotalCandidates,
+                    overallStartTime = result.OverallStartTime,
+                    overallEndTime = result.OverallEndTime,
+                    overallTimeDisplay = result.OverallTimeDisplay,
+                    totalDurationMinutes = result.TotalDurationMinutes,
+                    slots = result.Slots,
+                    errors = result.Errors
+                });
+            }
+
+            return Json(new { success = false, message = "Dịch vụ xếp lịch phỏng vấn tạm thời không khả dụng." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi tính toán xem trước lịch phỏng vấn hàng loạt");
+            return Json(new { success = false, message = "Lỗi khi xem trước lịch phỏng vấn: " + ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Xác nhận đặt lịch phỏng vấn tập trung hàng loạt và gửi email thư mời cho từng ứng viên (Scrum - Số 52).
+    /// </summary>
+    [HttpPost("ConfirmBatchSchedule")]
+    [HttpPost("/ung-vien/xac-nhan-dat-lich-hang-loat")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng")]
+    public async Task<IActionResult> ConfirmBatchSchedule(
+        [FromForm] BatchScheduleConfirmInputModel? formInput,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var model = formInput;
+            if (Request.HasJsonContentType())
+            {
+                try
+                {
+                    Request.EnableBuffering();
+                    using var reader = new System.IO.StreamReader(Request.Body, System.Text.Encoding.UTF8, leaveOpen: true);
+                    var bodyText = await reader.ReadToEndAsync(cancellationToken);
+                    Request.Body.Position = 0;
+                    if (!string.IsNullOrWhiteSpace(bodyText))
+                    {
+                        model = System.Text.Json.JsonSerializer.Deserialize<BatchScheduleConfirmInputModel>(
+                            bodyText,
+                            new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    }
+                }
+                catch (Exception jsonEx)
+                {
+                    _logger.LogWarning(jsonEx, "Lỗi khi đọc JSON payload ConfirmBatchSchedule");
+                }
+            }
+
+            if (model == null || model.Slots == null || !model.Slots.Any())
+            {
+                return Json(new { success = false, message = "Danh sách các khe giờ xác nhận không được để trống." });
+            }
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+            var isRecruiterOnly = User?.Identity?.IsAuthenticated == true &&
+                                  User.IsInRole(UserRoles.Recruiter) &&
+                                  !User.IsInRole(UserRoles.Admin) &&
+                                  !User.IsInRole(UserRoles.HRManager) &&
+                                  !User.IsInRole("Quản trị viên") &&
+                                  !User.IsInRole("Trưởng phòng nhân sự");
+
+            if (_interviewService != null)
+            {
+                var result = await _interviewService.ConfirmBatchScheduleAsync(model, currentUserId, isRecruiterOnly, cancellationToken);
+                return Json(new
+                {
+                    success = result.Success,
+                    message = result.Message,
+                    successCount = result.SuccessCount,
+                    failureCount = result.FailureCount,
+                    scheduledInterviews = result.ScheduledInterviews,
+                    errors = result.Errors
+                });
+            }
+
+            return Json(new { success = false, message = "Dịch vụ xếp lịch phỏng vấn tạm thời không khả dụng." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi xác nhận xếp lịch phỏng vấn hàng loạt");
+            return Json(new { success = false, message = "Lỗi khi xác nhận xếp lịch: " + ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Lấy danh sách ứng viên có thể chọn để đặt lịch phỏng vấn tập trung (Scrum - Số 52).
+    /// </summary>
+    [HttpGet("GetBatchSchedulingCandidates")]
+    [HttpGet("/ung-vien/danh-sach-ung-vien-dat-lich")]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng")]
+    public async Task<IActionResult> GetBatchSchedulingCandidates(
+        [FromQuery] Guid? jobPostingId,
+        [FromQuery] int? stageOrder,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+            var isRecruiterOnly = User?.Identity?.IsAuthenticated == true &&
+                                  User.IsInRole(UserRoles.Recruiter) &&
+                                  !User.IsInRole(UserRoles.Admin) &&
+                                  !User.IsInRole(UserRoles.HRManager) &&
+                                  !User.IsInRole("Quản trị viên") &&
+                                  !User.IsInRole("Trưởng phòng nhân sự");
+
+            if (_interviewService != null)
+            {
+                var candidates = await _interviewService.GetCandidatesForBatchSchedulingAsync(
+                    jobPostingId, stageOrder, currentUserId, isRecruiterOnly, cancellationToken);
+
+                return Json(new { success = true, data = candidates, candidates });
+            }
+
+            return Json(new { success = false, message = "Dịch vụ xếp lịch phỏng vấn tạm thời không khả dụng." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi lấy danh sách ứng viên đặt lịch phỏng vấn hàng loạt");
+            return Json(new { success = false, message = "Lỗi khi tải danh sách ứng viên: " + ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Đề xuất Thư mời nhận việc (Job Offer) cho ứng viên.
     /// </summary>
     [HttpPost("CreateOffer")]

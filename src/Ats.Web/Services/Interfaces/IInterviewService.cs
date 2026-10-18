@@ -81,5 +81,34 @@ public interface IInterviewService
         DateTimeOffset startTime,
         DateTimeOffset endTime,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Tính toán và xem trước các khe thời gian liên tiếp cho danh sách ứng viên (Scrum - Số 52).
+    /// Tự động chia slot dựa trên mốc bắt đầu, thời lượng và thời gian giải lao giữa các ca.
+    /// </summary>
+    Task<BatchSchedulePreviewResultDto> PreviewBatchScheduleAsync(
+        BatchSchedulePreviewInputModel model,
+        Guid currentUserId,
+        bool isRecruiterOnly,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Xác nhận đặt lịch phỏng vấn hàng loạt và gửi thư mời email cho từng ứng viên với đúng khung giờ (Scrum - Số 52).
+    /// </summary>
+    Task<BatchScheduleResultDto> ConfirmBatchScheduleAsync(
+        BatchScheduleConfirmInputModel model,
+        Guid currentUserId,
+        bool isRecruiterOnly,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lấy danh sách ứng viên hợp lệ để nhân viên tuyển dụng chọn đặt lịch phỏng vấn tập trung (Scrum - Số 52).
+    /// </summary>
+    Task<List<Ats.Web.Models.ViewModels.Workspace.CandidatePipelineItemDto>> GetCandidatesForBatchSchedulingAsync(
+        Guid? jobPostingId,
+        int? stageOrder,
+        Guid currentUserId,
+        bool isRecruiterOnly,
+        CancellationToken cancellationToken = default);
 }
 
