@@ -1,0 +1,96 @@
+@* Modal Dời lịch phỏng vấn (Scrum - Số 55) *@
+<div class="modal fade" id="rescheduleInterviewModal" tabindex="-1" aria-labelledby="rescheduleInterviewModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="rescheduleInterviewModalLabel" style="font-size: 1.05rem;">
+                    <i class="bi bi-calendar2-range text-primary me-2"></i>Dời lịch phỏng vấn
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="p-2.5 mb-3" style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px;">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-bold text-dark" id="reschedCandidateName" style="font-size: 0.9rem;">-</div>
+                            <div class="text-muted small" id="reschedJobTitle">-</div>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle" id="reschedRoundBadge" style="border-radius:6px; font-size:0.75rem;">Vòng PV</span>
+                    </div>
+                    <div class="mt-2 pt-2 border-top border-slate-200 small text-muted">
+                        <i class="bi bi-clock-history me-1 text-secondary"></i>Lịch hiện tại: <span class="fw-semibold text-dark font-monospace" id="reschedCurrentTimeDisplay">-</span>
+                    </div>
+                </div>
+
+                <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center" style="border-radius:8px; font-size:0.8rem;">
+                    <i class="bi bi-info-circle-fill me-2 fs-6 text-info"></i>
+                    <span>Ứng viên và toàn bộ người phỏng vấn trong hội đồng sẽ nhận được thông báo in-app và email dời lịch kèm liên kết họp mới.</span>
+                </div>
+
+                <form id="rescheduleInterviewForm" onsubmit="handleRescheduleInterviewSubmit(event)">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="reschedInterviewId" />
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-7">
+                            <label class="form-label small fw-semibold text-dark">Thời gian mới <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control form-control-sm" id="reschedDate" required style="border-radius:8px;" onchange="validateReschedDateTime()" />
+                            <div id="reschedPastDateError" class="text-danger small mt-1 d-none" style="font-size:0.75rem;">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>Thời gian mới phải ở tương lai.
+                            </div>
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label small fw-semibold text-dark">Thời lượng <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-sm" id="reschedDuration" style="border-radius:8px;">
+                                <option value="30">30 phút</option>
+                                <option value="45">45 phút</option>
+                                <option value="60" selected>60 phút (Chuẩn)</option>
+                                <option value="90">90 phút</option>
+                                <option value="120">120 phút (2 giờ)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Hình thức phỏng vấn <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-sm" id="reschedType" style="border-radius:8px;" onchange="onReschedTypeChange(this.value)">
+                            <option value="ONLINE_MEET">Trực tuyến (Google Meet / MS Teams)</option>
+                            <option value="OFFLINE_OFFICE">Trực tiếp tại Trụ sở NoveraTech</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Địa điểm / Link phòng họp mới <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm" id="reschedLocation" placeholder="https://meet.google.com/... hoặc Phòng Họp Tầng 12" required style="border-radius:8px;" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Danh sách người phỏng vấn (Panelists) <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-sm" id="reschedPanelists" multiple size="3" style="border-radius:8px; font-size:0.85rem;" onchange="validateReschedPanelists()">
+                            <!-- Render dynamically from Workspace interviewers -->
+                        </select>
+                        <small class="text-muted" style="font-size:0.75rem;">Giữ Ctrl (Windows) hoặc Cmd (Mac) để chọn hoặc đổi người phỏng vấn.</small>
+                        <div id="reschedPanelistError" class="text-danger small mt-1 d-none" style="font-size:0.75rem;">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>Vui lòng chọn ít nhất một người phỏng vấn.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Lý do dời lịch / Lời nhắn cho các bên</label>
+                        <textarea class="form-control form-control-sm" id="reschedReason" rows="2" placeholder="Ví dụ: Người phỏng vấn bận công tác đột xuất, dời sang chiều thứ 5..." style="border-radius:8px; font-size:0.85rem;"></textarea>
+                    </div>
+
+                    <div id="reschedGeneralError" class="alert alert-danger py-2 px-3 small d-none" style="border-radius:8px; font-size:0.8rem;"></div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-2" style="border-top:1px solid #E2E8F0;">
+                        <button type="button" class="btn btn-light px-4" style="border-radius:8px; font-size:0.85rem;" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold text-white" style="border-radius:8px; font-size:0.85rem;" id="btnSubmitResched">
+                            <span class="spinner-border spinner-border-sm me-1 d-none" id="spinnerResched"></span>
+                            <i class="bi bi-calendar2-check me-1"></i>Xác nhận dời lịch
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
