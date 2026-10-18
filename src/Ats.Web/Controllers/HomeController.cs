@@ -294,7 +294,7 @@ public class HomeController : Controller
                                     !User.IsInRole("Trưởng phòng nhân sự") &&
                                     !User.IsInRole("Chuyên viên tuyển dụng");
 
-            var isInterviewerRole = User.IsInRole(UserRoles.Interviewer) || User.IsInRole(UserRoles.HiringManager);
+            var isInterviewerRole = (User?.IsInRole(UserRoles.Interviewer) == true) || (User?.IsInRole(UserRoles.HiringManager) == true);
             model.IsInterviewer = isInterviewerRole || isInterviewerOnly;
 
             // Đếm số lượng buổi phỏng vấn mà người dùng hiện tại là Panelist
@@ -412,12 +412,12 @@ public class HomeController : Controller
                 .Take(25)
                 .ToListAsync();
 
-            var isStaffManager = User.IsInRole(UserRoles.Admin) || 
-                                 User.IsInRole(UserRoles.HRManager) || 
-                                 User.IsInRole(UserRoles.Recruiter) ||
-                                 User.IsInRole("Quản trị viên") ||
-                                 User.IsInRole("Trưởng phòng nhân sự") ||
-                                 User.IsInRole("Chuyên viên tuyển dụng");
+            var isStaffManager = (User?.IsInRole(UserRoles.Admin) == true) || 
+                                 (User?.IsInRole(UserRoles.HRManager) == true) || 
+                                 (User?.IsInRole(UserRoles.Recruiter) == true) ||
+                                 (User?.IsInRole("Quản trị viên") == true) ||
+                                 (User?.IsInRole("Trưởng phòng nhân sự") == true) ||
+                                 (User?.IsInRole("Chuyên viên tuyển dụng") == true);
 
             model.UpcomingInterviews = dbInterviews.Select(i =>
             {
@@ -565,7 +565,7 @@ public class HomeController : Controller
             // Danh sách ứng viên cho modal chấm điểm phỏng vấn
             // Quy tắc 1: Chỉ người phỏng vấn được mời mới mở được phiếu của buổi đó
             var evalCandidatesQuery = dbInterviews.AsEnumerable();
-            if (User.IsInRole(UserRoles.Interviewer) && !isStaffManager)
+            if ((User?.IsInRole(UserRoles.Interviewer) == true) && !isStaffManager)
             {
                 evalCandidatesQuery = evalCandidatesQuery.Where(i => i.Panelists.Any(p => p.InterviewerId == userId && !p.IsDeleted));
             }

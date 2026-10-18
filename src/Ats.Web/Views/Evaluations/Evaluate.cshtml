@@ -1,0 +1,46 @@
+@model Ats.Web.Models.ViewModels.Evaluations.EvaluationFormGenerateViewModel
+@{
+    ViewData["Title"] = $"Phiếu Đánh Giá Ứng Viên — {Model.CandidateName}";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid px-3 px-lg-4 py-3" style="max-width: 1200px;">
+    <!-- ── Breadcrumb ── -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted"><i class="bi bi-house-door me-1"></i>Trang chủ</a></li>
+            <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none text-muted">Bàn làm việc</a></li>
+            <li class="breadcrumb-item"><a href="/ung-vien" class="text-decoration-none text-muted">Hồ sơ ứng viên</a></li>
+            <li class="breadcrumb-item active fw-semibold text-dark" aria-current="page">Phiếu đánh giá: @Model.CandidateName</li>
+        </ol>
+    </nav>
+
+    <!-- ── Alert Messages (TempData) ── -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-2 py-2 px-3 mb-3 border-0 shadow-sm" style="background:#ECFDF5; color:#065F46; border-left: 4px solid #059669 !important;" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                <span class="small fw-semibold">@TempData["SuccessMessage"]</span>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-2 py-2 px-3 mb-3 border-0 shadow-sm" style="background:#FEF2F2; color:#991B1B; border-left: 4px solid #DC2626 !important;" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                <span class="small fw-semibold">@TempData["ErrorMessage"]</span>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- ── Form Partial View ── -->
+    @await Html.PartialAsync("_EvaluationFormModalPartial", Model)
+</div>
+
+@section Scripts {
+    <script src="~/js/evaluation-calculator.js" asp-append-version="true"></script>
+}

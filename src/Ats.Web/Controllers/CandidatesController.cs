@@ -878,7 +878,7 @@ public class CandidatesController(
 
     private async Task PopulateJobPostingsDropdownAsync(Guid selectedJobId, CancellationToken cancellationToken)
     {
-        var publishedJobs = await _jobPostingService.GetPublishedJobPostingsAsync(cancellationToken);
+        var publishedJobs = (await _jobPostingService.GetPublishedJobPostingsAsync(cancellationToken)) ?? [];
         var items = publishedJobs.Select(j => new SelectListItem
         {
             Value = j.Id.ToString(),

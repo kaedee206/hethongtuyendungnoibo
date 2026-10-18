@@ -444,6 +444,14 @@
                                             <i class="bi bi-stars text-warning"></i> Gợi ý kho
                                         </a>
 
+                                        <!-- SCRUM-56: Bảng so sánh năng lực ứng viên -->
+                                        @if (User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Admin) || User.IsInRole("Trưởng phòng nhân sự") || User.IsInRole("Quản trị viên"))
+                                        {
+                                            <a href="/so-sanh-ung-vien/@item.Id" class="btn btn-outline-info btn-sm action-btn text-dark" title="Bảng so sánh năng lực ứng viên (SCRUM-56)">
+                                                <i class="bi bi-bar-chart-line text-info"></i> So sánh
+                                            </a>
+                                        }
+
                                         <!-- Xem trang công khai -->
                                         <a href="/Jobs/@(item.Slug ?? item.Id.ToString())" target="_blank" class="btn btn-outline-secondary btn-sm action-btn" title="Xem chi tiết JD trang ứng viên">
                                             <i class="bi bi-box-arrow-up-right"></i> Xem

@@ -35,6 +35,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<EvaluationCriteria> EvaluationCriterias { get; set; }
     public DbSet<InterviewEvaluation> InterviewEvaluations { get; set; }
     public DbSet<EvaluationScore> EvaluationScores { get; set; }
+    public DbSet<EvaluationForm> EvaluationForms { get; set; }
+    public DbSet<EvaluationItem> EvaluationItems { get; set; }
 
     public DbSet<JobOffer> JobOffers { get; set; }
     public DbSet<OfferApproval> OfferApprovals { get; set; }
@@ -490,6 +492,48 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                   .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(e => new { e.UserId, e.Name });
+        });
+
+        // SCRUM-56: EvaluationForm & EvaluationItem mapping
+        modelBuilder.Entity<EvaluationForm>(entity =>
+        {
+            entity.ToTable("evaluation_forms");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TotalScore).HasPrecision(5, 2);
+            entity.Property(e => e.Status).HasConversion<string>();
+
+            entity.HasOne(e => e.Application)
+                .WithMany()
+                .HasForeignKey(e => e.ApplicationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Interview)
+                .WithMany()
+                .HasForeignKey(e => e.InterviewId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Evaluator)
+                .WithMany()
+                .HasForeignKey(e => e.EvaluatorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(e => e.Items)
+                .WithOne(i => i.EvaluationForm)
+                .HasForeignKey(i => i.EvaluationFormId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.ApplicationId);
+            entity.HasIndex(e => e.InterviewId);
+            entity.HasIndex(e => e.EvaluatorId);
+            entity.HasIndex(e => new { e.InterviewId, e.EvaluatorId });
+        });
+
+        modelBuilder.Entity<EvaluationItem>(entity =>
+        {
+            entity.ToTable("evaluation_items");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Weight).HasPrecision(18, 4);
+            entity.HasIndex(e => e.EvaluationFormId);
         });
     }
 }
