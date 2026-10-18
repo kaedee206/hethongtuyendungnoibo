@@ -66,8 +66,8 @@ public interface IInterviewService
     /// </summary>
     Task<InterviewDetailForEditDto?> GetInterviewDetailForEditAsync(
         Guid interviewId,
-        Guid currentUserId,
-        bool isRecruiterOnly,
+        Guid currentUserId = default,
+        bool isRecruiterOnly = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>
