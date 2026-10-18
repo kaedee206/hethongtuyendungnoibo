@@ -87,4 +87,31 @@ public interface IEmailService
         int slaDays,
         int overdueDays,
         CancellationToken cancellationToken = default);
+
+    Task<bool> SendInterviewRescheduledAsync(
+        string recipientEmail,
+        string recipientName,
+        bool isCandidate,
+        string candidateName,
+        string jobTitle,
+        string roundTitle,
+        DateTimeOffset oldStartTime,
+        DateTimeOffset newStartTime,
+        DateTimeOffset newEndTime,
+        string newLocationOrLink,
+        string newInterviewTypeDisplay,
+        string panelistNames,
+        string? rescheduleReason,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> SendInterviewCancelledAsync(
+        string recipientEmail,
+        string recipientName,
+        bool isCandidate,
+        string candidateName,
+        string jobTitle,
+        string roundTitle,
+        DateTimeOffset scheduledStartTime,
+        string cancellationReason,
+        CancellationToken cancellationToken = default);
 }

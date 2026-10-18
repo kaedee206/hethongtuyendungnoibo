@@ -1530,6 +1530,210 @@ public class WorkspaceController : Controller
     }
 
     /// <summary>
+    /// Lấy thông tin chi tiết một buổi phỏng vấn để hiển thị lên modal dời lịch (Scrum - Số 55).
+    /// </summary>
+    [HttpGet("GetInterviewDetailForEdit")]
+    [HttpGet("GetInterviewDetailForEdit/{id}")]
+    [HttpGet("/phong-van/{id}/chi-tiet-doi-lich")]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng")]
+    public async Task<IActionResult> GetInterviewDetailForEdit(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (id == Guid.Empty)
+            {
+                return Json(new { success = false, message = "Mã buổi phỏng vấn không hợp lệ." });
+            }
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+            var isRecruiterOnly = User?.Identity?.IsAuthenticated == true &&
+                                  User.IsInRole(UserRoles.Recruiter) &&
+                                  !User.IsInRole(UserRoles.Admin) &&
+                                  !User.IsInRole(UserRoles.HRManager) &&
+                                  !User.IsInRole("Quản trị viên") &&
+                                  !User.IsInRole("Trưởng phòng nhân sự");
+
+            if (_interviewService != null)
+            {
+                var detail = await _interviewService.GetInterviewDetailForEditAsync(id, currentUserId, isRecruiterOnly, cancellationToken);
+                if (detail == null)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy buổi phỏng vấn hoặc bạn không có quyền xem." });
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    data = detail
+                });
+            }
+
+            return Json(new { success = false, message = "Dịch vụ phỏng vấn tạm thời không khả dụng." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi lấy chi tiết phỏng vấn {InterviewId} để dời lịch", id);
+            return Json(new { success = false, message = "Lỗi khi lấy thông tin phỏng vấn: " + ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Dời lịch phỏng vấn (thay đổi ngày giờ, hình thức, danh sách người phỏng vấn) (Scrum - Số 55).
+    /// </summary>
+    [HttpPost("RescheduleInterview")]
+    [HttpPost("/phong-van/doi-lich")]
+    [HttpPost("/interviews/reschedule")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng")]
+    public async Task<IActionResult> RescheduleInterview(
+        [FromForm] RescheduleInterviewInputModel? formInput,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var model = formInput;
+            if (Request.HasJsonContentType())
+            {
+                try
+                {
+                    Request.EnableBuffering();
+                    using var reader = new System.IO.StreamReader(Request.Body, System.Text.Encoding.UTF8, leaveOpen: true);
+                    var bodyText = await reader.ReadToEndAsync(cancellationToken);
+                    Request.Body.Position = 0;
+                    if (!string.IsNullOrWhiteSpace(bodyText))
+                    {
+                        model = System.Text.Json.JsonSerializer.Deserialize<RescheduleInterviewInputModel>(
+                            bodyText,
+                            new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    }
+                }
+                catch (Exception jsonEx)
+                {
+                    _logger.LogWarning(jsonEx, "Lỗi khi đọc JSON payload RescheduleInterview");
+                }
+            }
+
+            if (model == null || model.InterviewId == Guid.Empty)
+            {
+                return Json(new { success = false, message = "Dữ liệu dời lịch phỏng vấn không hợp lệ." });
+            }
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+            var isRecruiterOnly = User?.Identity?.IsAuthenticated == true &&
+                                  User.IsInRole(UserRoles.Recruiter) &&
+                                  !User.IsInRole(UserRoles.Admin) &&
+                                  !User.IsInRole(UserRoles.HRManager) &&
+                                  !User.IsInRole("Quản trị viên") &&
+                                  !User.IsInRole("Trưởng phòng nhân sự");
+
+            if (_interviewService != null)
+            {
+                var result = await _interviewService.RescheduleInterviewAsync(model, currentUserId, isRecruiterOnly, cancellationToken);
+                return Json(new
+                {
+                    success = result.Success,
+                    message = result.Message,
+                    interviewId = result.InterviewId,
+                    roundNumber = result.RoundNumber,
+                    title = result.Title,
+                    startTime = result.StartTimeDisplay,
+                    endTime = result.EndTimeDisplay,
+                    interviewType = result.InterviewTypeDisplay,
+                    locationOrLink = result.LocationOrLink,
+                    panelists = result.Panelists,
+                    errors = result.Errors
+                });
+            }
+
+            return Json(new { success = false, message = "Dịch vụ xếp lịch phỏng vấn tạm thời không khả dụng." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi dời lịch phỏng vấn");
+            return Json(new { success = false, message = "Lỗi khi dời lịch phỏng vấn: " + ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Huỷ một buổi phỏng vấn bắt buộc nhập lý do (Scrum - Số 55).
+    /// </summary>
+    [HttpPost("CancelInterview")]
+    [HttpPost("/phong-van/huy-lich")]
+    [HttpPost("/interviews/cancel")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager},Quản trị viên,Trưởng phòng nhân sự,Chuyên viên tuyển dụng")]
+    public async Task<IActionResult> CancelInterview(
+        [FromForm] CancelInterviewInputModel? formInput,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var model = formInput;
+            if (Request.HasJsonContentType())
+            {
+                try
+                {
+                    Request.EnableBuffering();
+                    using var reader = new System.IO.StreamReader(Request.Body, System.Text.Encoding.UTF8, leaveOpen: true);
+                    var bodyText = await reader.ReadToEndAsync(cancellationToken);
+                    Request.Body.Position = 0;
+                    if (!string.IsNullOrWhiteSpace(bodyText))
+                    {
+                        model = System.Text.Json.JsonSerializer.Deserialize<CancelInterviewInputModel>(
+                            bodyText,
+                            new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    }
+                }
+                catch (Exception jsonEx)
+                {
+                    _logger.LogWarning(jsonEx, "Lỗi khi đọc JSON payload CancelInterview");
+                }
+            }
+
+            if (model == null || model.InterviewId == Guid.Empty)
+            {
+                return Json(new { success = false, message = "Dữ liệu huỷ lịch phỏng vấn không hợp lệ." });
+            }
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+            var isRecruiterOnly = User?.Identity?.IsAuthenticated == true &&
+                                  User.IsInRole(UserRoles.Recruiter) &&
+                                  !User.IsInRole(UserRoles.Admin) &&
+                                  !User.IsInRole(UserRoles.HRManager) &&
+                                  !User.IsInRole("Quản trị viên") &&
+                                  !User.IsInRole("Trưởng phòng nhân sự");
+
+            if (_interviewService != null)
+            {
+                var result = await _interviewService.CancelInterviewAsync(model, currentUserId, isRecruiterOnly, cancellationToken);
+                return Json(new
+                {
+                    success = result.Success,
+                    message = result.Message,
+                    interviewId = result.InterviewId,
+                    reason = result.Reason,
+                    errors = result.Errors
+                });
+            }
+
+            return Json(new { success = false, message = "Dịch vụ xếp lịch phỏng vấn tạm thời không khả dụng." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi huỷ lịch phỏng vấn");
+            return Json(new { success = false, message = "Lỗi khi huỷ lịch phỏng vấn: " + ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Đề xuất Thư mời nhận việc (Job Offer) cho ứng viên.
     /// </summary>
     [HttpPost("CreateOffer")]

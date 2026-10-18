@@ -110,5 +110,34 @@ public interface IInterviewService
         Guid currentUserId,
         bool isRecruiterOnly,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lấy thông tin chi tiết của một buổi phỏng vấn để mở form dời lịch hoặc xem lại (Scrum - Số 55).
+    /// </summary>
+    Task<InterviewDetailForEditDto?> GetInterviewDetailForEditAsync(
+        Guid interviewId,
+        Guid currentUserId = default,
+        bool isRecruiterOnly = false,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Dời lịch phỏng vấn: đổi ngày giờ, hình thức, liên kết và danh sách người phỏng vấn (Scrum - Số 55).
+    /// Chặn nếu đã có phiếu đánh giá nộp. Gửi thông báo đến ứng viên và toàn bộ người phỏng vấn.
+    /// </summary>
+    Task<InterviewScheduleResultDto> RescheduleInterviewAsync(
+        RescheduleInterviewInputModel model,
+        Guid currentUserId,
+        bool isRecruiterOnly,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Huỷ buổi phỏng vấn với lý do bắt buộc (Scrum - Số 55).
+    /// Chặn nếu đã có phiếu đánh giá nộp. Gửi thông báo đến ứng viên và toàn bộ người phỏng vấn.
+    /// </summary>
+    Task<InterviewCancelResultDto> CancelInterviewAsync(
+        CancelInterviewInputModel model,
+        Guid currentUserId,
+        bool isRecruiterOnly,
+        CancellationToken cancellationToken = default);
 }
 

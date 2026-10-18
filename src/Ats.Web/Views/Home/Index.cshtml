@@ -1,6 +1,7 @@
 @model Ats.Web.Models.ViewModels.Workspace.WorkspaceDashboardViewModel
 @using System.Security.Claims
 @using Ats.Web.Constants
+@using Ats.Web.Models.Enums
 @{
     ViewData["Title"] = Model.IsAuthenticated ? "Không gian làm việc" : "Hệ thống Tuyển dụng NoveraTech";
     var activeFeature = (ViewBag.ActiveFeature as string ?? "tong-quan").ToLowerInvariant().Trim();
@@ -1801,13 +1802,44 @@
                                                                 <i class="bi bi-link-45deg me-1"></i> Link mời
                                                             </button>
                                                         }
-                                                        @if (!string.IsNullOrWhiteSpace(interview.LocationOrLink))
+                                                        @if (!string.IsNullOrWhiteSpace(interview.LocationOrLink) && interview.Status != InterviewStatus.CANCELLED)
                                                         {
                                                             <a href="@interview.LocationOrLink" target="_blank" class="btn btn-sm btn-outline-primary"
                                                                style="border-radius:8px; font-size:0.75rem; font-weight:600; padding: 0.25rem 0.65rem;"
                                                                title="Mở Google Meet">
                                                                 <i class="bi bi-camera-video me-1"></i> Meet
                                                             </a>
+                                                        }
+                                                        @if (interview.CanRescheduleOrCancel)
+                                                        {
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                                    style="border-radius:8px; font-size:0.75rem; font-weight:600; padding: 0.25rem 0.65rem;"
+                                                                    onclick="openRescheduleInterviewModal('@interview.InterviewId', '@interview.CandidateName', '@interview.JobTitle', '@interview.RoundTitle', '@interview.TimeDisplay', '@interview.DateDisplay')"
+                                                                    title="Dời lịch phỏng vấn (thay đổi thời gian, hình thức, hội đồng)">
+                                                                <i class="bi bi-calendar2-range me-1"></i> Dời lịch
+                                                            </button>
+                                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                                    style="border-radius:8px; font-size:0.75rem; font-weight:600; padding: 0.25rem 0.65rem;"
+                                                                    onclick="openCancelInterviewModal('@interview.InterviewId', '@interview.CandidateName', '@interview.JobTitle', '@interview.RoundTitle', '@interview.TimeDisplay - @interview.DateDisplay')"
+                                                                    title="Hủy buổi phỏng vấn này">
+                                                                <i class="bi bi-calendar-x me-1"></i> Hủy
+                                                            </button>
+                                                        }
+                                                        else if (interview.HasSubmittedEvaluation)
+                                                        {
+                                                            <span class="badge bg-light text-muted border" style="border-radius:6px; font-size:0.72rem; padding: 0.35rem 0.6rem;"
+                                                                  title="Không thể dời hoặc huỷ do đã có phiếu đánh giá được nộp">
+                                                                <i class="bi bi-lock-fill me-1 text-secondary"></i>Đã có phiếu nộp
+                                                            </span>
+                                                        }
+                                                        else if (interview.Status == InterviewStatus.CANCELLED)
+                                                        {
+                                                            <button type="button" class="btn btn-sm btn-light text-danger border border-danger-subtle"
+                                                                    style="border-radius:8px; font-size:0.72rem; font-weight:600; padding: 0.25rem 0.65rem;"
+                                                                    onclick="alert('Lý do hủy buổi phỏng vấn:\n\n' + @Html.Raw(System.Text.Json.JsonSerializer.Serialize(interview.CancellationReason ?? "Người phỏng vấn bận đột xuất")))"
+                                                                    title="Xem lý do hủy buổi phỏng vấn">
+                                                                <i class="bi bi-info-circle me-1"></i> Lý do hủy
+                                                            </button>
                                                         }
                                                         @if (interview.IsCurrentUserPanelist)
                                                         {
@@ -2866,6 +2898,10 @@
         </div>
     </div>
 </div>
+
+<!-- Modals Dời & Hủy Lịch Phỏng Vấn (Scrum - Số 55) -->
+@await Html.PartialAsync("_RescheduleInterviewModal")
+@await Html.PartialAsync("_CancelInterviewModal")
 
 <!-- Modal 8: Khởi tạo đề xuất Offer -->
 <div class="modal fade" id="createOfferModal" tabindex="-1" aria-labelledby="createOfferModalLabel" aria-hidden="true">
@@ -5313,6 +5349,322 @@
                     }
                 }
             } catch (err) {
+                showToast('Lỗi kết nối: ' + err.message, false);
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('d-none');
+            }
+        }
+
+        // =========================================================================
+        // SCRUM - SỐ 55: DỜI VÀ HỦY LỊCH PHỎNG VẤN (RESCHEDULE & CANCEL INTERVIEW)
+        // =========================================================================
+
+        function validateReschedDateTime() {
+            var input = document.getElementById('reschedDate');
+            var errEl = document.getElementById('reschedPastDateError');
+            if (!input || !input.value) return false;
+
+            var chosen = new Date(input.value);
+            var now = new Date();
+            if (chosen <= now) {
+                errEl?.classList.remove('d-none');
+                input.classList.add('is-invalid');
+                return false;
+            } else {
+                errEl?.classList.add('d-none');
+                input.classList.remove('is-invalid');
+                return true;
+            }
+        }
+
+        function validateReschedPanelists() {
+            var select = document.getElementById('reschedPanelists');
+            var errEl = document.getElementById('reschedPanelistError');
+            var selected = Array.from(select.selectedOptions).map(o => o.value).filter(v => v);
+            if (selected.length === 0) {
+                errEl?.classList.remove('d-none');
+                return false;
+            } else {
+                errEl?.classList.add('d-none');
+                return true;
+            }
+        }
+
+        function onReschedTypeChange(val) {
+            var locInput = document.getElementById('reschedLocation');
+            if (!locInput) return;
+            if (val === 'ONLINE_MEET') {
+                if (!locInput.value || !locInput.value.startsWith('http')) {
+                    locInput.value = 'https://meet.google.com/nov-' + Math.random().toString(36).substring(2, 6) + '-' + Math.random().toString(36).substring(2, 5);
+                }
+            } else {
+                if (!locInput.value || locInput.value.startsWith('http')) {
+                    locInput.value = 'Trụ sở NoveraTech, Tầng 12 Tòa nhà Innovation, Cầu Giấy, Hà Nội';
+                }
+            }
+        }
+
+        async function openRescheduleInterviewModal(interviewId, candidateName, jobTitle, roundTitle, timeDisplay, dateDisplay) {
+            document.getElementById('reschedInterviewId').value = interviewId;
+            document.getElementById('reschedCandidateName').textContent = candidateName || 'Ứng viên';
+            document.getElementById('reschedJobTitle').textContent = jobTitle || 'Vị trí';
+            document.getElementById('reschedRoundBadge').textContent = roundTitle || 'Vòng PV';
+            document.getElementById('reschedCurrentTimeDisplay').textContent = (timeDisplay || '') + ' - ' + (dateDisplay || '');
+
+            var genError = document.getElementById('reschedGeneralError');
+            if (genError) {
+                genError.classList.add('d-none');
+                genError.textContent = '';
+            }
+            document.getElementById('reschedPastDateError')?.classList.add('d-none');
+            document.getElementById('reschedPanelistError')?.classList.add('d-none');
+
+            var now = new Date();
+            var localNowIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            var dateInput = document.getElementById('reschedDate');
+            dateInput.min = localNowIso;
+            dateInput.classList.remove('is-invalid');
+
+            // Mặc định thời gian: ngày mai lúc 9:00
+            var tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(9, 0, 0, 0);
+            var localIso = new Date(tomorrow.getTime() - tomorrow.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            dateInput.value = localIso;
+
+            var panelistSelect = document.getElementById('reschedPanelists');
+            panelistSelect.innerHTML = '<option disabled>Đang tải dữ liệu buổi phỏng vấn...</option>';
+
+            var modal = new bootstrap.Modal(document.getElementById('rescheduleInterviewModal'));
+            modal.show();
+
+            try {
+                // Tải danh sách tất cả Interviewers
+                var resInts = await fetch('/Workspace/GetInterviewers', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                var dataInts = await resInts.json();
+                var allInterviewers = dataInts.interviewers || dataInts.data || [];
+
+                // Tải chi tiết buổi phỏng vấn hiện tại
+                var resDetail = await fetch('/Workspace/GetInterviewDetailForEdit?id=' + encodeURIComponent(interviewId), {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                var detailData = await resDetail.json();
+
+                if (!detailData.success && detailData.message) {
+                    showToast(detailData.message, false);
+                    modal.hide();
+                    return;
+                }
+
+                var interview = detailData.data || {};
+
+                // Kiểm tra ràng buộc bảo vệ: Đã có phiếu đánh giá nộp thì không sửa được
+                if (interview.hasSubmittedEvaluation) {
+                    showToast('Không thể dời lịch vì buổi phỏng vấn đã có phiếu đánh giá được nộp.', false);
+                    modal.hide();
+                    return;
+                }
+
+                if (interview.interviewType) {
+                    document.getElementById('reschedType').value = interview.interviewType;
+                }
+                if (interview.locationOrLink) {
+                    document.getElementById('reschedLocation').value = interview.locationOrLink;
+                }
+                if (interview.durationMinutes) {
+                    document.getElementById('reschedDuration').value = interview.durationMinutes;
+                }
+                if (interview.startTimeIso) {
+                    var stDate = new Date(interview.startTimeIso);
+                    var stIso = new Date(stDate.getTime() - stDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                    if (stDate > now) {
+                        dateInput.value = stIso;
+                    }
+                }
+
+                var assignedPanelistIds = (interview.panelists || []).map(p => p.interviewerId);
+
+                if (allInterviewers.length > 0) {
+                    panelistSelect.innerHTML = allInterviewers.map(u => {
+                        var uId = u.id || u.Id;
+                        var uName = u.fullName || u.name || u.FullName || 'Nhân sự';
+                        var uEmail = u.email || u.Email || '';
+                        var uRole = u.role || u.Role || 'Interviewer';
+                        var isSel = assignedPanelistIds.includes(uId);
+                        return `<option value="${uId}" ${isSel ? 'selected' : ''}>${uName} (${uRole}) - ${uEmail}</option>`;
+                    }).join('');
+                } else {
+                    panelistSelect.innerHTML = '<option value="">(Chưa có người phỏng vấn trong hệ thống)</option>';
+                }
+            } catch (err) {
+                console.error(err);
+                panelistSelect.innerHTML = '<option value="">(Không thể tải chi tiết)</option>';
+            }
+        }
+
+        async function handleRescheduleInterviewSubmit(e) {
+            e.preventDefault();
+
+            if (!validateReschedDateTime()) {
+                showToast('Thời gian dời lịch phải ở tương lai.', false);
+                return;
+            }
+
+            var select = document.getElementById('reschedPanelists');
+            var selectedPanelists = Array.from(select.selectedOptions).map(o => o.value).filter(v => v);
+
+            if (selectedPanelists.length === 0) {
+                document.getElementById('reschedPanelistError')?.classList.remove('d-none');
+                showToast('Vui lòng chọn ít nhất một người phỏng vấn.', false);
+                return;
+            }
+
+            var btn = document.getElementById('btnSubmitResched');
+            var spinner = document.getElementById('spinnerResched');
+            var genError = document.getElementById('reschedGeneralError');
+            btn.disabled = true;
+            spinner.classList.remove('d-none');
+            if (genError) genError.classList.add('d-none');
+
+            var payload = {
+                interviewId: document.getElementById('reschedInterviewId').value,
+                newStartTime: document.getElementById('reschedDate').value,
+                durationMinutes: parseInt(document.getElementById('reschedDuration').value, 10) || 60,
+                interviewType: document.getElementById('reschedType').value,
+                locationOrLink: document.getElementById('reschedLocation').value,
+                interviewerIds: selectedPanelists,
+                panelistIds: selectedPanelists,
+                reason: document.getElementById('reschedReason').value
+            };
+
+            try {
+                var res = await fetch('/Workspace/RescheduleInterview', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getCsrfToken(),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                var data = await res.json();
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('rescheduleInterviewModal')).hide();
+                    showToast(data.message || 'Dời lịch phỏng vấn thành công! Toàn bộ các bên đã được thông báo.', true);
+                    setTimeout(() => window.location.reload(), 1200);
+                } else {
+                    if (genError) {
+                        genError.textContent = data.message || 'Lỗi khi dời lịch phỏng vấn.';
+                        genError.classList.remove('d-none');
+                    }
+                    showToast(data.message || 'Không thể dời lịch phỏng vấn', false);
+                }
+            } catch (err) {
+                if (genError) {
+                    genError.textContent = 'Lỗi kết nối máy chủ: ' + err.message;
+                    genError.classList.remove('d-none');
+                }
+                showToast('Lỗi kết nối: ' + err.message, false);
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('d-none');
+            }
+        }
+
+        function validateCancelReason() {
+            var textarea = document.getElementById('cancelReason');
+            var errEl = document.getElementById('cancelReasonError');
+            var charCount = document.getElementById('cancelCharCount');
+            var val = (textarea?.value || '').trim();
+
+            if (charCount) {
+                charCount.textContent = val.length + ' ký tự';
+            }
+
+            if (val.length < 5) {
+                errEl?.classList.remove('d-none');
+                textarea?.classList.add('is-invalid');
+                return false;
+            } else {
+                errEl?.classList.add('d-none');
+                textarea?.classList.remove('is-invalid');
+                return true;
+            }
+        }
+
+        function openCancelInterviewModal(interviewId, candidateName, jobTitle, roundTitle, timeDisplay) {
+            document.getElementById('cancelInterviewId').value = interviewId;
+            document.getElementById('cancelCandidateName').textContent = candidateName || 'Ứng viên';
+            document.getElementById('cancelJobTitle').textContent = jobTitle || 'Vị trí';
+            document.getElementById('cancelRoundBadge').textContent = roundTitle || 'Vòng PV';
+            document.getElementById('cancelTimeDisplay').textContent = timeDisplay || '-';
+
+            var textarea = document.getElementById('cancelReason');
+            textarea.value = '';
+            textarea.classList.remove('is-invalid');
+            document.getElementById('cancelReasonError')?.classList.add('d-none');
+            document.getElementById('cancelCharCount').textContent = '0 ký tự';
+
+            var genError = document.getElementById('cancelGeneralError');
+            if (genError) {
+                genError.classList.add('d-none');
+                genError.textContent = '';
+            }
+
+            var modal = new bootstrap.Modal(document.getElementById('cancelInterviewModal'));
+            modal.show();
+        }
+
+        async function handleCancelInterviewSubmit(e) {
+            e.preventDefault();
+
+            if (!validateCancelReason()) {
+                showToast('Vui lòng nhập lý do hủy lịch phỏng vấn (tối thiểu 5 ký tự).', false);
+                return;
+            }
+
+            var btn = document.getElementById('btnSubmitCancel');
+            var spinner = document.getElementById('spinnerCancel');
+            var genError = document.getElementById('cancelGeneralError');
+            btn.disabled = true;
+            spinner.classList.remove('d-none');
+            if (genError) genError.classList.add('d-none');
+
+            var payload = {
+                interviewId: document.getElementById('cancelInterviewId').value,
+                reason: document.getElementById('cancelReason').value.trim()
+            };
+
+            try {
+                var res = await fetch('/Workspace/CancelInterview', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getCsrfToken(),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                var data = await res.json();
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('cancelInterviewModal')).hide();
+                    showToast(data.message || 'Đã hủy lịch phỏng vấn thành công. Các bên đã nhận được thông báo.', true);
+                    setTimeout(() => window.location.reload(), 1200);
+                } else {
+                    if (genError) {
+                        genError.textContent = data.message || 'Lỗi khi hủy lịch phỏng vấn.';
+                        genError.classList.remove('d-none');
+                    }
+                    showToast(data.message || 'Không thể hủy lịch phỏng vấn', false);
+                }
+            } catch (err) {
+                if (genError) {
+                    genError.textContent = 'Lỗi kết nối máy chủ: ' + err.message;
+                    genError.classList.remove('d-none');
+                }
                 showToast('Lỗi kết nối: ' + err.message, false);
             } finally {
                 btn.disabled = false;

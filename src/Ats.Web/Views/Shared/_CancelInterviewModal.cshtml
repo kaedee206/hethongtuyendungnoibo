@@ -1,0 +1,60 @@
+@* Modal Huỷ lịch phỏng vấn bắt buộc nhập lý do (Scrum - Số 55) *@
+<div class="modal fade" id="cancelInterviewModal" tabindex="-1" aria-labelledby="cancelInterviewModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger" id="cancelInterviewModalLabel" style="font-size: 1.05rem;">
+                    <i class="bi bi-calendar-x text-danger me-2"></i>Hủy buổi phỏng vấn
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="p-2.5 mb-3" style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px;">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-bold text-dark" id="cancelCandidateName" style="font-size: 0.9rem;">-</div>
+                            <div class="text-muted small" id="cancelJobTitle">-</div>
+                        </div>
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle" id="cancelRoundBadge" style="border-radius:6px; font-size:0.75rem;">Vòng PV</span>
+                    </div>
+                    <div class="mt-2 pt-2 border-top border-slate-200 small text-muted">
+                        <i class="bi bi-clock me-1 text-secondary"></i>Lịch hẹn: <span class="fw-semibold text-dark font-monospace" id="cancelTimeDisplay">-</span>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center" style="border-radius:8px; font-size:0.8rem;">
+                    <i class="bi bi-exclamation-triangle-fill me-2 fs-6 text-warning"></i>
+                    <span>Cảnh báo: Lịch phỏng vấn bị hủy sẽ được cập nhật trạng thái và tự động gửi email cùng thông báo in-app kèm lý do tới ứng viên và giám khảo.</span>
+                </div>
+
+                <form id="cancelInterviewForm" onsubmit="handleCancelInterviewSubmit(event)">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="cancelInterviewId" />
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">
+                            Lý do hủy buổi phỏng vấn <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="cancelReason" rows="3" required minlength="5" placeholder="Bắt buộc nhập lý do (VD: Người phỏng vấn bận đột xuất, ứng viên xin rút hồ sơ, vị trí tạm dừng tuyển...)" style="border-radius:8px; font-size:0.85rem;" oninput="validateCancelReason()"></textarea>
+                        <div class="d-flex justify-content-between mt-1">
+                            <div id="cancelReasonError" class="text-danger small d-none" style="font-size:0.75rem;">
+                                <i class="bi bi-exclamation-circle-fill me-1"></i>Lý do hủy bắt buộc nhập và phải có ít nhất 5 ký tự.
+                            </div>
+                            <small class="text-muted ms-auto" id="cancelCharCount" style="font-size:0.75rem;">0 ký tự</small>
+                        </div>
+                    </div>
+
+                    <div id="cancelGeneralError" class="alert alert-danger py-2 px-3 small d-none" style="border-radius:8px; font-size:0.8rem;"></div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-2" style="border-top:1px solid #E2E8F0;">
+                        <button type="button" class="btn btn-light px-4" style="border-radius:8px; font-size:0.85rem;" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-danger px-4 fw-semibold text-white" style="border-radius:8px; font-size:0.85rem;" id="btnSubmitCancel">
+                            <span class="spinner-border spinner-border-sm me-1 d-none" id="spinnerCancel"></span>
+                            <i class="bi bi-x-circle me-1"></i>Xác nhận hủy lịch
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

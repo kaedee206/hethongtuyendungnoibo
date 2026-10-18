@@ -457,6 +457,22 @@ public class HomeController : Controller
                 var anySubEvalWithin24h = i.Evaluations.FirstOrDefault(e => e.IsSubmitted && !e.IsDeleted && e.SubmittedAt.HasValue && (DateTimeOffset.UtcNow - e.SubmittedAt.Value) <= TimeSpan.FromHours(24));
                 var canRecruiterReopen = isStaffManager && anySubEvalWithin24h != null;
 
+                // Scrum - Số 55: Kiểm tra điều kiện dời hoặc huỷ lịch phỏng vấn (Không sửa được buổi đã có phiếu đánh giá nộp)
+                var hasSubmittedEvaluation = i.Evaluations.Any(e => e.IsSubmitted && !e.IsDeleted);
+                var canRescheduleOrCancel = isStaffManager &&
+                                            !hasSubmittedEvaluation &&
+                                            i.Status != InterviewStatus.CANCELLED &&
+                                            i.Status != InterviewStatus.COMPLETED;
+
+                string? cancellationReason = null;
+                if (i.Status == InterviewStatus.CANCELLED && !string.IsNullOrWhiteSpace(i.CandidateNotes))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(i.CandidateNotes, @"\[LÝ DO HUỶ\]:\s*(.*)");
+                    cancellationReason = match.Success ? match.Groups[1].Value.Trim() : i.CandidateNotes;
+                }
+
+                var interviewerIds = i.Panelists.Where(p => !p.IsDeleted).Select(p => p.InterviewerId).ToList();
+
                 // Quy tắc 4: Không nhìn thấy đánh giá của người khác trước khi nộp phiếu của mình
                 string? evalResult;
                 if (isInvited)
@@ -523,7 +539,12 @@ public class HomeController : Controller
                     FirstEvaluationId = anySubEvalWithin24h?.Id ?? i.Evaluations.FirstOrDefault(e => e.IsSubmitted)?.Id,
                     IsReopened = isReopened,
                     InvitationToken = token,
-                    ConfirmationUrl = confirmUrl
+                    ConfirmationUrl = confirmUrl,
+                    HasSubmittedEvaluation = hasSubmittedEvaluation,
+                    CanRescheduleOrCancel = canRescheduleOrCancel,
+                    CancellationReason = cancellationReason,
+                    InterviewTypeString = i.InterviewType.ToString(),
+                    InterviewerIds = interviewerIds
                 };
             }).ToList();
 
