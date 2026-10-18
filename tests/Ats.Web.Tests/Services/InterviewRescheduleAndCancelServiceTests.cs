@@ -234,6 +234,14 @@ public class InterviewRescheduleAndCancelServiceTests
         history.Should().NotBeNull();
         history!.Comment.Should().Contain("Người phỏng vấn vòng 1 bận đi công tác đột xuất");
 
+        // Chờ background email Task.Run kích hoạt
+        for (int i = 0; i < 10; i++)
+        {
+            if (mockEmail.Invocations.Any(inv => inv.Method.Name == nameof(IEmailService.SendInterviewRescheduledAsync)))
+                break;
+            await Task.Delay(50);
+        }
+
         // Kiểm tra gửi email cho ứng viên và toàn bộ người phỏng vấn mới (iv2, iv3)
         mockEmail.Verify(e => e.SendInterviewRescheduledAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(),
@@ -352,6 +360,14 @@ public class InterviewRescheduleAndCancelServiceTests
             .FirstOrDefaultAsync(h => h.ApplicationId == app.Id && h.Comment != null && h.Comment.Contains("huỷ"));
         history.Should().NotBeNull();
         history!.Comment.Should().Contain(cancelReason);
+
+        // Chờ background email Task.Run kích hoạt
+        for (int i = 0; i < 10; i++)
+        {
+            if (mockEmail.Invocations.Any(inv => inv.Method.Name == nameof(IEmailService.SendInterviewCancelledAsync)))
+                break;
+            await Task.Delay(50);
+        }
 
         // Verify Emails sent (Ít nhất 2 email: ứng viên + giám khảo)
         mockEmail.Verify(e => e.SendInterviewCancelledAsync(
