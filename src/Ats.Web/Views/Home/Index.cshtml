@@ -1,6 +1,7 @@
 @model Ats.Web.Models.ViewModels.Workspace.WorkspaceDashboardViewModel
 @using System.Security.Claims
 @using Ats.Web.Constants
+@using Ats.Web.Models.Enums
 @{
     ViewData["Title"] = Model.IsAuthenticated ? "Không gian làm việc" : "Hệ thống Tuyển dụng NoveraTech";
     var activeFeature = (ViewBag.ActiveFeature as string ?? "tong-quan").ToLowerInvariant().Trim();
