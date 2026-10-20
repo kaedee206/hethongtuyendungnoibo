@@ -77,9 +77,11 @@ public class OfferServiceTests
         var req = new JobRequisition
         {
             Id = Guid.NewGuid(),
+            Code = "REQ-SWE-01",
             DepartmentId = dept.Id,
             JobPositionId = position.Id,
-            Title = "Tuyển dụng Senior Backend Engineer",
+            HiringManagerId = recruiter.Id,
+            Quantity = 1,
             MinSalary = 30_000_000,
             MaxSalary = 50_000_000,
             Status = RequisitionStatus.APPROVED
@@ -126,7 +128,7 @@ public class OfferServiceTests
             CandidateId = candidate.Id,
             JobPostingId = posting.Id,
             CurrentStageId = interviewStage.Id,
-            Status = ApplicationStatus.ACTIVE,
+            Status = ApplicationStatus.IN_PROCESS,
             CreatedAt = DateTimeOffset.UtcNow
         };
         await context.Applications.AddAsync(app);
@@ -173,7 +175,9 @@ public class OfferServiceTests
             Id = Guid.NewGuid(),
             CandidateId = candidate.Id,
             JobPostingId = app1.JobPostingId,
-            Status = ApplicationStatus.ACTIVE,
+            CurrentStageId = app1.CurrentStageId,
+            ResumeId = Guid.NewGuid(),
+            Status = ApplicationStatus.IN_PROCESS,
             CreatedAt = DateTimeOffset.UtcNow
         };
         await context.Applications.AddAsync(app2);
@@ -227,7 +231,9 @@ public class OfferServiceTests
             Id = Guid.NewGuid(),
             CandidateId = candidate.Id,
             JobPostingId = app1.JobPostingId,
-            Status = ApplicationStatus.ACTIVE,
+            CurrentStageId = app1.CurrentStageId,
+            ResumeId = Guid.NewGuid(),
+            Status = ApplicationStatus.IN_PROCESS,
             CreatedAt = DateTimeOffset.UtcNow
         };
         await context.Applications.AddAsync(app2);
