@@ -88,7 +88,7 @@ public class OfferService(
             CandidateId = application.CandidateId,
             CandidateName = candName,
             CandidateEmail = application.Candidate.Email,
-            CandidatePhone = application.Candidate.PhoneNumber,
+            CandidatePhone = application.Candidate.Phone,
             JobPostingTitle = application.JobPosting.Title,
             DepartmentName = requisition.Department?.Name ?? "Chưa phân bổ",
             WorkLocation = application.JobPosting.WorkLocation,
@@ -132,7 +132,7 @@ public class OfferService(
             ?? throw new KeyNotFoundException($"Không tìm thấy hồ sơ ứng tuyển với mã {input.ApplicationId}.");
 
         var recruiter = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == currentUserId, cancellationToken);
-        var recruiterName = recruiter != null ? $"{recruiter.FirstName} {recruiter.LastName}".Trim() : "Phòng Nhân sự NoveraTech";
+        var recruiterName = (recruiter != null && !string.IsNullOrWhiteSpace(recruiter.FullName)) ? recruiter.FullName : "Phòng Nhân sự NoveraTech";
 
         var candFullName = $"{application.Candidate.FirstName} {application.Candidate.LastName}".Trim();
         var allowances = input.BonusAllowance ?? 0;
@@ -146,7 +146,7 @@ public class OfferService(
             OfferId = input.OfferId,
             CandidateName = candFullName,
             CandidateEmail = application.Candidate.Email,
-            CandidatePhone = application.Candidate.PhoneNumber,
+            CandidatePhone = application.Candidate.Phone,
             JobTitle = !string.IsNullOrWhiteSpace(input.JobTitle) ? input.JobTitle : application.JobPosting.Title,
             DepartmentName = application.JobPosting.Requisition?.Department?.Name ?? "Khối Công nghệ & Kỹ thuật",
             WorkLocation = !string.IsNullOrWhiteSpace(input.WorkLocation)
@@ -422,8 +422,8 @@ public class OfferService(
 
         var app = offer.Application;
         var candName = $"{app.Candidate.FirstName} {app.Candidate.LastName}".Trim();
-        var recruiterName = offer.CreatedByRecruiter != null
-            ? $"{offer.CreatedByRecruiter.FirstName} {offer.CreatedByRecruiter.LastName}".Trim()
+        var recruiterName = (offer.CreatedByRecruiter != null && !string.IsNullOrWhiteSpace(offer.CreatedByRecruiter.FullName))
+            ? offer.CreatedByRecruiter.FullName
             : "Phòng Nhân sự NoveraTech";
 
         return new JobOfferPreviewViewModel
@@ -432,7 +432,7 @@ public class OfferService(
             OfferId = offer.Id,
             CandidateName = candName,
             CandidateEmail = app.Candidate.Email,
-            CandidatePhone = app.Candidate.PhoneNumber,
+            CandidatePhone = app.Candidate.Phone,
             JobTitle = !string.IsNullOrWhiteSpace(offer.JobTitle)
                 ? offer.JobTitle
                 : (offer.JobPosition?.Title ?? app.JobPosting.Title),
