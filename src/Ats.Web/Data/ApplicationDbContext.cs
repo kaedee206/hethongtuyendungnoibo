@@ -476,5 +476,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasIndex(e => e.TargetJobTitle);
             entity.HasIndex(e => e.Status);
         });
+
+        // JobOffer mapping & relationships (SCRUM-340)
+        modelBuilder.Entity<JobOffer>(entity =>
+        {
+            entity.HasOne(o => o.JobPosition)
+                .WithMany()
+                .HasForeignKey(o => o.JobPositionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(o => o.ApplicationId);
+            entity.HasIndex(o => o.Status);
+        });
     }
 }
