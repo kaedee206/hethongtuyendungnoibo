@@ -34,7 +34,12 @@ public enum CandidateStage
     /// <summary>
     /// Loại hồ sơ (Hồ sơ bị từ chối tại bất kỳ vòng nào kèm lý do chuẩn hóa)
     /// </summary>
-    REJECTED = 6
+    REJECTED = 6,
+
+    /// <summary>
+    /// Đã hoàn thành thủ tục tiếp nhận nhân sự mới (SP-7: Onboarding checklist hoàn tất 100%)
+    /// </summary>
+    ONBOARDED = 7
 }
 
 /// <summary>
@@ -50,6 +55,7 @@ public static class CandidateStageExtensions
         CandidateStage.OFFER => "Đề xuất tuyển dụng (Offer)",
         CandidateStage.HIRED => "Tuyển dụng thành công",
         CandidateStage.REJECTED => "Loại hồ sơ",
+        CandidateStage.ONBOARDED => "Đã onboard",
         _ => stage.ToString()
     };
 }

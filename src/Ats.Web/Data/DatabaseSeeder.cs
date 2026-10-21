@@ -118,10 +118,26 @@ public static class DatabaseSeeder
                 new() { Id = Guid.NewGuid(), Name = "Phỏng vấn chuyên môn", StageOrder = 4, ColorCode = "#ffc107" },
                 new() { Id = Guid.NewGuid(), Name = "Đề nghị tuyển dụng (Offer)", StageOrder = 5, ColorCode = "#fd7e14" },
                 new() { Id = Guid.NewGuid(), Name = "Tuyển dụng thành công", StageOrder = 6, ColorCode = "#198754" },
-                new() { Id = Guid.NewGuid(), Name = "Từ chối", StageOrder = 7, ColorCode = "#dc3545" }
+                new() { Id = Guid.NewGuid(), Name = "Từ chối", StageOrder = 7, ColorCode = "#dc3545" },
+                new() { Id = Guid.NewGuid(), Name = "Đã onboard", StageOrder = 8, ColorCode = "#059669" }
             };
             await context.PipelineStages.AddRangeAsync(stages);
             await context.SaveChangesAsync();
+        }
+        else
+        {
+            var onboardedStage = await context.PipelineStages.FirstOrDefaultAsync(ps => ps.Name == "Đã onboard");
+            if (onboardedStage == null)
+            {
+                await context.PipelineStages.AddAsync(new PipelineStage
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Đã onboard",
+                    StageOrder = 8,
+                    ColorCode = "#059669"
+                });
+                await context.SaveChangesAsync();
+            }
         }
 
         // 5. Seed Permissions
@@ -1450,6 +1466,136 @@ public static class DatabaseSeeder
             );
             await context.SaveChangesAsync();
         }
+
+        await SeedOnboardingTemplatesAsync(context);
+    }
+
+    private static async Task SeedOnboardingTemplatesAsync(ApplicationDbContext context)
+    {
+        if (await context.OnboardingTemplates.AnyAsync())
+        {
+            return;
+        }
+
+        var itDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "IT");
+        var hrDept = await context.Departments.FirstOrDefaultAsync(d => d.Code == "HR");
+
+        var hrUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "hr@noveratech.vn" || u.Email == "phuong.nguyen@noveratech.digital");
+        var itUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "it@noveratech.vn" || u.Email == "long.vu@noveratech.digital");
+        var adminUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "admin@noveratech.vn");
+
+        var itAssignee = itUser?.Id ?? adminUser?.Id;
+        var hrAssignee = hrUser?.Id ?? adminUser?.Id;
+
+        // 1. Mẫu IT / Kỹ thuật
+        if (itDept != null)
+        {
+            var itTemplate = new OnboardingTemplate
+            {
+                Id = Guid.NewGuid(),
+                Name = "Checklist Onboarding Khối Công nghệ & IT",
+                Description = "Mẫu chuẩn bị thiết bị, tài khoản hệ thống và hồ sơ cho nhân sự khối Kỹ thuật & Công nghệ thông tin.",
+                DepartmentId = itDept.Id,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+
+            itTemplate.Items = new List<OnboardingTemplateItem>
+            {
+                // ACCOUNT
+                new() { Id = Guid.NewGuid(), TemplateId = itTemplate.Id, Category = OnboardingCategory.ACCOUNT, Title = "Cấp tài khoản Email công ty (@noveratech.digital)", Description = "Tạo email và phân quyền truy cập Google Workspace doanh nghiệp.", DefaultAssignedUserId = itAssignee, DaysBeforeJoinDateOffset = 2, DisplayOrder = 1 },
+                new() { Id = Guid.NewGuid(), TemplateId = itTemplate.Id, Category = OnboardingCategory.ACCOUNT, Title = "Cấp tài khoản GitHub Enterprise, Jira & Confluence", Description = "Add vào Organization trên GitHub và cấp quyền truy cập các dự án liên quan.", DefaultAssignedUserId = itAssignee, DaysBeforeJoinDateOffset = 1, DisplayOrder = 2 },
+                new() { Id = Guid.NewGuid(), TemplateId = itTemplate.Id, Category = OnboardingCategory.ACCOUNT, Title = "Cấu hình VPN nội bộ & quyền truy cập Cloud AWS Staging", Description = "Cung cấp profile OpenVPN và key truy cập môi trường thử nghiệm.", DefaultAssignedUserId = itAssignee, DaysBeforeJoinDateOffset = 0, DisplayOrder = 3 },
+
+                // EQUIPMENT
+                new() { Id = Guid.NewGuid(), TemplateId = itTemplate.Id, Category = OnboardingCategory.EQUIPMENT, Title = "Cấp phát Laptop cấu hình cao & màn hình phụ 27 inch 4K", Description = "Cài sẵn hệ điều hành, docker và các công cụ phát triển phần mềm chuẩn.", DefaultAssignedUserId = itAssignee, DaysBeforeJoinDateOffset = 1, DisplayOrder = 4 },
+                new() { Id = Guid.NewGuid(), TemplateId = itTemplate.Id, Category = OnboardingCategory.EQUIPMENT, Title = "Cấp phát bàn phím cơ & chuột công thái học", Description = "Bàn phím cơ Bluetooth và chuột công thái học chống mỏi cổ tay.", DefaultAssignedUserId = itAssignee, DaysBeforeJoinDateOffset = 1, DisplayOrder = 5 },
+                new() { Id = Guid.NewGuid(), TemplateId = itTemplate.Id, Category = OnboardingCategory.EQUIPMENT, Title = "Cấp tai nghe chống ồn khử tạp âm", Description = "Tai nghe phục vụ họp trực tuyến và tập trung làm việc.", DefaultAssignedUserId = itAssignee, DaysBeforeJoinDateOffset = 0, DisplayOrder = 6 },
+
+                // SEATING
+                new() { Id = Guid.NewGuid(), TemplateId = itTemplate.Id, Category = OnboardingCategory.SEATING, Title = "Sắp xếp chỗ ngồi tại Khu vực Kỹ thuật (Tầng 4)", Description = "Dọn dẹp bàn làm việc, kiểm tra ổ cắm điện, cổng mạng LAN và ghế công thái học.", DefaultAssignedUserId = hrAssignee, DaysBeforeJoinDateOffset = 1, DisplayOrder = 7 },
+                new() { Id = Guid.NewGuid(), TemplateId = itTemplate.Id, Category = OnboardingCategory.SEATING, Title = "Cấp thẻ từ nhân viên & đăng ký vân tay ra vào", Description = "In thẻ nhân viên có ảnh và kích hoạt quyền mở cửa văn phòng.", DefaultAssignedUserId = hrAssignee, DaysBeforeJoinDateOffset = 0, DisplayOrder = 8 },
+                new() { Id = Guid.NewGuid(), TemplateId = itTemplate.Id, Category = OnboardingCategory.SEATING, Title = "Chuẩn bị bộ quà tặng Welcome Kit & Sổ tay văn hóa", Description = "Bình giữ nhiệt, sổ tay Novera, bút ký và áo phông đồng phục.", DefaultAssignedUserId = hrAssignee, DaysBeforeJoinDateOffset = 0, DisplayOrder = 9 },
+
+                // DOCUMENT
+                new() { Id = Guid.NewGuid(), TemplateId = itTemplate.Id, Category = OnboardingCategory.DOCUMENT, Title = "Ký Hợp đồng thử việc & Thỏa thuận bảo mật thông tin (NDA)", Description = "Ký số hoặc ký giấy hợp đồng và tài liệu cam kết bảo mật mã nguồn công ty.", DefaultAssignedUserId = hrAssignee, DaysBeforeJoinDateOffset = 0, DisplayOrder = 10 },
+                new() { Id = Guid.NewGuid(), TemplateId = itTemplate.Id, Category = OnboardingCategory.DOCUMENT, Title = "Thu nhận hồ sơ lý lịch, CCCD & bằng cấp công chứng", Description = "Kiểm tra và lưu trữ hồ sơ nhân sự theo đúng quy định pháp luật.", DefaultAssignedUserId = hrAssignee, DaysBeforeJoinDateOffset = 0, DisplayOrder = 11 },
+                new() { Id = Guid.NewGuid(), TemplateId = itTemplate.Id, Category = OnboardingCategory.DOCUMENT, Title = "Đăng ký mã số thuế cá nhân & tài khoản nhận lương", Description = "Thu thập số tài khoản Vietcombank/Techcombank để phòng kế toán chi trả lương.", DefaultAssignedUserId = hrAssignee, DaysBeforeJoinDateOffset = 0, DisplayOrder = 12 }
+            };
+
+            await context.OnboardingTemplates.AddAsync(itTemplate);
+        }
+
+        // 2. Mẫu Nhân sự / Hành chính
+        if (hrDept != null)
+        {
+            var hrTemplate = new OnboardingTemplate
+            {
+                Id = Guid.NewGuid(),
+                Name = "Checklist Onboarding Khối Nhân sự & Vận hành",
+                Description = "Mẫu chuẩn bị cho nhân sự phụ trách tuyển dụng, C&B, hành chính và vận hành doanh nghiệp.",
+                DepartmentId = hrDept.Id,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+
+            hrTemplate.Items = new List<OnboardingTemplateItem>
+            {
+                // ACCOUNT
+                new() { Id = Guid.NewGuid(), TemplateId = hrTemplate.Id, Category = OnboardingCategory.ACCOUNT, Title = "Cấp Email công ty & phân quyền hệ thống HRM", Description = "Cấp tài khoản email và quyền truy cập ATS/HRM.", DefaultAssignedUserId = itAssignee, DaysBeforeJoinDateOffset = 2, DisplayOrder = 1 },
+                new() { Id = Guid.NewGuid(), TemplateId = hrTemplate.Id, Category = OnboardingCategory.ACCOUNT, Title = "Cấp tài khoản phần mềm MISA Amis / Bảo hiểm xã hội", Description = "Phân quyền quản lý chấm công, tính lương và bảo hiểm.", DefaultAssignedUserId = itAssignee, DaysBeforeJoinDateOffset = 1, DisplayOrder = 2 },
+
+                // EQUIPMENT
+                new() { Id = Guid.NewGuid(), TemplateId = hrTemplate.Id, Category = OnboardingCategory.EQUIPMENT, Title = "Cấp phát Laptop văn phòng & chuột không dây", Description = "Laptop Lenovo ThinkPad / Dell Latitude phục vụ công việc hành chính.", DefaultAssignedUserId = itAssignee, DaysBeforeJoinDateOffset = 1, DisplayOrder = 3 },
+                new() { Id = Guid.NewGuid(), TemplateId = hrTemplate.Id, Category = OnboardingCategory.EQUIPMENT, Title = "Cấp điện thoại hotline hoặc SIM liên hệ ứng viên", Description = "Thiết bị liên lạc với ứng viên và đối tác tuyển dụng.", DefaultAssignedUserId = hrAssignee, DaysBeforeJoinDateOffset = 0, DisplayOrder = 4 },
+
+                // SEATING
+                new() { Id = Guid.NewGuid(), TemplateId = hrTemplate.Id, Category = OnboardingCategory.SEATING, Title = "Bố trí chỗ ngồi tại Khu vực Nhân sự (Tầng 3)", Description = "Chuẩn bị bàn ghế, tủ tài liệu có khóa cá nhân.", DefaultAssignedUserId = hrAssignee, DaysBeforeJoinDateOffset = 1, DisplayOrder = 5 },
+                new() { Id = Guid.NewGuid(), TemplateId = hrTemplate.Id, Category = OnboardingCategory.SEATING, Title = "Cấp thẻ nhân viên & thẻ gửi xe", Description = "Bàn giao thẻ chấm công ra vào tòa nhà.", DefaultAssignedUserId = hrAssignee, DaysBeforeJoinDateOffset = 0, DisplayOrder = 6 },
+
+                // DOCUMENT
+                new() { Id = Guid.NewGuid(), TemplateId = hrTemplate.Id, Category = OnboardingCategory.DOCUMENT, Title = "Ký Hợp đồng lao động & Phụ lục nhân sự", Description = "Hoàn tất thủ tục pháp lý nhân sự ngày đầu nhận việc.", DefaultAssignedUserId = hrAssignee, DaysBeforeJoinDateOffset = 0, DisplayOrder = 7 },
+                new() { Id = Guid.NewGuid(), TemplateId = hrTemplate.Id, Category = OnboardingCategory.DOCUMENT, Title = "Thu thập hồ sơ nhân sự & sổ BHXH", Description = "Lưu trữ hồ sơ cá nhân và kiểm tra thông tin quá trình đóng BHXH.", DefaultAssignedUserId = hrAssignee, DaysBeforeJoinDateOffset = 0, DisplayOrder = 8 }
+            };
+
+            await context.OnboardingTemplates.AddAsync(hrTemplate);
+        }
+
+        // 3. Mẫu Chuẩn Toàn Công Ty (Mặc định khi phòng ban khác chưa có mẫu riêng)
+        var defaultTemplate = new OnboardingTemplate
+        {
+            Id = Guid.NewGuid(),
+            Name = "Checklist Onboarding Chuẩn Toàn Công Ty (General)",
+            Description = "Mẫu chuẩn bị tiêu chuẩn áp dụng cho toàn bộ các phòng ban và nhân sự mới tiếp nhận việc.",
+            DepartmentId = null,
+            IsActive = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+
+        defaultTemplate.Items = new List<OnboardingTemplateItem>
+        {
+            // ACCOUNT
+            new() { Id = Guid.NewGuid(), TemplateId = defaultTemplate.Id, Category = OnboardingCategory.ACCOUNT, Title = "Cấp tài khoản Email công ty và Slack", Description = "Cung cấp địa chỉ email doanh nghiệp và tài khoản trao đổi nội bộ.", DefaultAssignedUserId = itAssignee, DaysBeforeJoinDateOffset = 2, DisplayOrder = 1 },
+            new() { Id = Guid.NewGuid(), TemplateId = defaultTemplate.Id, Category = OnboardingCategory.ACCOUNT, Title = "Cấp tài khoản cổng thông tin nội bộ (Portal)", Description = "Truy cập thông tin quy chế công ty, xin nghỉ phép, chấm công.", DefaultAssignedUserId = itAssignee, DaysBeforeJoinDateOffset = 1, DisplayOrder = 2 },
+
+            // EQUIPMENT
+            new() { Id = Guid.NewGuid(), TemplateId = defaultTemplate.Id, Category = OnboardingCategory.EQUIPMENT, Title = "Cấp phát máy tính làm việc và phụ kiện", Description = "Máy tính xách tay hoặc để bàn kèm phụ kiện văn phòng.", DefaultAssignedUserId = itAssignee, DaysBeforeJoinDateOffset = 1, DisplayOrder = 3 },
+
+            // SEATING
+            new() { Id = Guid.NewGuid(), TemplateId = defaultTemplate.Id, Category = OnboardingCategory.SEATING, Title = "Bố trí bàn làm việc và ghế ngồi", Description = "Đảm bảo vị trí ngồi sạch sẽ, đủ ánh sáng và tiện nghi.", DefaultAssignedUserId = hrAssignee, DaysBeforeJoinDateOffset = 1, DisplayOrder = 4 },
+            new() { Id = Guid.NewGuid(), TemplateId = defaultTemplate.Id, Category = OnboardingCategory.SEATING, Title = "Cấp thẻ từ ra vào & Welcome Kit", Description = "Thẻ mở cửa và bộ quà tặng chào đón thành viên mới.", DefaultAssignedUserId = hrAssignee, DaysBeforeJoinDateOffset = 0, DisplayOrder = 5 },
+
+            // DOCUMENT
+            new() { Id = Guid.NewGuid(), TemplateId = defaultTemplate.Id, Category = OnboardingCategory.DOCUMENT, Title = "Ký Hợp đồng lao động và cam kết bảo mật", Description = "Hoàn tất thủ tục pháp lý ngày đầu tiên tiếp nhận vị trí.", DefaultAssignedUserId = hrAssignee, DaysBeforeJoinDateOffset = 0, DisplayOrder = 6 },
+            new() { Id = Guid.NewGuid(), TemplateId = defaultTemplate.Id, Category = OnboardingCategory.DOCUMENT, Title = "Tiếp nhận hồ sơ nhân sự và mở tài khoản ngân hàng", Description = "Hoàn thiện hồ sơ lưu trữ và đăng ký tài khoản trả lương.", DefaultAssignedUserId = hrAssignee, DaysBeforeJoinDateOffset = 0, DisplayOrder = 7 }
+        };
+
+        await context.OnboardingTemplates.AddAsync(defaultTemplate);
+
+        await context.SaveChangesAsync();
     }
 }
 

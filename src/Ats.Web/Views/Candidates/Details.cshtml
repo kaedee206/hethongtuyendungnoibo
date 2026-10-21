@@ -408,6 +408,77 @@
                                                 </div>
                                             }
 
+                                            <!-- Checklist Onboarding (SP-7) -->
+                                            @if (app.IsEligibleForOnboarding)
+                                            {
+                                                @if (app.HasOnboardingChecklist)
+                                                {
+                                                    <div class="p-3 mb-3 rounded-2" style="background: #ECFDF5; border: 1px solid #A7F3D0;">
+                                                        <div class="d-flex justify-content-between align-items-center mb-1.5 flex-wrap gap-2">
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                <div class="p-1.5 rounded-2 text-white" style="background: #059669;">
+                                                                    <i class="bi bi-person-check-fill"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <div class="fw-bold text-dark font-outfit" style="font-size: 0.88rem;">
+                                                                        Checklist Onboarding Nhân Sự Mới
+                                                                    </div>
+                                                                    <small class="text-muted" style="font-size: 0.73rem;">4 nhóm: Tài khoản • Thiết bị • Chỗ ngồi • Hồ sơ</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                <span class="badge rounded-2 font-mono @(app.OnboardingProgressPercentage == 100 ? "bg-success text-white" : "bg-primary text-white")" style="font-size: 0.78rem;">
+                                                                    @(app.OnboardingProgressPercentage?.ToString("F0") ?? "0")% hoàn thành
+                                                                </span>
+                                                                <button type="button" 
+                                                                        class="btn btn-sm text-white rounded-2 px-2.5 py-1 fw-semibold d-inline-flex align-items-center gap-1 shadow-xs" 
+                                                                        style="font-size: 0.75rem; background: #059669;"
+                                                                        onclick="openViewOnboardingModal('@app.ApplicationId')">
+                                                                    <i class="bi bi-card-checklist"></i>
+                                                                    <span>Chi tiết checklist</span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Mini Progress Bar -->
+                                                        <div class="progress mt-2" style="height: 6px; background-color: #D1FAE5; border-radius: 4px;">
+                                                            <div class="progress-bar" 
+                                                                 role="progressbar" 
+                                                                 style="width: @(app.OnboardingProgressPercentage?.ToString("F0") ?? "0")%; background-color: #059669;" 
+                                                                 aria-valuenow="@(app.OnboardingProgressPercentage?.ToString("F0") ?? "0")" 
+                                                                 aria-valuemin="0" 
+                                                                 aria-valuemax="100">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    @if (User.IsInRole(Ats.Web.Constants.UserRoles.HRManager) || User.IsInRole(Ats.Web.Constants.UserRoles.Admin))
+                                                    {
+                                                        <div class="p-3 mb-3 rounded-2" style="background: #F0FDF4; border: 1px dashed #059669;">
+                                                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                                                <div>
+                                                                    <div class="fw-bold text-dark font-outfit" style="font-size: 0.88rem;">
+                                                                        <i class="bi bi-stars text-success me-1"></i>Sẵn sàng khởi tạo Checklist Onboarding
+                                                                    </div>
+                                                                    <small class="text-muted" style="font-size: 0.75rem;">
+                                                                        Ứng viên đã nhận việc thành công. Khởi tạo checklist từ mẫu phòng ban để chuẩn bị tài khoản, thiết bị, chỗ ngồi và hồ sơ ngay ngày đầu đi làm.
+                                                                    </small>
+                                                                </div>
+                                                                <button type="button" 
+                                                                        class="btn btn-sm text-white rounded-2 px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1 shadow-xs" 
+                                                                        style="font-size: 0.78rem; background: #059669;"
+                                                                        onclick="openInitOnboardingModal('@app.ApplicationId')">
+                                                                    <i class="bi bi-plus-circle"></i>
+                                                                    <span>Khởi Tạo Checklist Onboarding</span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                }
+                                            }
+
                                             <!-- Từ chối lý do -->
                                             @if (!string.IsNullOrWhiteSpace(app.RejectionNote))
                                             {
@@ -937,6 +1008,34 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Xem Chi Tiết Checklist Onboarding (SP-7) -->
+<div class="modal fade" id="onboardingDetailModal" tabindex="-1" aria-labelledby="onboardingDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header py-3 px-4 bg-white border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-1.5 rounded-2" style="background: #ECFDF5; color: #059669;">
+                        <i class="bi bi-card-checklist fs-5"></i>
+                    </div>
+                    <h5 class="modal-title fw-bold font-outfit mb-0" id="onboardingDetailModalLabel">
+                        Chi Tiết Checklist Onboarding Nhân Sự Mới
+                    </h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" style="background-color: #F8FAFC;" id="onboardingDetailModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-success" role="status"></div>
+                    <p class="text-muted mt-2 mb-0">Đang tải checklist onboarding...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Container Modal Khởi Tạo Checklist (Nạp AJAX) -->
+<div id="initOnboardingModalContainer"></div>
 
 @section Scripts {
 <script src="~/js/interview-conflict.js"></script>
@@ -1549,6 +1648,74 @@
         } finally {
             submitBtn.disabled = false;
             spinner.classList.add('d-none');
+        }
+    }
+
+    // ==========================================
+    // USER STORY SP-7: ONBOARDING CHECKLIST SCRIPTS
+    // ==========================================
+    async function openViewOnboardingModal(applicationId) {
+        const modalEl = document.getElementById('onboardingDetailModal');
+        const modalBody = document.getElementById('onboardingDetailModalBody');
+        modalBody.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-success" role="status"></div><p class="text-muted mt-2 mb-0">Đang tải checklist onboarding...</p></div>';
+
+        const bsModal = new bootstrap.Modal(modalEl);
+        bsModal.show();
+
+        try {
+            const response = await fetch('/ung-vien/onboarding/' + applicationId, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!response.ok) throw new Error('Không thể tải checklist onboarding');
+            const html = await response.text();
+            modalBody.innerHTML = html;
+
+            // Execute scripts inside loaded partial
+            const scripts = modalBody.querySelectorAll('script');
+            scripts.forEach(s => {
+                const newScript = document.createElement('script');
+                newScript.textContent = s.textContent;
+                document.body.appendChild(newScript);
+            });
+        } catch (err) {
+            modalBody.innerHTML = '<div class="alert alert-danger p-3 my-3">Lỗi: ' + err.message + '</div>';
+        }
+    }
+
+    async function openInitOnboardingModal(applicationId) {
+        const container = document.getElementById('initOnboardingModalContainer');
+        container.innerHTML = '';
+
+        try {
+            const response = await fetch('/ung-vien/onboarding/init-modal/' + applicationId, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.message || 'Không thể mở modal khởi tạo');
+            }
+            const html = await response.text();
+            container.innerHTML = html;
+
+            // Execute scripts inside loaded partial
+            const scripts = container.querySelectorAll('script');
+            scripts.forEach(s => {
+                const newScript = document.createElement('script');
+                newScript.textContent = s.textContent;
+                document.body.appendChild(newScript);
+            });
+
+            const modalEl = document.getElementById('initOnboardingModal');
+            if (modalEl) {
+                const bsModal = new bootstrap.Modal(modalEl);
+                bsModal.show();
+            }
+        } catch (err) {
+            if (window.NoveraToast) {
+                window.NoveraToast.error(err.message);
+            } else {
+                alert(err.message);
+            }
         }
     }
 </script>

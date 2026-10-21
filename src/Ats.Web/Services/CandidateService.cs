@@ -164,6 +164,7 @@ public class CandidateService(
             .Include(a => a.JobOffers.Where(o => !o.IsDeleted))
             .Include(a => a.StageHistories.Where(h => !h.IsDeleted))
                 .ThenInclude(h => h.ChangedByUser)
+            .Include(a => a.OnboardingChecklist)
             .Where(a => (!a.IsDeleted) && (a.CandidateId == candidateId || a.Candidate.Email.ToLower() == candidate.Email.ToLower()))
             .OrderByDescending(a => a.AppliedAt ?? a.CreatedAt)
             .ToListAsync(cancellationToken);
@@ -257,6 +258,12 @@ public class CandidateService(
                     ContractType = o.ContractType ?? string.Empty,
                     Status = o.Status.ToString()
                 }).FirstOrDefault(),
+
+                // Onboarding Checklist (SP-7)
+                HasOnboardingChecklist = app.OnboardingChecklist != null && !app.OnboardingChecklist.IsDeleted,
+                OnboardingChecklistId = app.OnboardingChecklist?.Id,
+                OnboardingProgressPercentage = app.OnboardingChecklist?.ProgressPercentage,
+                OnboardingStatus = app.OnboardingChecklist?.IsCompleted == true ? "COMPLETED" : "IN_PROGRESS",
 
                 // Stage History
                 StageHistories = app.StageHistories

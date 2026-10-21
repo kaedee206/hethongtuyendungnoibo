@@ -94,6 +94,7 @@ builder.Services.AddScoped<ICandidateExportService, CandidateExportService>();
 builder.Services.AddScoped<ICandidateEvaluationComparisonService, CandidateEvaluationComparisonService>();
 builder.Services.AddScoped<ICandidateInterviewService, CandidateInterviewService>();
 builder.Services.AddScoped<ICandidateMultiRoundEvaluationService, CandidateMultiRoundEvaluationService>();
+builder.Services.AddScoped<IOnboardingChecklistService, OnboardingChecklistService>();
 builder.Services.AddSingleton<IJobExpirationService, JobExpirationService>();
 builder.Services.AddHostedService<JobExpirationBackgroundService>();
 
@@ -730,6 +731,80 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE interview_evaluations ADD COLUMN IF NOT EXISTS reopened_at TIMESTAMPTZ;
             ALTER TABLE interview_evaluations ADD COLUMN IF NOT EXISTS reopened_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL;
             ALTER TABLE interview_evaluations ADD COLUMN IF NOT EXISTS reopen_reason TEXT;
+
+            -- SP-7: Khởi tạo checklist onboarding cho người đã nhận việc
+            CREATE TABLE IF NOT EXISTS onboarding_templates (
+                id UUID PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+            CREATE INDEX IF NOT EXISTS ix_onboarding_templates_dept_id ON onboarding_templates(department_id);
+
+            CREATE TABLE IF NOT EXISTS onboarding_template_items (
+                id UUID PRIMARY KEY,
+                template_id UUID NOT NULL REFERENCES onboarding_templates(id) ON DELETE CASCADE,
+                category INTEGER NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                default_assigned_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+                days_before_join_date_offset INTEGER NOT NULL DEFAULT 1,
+                display_order INTEGER NOT NULL DEFAULT 1,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+            CREATE INDEX IF NOT EXISTS ix_onboarding_template_items_tpl_id ON onboarding_template_items(template_id);
+
+            CREATE TABLE IF NOT EXISTS candidate_onboarding_checklists (
+                id UUID PRIMARY KEY,
+                application_id UUID NOT NULL UNIQUE REFERENCES applications(id) ON DELETE CASCADE,
+                candidate_id UUID NOT NULL REFERENCES candidates(id) ON DELETE RESTRICT,
+                department_id UUID NOT NULL REFERENCES departments(id) ON DELETE RESTRICT,
+                first_working_date DATE NOT NULL,
+                progress_percentage INTEGER NOT NULL DEFAULT 0,
+                is_completed BOOLEAN NOT NULL DEFAULT FALSE,
+                completed_at TIMESTAMPTZ,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+            CREATE INDEX IF NOT EXISTS ix_candidate_onboarding_checklists_app_id ON candidate_onboarding_checklists(application_id);
+            CREATE INDEX IF NOT EXISTS ix_candidate_onboarding_checklists_cand_id ON candidate_onboarding_checklists(candidate_id);
+
+            CREATE TABLE IF NOT EXISTS candidate_onboarding_checklist_items (
+                id UUID PRIMARY KEY,
+                checklist_id UUID NOT NULL REFERENCES candidate_onboarding_checklists(id) ON DELETE CASCADE,
+                category INTEGER NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                assigned_to_user_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+                due_date DATE NOT NULL,
+                is_completed BOOLEAN NOT NULL DEFAULT FALSE,
+                completed_at TIMESTAMPTZ,
+                completed_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+            CREATE INDEX IF NOT EXISTS ix_candidate_onboarding_checklist_items_chk_id ON candidate_onboarding_checklist_items(checklist_id);
+            CREATE INDEX IF NOT EXISTS ix_candidate_onboarding_checklist_items_assignee ON candidate_onboarding_checklist_items(assigned_to_user_id);
         ");
     }
     catch (Exception ex)

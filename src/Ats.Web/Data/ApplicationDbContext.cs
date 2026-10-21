@@ -62,6 +62,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<RequisitionHandoverHistory> RequisitionHandoverHistories { get; set; }
     public DbSet<SavedCandidateFilter> SavedCandidateFilters { get; set; }
 
+    // SP-7: Khởi tạo checklist Onboarding cho người đã nhận việc
+    public DbSet<OnboardingTemplate> OnboardingTemplates { get; set; }
+    public DbSet<OnboardingTemplateItem> OnboardingTemplateItems { get; set; }
+    public DbSet<CandidateOnboardingChecklist> CandidateOnboardingChecklists { get; set; }
+    public DbSet<CandidateOnboardingChecklistItem> CandidateOnboardingChecklistItems { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -534,6 +540,65 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Weight).HasPrecision(18, 4);
             entity.HasIndex(e => e.EvaluationFormId);
+        });
+
+        // SP-7: Cấu hình bảng Onboarding Templates & Items
+        modelBuilder.Entity<OnboardingTemplate>(entity =>
+        {
+            entity.HasOne(t => t.Department)
+                .WithMany()
+                .HasForeignKey(t => t.DepartmentId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasMany(t => t.Items)
+                .WithOne(i => i.Template)
+                .HasForeignKey(i => i.TemplateId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<OnboardingTemplateItem>(entity =>
+        {
+            entity.HasOne(i => i.DefaultAssignedUser)
+                .WithMany()
+                .HasForeignKey(i => i.DefaultAssignedUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // SP-7: Cấu hình bảng Candidate Onboarding Checklist & Items
+        modelBuilder.Entity<CandidateOnboardingChecklist>(entity =>
+        {
+            entity.HasOne(c => c.Application)
+                .WithOne(a => a.OnboardingChecklist)
+                .HasForeignKey<CandidateOnboardingChecklist>(c => c.ApplicationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(c => c.Candidate)
+                .WithMany()
+                .HasForeignKey(c => c.CandidateId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(c => c.Department)
+                .WithMany()
+                .HasForeignKey(c => c.DepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(c => c.Items)
+                .WithOne(i => i.Checklist)
+                .HasForeignKey(i => i.ChecklistId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CandidateOnboardingChecklistItem>(entity =>
+        {
+            entity.HasOne(i => i.AssignedToUser)
+                .WithMany()
+                .HasForeignKey(i => i.AssignedToUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(i => i.CompletedByUser)
+                .WithMany()
+                .HasForeignKey(i => i.CompletedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

@@ -10,6 +10,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Logging;
 
+using Ats.Web.Data;
+using Ats.Web.Models.ViewModels.Onboarding;
+using Microsoft.EntityFrameworkCore;
+
 namespace Ats.Web.Controllers;
 
 /// <summary>
@@ -26,6 +30,8 @@ public class CandidatesController(
     IJobPostingService jobPostingService,
     ISecurityAuditService securityAuditService,
     ICandidateMultiRoundEvaluationService multiRoundEvaluationService,
+    IOnboardingChecklistService onboardingChecklistService,
+    ApplicationDbContext dbContext,
     ILogger<CandidatesController> logger) : Controller
 {
     private readonly ICandidateStageService _candidateStageService = candidateStageService;
@@ -33,6 +39,8 @@ public class CandidatesController(
     private readonly IJobPostingService _jobPostingService = jobPostingService;
     private readonly ISecurityAuditService _securityAuditService = securityAuditService;
     private readonly ICandidateMultiRoundEvaluationService _multiRoundEvaluationService = multiRoundEvaluationService;
+    private readonly IOnboardingChecklistService _onboardingChecklistService = onboardingChecklistService;
+    private readonly ApplicationDbContext _dbContext = dbContext;
     private readonly ILogger<CandidatesController> _logger = logger;
 
     private Guid GetCurrentUserId()
@@ -1028,6 +1036,241 @@ public class CandidatesController(
 
         ViewBag.JobPostings = items;
         ViewBag.SelectedJob = publishedJobs.FirstOrDefault(j => j.Id == selectedJobId);
+    }
+
+    // ==========================================
+    // USER STORY SP-7: ONBOARDING CHECKLIST
+    // ==========================================
+
+    /// <summary>
+    /// GET: /ung-vien/onboarding/{applicationId}
+    /// Lấy chi tiết checklist onboarding của hồ sơ ứng viên (trả về PartialView cho AJAX hoặc View độc lập).
+    /// </summary>
+    [HttpGet("onboarding/{applicationId:guid}")]
+    public async Task<IActionResult> GetOnboardingChecklist(Guid applicationId, CancellationToken cancellationToken)
+    {
+        var currentUserId = GetCurrentUserId();
+        var currentUserRole = GetCurrentUserRole();
+
+        var checklist = await _onboardingChecklistService.GetChecklistByApplicationIdAsync(applicationId, currentUserId, currentUserRole, cancellationToken);
+        if (checklist == null)
+        {
+            return NotFound(new { success = false, message = "Chưa có checklist onboarding cho hồ sơ này." });
+        }
+
+        var isAjax = Request.Headers.XRequestedWith == "XMLHttpRequest";
+        if (isAjax)
+        {
+            return PartialView("_OnboardingChecklistPartial", checklist);
+        }
+
+        return View("Onboarding", checklist);
+    }
+
+    /// <summary>
+    /// GET: /ung-vien/onboarding/init-modal/{applicationId}
+    /// Chuẩn bị dữ liệu hiển thị modal khởi tạo checklist (chỉ dành cho HR Manager).
+    /// </summary>
+    [HttpGet("onboarding/init-modal/{applicationId:guid}")]
+    [Authorize(Roles = UserRoles.HRManager)]
+    public async Task<IActionResult> GetInitializeChecklistModal(Guid applicationId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var application = await _dbContext.Applications
+                .Include(a => a.Candidate)
+                .Include(a => a.JobPosting)
+                    .ThenInclude(jp => jp.Requisition)
+                        .ThenInclude(r => r.Department)
+                .Include(a => a.JobOffers.Where(o => !o.IsDeleted))
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.Id == applicationId && !a.IsDeleted, cancellationToken);
+
+            if (application == null)
+            {
+                return NotFound(new { success = false, message = "Không tìm thấy hồ sơ ứng tuyển." });
+            }
+
+            var deptId = application.JobPosting?.Requisition?.DepartmentId ?? Guid.Empty;
+            var deptName = application.JobPosting?.Requisition?.Department?.Name ?? "NoveraTech";
+
+            var latestOffer = application.JobOffers.OrderByDescending(o => o.CreatedAt).FirstOrDefault();
+            var firstWorkingDate = latestOffer?.ProposedJoinDate ?? DateOnly.FromDateTime(DateTime.UtcNow.AddDays(7));
+
+            var template = await _onboardingChecklistService.GetTemplateForDepartmentAsync(deptId, firstWorkingDate, cancellationToken);
+
+            var availableUsers = await _dbContext.Users
+                .Where(u => u.Status == "ACTIVE")
+                .OrderBy(u => u.FullName)
+                .Select(u => new UserLookupDto
+                {
+                    UserId = u.Id,
+                    FullName = u.FullName,
+                    Email = u.Email,
+                    RoleName = u.Role ?? "Nhân viên"
+                })
+                .ToListAsync(cancellationToken);
+
+            var candidateFullName = $"{application.Candidate.LastName} {application.Candidate.FirstName}".Trim();
+            if (string.IsNullOrWhiteSpace(candidateFullName))
+            {
+                candidateFullName = application.Candidate.Email;
+            }
+
+            var modalVm = new PrepareCreateOnboardingChecklistModalViewModel
+            {
+                ApplicationId = application.Id,
+                CandidateId = application.CandidateId,
+                CandidateName = candidateFullName,
+                CandidateEmail = application.Candidate.Email,
+                JobTitle = application.JobPosting?.Title ?? "Vị trí tuyển dụng",
+                DepartmentId = deptId,
+                DepartmentName = deptName,
+                FirstWorkingDate = firstWorkingDate,
+                Template = template,
+                AvailableUsers = availableUsers
+            };
+
+            return PartialView("_CreateOnboardingChecklistModalPartial", modalVm);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi nạp dữ liệu modal khởi tạo onboarding cho hồ sơ {AppId}", applicationId);
+            return StatusCode(500, new { success = false, message = "Không thể tải dữ liệu modal khởi tạo checklist: " + ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// GET: /ung-vien/onboarding/template/{departmentId}
+    /// Lấy chi tiết mẫu onboarding theo phòng ban gồm các hạng mục theo 4 nhóm.
+    /// </summary>
+    [HttpGet("onboarding/template/{departmentId:guid}")]
+    public async Task<IActionResult> GetOnboardingTemplateDetail(Guid departmentId, [FromQuery] DateOnly? firstWorkingDate, CancellationToken cancellationToken)
+    {
+        var template = await _onboardingChecklistService.GetTemplateForDepartmentAsync(departmentId, firstWorkingDate, cancellationToken);
+        return Json(template);
+    }
+
+    /// <summary>
+    /// POST: /ung-vien/onboarding/khoi-tao
+    /// Khởi tạo checklist onboarding cho ứng viên đã nhận việc (Chỉ HR Manager).
+    /// </summary>
+    [HttpPost("onboarding/khoi-tao")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = UserRoles.HRManager)]
+    public async Task<IActionResult> InitializeChecklist(
+        [FromForm] CreateOnboardingChecklistInputModel model, 
+        [FromForm] Guid candidateId, 
+        CancellationToken cancellationToken)
+    {
+        var isAjax = Request.Headers.XRequestedWith == "XMLHttpRequest";
+        var currentUserId = GetCurrentUserId();
+        var currentUserRole = GetCurrentUserRole();
+
+        if (!ModelState.IsValid)
+        {
+            var errorMsg = string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+            if (isAjax)
+            {
+                return Json(new { success = false, message = errorMsg });
+            }
+            TempData["ErrorMessage"] = errorMsg;
+            return RedirectToAction(nameof(Details), new { id = candidateId });
+        }
+
+        try
+        {
+            var checklistDto = await _onboardingChecklistService.InitializeChecklistAsync(model, currentUserId, currentUserRole, cancellationToken);
+            var successMsg = $"Khởi tạo checklist onboarding thành công với {checklistDto.TotalCount} hạng mục bàn giao!";
+
+            if (isAjax)
+            {
+                return Json(new
+                {
+                    success = true,
+                    message = successMsg,
+                    data = checklistDto
+                });
+            }
+
+            TempData["SuccessMessage"] = successMsg;
+            return RedirectToAction(nameof(Details), new { id = candidateId });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Từ chối phân quyền khởi tạo checklist cho User {UserId}", currentUserId);
+            if (isAjax) return Json(new { success = false, message = ex.Message });
+            TempData["ErrorMessage"] = ex.Message;
+            return RedirectToAction(nameof(Details), new { id = candidateId });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Lỗi nghiệp vụ khi khởi tạo checklist cho hồ sơ {AppId}: {Msg}", model.ApplicationId, ex.Message);
+            if (isAjax) return Json(new { success = false, message = ex.Message });
+            TempData["ErrorMessage"] = ex.Message;
+            return RedirectToAction(nameof(Details), new { id = candidateId });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi không xác định khi khởi tạo checklist cho hồ sơ {AppId}", model.ApplicationId);
+            var err = "Có lỗi xảy ra trong quá trình khởi tạo checklist onboarding. Vui lòng liên hệ quản trị viên.";
+            if (isAjax) return Json(new { success = false, message = err });
+            TempData["ErrorMessage"] = err;
+            return RedirectToAction(nameof(Details), new { id = candidateId });
+        }
+    }
+
+    /// <summary>
+    /// POST: /ung-vien/onboarding/cap-nhat-muc
+    /// Đánh dấu hoàn thành / chưa hoàn thành từng mục checklist.
+    /// Quyền hạn: HR Manager hoặc Người phụ trách trực tiếp mục đó.
+    /// </summary>
+    [HttpPost("onboarding/cap-nhat-muc")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleChecklistItem([FromBody] ToggleOnboardingItemInputModel input, CancellationToken cancellationToken)
+    {
+        var currentUserId = GetCurrentUserId();
+        var currentUserRole = GetCurrentUserRole();
+
+        if (input == null || input.ItemId == Guid.Empty)
+        {
+            return Json(new { success = false, message = "Tham số cập nhật không hợp lệ." });
+        }
+
+        try
+        {
+            var checklist = await _onboardingChecklistService.ToggleChecklistItemAsync(input, currentUserId, currentUserRole, cancellationToken);
+            return Json(new
+            {
+                success = true,
+                message = "Cập nhật mục thành công.",
+                data = new
+                {
+                    checklistId = checklist.Id,
+                    progressPercentage = checklist.ProgressPercentage,
+                    completedItemsCount = checklist.CompletedCount,
+                    totalItemsCount = checklist.TotalCount,
+                    isAllCompleted = checklist.IsCompleted,
+                    statusBadgeClass = checklist.StatusBadgeClass,
+                    statusDisplayName = checklist.StatusDisplayName
+                }
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Từ chối quyền cập nhật mục checklist {ItemId} cho user {UserId}", input.ItemId, currentUserId);
+            return Json(new { success = false, message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Lỗi nghiệp vụ khi cập nhật mục checklist {ItemId}: {Msg}", input.ItemId, ex.Message);
+            return Json(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi hệ thống khi cập nhật mục checklist {ItemId}", input.ItemId);
+            return Json(new { success = false, message = "Có lỗi xảy ra khi cập nhật mục checklist." });
+        }
     }
 }
 

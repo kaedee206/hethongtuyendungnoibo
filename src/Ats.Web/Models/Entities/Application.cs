@@ -63,4 +63,5 @@ public class Application : BaseEntity
     public ICollection<Interview> Interviews { get; set; } = new List<Interview>();
     public ICollection<JobOffer> JobOffers { get; set; } = new List<JobOffer>();
     public ICollection<CandidateInteraction> Interactions { get; set; } = new List<CandidateInteraction>();
+    public CandidateOnboardingChecklist? OnboardingChecklist { get; set; }
 }

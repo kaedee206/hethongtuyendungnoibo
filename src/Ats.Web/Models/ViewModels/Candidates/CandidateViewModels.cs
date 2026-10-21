@@ -143,6 +143,17 @@ public class CandidateApplicationHistoryViewModel
     // Chi tiết Offer nếu có
     public CandidateOfferHistoryItemViewModel? Offer { get; set; }
 
+    // Onboarding Checklist (SP-7)
+    public bool HasOnboardingChecklist { get; set; }
+    public Guid? OnboardingChecklistId { get; set; }
+    public decimal? OnboardingProgressPercentage { get; set; }
+    public string? OnboardingStatus { get; set; }
+    public bool IsEligibleForOnboarding => 
+        Status == "HIRED" || 
+        Status == "ONBOARDED" || 
+        CurrentStageName.Contains("Tuyển dụng thành công", StringComparison.OrdinalIgnoreCase) || 
+        CurrentStageName.Contains("Đã onboard", StringComparison.OrdinalIgnoreCase);
+
     // Lịch sử chuyển bước (Audit Trail)
     public List<CandidateStageHistoryItemViewModel> StageHistories { get; set; } = [];
 }
