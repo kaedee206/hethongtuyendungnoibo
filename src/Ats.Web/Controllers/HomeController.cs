@@ -624,7 +624,11 @@ public class HomeController : Controller
                     CurrentLevel = currentLevel,
                     CurrentLevelDisplay = currentLevelDisplay,
                     CanCurrentUserApprove = canApprove,
-                    RecruiterNotes = o.Notes
+                    RecruiterNotes = o.Notes,
+                    ExpirationDateDisplay = o.ExpirationDate?.ToString("dd/MM/yyyy"),
+                    IsExpired = o.IsExpired(),
+                    CandidateFeedback = o.CandidateFeedback,
+                    CandidateRespondedAt = o.CandidateRespondedAt
                 };
             }).ToList();
 

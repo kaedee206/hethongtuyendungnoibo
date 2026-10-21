@@ -38,6 +38,7 @@ public class WorkspaceController : Controller
     private readonly ICandidateInterviewService? _candidateInterviewService;
     private readonly IOfferService? _offerService;
     private readonly IOfferApprovalService? _offerApprovalService;
+    private readonly ICandidateOfferService? _candidateOfferService;
 
     [ActivatorUtilitiesConstructor]
     public WorkspaceController(
@@ -57,7 +58,8 @@ public class WorkspaceController : Controller
         IInterviewService? interviewService = null,
         ICandidateInterviewService? candidateInterviewService = null,
         IOfferService? offerService = null,
-        IOfferApprovalService? offerApprovalService = null)
+        IOfferApprovalService? offerApprovalService = null,
+        ICandidateOfferService? candidateOfferService = null)
     {
         _dbContext = dbContext;
         _env = env;
@@ -76,6 +78,7 @@ public class WorkspaceController : Controller
         _candidateInterviewService = candidateInterviewService;
         _offerService = offerService;
         _offerApprovalService = offerApprovalService;
+        _candidateOfferService = candidateOfferService;
     }
 
     public WorkspaceController(
@@ -83,7 +86,7 @@ public class WorkspaceController : Controller
         IWebHostEnvironment env,
         IEmailService emailService,
         ILogger<WorkspaceController> logger)
-        : this(dbContext, env, emailService, null!, null!, null!, logger, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!)
+        : this(dbContext, env, emailService, null!, null!, null!, logger, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!)
     {
     }
 
@@ -774,6 +777,67 @@ public class WorkspaceController : Controller
             _logger.LogError(ex, "Lỗi khi phê duyệt Offer");
             return Json(new { success = false, message = "Lỗi khi duyệt Offer: " + ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Gửi Thư mời nhận việc (Offer Letter) cho Ứng viên qua email kèm liên kết phản hồi bảo mật (SCRUM-342).
+    /// </summary>
+    [HttpPost("SendOfferToCandidate")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin}")]
+    public async Task<IActionResult> SendOfferToCandidate(
+        [FromForm] SendOfferToCandidateInputModel input,
+        CancellationToken cancellationToken = default)
+    {
+        if (input == null || input.OfferId == Guid.Empty)
+        {
+            return Json(new { success = false, message = "Thiếu thông tin đề xuất Offer cần gửi." });
+        }
+
+        if (_candidateOfferService == null)
+        {
+            return Json(new { success = false, message = "Dịch vụ xử lý thư mời chưa được cấu hình." });
+        }
+
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+        var (success, message, responseUrl) = await _candidateOfferService.SendOfferToCandidateAsync(
+            input.OfferId,
+            currentUserId,
+            input.CustomMessage,
+            baseUrl,
+            cancellationToken);
+
+        return Json(new
+        {
+            success,
+            message,
+            responseUrl
+        });
+    }
+
+    /// <summary>
+    /// Quét và tự động chuyển các Offer quá hạn phản hồi sang Hết hạn (EXPIRED) (SCRUM-342).
+    /// </summary>
+    [HttpPost("CheckExpiredOffers")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin}")]
+    public async Task<IActionResult> CheckExpiredOffers(CancellationToken cancellationToken = default)
+    {
+        if (_candidateOfferService == null)
+        {
+            return Json(new { success = false, message = "Dịch vụ xử lý thư mời chưa được cấu hình." });
+        }
+
+        var expiredCount = await _candidateOfferService.CheckAndExpireOverdueOffersAsync(cancellationToken);
+        return Json(new
+        {
+            success = true,
+            message = $"Đã quét và cập nhật {expiredCount} đề xuất Offer quá thời hạn phản hồi sang trạng thái Hết hạn.",
+            expiredCount
+        });
     }
 
     /// <summary>

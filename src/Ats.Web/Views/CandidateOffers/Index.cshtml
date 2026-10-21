@@ -1,0 +1,532 @@
+@model Ats.Web.Models.ViewModels.Offers.CandidateOfferDetailsViewModel
+@{
+    ViewData["Title"] = $"Thư mời nhận việc — {Model.JobTitle} | NoveraTech";
+    Layout = "_Layout";
+    var preSelectAccept = ViewBag.PreSelectAccept as bool? == true;
+    var preSelectDecline = ViewBag.PreSelectDecline as bool? == true;
+    var isStaffPreview = ViewBag.IsStaffPreview as bool? == true;
+}
+
+<div class="container py-4 py-md-5" style="max-width: 900px;">
+    @if (isStaffPreview)
+    {
+        <div class="alert alert-info border-0 shadow-sm d-flex align-items-center gap-2 mb-4" style="border-radius: 12px; background: #EFF6FF; border-left: 4px solid #3B82F6 !important;">
+            <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+            <div>
+                <strong>Chế độ xem trước nội bộ:</strong> Bạn đang đăng nhập bằng tài khoản nhân sự (<code>@ViewBag.StaffEmail</code>). Đây là giao diện ứng viên <strong>@Model.CandidateName</strong> sẽ nhìn thấy để phản hồi thư mời nhận việc.
+            </div>
+        </div>
+    }
+
+    <!-- Header & Brand Banner -->
+    <div class="card border-0 shadow-sm overflow-hidden mb-4" style="border-radius: 20px; background: linear-gradient(135deg, #059669 0%, #047857 100%);">
+        <div class="card-body p-4 p-md-5 text-white position-relative">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                    <span class="badge px-3 py-1.5 fw-semibold mb-2" style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(8px); font-size: 0.8rem; letter-spacing: 0.5px;">
+                        <i class="bi bi-stars me-1 text-warning"></i>THƯ MỜI NHẬN VIỆC CHÍNH THỨC (JOB OFFER)
+                    </span>
+                    <h1 class="h2 fw-bold mb-1 text-white" style="letter-spacing: -0.02em;">Chào mừng bạn gia nhập NoveraTech!</h1>
+                    <p class="mb-0 text-light opacity-90" style="font-size: 0.95rem;">
+                        Vị trí bổ nhiệm: <strong>@Model.JobTitle</strong> — @Model.DepartmentName
+                    </p>
+                </div>
+                <div class="text-md-end bg-white bg-opacity-10 p-3 rounded-4" style="backdrop-filter: blur(10px); min-width: 200px;">
+                    <div class="small text-light opacity-80 text-uppercase fw-semibold" style="font-size: 0.72rem;">Kính gửi ứng viên</div>
+                    <div class="h5 fw-bold mb-0 text-white">@Model.CandidateName</div>
+                    <div class="small text-light opacity-75">@Model.CandidateEmail</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert / Toast Message from Redirect -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm d-flex align-items-center gap-2 mb-4" style="border-radius: 14px; background: #ECFDF5; color: #065F46;">
+            <i class="bi bi-check-circle-fill text-success fs-5"></i>
+            <div>@TempData["SuccessMessage"]</div>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm d-flex align-items-center gap-2 mb-4" style="border-radius: 14px; background: #FEF2F2; color: #991B1B;">
+            <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+            <div>@TempData["ErrorMessage"]</div>
+        </div>
+    }
+
+    <!-- Status & Expiration Countdown Banner -->
+    <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 18px; background: #FFFFFF; border: 1px solid #E2E8F0;">
+        <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+            <div>
+                <span class="text-uppercase text-muted fw-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Trạng thái thư mời</span>
+                <div class="d-flex align-items-center gap-2 mt-1">
+                    @if (Model.Status == Ats.Web.Models.Enums.OfferStatus.ACCEPTED)
+                    {
+                        <span class="badge px-3 py-1.5 fw-bold bg-success text-white" style="font-size: 0.9rem; border-radius: 8px;">
+                            <i class="bi bi-check-circle-fill me-1.5"></i>Đã chấp nhận nhận việc
+                        </span>
+                    }
+                    else if (Model.Status == Ats.Web.Models.Enums.OfferStatus.REJECTED)
+                    {
+                        <span class="badge px-3 py-1.5 fw-bold bg-secondary text-white" style="font-size: 0.9rem; border-radius: 8px;">
+                            <i class="bi bi-x-circle-fill me-1.5"></i>Đã từ chối nhận việc
+                        </span>
+                    }
+                    else if (Model.IsExpired)
+                    {
+                        <span class="badge px-3 py-1.5 fw-bold bg-danger text-white" style="font-size: 0.9rem; border-radius: 8px;">
+                            <i class="bi bi-clock-history me-1.5"></i>Đã hết hạn phản hồi
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge px-3 py-1.5 fw-bold" style="background: #E0E7FF; color: #4338CA; font-size: 0.9rem; border-radius: 8px;">
+                            <i class="bi bi-hourglass-split me-1.5"></i>Đang chờ phản hồi từ bạn
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <!-- Thời hạn hiệu lực & đếm ngược -->
+            <div class="text-md-end">
+                <span class="text-uppercase text-muted fw-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Thời hạn hiệu lực</span>
+                <div class="d-flex align-items-center gap-2 mt-1">
+                    <span class="fw-bold @(Model.IsExpired ? "text-danger" : "text-dark")" style="font-size: 0.95rem;">
+                        <i class="bi bi-calendar-check me-1 text-muted"></i>Hết ngày @Model.ExpirationDateFormatted
+                    </span>
+                    @if (!Model.HasResponded && !Model.IsExpired)
+                    {
+                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1 fw-bold" style="border-radius: 6px; font-size: 0.78rem;">
+                            <i class="bi bi-alarm me-1"></i>@Model.RemainingTimeDisplay
+                        </span>
+                    }
+                </div>
+                <div class="text-muted small mt-0.5" style="font-size: 0.78rem;">
+                    (Quá thời hạn mà không phản hồi thì offer tự chuyển sang Hết hạn)
+                </div>
+            </div>
+        </div>
+
+        @if (Model.HasResponded)
+        {
+            <div class="mt-3 p-3.5" style="background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 12px; font-size: 0.9rem;">
+                <div class="fw-semibold text-secondary mb-1 d-flex align-items-center gap-1.5">
+                    <i class="bi bi-chat-square-quote-fill @(Model.IsAccepted ? "text-success" : "text-secondary")"></i>
+                    <span>Ý kiến phản hồi bạn đã gửi vào lúc <strong>@Model.CandidateRespondedAtFormatted</strong>:</span>
+                </div>
+                <div class="text-dark fst-italic ps-3 border-start border-3 @(Model.IsAccepted ? "border-success" : "border-secondary")">
+                    @(string.IsNullOrWhiteSpace(Model.CandidateFeedback) ? "Không có ý kiến bổ sung." : Model.CandidateFeedback)
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Job Offer Details Card -->
+    <div class="card border-0 shadow-sm p-4 p-md-4 mb-4" style="border-radius: 18px; background: #FFFFFF; border: 1px solid #E2E8F0;">
+        <h2 class="h5 fw-bold text-dark mb-4 pb-2 d-flex align-items-center gap-2" style="border-bottom: 1px solid #F1F5F9;">
+            <i class="bi bi-file-earmark-text-fill text-success"></i>
+            Điều khoản thư mời nhận việc chính thức
+        </h2>
+
+        <!-- Key Salary & Compensation Highlights -->
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-4">
+                <div class="p-3.5 h-100" style="background: #F0FDF4; border: 1.5px solid #BBF7D0; border-radius: 14px;">
+                    <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Mức lương cơ bản (Gross)</div>
+                    <div class="h4 fw-bolder mt-1.5 mb-0" style="color: #059669; font-family: 'JetBrains Mono', monospace;">
+                        @Model.BaseSalary.ToString("N0") <span style="font-size: 0.85rem; font-weight: 600;">VNĐ/tháng</span>
+                    </div>
+                    <div class="text-muted small mt-1" style="font-size: 0.78rem;">Được xem xét điều chỉnh định kỳ hàng năm</div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <div class="p-3.5 h-100" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 14px;">
+                    <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Phụ cấp & Thưởng dự án</div>
+                    <div class="h4 fw-bold mt-1.5 mb-0 text-dark" style="font-family: 'JetBrains Mono', monospace;">
+                        @Model.BonusAllowance.ToString("N0") <span style="font-size: 0.85rem; font-weight: 600;">VNĐ/tháng</span>
+                    </div>
+                    <div class="text-muted small mt-1" style="font-size: 0.78rem;">Cơm trưa, điện thoại & hỗ trợ thiết bị</div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <div class="p-3.5 h-100" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 14px;">
+                    <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Tổng gói thu nhập (Gross)</div>
+                    <div class="h4 fw-bold mt-1.5 mb-0 text-primary" style="font-family: 'JetBrains Mono', monospace;">
+                        @Model.TotalPackage.ToString("N0") <span style="font-size: 0.85rem; font-weight: 600;">VNĐ/tháng</span>
+                    </div>
+                    <div class="text-muted small mt-1" style="font-size: 0.78rem;">Chưa bao gồm thưởng KPI và tháng 13+</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Working Arrangement & Details Grid -->
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-6">
+                <div class="p-3 h-100" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px;">
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Chức danh bổ nhiệm</div>
+                    <div class="h6 fw-bold text-dark mt-1 mb-0">@Model.JobTitle</div>
+                    <div class="text-muted small mt-0.5">Khối: @Model.DepartmentName</div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <div class="p-3 h-100" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px;">
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Ngày bắt đầu làm việc dự kiến</div>
+                    <div class="h6 fw-bold text-success mt-1 mb-0">
+                        <i class="bi bi-calendar-event me-1"></i>@(Model.ProposedJoinDateFormatted ?? "Theo thỏa thuận tiếp nhận")
+                    </div>
+                    <div class="text-muted small mt-0.5">Thời gian thử việc: <strong>@Model.ProbationPeriodMonths tháng</strong> (Hưởng 85% lương chính thức)</div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <div class="p-3 h-100" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px;">
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Địa điểm làm việc</div>
+                    <div class="fw-bold text-dark mt-1">
+                        <i class="bi bi-geo-alt-fill text-danger me-1"></i>@Model.WorkLocation
+                    </div>
+                    <div class="text-muted small mt-0.5">Chế độ Hybrid linh hoạt 2 ngày WFH/tuần</div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <div class="p-3 h-100" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px;">
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Loại hợp đồng lao động</div>
+                    <div class="fw-bold text-dark mt-1">
+                        <i class="bi bi-briefcase-fill text-primary me-1"></i>@Model.ContractType
+                    </div>
+                    <div class="text-muted small mt-0.5">Ký hợp đồng chính thức ngay sau khi kết thúc thử việc</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Corporate Benefits & Perks Package -->
+        <div class="p-3.5 mb-3" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 14px;">
+            <div class="fw-bold text-dark mb-2 d-flex align-items-center gap-2" style="font-size: 0.92rem;">
+                <i class="bi bi-gift-fill text-warning"></i>
+                <span>Chế độ phúc lợi & Đãi ngộ đặc quyền tại NoveraTech</span>
+            </div>
+            <div class="row g-2 text-secondary" style="font-size: 0.88rem;">
+                <div class="col-12 col-md-6 d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span>Bảo hiểm xã hội, BHYT, BHTN đóng 100% trên lương thực nhận.</span>
+                </div>
+                <div class="col-12 col-md-6 d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span>Bảo hiểm chăm sóc sức khỏe toàn diện NoveraCare VIP (Bảo Việt / PJICO).</span>
+                </div>
+                <div class="col-12 col-md-6 d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span>Lương tháng 13 đảm bảo + Thưởng hiệu quả kinh doanh & dự án hàng quý.</span>
+                </div>
+                <div class="col-12 col-md-6 d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span>14 ngày phép năm + 1 ngày phép sinh nhật có lương.</span>
+                </div>
+                <div class="col-12 col-md-6 d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span>Trang bị máy tính làm việc cao cấp (MacBook Pro / Dell XPS tùy chọn).</span>
+                </div>
+                <div class="col-12 col-md-6 d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span>Ngân sách đào tạo, chứng chỉ quốc tế và hoạt động Teambuilding hàng năm.</span>
+                </div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Notes))
+        {
+            <div class="p-3 mb-2" style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 12px; font-size: 0.88rem;">
+                <div class="fw-bold text-warning-emphasis mb-1">
+                    <i class="bi bi-chat-left-dots-fill me-1"></i>Ghi chú từ Bộ phận Tuyển dụng:
+                </div>
+                <div class="text-dark">@Model.Notes</div>
+            </div>
+        }
+    </div>
+
+    <!-- Official Candidate Response Action Section (SCRUM-342 Core Feature) -->
+    @if (Model.CanRespond)
+    {
+        <div class="card border-0 shadow-sm p-4 p-md-5 mb-4" id="responseCard" style="border-radius: 18px; background: #FFFFFF; border: 2px solid #059669;">
+            <div class="text-center mb-4">
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1.5 fw-bold" style="font-size: 0.82rem;">
+                    <i class="bi bi-reply-fill me-1"></i>PHẢN HỒI THƯ MỜI CHÍNH THỨC
+                </span>
+                <h3 class="h4 fw-bold text-dark mt-2 mb-1">Quyết định của bạn cho vị trí này</h3>
+                <p class="text-muted small mb-0">
+                    Vui lòng chọn <strong>Chấp nhận</strong> hoặc <strong>Từ chối</strong> và ghi ý kiến phản hồi để gửi câu trả lời chính thức thay vì trao đổi miệng.
+                </p>
+            </div>
+
+            <form id="offerResponseForm" asp-controller="CandidateOffers" asp-action="Respond" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Token" value="@Model.Token" />
+                <input type="hidden" id="selectedDecision" name="Decision" value="" />
+
+                <!-- Action Selection Buttons (Radio-like cards) -->
+                <div class="row g-3 mb-4 justify-content-center">
+                    <div class="col-12 col-md-6">
+                        <div class="decision-card p-4 text-center cursor-pointer h-100 transition-all" id="cardAccept" onclick="selectDecision('ACCEPT')" style="border: 2px solid #E2E8F0; border-radius: 16px; background: #FFFFFF; cursor: pointer;">
+                            <div class="icon-wrapper mb-2 d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 56px; height: 56px; background: #ECFDF5; color: #059669;">
+                                <i class="bi bi-check-circle-fill fs-3"></i>
+                            </div>
+                            <h4 class="h5 fw-bold text-dark mb-1">Đồng ý nhận việc (Accept)</h4>
+                            <p class="text-muted small mb-0">Tôi đồng ý với các điều khoản trong thư mời và sẵn sàng gia nhập NoveraTech.</p>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <div class="decision-card p-4 text-center cursor-pointer h-100 transition-all" id="cardDecline" onclick="selectDecision('DECLINE')" style="border: 2px solid #E2E8F0; border-radius: 16px; background: #FFFFFF; cursor: pointer;">
+                            <div class="icon-wrapper mb-2 d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 56px; height: 56px; background: #FEF2F2; color: #DC2626;">
+                                <i class="bi bi-x-circle-fill fs-3"></i>
+                            </div>
+                            <h4 class="h5 fw-bold text-dark mb-1">Từ chối đề nghị (Decline)</h4>
+                            <p class="text-muted small mb-0">Tôi rất tiếc chưa thể nhận việc tại thời điểm này và xin từ chối cơ hội.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ô ghi ý kiến phản hồi (Feedback Textarea) -->
+                <div class="mb-4" id="feedbackContainer" style="display: none;">
+                    <label class="form-label fw-bold text-dark d-flex align-items-center justify-content-between" for="candidateFeedback">
+                        <span id="feedbackLabelTitle"><i class="bi bi-pencil-square me-1 text-success"></i>Ý kiến / Phản hồi của bạn</span>
+                        <span class="text-muted fw-normal small">(Tùy chọn)</span>
+                    </label>
+                    <textarea class="form-control p-3" id="candidateFeedback" name="Feedback" rows="4" maxlength="2000" placeholder="Ghi ý kiến, nguyện vọng về ngày bắt đầu hoặc lời cảm ơn tới hội đồng tuyển dụng..." style="border-radius: 12px; font-size: 0.92rem; border-color: #CBD5E1;"></textarea>
+                    <div class="form-text text-muted small mt-1" id="feedbackHelpText">
+                        Phản hồi của bạn sẽ cập nhật ngay lập tức trạng thái hồ sơ trên hệ thống tuyển dụng NoveraTech.
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="text-center" id="submitActionContainer" style="display: none;">
+                    <button type="button" id="btnOpenConfirmModal" class="btn btn-lg fw-bold px-5 py-3 shadow d-inline-flex align-items-center gap-2" style="border-radius: 12px; font-size: 1.05rem;" onclick="openConfirmationModal()">
+                        <i class="bi bi-send-fill"></i>
+                        <span id="btnSubmitText">Xác nhận gửi phản hồi chính thức</span>
+                    </button>
+                    <div class="text-muted small mt-2">
+                        <i class="bi bi-shield-check text-success me-1"></i>Hành động của bạn có giá trị cam kết chính thức theo quy trình tuyển dụng.
+                    </div>
+                </div>
+            </form>
+        </div>
+    }
+    else if (Model.HasResponded)
+    {
+        <div class="card border-0 shadow-sm p-4 p-md-5 mb-4 text-center" style="border-radius: 18px; background: @(Model.IsAccepted ? "#F0FDF4" : "#F8FAFC"); border: 1.5px solid @(Model.IsAccepted ? "#BBF7D0" : "#E2E8F0");">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3 mx-auto" style="width: 68px; height: 68px; background: @(Model.IsAccepted ? "#DCFCE7" : "#E2E8F0"); color: @(Model.IsAccepted ? "#16A34A" : "#64748B");">
+                <i class="bi @(Model.IsAccepted ? "bi-check2-all" : "bi-check-circle") fs-1"></i>
+            </div>
+            <h3 class="h4 fw-bold @(Model.IsAccepted ? "text-success" : "text-dark") mb-2">
+                @(Model.IsAccepted ? "Cảm ơn bạn đã chấp nhận lời mời gia nhập NoveraTech!" : "Bạn đã hoàn tất phản hồi thư mời nhận việc.")
+            </h3>
+            <p class="text-muted small mb-0" style="max-width: 600px; margin: 0 auto; line-height: 1.6;">
+                @(Model.IsAccepted 
+                    ? $"Hệ thống đã ghi nhận phản hồi của bạn vào ngày {Model.CandidateRespondedAtFormatted}. Bộ phận Nhân sự NoveraTech đang chuẩn bị hợp đồng và hướng dẫn hội nhập để gửi tới bạn trước ngày {Model.ProposedJoinDateFormatted ?? "tiếp nhận"}."
+                    : $"Hệ thống đã ghi nhận quyết định từ chối của bạn vào ngày {Model.CandidateRespondedAtFormatted}. Chúc bạn luôn thành công trên chặng đường sự nghiệp sắp tới!")
+            </p>
+        </div>
+    }
+
+    <!-- Contact & Support Footer -->
+    <div class="text-center text-muted small py-3">
+        Mọi thắc mắc về điều khoản hoặc cần hỗ trợ, vui lòng liên hệ Chuyên viên tuyển dụng phụ trách: <strong>@Model.RecruiterName</strong> — Hotline: <strong>024.3999.8888</strong>.
+    </div>
+</div>
+
+<!-- Modal Xác Nhận Gửi Phản Hồi Chính Thức (Tránh bấm nhầm) -->
+<div class="modal fade" id="confirmResponseModal" tabindex="-1" aria-labelledby="confirmResponseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 18px; overflow: hidden;">
+            <div class="modal-header border-0 pt-4 px-4 pb-0">
+                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="confirmResponseModalLabel">
+                    <i class="bi bi-patch-question-fill text-primary" id="modalHeaderIcon"></i>
+                    <span id="modalHeaderTitle">Xác nhận gửi phản hồi thư mời</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="p-3 mb-3 rounded-3" id="modalDecisionSummaryBox" style="background: #F8FAFC; border: 1px solid #E2E8F0;">
+                    <div class="small text-muted fw-semibold">Quyết định lựa chọn:</div>
+                    <div class="h5 fw-bold mt-1 mb-0" id="modalDecisionText">Chấp nhận nhận việc</div>
+                </div>
+
+                <p class="text-muted small mb-0" id="modalDecisionDesc">
+                    Sau khi xác nhận, phản hồi của bạn sẽ được lưu lại chính thức và cập nhật ngay lập tức trên hệ thống tuyển dụng. Bạn có chắc chắn muốn gửi câu trả lời này?
+                </p>
+            </div>
+            <div class="modal-footer border-0 pt-0 px-4 pb-4 gap-2">
+                <button type="button" class="btn btn-light px-3 py-2 fw-semibold" style="border-radius: 10px;" data-bs-dismiss="modal">Kiểm tra lại</button>
+                <button type="button" class="btn btn-success px-4 py-2 fw-bold text-white" id="btnFinalSubmit" style="border-radius: 10px;" onclick="executeSubmitResponse()">
+                    <i class="bi bi-check-lg me-1"></i> Đồng ý gửi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .decision-card {
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .decision-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+    }
+    .decision-card.selected-accept {
+        border-color: #059669 !important;
+        background: #F0FDF4 !important;
+        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.2) !important;
+    }
+    .decision-card.selected-decline {
+        border-color: #DC2626 !important;
+        background: #FEF2F2 !important;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2) !important;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        var currentDecision = '';
+        var confirmModal = null;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var modalEl = document.getElementById('confirmResponseModal');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+                confirmModal = new bootstrap.Modal(modalEl);
+            }
+
+            @if (preSelectAccept)
+            {
+                <text>selectDecision('ACCEPT');</text>
+            }
+            else if (preSelectDecline)
+            {
+                <text>selectDecision('DECLINE');</text>
+            }
+        });
+
+        function selectDecision(decision) {
+            currentDecision = decision;
+            document.getElementById('selectedDecision').value = decision;
+
+            var cardAccept = document.getElementById('cardAccept');
+            var cardDecline = document.getElementById('cardDecline');
+            var feedbackContainer = document.getElementById('feedbackContainer');
+            var submitActionContainer = document.getElementById('submitActionContainer');
+            var btnOpenConfirmModal = document.getElementById('btnOpenConfirmModal');
+            var btnSubmitText = document.getElementById('btnSubmitText');
+            var feedbackLabelTitle = document.getElementById('feedbackLabelTitle');
+            var candidateFeedback = document.getElementById('candidateFeedback');
+
+            cardAccept.classList.remove('selected-accept');
+            cardDecline.classList.remove('selected-decline');
+
+            feedbackContainer.style.display = 'block';
+            submitActionContainer.style.display = 'block';
+
+            if (decision === 'ACCEPT') {
+                cardAccept.classList.add('selected-accept');
+                btnOpenConfirmModal.className = 'btn btn-lg fw-bold px-5 py-3 shadow d-inline-flex align-items-center gap-2 btn-success text-white';
+                btnSubmitText.textContent = 'Xác nhận CHẤP NHẬN thư mời nhận việc';
+                feedbackLabelTitle.innerHTML = '<i class="bi bi-heart-fill me-1 text-success"></i>Ý kiến phản hồi & Lời nhắn gửi';
+                candidateFeedback.placeholder = 'Ghi ý kiến, nguyện vọng về ngày bắt đầu làm việc hoặc lời cảm ơn tới Ban Giám Đốc và Hội đồng Tuyển dụng...';
+            } else {
+                cardDecline.classList.add('selected-decline');
+                btnOpenConfirmModal.className = 'btn btn-lg fw-bold px-5 py-3 shadow d-inline-flex align-items-center gap-2 btn-outline-danger';
+                btnSubmitText.textContent = 'Xác nhận TỪ CHỐI thư mời nhận việc';
+                feedbackLabelTitle.innerHTML = '<i class="bi bi-chat-left-dots-fill me-1 text-danger"></i>Lý do từ chối & Đóng góp ý kiến';
+                candidateFeedback.placeholder = 'Rất mong bạn có thể chia sẻ lý do từ chối (mức lương, vị trí khác, kế hoạch cá nhân...) để giúp NoveraTech cải thiện trong tương lai...';
+            }
+
+            // Cuộn nhẹ xuống khu vực nhập ý kiến
+            feedbackContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function openConfirmationModal() {
+            if (!currentDecision) {
+                alert('Vui lòng chọn Chấp nhận hoặc Từ chối trước khi tiếp tục.');
+                return;
+            }
+
+            var modalHeaderIcon = document.getElementById('modalHeaderIcon');
+            var modalHeaderTitle = document.getElementById('modalHeaderTitle');
+            var modalDecisionSummaryBox = document.getElementById('modalDecisionSummaryBox');
+            var modalDecisionText = document.getElementById('modalDecisionText');
+            var modalDecisionDesc = document.getElementById('modalDecisionDesc');
+            var btnFinalSubmit = document.getElementById('btnFinalSubmit');
+
+            if (currentDecision === 'ACCEPT') {
+                modalHeaderIcon.className = 'bi bi-check-circle-fill text-success fs-4';
+                modalHeaderTitle.textContent = 'Xác nhận CHẤP NHẬN nhận việc';
+                modalDecisionSummaryBox.style.background = '#F0FDF4';
+                modalDecisionSummaryBox.style.borderColor = '#BBF7D0';
+                modalDecisionText.className = 'h5 fw-bold mt-1 mb-0 text-success';
+                modalDecisionText.textContent = '🎉 Đồng ý nhận việc (Accept Offer)';
+                modalDecisionDesc.textContent = 'Bạn đang xác nhận chấp thuận lời mời gia nhập NoveraTech. Hệ thống sẽ cập nhật trạng thái hồ sơ của bạn sang "Tuyển dụng thành công" và bộ phận nhân sự sẽ liên hệ để hoàn tất hồ sơ tiếp nhận.';
+                btnFinalSubmit.className = 'btn btn-success px-4 py-2 fw-bold text-white';
+                btnFinalSubmit.innerHTML = '<i class="bi bi-check-lg me-1"></i> Xác nhận chấp nhận';
+            } else {
+                modalHeaderIcon.className = 'bi bi-x-circle-fill text-danger fs-4';
+                modalHeaderTitle.textContent = 'Xác nhận TỪ CHỐI nhận việc';
+                modalDecisionSummaryBox.style.background = '#FEF2F2';
+                modalDecisionSummaryBox.style.borderColor = '#FECACA';
+                modalDecisionText.className = 'h5 fw-bold mt-1 mb-0 text-danger';
+                modalDecisionText.textContent = '❌ Từ chối nhận việc (Decline Offer)';
+                modalDecisionDesc.textContent = 'Bạn đang xác nhận từ chối cơ hội làm việc tại NoveraTech. Quyết định này sẽ được gửi tới bộ phận nhân sự và không thể hoàn tác sau khi đã gửi.';
+                btnFinalSubmit.className = 'btn btn-danger px-4 py-2 fw-bold text-white';
+                btnFinalSubmit.innerHTML = '<i class="bi bi-x-lg me-1"></i> Xác nhận từ chối';
+            }
+
+            if (confirmModal) {
+                confirmModal.show();
+            }
+        }
+
+        async function executeSubmitResponse() {
+            var form = document.getElementById('offerResponseForm');
+            var btnFinalSubmit = document.getElementById('btnFinalSubmit');
+            var originalBtnHtml = btnFinalSubmit.innerHTML;
+
+            btnFinalSubmit.disabled = true;
+            btnFinalSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Đang gửi...';
+
+            var formData = new FormData(form);
+
+            try {
+                var response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                var result = await response.json();
+
+                if (confirmModal) {
+                    confirmModal.hide();
+                }
+
+                if (result.success) {
+                    // Tải lại trang để hiển thị trạng thái hoàn tất trang trọng
+                    window.location.reload();
+                } else {
+                    alert(result.message || 'Có lỗi xảy ra khi gửi phản hồi. Vui lòng thử lại.');
+                    btnFinalSubmit.disabled = false;
+                    btnFinalSubmit.innerHTML = originalBtnHtml;
+                }
+            } catch (err) {
+                console.error('Lỗi khi gửi phản hồi:', err);
+                // Fallback submit form thông thường
+                form.submit();
+            }
+        }
+    </script>
+}

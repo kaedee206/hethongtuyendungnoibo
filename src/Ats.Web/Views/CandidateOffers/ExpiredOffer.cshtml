@@ -1,0 +1,55 @@
+@model Ats.Web.Models.ViewModels.Offers.CandidateOfferDetailsViewModel
+@{
+    ViewData["Title"] = "Thư mời nhận việc đã hết hạn | NoveraTech";
+    Layout = "_Layout";
+}
+
+<div class="container py-5" style="max-width: 680px;">
+    <div class="card border-0 shadow-sm p-4 p-md-5 text-center" style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E2E8F0;">
+        <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3 mx-auto" style="width: 76px; height: 76px; background: #FEF2F2; color: #DC2626;">
+            <i class="bi bi-clock-history fs-1"></i>
+        </div>
+
+        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1.5 fw-bold mb-2 mx-auto" style="font-size: 0.82rem; border-radius: 8px;">
+            HẾT HIỆU LỰC PHẢN HỒI
+        </span>
+
+        <h1 class="h3 fw-bold text-dark mt-2 mb-2">Thư mời nhận việc đã hết hạn</h1>
+        <p class="text-muted" style="font-size: 0.95rem; line-height: 1.6;">
+            Kính gửi <strong>@Model.CandidateName</strong>, thư mời nhận việc vị trí <strong>@Model.JobTitle</strong> từ Tập đoàn Công nghệ NoveraTech đã hết thời hạn tiếp nhận phản hồi vào ngày <strong>@Model.ExpirationDateFormatted</strong>.
+        </p>
+
+        <div class="p-3.5 my-3 text-start" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; font-size: 0.9rem;">
+            <div class="d-flex justify-content-between py-1 border-bottom border-light-subtle">
+                <span class="text-muted">Vị trí tuyển dụng:</span>
+                <span class="fw-bold text-dark">@Model.JobTitle</span>
+            </div>
+            <div class="d-flex justify-content-between py-1 border-bottom border-light-subtle">
+                <span class="text-muted">Khối phòng ban:</span>
+                <span class="fw-semibold text-dark">@Model.DepartmentName</span>
+            </div>
+            <div class="d-flex justify-content-between py-1 border-bottom border-light-subtle">
+                <span class="text-muted">Thời hạn phản hồi ban đầu:</span>
+                <span class="fw-bold text-danger">Hết ngày @Model.ExpirationDateFormatted</span>
+            </div>
+            <div class="d-flex justify-content-between py-1">
+                <span class="text-muted">Trạng thái hiện tại:</span>
+                <span class="badge bg-danger text-white">Đã tự động chuyển sang Hết hạn (Expired)</span>
+            </div>
+        </div>
+
+        <p class="text-muted small mt-2 mb-4" style="line-height: 1.6;">
+            Theo quy định của NoveraTech, đề xuất nhận việc sẽ tự động đóng khi vượt quá thời hạn quy định để bảo đảm tiến độ nhân sự của dự án. Nếu bạn gặp sự cố kỹ thuật hoặc cần hỗ trợ gia hạn thời gian xem xét, vui lòng liên hệ trực tiếp với bộ phận tuyển dụng.
+        </p>
+
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+            <a href="mailto:tuyendung@noveratech.vn" class="btn btn-outline-primary fw-semibold px-4 py-2 d-inline-flex align-items-center gap-2" style="border-radius: 10px;">
+                <i class="bi bi-envelope-fill"></i>
+                <span>Gửi email tới Bộ phận Tuyển dụng</span>
+            </a>
+            <a href="/" class="btn btn-light fw-semibold px-4 py-2" style="border-radius: 10px;">
+                Về trang chủ
+            </a>
+        </div>
+    </div>
+</div>

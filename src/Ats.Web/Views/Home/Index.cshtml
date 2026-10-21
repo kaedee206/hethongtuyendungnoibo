@@ -3358,6 +3358,36 @@
             }
         }
 
+        // 3.1. Gửi thư mời nhận việc cho Ứng viên (SCRUM-342)
+        async function sendOfferToCandidate(offerId, candidateName) {
+            if (!confirm('Xác nhận GỬI THƯ MỜI NHẬN VIỆC chính thức tới ứng viên ' + candidateName + ' qua email?\nEmail sẽ chứa liên kết phản hồi có hiệu lực tới hết thời hạn quy định.')) {
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('OfferId', offerId);
+            formData.append('__RequestVerificationToken', getCsrfToken());
+
+            try {
+                var res = await fetch('/Workspace/SendOfferToCandidate', {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': getCsrfToken()
+                    },
+                    body: formData
+                });
+                var data = await res.json();
+                if (data.success) {
+                    showToast(data.message, true);
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showToast(data.message || 'Lỗi khi gửi thư mời', false);
+                }
+            } catch (err) {
+                showToast('Lỗi kết nối: ' + err.message, false);
+            }
+        }
+
         // 4. Tạo tin tuyển dụng mới
         async function handleJobCreateSubmit(e) {
             e.preventDefault();
