@@ -21,6 +21,7 @@ public class HomeController : Controller
     private readonly ICandidateMergeService _mergeService;
     private readonly IRequisitionAssignmentService _assignmentService;
     private readonly ICandidateInterviewService? _candidateInterviewService;
+    private readonly IPositionProgressService? _positionProgressService;
     private readonly ILogger<HomeController> _logger;
 
     [ActivatorUtilitiesConstructor]
@@ -31,7 +32,8 @@ public class HomeController : Controller
         ICandidateMergeService mergeService,
         IRequisitionAssignmentService assignmentService,
         ILogger<HomeController> logger,
-        ICandidateInterviewService? candidateInterviewService = null)
+        ICandidateInterviewService? candidateInterviewService = null,
+        IPositionProgressService? positionProgressService = null)
     {
         _dbContext = dbContext;
         _jobService = jobService;
@@ -40,6 +42,7 @@ public class HomeController : Controller
         _assignmentService = assignmentService;
         _logger = logger;
         _candidateInterviewService = candidateInterviewService;
+        _positionProgressService = positionProgressService;
     }
 
     public HomeController(
@@ -91,6 +94,10 @@ public class HomeController : Controller
         if (normalizedFeature == "trung-lap" || normalizedFeature == "duplicates" || normalizedFeature == "ho-so-trung-lap")
         {
             return RedirectToAction("CandidateDuplicates", "Workspace");
+        }
+        if (normalizedFeature == "tien-do-vi-tri" || normalizedFeature == "tien-do-tuyen-dung")
+        {
+            normalizedFeature = "tien-do-vi-tri";
         }
         ViewBag.ActiveFeature = normalizedFeature;
 
@@ -787,6 +794,20 @@ public class HomeController : Controller
                     IsRead = n.IsRead,
                     CreatedAtDisplay = n.CreatedAt.ToString("HH:mm dd/MM/yyyy")
                 }).ToList();
+            }
+
+            // SCRUM-351: Nạp tiến độ tuyển dụng các vị trí sở hữu của Trưởng bộ phận (Hiring Manager)
+            if (User?.Identity?.IsAuthenticated == true && 
+                (User.IsInRole(UserRoles.HiringManager) || User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager)))
+            {
+                var progressService = _positionProgressService ?? new PositionProgressService(_dbContext, Microsoft.Extensions.Logging.Abstractions.NullLogger<PositionProgressService>.Instance);
+                model.MyOwnedPositionsProgress = await progressService.GetOwnedPositionsSummaryAsync(userId);
+                if (model.MyOwnedPositionsProgress.Any())
+                {
+                    var primaryReqId = model.MyOwnedPositionsProgress.FirstOrDefault(p => p.Status == RequisitionStatus.APPROVED)?.RequisitionId
+                                       ?? model.MyOwnedPositionsProgress.First().RequisitionId;
+                    model.MyPrimaryPositionProgress = await progressService.GetPositionProgressDetailAsync(primaryReqId, userId, true);
+                }
             }
         }
         return model;
