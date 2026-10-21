@@ -15,12 +15,14 @@ public class OfferService(
     ApplicationDbContext dbContext,
     IEmailService emailService,
     ILogger<OfferService> logger,
-    IRequisitionAssignmentService? assignmentService = null) : IOfferService
+    IRequisitionAssignmentService? assignmentService = null,
+    IOfferApprovalService? approvalService = null) : IOfferService
 {
     private readonly ApplicationDbContext _dbContext = dbContext;
     private readonly IEmailService _emailService = emailService;
     private readonly ILogger<OfferService> _logger = logger;
     private readonly IRequisitionAssignmentService? _assignmentService = assignmentService;
+    private readonly IOfferApprovalService? _approvalService = approvalService;
 
     /// <inheritdoc />
     public async Task<JobOfferFormInitViewModel> GetOfferFormInitDataAsync(
@@ -360,6 +362,12 @@ public class OfferService(
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // Khởi tạo luồng duyệt theo hạn mức lương khi gửi duyệt (SCRUM-341)
+        if (!input.IsDraft && _approvalService != null)
+        {
+            await _approvalService.InitializeApprovalWorkflowAsync(offer.Id, cancellationToken);
+        }
 
         string actionText = input.IsDraft ? "Đã lưu nháp đề xuất Offer" : "Đã gửi đề xuất Offer để phê duyệt";
         return OfferOperationResult.Ok(
