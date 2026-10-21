@@ -798,6 +798,82 @@
                         </div>
                     </div>
 
+                    @if (Model.MyOwnedPositionsProgress.Count > 0 && Model.MyPrimaryPositionProgress != null)
+                    {
+                        var primaryPos = Model.MyPrimaryPositionProgress;
+                        <!-- KHỐI TIẾN ĐỘ VỊ TRÍ SỞ HỮU DÀNH CHO TRƯỞNG BỘ PHẬN (SCRUM-351) -->
+                        <div class="card border-0 shadow-sm p-4 mb-4" style="background: linear-gradient(135deg, #F8FAFC 0%, #FFFFFF 100%); border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                            <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 pb-3 border-bottom" style="border-color: #F1F5F9 !important;">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="rounded-3 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; background: #EEF2FF; color: #4F46E5; font-size: 1.25rem;">
+                                        <i class="bi bi-graph-up-arrow"></i>
+                                    </div>
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <h6 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">
+                                                Tiến Độ Vị Trí Bạn Sở Hữu: <span class="text-primary">@primaryPos.PositionTitle</span>
+                                            </h6>
+                                            <span class="badge bg-light text-secondary border font-monospace" style="font-size: 0.75rem; border-radius: 6px;">@primaryPos.RequisitionCode</span>
+                                            <span class="badge @primaryPos.UrgencyBadgeClass" style="font-size: 0.75rem; border-radius: 6px;">
+                                                <i class="bi bi-clock-history me-1"></i>@primaryPos.DaysRemainingDisplay
+                                            </span>
+                                        </div>
+                                        <small class="text-muted">Theo dõi thời hạn cần người, phễu ứng viên và ý kiến đánh giá để sẵn sàng báo cáo Ban Giám Đốc</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <a href="/yeu-cau-tuyen-dung/tien-do?id=@primaryPos.SelectedRequisitionId" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm" style="border-radius: 8px; font-weight: 600; padding: 0.45rem 0.9rem;">
+                                        <i class="bi bi-speedometer2"></i>
+                                        <span>Xem Chi Tiết & Báo Cáo Sếp</span>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 pt-3">
+                                <div class="col-6 col-md-3">
+                                    <div class="p-3 rounded-3" style="background: #F8FAFC; border: 1px solid #F1F5F9;">
+                                        <span class="text-muted text-uppercase d-block mb-1" style="font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em;">Hạn cần người</span>
+                                        <div class="fw-bold font-monospace text-dark" style="font-size: 1.1rem;">
+                                            @(primaryPos.TargetHireDate.HasValue ? primaryPos.TargetHireDate.Value.ToString("dd/MM/yyyy") : "Chưa thiết lập")
+                                        </div>
+                                        <div class="small text-muted mt-0.5" style="font-size: 0.72rem;">@primaryPos.UrgencyMessage</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="p-3 rounded-3" style="background: #F8FAFC; border: 1px solid #F1F5F9;">
+                                        <span class="text-muted text-uppercase d-block mb-1" style="font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em;">Chỉ tiêu đã tuyển</span>
+                                        <div class="fw-bold font-monospace text-success" style="font-size: 1.1rem;">
+                                            @primaryPos.HiredCount / @primaryPos.Quantity <span style="font-size: 0.75rem; color: #64748B;">người</span>
+                                        </div>
+                                        <div class="progress mt-1.5" style="height: 5px; border-radius: 4px; background: #E2E8F0;">
+                                            <div class="progress-bar bg-success" role="progressbar" style="width: @primaryPos.HeadcountFulfillmentPercentage%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="p-3 rounded-3" style="background: #F8FAFC; border: 1px solid #F1F5F9;">
+                                        <span class="text-muted text-uppercase d-block mb-1" style="font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em;">Lịch phỏng vấn tới</span>
+                                        <div class="fw-bold font-monospace text-primary" style="font-size: 1.1rem;">
+                                            @primaryPos.UpcomingInterviews.Count <span style="font-size: 0.75rem; color: #64748B;">buổi</span>
+                                        </div>
+                                        <div class="small text-muted mt-0.5" style="font-size: 0.72rem;">Đang lên lịch phỏng vấn</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="p-3 rounded-3" style="background: @(primaryPos.PendingFeedbackCandidates.Count > 0 ? "#FEF2F2" : "#F8FAFC"); border: 1px solid @(primaryPos.PendingFeedbackCandidates.Count > 0 ? "#FCA5A5" : "#F1F5F9");">
+                                        <span class="text-muted text-uppercase d-block mb-1" style="font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em;">Chờ bạn cho ý kiến</span>
+                                        <div class="fw-bold font-monospace @(primaryPos.PendingFeedbackCandidates.Count > 0 ? "text-danger" : "text-dark")" style="font-size: 1.1rem;">
+                                            @primaryPos.PendingFeedbackCandidates.Count <span style="font-size: 0.75rem; color: #64748B;">ứng viên</span>
+                                        </div>
+                                        <div class="small @(primaryPos.PendingFeedbackCandidates.Count > 0 ? "text-danger fw-semibold" : "text-muted") mt-0.5" style="font-size: 0.72rem;">
+                                            @(primaryPos.PendingFeedbackCandidates.Count > 0 ? "Cần nộp phiếu đánh giá ngay" : "Không có ứng viên chờ")
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
                     <!-- BỐ CỤC EXECUTIVE OVERVIEW (Full-Width: Phễu Tuyển Dụng Tuyến Tính & Bảng Hồ Sơ Ứng Tuyển) -->
                     <div class="row g-4 mb-4">
                         <div class="col-12 d-flex flex-column gap-4">
