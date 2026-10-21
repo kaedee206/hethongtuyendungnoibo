@@ -468,13 +468,13 @@ public class EvaluationService(
             .FirstOrDefaultAsync(u => u.Id == currentUserId, cancellationToken);
 
         var isAdminOrHR = currentUser != null && (
-            currentUser.RoleEntity?.Code is RoleCode.ADMIN or RoleCode.HR_MANAGER or RoleCode.HIRING_MANAGER ||
-            currentUser.UserRoles.Any(ur => ur.Role.Code is RoleCode.ADMIN or RoleCode.HR_MANAGER or RoleCode.HIRING_MANAGER)
+            currentUser.RoleEntity?.Code is RoleCode.ADMIN or RoleCode.HR_MANAGER or RoleCode.HIRING_MANAGER or RoleCode.RECRUITER ||
+            currentUser.UserRoles.Any(ur => ur.Role.Code is RoleCode.ADMIN or RoleCode.HR_MANAGER or RoleCode.HIRING_MANAGER or RoleCode.RECRUITER)
         );
 
         if (!isAdminOrHR)
         {
-            throw new UnauthorizedAccessException("Chỉ Trưởng phòng Nhân sự và Quản trị viên mới có quyền xem bảng so sánh ứng viên.");
+            throw new UnauthorizedAccessException("Chỉ Trưởng phòng Nhân sự, Quản lý tuyển dụng, Chuyên viên tuyển dụng và Quản trị viên mới có quyền xem bảng so sánh ứng viên.");
         }
 
         var jobPosting = await _dbContext.JobPostings

@@ -102,11 +102,11 @@ public class CompetencyFrameworkService(ApplicationDbContext dbContext, ILogger<
         var f = await _dbContext.CompetencyFrameworks
             .AsNoTracking()
             .Include(cf => cf.Criteria.Where(c => !c.IsDeleted))
-            .Include(cf => cf.AssignedPositions.Where(p => !p.IsDeleted))
-                .ThenInclude(p => p.Department)
             .FirstOrDefaultAsync(cf => cf.Id == id && !cf.IsDeleted, cancellationToken);
 
         if (f == null) return null;
+
+        var positions = await GetAssociatedPositionsAsync(f.Id, cancellationToken);
 
         return new CompetencyFrameworkItemViewModel
         {
@@ -117,15 +117,7 @@ public class CompetencyFrameworkService(ApplicationDbContext dbContext, ILogger<
             Description = f.Description,
             IsActive = f.IsActive,
             CompetenciesCount = f.Criteria.Count(c => !c.IsDeleted),
-            AssociatedJobPositions = f.AssignedPositions.Select(p => new JobPositionAssignedViewModel
-            {
-                Id = p.Id,
-                Code = p.Code,
-                Title = p.Title,
-                DepartmentName = p.Department?.Name ?? string.Empty,
-                JobLevel = p.JobLevel,
-                IsActive = p.IsActive
-            }).ToList(),
+            AssociatedJobPositions = positions,
             UpdatedAt = f.UpdatedAt
         };
     }
@@ -137,11 +129,11 @@ public class CompetencyFrameworkService(ApplicationDbContext dbContext, ILogger<
         var f = await _dbContext.CompetencyFrameworks
             .AsNoTracking()
             .Include(cf => cf.Criteria.Where(c => !c.IsDeleted))
-            .Include(cf => cf.AssignedPositions.Where(p => !p.IsDeleted))
-                .ThenInclude(p => p.Department)
             .FirstOrDefaultAsync(cf => cf.Id == id && !cf.IsDeleted, cancellationToken);
 
         if (f == null) return null;
+
+        var positions = await GetAssociatedPositionsAsync(f.Id, cancellationToken);
 
         return new CompetencyFrameworkDetailViewModel
         {
@@ -166,17 +158,7 @@ public class CompetencyFrameworkService(ApplicationDbContext dbContext, ILogger<
                     Rubric4 = c.Rubric4,
                     Rubric5 = c.Rubric5
                 }).ToList(),
-            AssignedPositions = f.AssignedPositions
-                .OrderBy(p => p.Title)
-                .Select(p => new JobPositionAssignedViewModel
-                {
-                    Id = p.Id,
-                    Code = p.Code,
-                    Title = p.Title,
-                    DepartmentName = p.Department?.Name ?? string.Empty,
-                    JobLevel = p.JobLevel,
-                    IsActive = p.IsActive
-                }).ToList()
+            AssignedPositions = positions
         };
     }
 

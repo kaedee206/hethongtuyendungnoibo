@@ -169,7 +169,7 @@ public class EvaluationsController(
     /// Màn hình Bảng so sánh ứng viên trên cùng một thước đo khung năng lực (dành riêng cho HR Manager & Admin).
     /// </summary>
     [HttpGet("so-sanh-ung-vien/{jobPostingId:guid}")]
-    [Authorize(Roles = $"{UserRoles.HRManager},{UserRoles.Admin},Trưởng phòng nhân sự,Quản trị viên,HiringManager,Quản lý tuyển dụng")]
+    [Authorize(Roles = $"{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.Recruiter},{UserRoles.HiringManager},Trưởng phòng nhân sự,Quản trị viên,HiringManager,Quản lý tuyển dụng,Chuyên viên tuyển dụng")]
     public async Task<IActionResult> Comparison(Guid jobPostingId, CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
@@ -183,19 +183,19 @@ public class EvaluationsController(
         {
             _logger.LogWarning(ex, "Không tìm thấy tin tuyển dụng: JobPostingId={JobPostingId}", jobPostingId);
             TempData["ErrorMessage"] = ex.Message;
-            return RedirectToAction("Index", "Jobs");
+            return RedirectToAction("Manage", "Jobs");
         }
         catch (UnauthorizedAccessException ex)
         {
             _logger.LogWarning(ex, "Từ chối truy cập bảng so sánh ứng viên cho UserId={UserId}", currentUserId);
             TempData["ErrorMessage"] = ex.Message;
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Manage", "Jobs");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Lỗi xảy ra khi tải bảng so sánh ứng viên cho JobPosting {JobPostingId}", jobPostingId);
-            TempData["ErrorMessage"] = "Không thể tải bảng so sánh ứng viên. Vui lòng thử lại sau.";
-            return RedirectToAction("Index", "Jobs");
+            TempData["ErrorMessage"] = "Không thể tải bảng so sánh ứng viên cho tin tuyển dụng này hoặc chưa có đánh giá nào được nộp.";
+            return RedirectToAction("Manage", "Jobs");
         }
     }
 
