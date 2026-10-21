@@ -1792,102 +1792,118 @@
                                                     </div>
                                                 </td>
                                                 <td class="py-3 px-3 text-end text-nowrap">
-                                                    <div class="d-flex justify-content-end gap-1.5 flex-wrap">
-                                                        @if (!string.IsNullOrWhiteSpace(interview.ConfirmationUrl))
-                                                        {
-                                                            <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                                    style="border-radius:8px; font-size:0.75rem; font-weight:600; padding: 0.25rem 0.65rem;"
-                                                                    onclick="copyCandidateInviteUrl('@interview.ConfirmationUrl')"
-                                                                    title="Sao chép liên kết thư mời phỏng vấn dành riêng cho ứng viên này">
-                                                                <i class="bi bi-link-45deg me-1"></i> Link mời
-                                                            </button>
-                                                        }
+                                                    <div class="d-inline-flex align-items-center justify-content-end gap-1.5">
+                                                        @* 1. Vào phòng họp trực tuyến Google Meet *@
                                                         @if (!string.IsNullOrWhiteSpace(interview.LocationOrLink) && interview.Status != InterviewStatus.CANCELLED)
                                                         {
-                                                            <a href="@interview.LocationOrLink" target="_blank" class="btn btn-sm btn-outline-primary"
-                                                               style="border-radius:8px; font-size:0.75rem; font-weight:600; padding: 0.25rem 0.65rem;"
-                                                               title="Mở Google Meet">
-                                                                <i class="bi bi-camera-video me-1"></i> Meet
+                                                            <a href="@interview.LocationOrLink" target="_blank" class="btn btn-sm btn-outline-primary btn-action-icon"
+                                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Mở phòng họp trực tuyến (Google Meet)">
+                                                                <i class="bi bi-camera-video"></i>
                                                             </a>
                                                         }
-                                                        @if (interview.CanRescheduleOrCancel)
-                                                        {
-                                                            <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                                    style="border-radius:8px; font-size:0.75rem; font-weight:600; padding: 0.25rem 0.65rem;"
-                                                                    onclick="openRescheduleInterviewModal('@interview.InterviewId', '@interview.CandidateName', '@interview.JobTitle', '@interview.RoundTitle', '@interview.TimeDisplay', '@interview.DateDisplay')"
-                                                                    title="Dời lịch phỏng vấn (thay đổi thời gian, hình thức, hội đồng)">
-                                                                <i class="bi bi-calendar2-range me-1"></i> Dời lịch
-                                                            </button>
-                                                            <button type="button" class="btn btn-sm btn-outline-danger"
-                                                                    style="border-radius:8px; font-size:0.75rem; font-weight:600; padding: 0.25rem 0.65rem;"
-                                                                    onclick="openCancelInterviewModal('@interview.InterviewId', '@interview.CandidateName', '@interview.JobTitle', '@interview.RoundTitle', '@interview.TimeDisplay - @interview.DateDisplay')"
-                                                                    title="Hủy buổi phỏng vấn này">
-                                                                <i class="bi bi-calendar-x me-1"></i> Hủy
-                                                            </button>
-                                                        }
-                                                        else if (interview.HasSubmittedEvaluation)
-                                                        {
-                                                            <span class="badge bg-light text-muted border" style="border-radius:6px; font-size:0.72rem; padding: 0.35rem 0.6rem;"
-                                                                  title="Không thể dời hoặc huỷ do đã có phiếu đánh giá được nộp">
-                                                                <i class="bi bi-lock-fill me-1 text-secondary"></i>Đã có phiếu nộp
-                                                            </span>
-                                                        }
-                                                        else if (interview.Status == InterviewStatus.CANCELLED)
-                                                        {
-                                                            <button type="button" class="btn btn-sm btn-light text-danger border border-danger-subtle"
-                                                                    style="border-radius:8px; font-size:0.72rem; font-weight:600; padding: 0.25rem 0.65rem;"
-                                                                    onclick="alert('Lý do hủy buổi phỏng vấn:\n\n' + @Html.Raw(System.Text.Json.JsonSerializer.Serialize(interview.CancellationReason ?? "Người phỏng vấn bận đột xuất")))"
-                                                                    title="Xem lý do hủy buổi phỏng vấn">
-                                                                <i class="bi bi-info-circle me-1"></i> Lý do hủy
-                                                            </button>
-                                                        }
+
+                                                        @* 2. Đánh giá / Chấm điểm *@
                                                         @if (interview.IsCurrentUserPanelist)
                                                         {
                                                             @if (interview.HasCurrentUserSubmitted && !interview.IsReopened)
                                                             {
-                                                                <button type="button" class="btn btn-sm btn-outline-success"
-                                                                        style="border-radius:8px; font-size:0.75rem; font-weight:600; padding: 0.25rem 0.65rem;"
+                                                                <button type="button" class="btn btn-sm btn-outline-success btn-action-icon"
                                                                         onclick="openEvaluationForInterview('@interview.InterviewId', '@interview.CandidateName', '@interview.JobTitle')"
-                                                                        title="Phiếu đánh giá đã được nộp (Đã khóa chỉnh sửa)">
-                                                                    <i class="bi bi-check2-circle me-1"></i> Đã nộp phiếu
+                                                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Phiếu đánh giá đã được nộp (Bấm để xem lại)">
+                                                                    <i class="bi bi-check2-circle"></i>
                                                                 </button>
                                                             }
                                                             else if (interview.IsReopened)
                                                             {
-                                                                <button type="button" class="btn btn-sm btn-warning text-dark fw-bold"
-                                                                        style="border-radius:8px; font-size:0.75rem; padding: 0.25rem 0.65rem;"
+                                                                <button type="button" class="btn btn-sm btn-warning btn-action-icon text-dark fw-bold"
                                                                         onclick="openEvaluationForInterview('@interview.InterviewId', '@interview.CandidateName', '@interview.JobTitle')"
-                                                                        title="Phiếu đã được Recruiter mở lại để bạn cập nhật nhận định">
-                                                                    <i class="bi bi-unlock-fill me-1"></i> Sửa lại phiếu
+                                                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Phiếu đã được mở lại để cập nhật nhận định">
+                                                                    <i class="bi bi-unlock-fill"></i>
                                                                 </button>
                                                             }
                                                             else
                                                             {
-                                                                <button type="button" class="btn btn-sm btn-primary"
-                                                                        style="border-radius:8px; font-size:0.75rem; font-weight:600; padding: 0.25rem 0.65rem;"
+                                                                <button type="button" class="btn btn-sm btn-success btn-action-icon text-white"
                                                                         onclick="openEvaluationForInterview('@interview.InterviewId', '@interview.CandidateName', '@interview.JobTitle')"
-                                                                        title="Mở phiếu chấm điểm sau buổi phỏng vấn">
-                                                                    <i class="bi bi-pencil-square me-1"></i> Chấm điểm
+                                                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Mở phiếu chấm điểm sau buổi phỏng vấn">
+                                                                    <i class="bi bi-pencil-square"></i>
                                                                 </button>
                                                             }
                                                         }
                                                         else if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
                                                         {
-                                                            <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                                    style="border-radius:8px; font-size:0.75rem; font-weight:600; padding: 0.25rem 0.65rem;"
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary btn-action-icon"
                                                                     onclick="openEvaluationForInterview('@interview.InterviewId', '@interview.CandidateName', '@interview.JobTitle')"
-                                                                    title="Xem tổng hợp đánh giá của hội đồng">
-                                                                <i class="bi bi-card-checklist me-1"></i> Xem đánh giá
+                                                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Xem tổng hợp đánh giá của hội đồng">
+                                                                <i class="bi bi-card-checklist"></i>
                                                             </button>
                                                         }
                                                         else
                                                         {
-                                                            <button type="button" class="btn btn-sm btn-light text-muted" disabled
-                                                                    style="border-radius:8px; font-size:0.75rem; font-weight:500; border:1px solid #E2E8F0; padding: 0.25rem 0.65rem;"
-                                                                    title="Chỉ người phỏng vấn được mời mới mở được phiếu">
-                                                                <i class="bi bi-lock me-1"></i> Không thuộc HĐ
+                                                            <button type="button" class="btn btn-sm btn-light text-muted btn-action-icon" disabled
+                                                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Chỉ người phỏng vấn được mời mới mở được phiếu">
+                                                                <i class="bi bi-lock"></i>
                                                             </button>
                                                         }
+
+                                                        @* 3. Dời lịch phỏng vấn *@
+                                                        @if (interview.CanRescheduleOrCancel)
+                                                        {
+                                                            <button type="button" class="btn btn-sm btn-outline-warning btn-action-icon text-dark"
+                                                                    onclick="openRescheduleInterviewModal('@interview.InterviewId', '@interview.CandidateName', '@interview.JobTitle', '@interview.RoundTitle', '@interview.TimeDisplay', '@interview.DateDisplay')"
+                                                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Dời lịch phỏng vấn (thay đổi thời gian, hình thức, hội đồng)">
+                                                                <i class="bi bi-calendar2-range"></i>
+                                                            </button>
+                                                        }
+                                                        else if (interview.HasSubmittedEvaluation)
+                                                        {
+                                                            <span class="d-inline-flex align-items-center justify-content-center text-muted" style="width: 32px; height: 32px;"
+                                                                  data-bs-toggle="tooltip" data-bs-placement="top" title="Không thể dời hoặc hủy do đã có phiếu nộp">
+                                                                <i class="bi bi-lock-fill text-secondary"></i>
+                                                            </span>
+                                                        }
+
+                                                        @* 4. Nút Tùy chọn (3 chấm): Link mời, Hủy lịch, Lý do hủy *@
+                                                        <div class="dropdown d-inline-block">
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary btn-action-icon"
+                                                                    data-bs-toggle="dropdown" aria-expanded="false"
+                                                                    data-bs-toggle-second="tooltip" data-bs-placement="top" title="Tùy chọn khác">
+                                                                <i class="bi bi-three-dots-vertical"></i>
+                                                            </button>
+                                                            <ul class="dropdown-menu dropdown-menu-end shadow border py-1" style="border-radius: 8px; font-size: 0.85rem; border-color: #E2E8F0 !important; min-width: 210px;">
+                                                                @if (!string.IsNullOrWhiteSpace(interview.ConfirmationUrl))
+                                                                {
+                                                                    <li>
+                                                                        <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
+                                                                           onclick="copyCandidateInviteUrl('@interview.ConfirmationUrl')">
+                                                                            <i class="bi bi-link-45deg text-secondary"></i> Sao chép link thư mời
+                                                                        </a>
+                                                                    </li>
+                                                                }
+                                                                @if (interview.CanRescheduleOrCancel)
+                                                                {
+                                                                    <li>
+                                                                        <a class="dropdown-item py-2 text-danger d-flex align-items-center gap-2" href="javascript:void(0)"
+                                                                           onclick="openCancelInterviewModal('@interview.InterviewId', '@interview.CandidateName', '@interview.JobTitle', '@interview.RoundTitle', '@interview.TimeDisplay - @interview.DateDisplay')">
+                                                                            <i class="bi bi-calendar-x"></i> Hủy buổi phỏng vấn này
+                                                                        </a>
+                                                                    </li>
+                                                                }
+                                                                @if (interview.Status == InterviewStatus.CANCELLED)
+                                                                {
+                                                                    <li>
+                                                                        <a class="dropdown-item py-2 text-danger d-flex align-items-center gap-2" href="javascript:void(0)"
+                                                                           onclick="alert('Lý do hủy buổi phỏng vấn:\n\n' + @Html.Raw(System.Text.Json.JsonSerializer.Serialize(interview.CancellationReason ?? "Người phỏng vấn bận đột xuất")))">
+                                                                            <i class="bi bi-info-circle"></i> Xem lý do hủy phỏng vấn
+                                                                        </a>
+                                                                    </li>
+                                                                }
+                                                                @if (string.IsNullOrWhiteSpace(interview.ConfirmationUrl) && !interview.CanRescheduleOrCancel && interview.Status != InterviewStatus.CANCELLED)
+                                                                {
+                                                                    <li class="dropdown-item text-muted small py-2 fst-italic">Không có tùy chọn bổ sung</li>
+                                                                }
+                                                            </ul>
+                                                        </div>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -2839,11 +2855,40 @@
                         <input type="text" class="form-control form-control-sm" id="schedLocation" placeholder="https://meet.google.com/... hoặc Phòng Họp Tầng 12" required style="border-radius:8px;" oninput="triggerHomeConflictCheck()" />
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold text-dark">Thành viên hội đồng phỏng vấn (Panelists) <span class="text-danger">*</span></label>
-                        <select class="form-select form-select-sm" id="schedPanelists" multiple size="3" style="border-radius:8px; font-size:0.85rem;" onchange="validateSchedPanelists()">
-                            <!-- Populated dynamically via /Workspace/GetInterviewers -->
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label small fw-semibold text-dark mb-0">Thành viên hội đồng phỏng vấn (Panelists) <span class="text-danger">*</span></label>
+                            <span class="badge bg-light text-secondary border small px-2 py-0.5" id="schedPanelistCountBadge" style="font-size: 0.7rem;">0 người đã chọn</span>
+                        </div>
+                        <div class="dropdown custom-panelist-dropdown" id="schedPanelistDropdownWrapper">
+                            <button class="btn custom-panelist-btn form-control text-start d-flex justify-content-between align-items-center dropdown-toggle" 
+                                    type="button" id="schedPanelistDropdownBtn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                <span class="text-truncate flex-grow-1" id="schedPanelistBtnText">
+                                    <span class="text-muted"><i class="bi bi-people me-1.5 text-secondary"></i>Bấm để chọn người phỏng vấn...</span>
+                                </span>
+                                <i class="bi bi-chevron-down ms-2 small text-muted"></i>
+                            </button>
+                            <div class="dropdown-menu custom-panelist-menu dropdown-menu-start shadow-sm" aria-labelledby="schedPanelistDropdownBtn">
+                                <div class="px-1 pb-2 border-bottom mb-2">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-light border-end-0 text-muted" style="border-color: #CBD5E1; border-radius: 6px 0 0 6px;"><i class="bi bi-search"></i></span>
+                                        <input type="text" class="form-control custom-panelist-search border-start-0" id="schedPanelistSearchInput" placeholder="Tìm theo tên, email, vai trò..." style="border-radius: 0 6px 6px 0;" oninput="filterPanelistDropdown('sched')">
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-1.5 px-1">
+                                        <a href="javascript:void(0)" class="text-decoration-none small text-success fw-semibold" style="font-size: 0.72rem;" onclick="selectAllPanelists('sched', true)">
+                                            <i class="bi bi-check-all me-0.5"></i>Chọn tất cả
+                                        </a>
+                                        <a href="javascript:void(0)" class="text-decoration-none small text-muted" style="font-size: 0.72rem;" onclick="selectAllPanelists('sched', false)">
+                                            Bỏ chọn
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="custom-panelist-list" id="schedPanelistList">
+                                    <div class="text-center py-3 text-muted small"><span class="spinner-border spinner-border-sm me-1 text-success"></span>Đang tải danh sách nhân sự...</div>
+                                </div>
+                            </div>
+                        </div>
+                        <select class="d-none" id="schedPanelists" multiple onchange="validateSchedPanelists()">
                         </select>
-                        <small class="text-muted" style="font-size:0.75rem;">Giữ phím Ctrl / Shift để chọn nhiều người phỏng vấn.</small>
                         <div id="schedPanelistError" class="text-danger small mt-1 d-none" style="font-size:0.75rem;">
                             <i class="bi bi-exclamation-circle-fill me-1"></i>Vui lòng chọn ít nhất một người phỏng vấn.
                         </div>
@@ -2899,9 +2944,7 @@
     </div>
 </div>
 
-<!-- Modals Dời & Hủy Lịch Phỏng Vấn (Scrum - Số 55) -->
-@await Html.PartialAsync("_RescheduleInterviewModal")
-@await Html.PartialAsync("_CancelInterviewModal")
+<!-- Modals Dời & Hủy Lịch Phỏng Vấn được tải tập trung tại _Layout.cshtml -->
 
 <!-- Modal 8: Khởi tạo đề xuất Offer -->
 <div class="modal fade" id="createOfferModal" tabindex="-1" aria-labelledby="createOfferModalLabel" aria-hidden="true">
@@ -3436,7 +3479,7 @@
         }
 
         // 6. Đánh giá phỏng vấn sau buổi phỏng vấn (Scrum - Số 57)
-        let currentEvaluationSheetData = null;
+        var currentEvaluationSheetData = window.currentEvaluationSheetData || null;
 
         async function openEvaluationForInterview(interviewId, candidateName, jobTitle) {
             var select = document.getElementById('evalInterviewId');
@@ -5083,6 +5126,7 @@
                 return true;
             }
         }
+        window.validateSchedPanelists = validateSchedPanelists;
 
         function onSchedCandidateSelectChange(select) {
             var selectedOpt = select.options[select.selectedIndex];
@@ -5238,8 +5282,10 @@
             onHomeSchedTypeChange('ONLINE_MEET');
 
             // Load internal interviewers
-            var select = document.getElementById('schedPanelists');
-            select.innerHTML = '<option disabled>Đang tải danh sách nhân sự...</option>';
+            var schedList = document.getElementById('schedPanelistList');
+            if (schedList) {
+                schedList.innerHTML = '<div class="text-center py-3 text-muted small"><span class="spinner-border spinner-border-sm me-1 text-success"></span>Đang tải danh sách nhân sự...</div>';
+            }
 
             try {
                 var res = await fetch('/Workspace/GetInterviewers', {
@@ -5247,19 +5293,14 @@
                 });
                 var data = await res.json();
                 var list = data.interviewers || data.data || [];
-                if (list.length > 0) {
-                    select.innerHTML = list.map((u, idx) => {
-                        var uId = u.id || u.Id;
-                        var uName = u.fullName || u.name || u.FullName || 'Nhân sự';
-                        var uEmail = u.email || u.Email || '';
-                        var uRole = u.role || u.Role || 'Interviewer';
-                        return `<option value="${uId}" ${idx === 0 ? 'selected' : ''}>${uName} (${uRole}) - ${uEmail}</option>`;
-                    }).join('');
-                } else {
-                    select.innerHTML = '<option value="">(Chưa có người phỏng vấn khác trong CSDL)</option>';
+                var defaultSelectedId = list.length > 0 ? [String(list[0].id || list[0].Id)] : [];
+                if (typeof renderPanelistDropdown === 'function') {
+                    renderPanelistDropdown('sched', list, defaultSelectedId);
                 }
             } catch (e) {
-                select.innerHTML = '<option value="">(Không thể tải danh sách)</option>';
+                if (typeof renderPanelistDropdown === 'function') {
+                    renderPanelistDropdown('sched', [], []);
+                }
             }
 
             // Gắn lắng nghe và kích hoạt kiểm tra xung đột thời gian thực ban đầu
@@ -5390,6 +5431,7 @@
                 return true;
             }
         }
+        window.validateReschedPanelists = validateReschedPanelists;
 
         function onReschedTypeChange(val) {
             var locInput = document.getElementById('reschedLocation');
@@ -5433,21 +5475,23 @@
             var localIso = new Date(tomorrow.getTime() - tomorrow.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
             dateInput.value = localIso;
 
-            var panelistSelect = document.getElementById('reschedPanelists');
-            panelistSelect.innerHTML = '<option disabled>Đang tải dữ liệu buổi phỏng vấn...</option>';
+            var reschedList = document.getElementById('reschedPanelistList');
+            if (reschedList) {
+                reschedList.innerHTML = '<div class="text-center py-3 text-muted small"><span class="spinner-border spinner-border-sm me-1 text-success"></span>Đang tải danh sách nhân sự...</div>';
+            }
 
             var modal = new bootstrap.Modal(document.getElementById('rescheduleInterviewModal'));
             modal.show();
 
             try {
-                // Tải danh sách tất cả Interviewers
+                // Tai danh sach tat ca Interviewers
                 var resInts = await fetch('/Workspace/GetInterviewers', {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
                 var dataInts = await resInts.json();
                 var allInterviewers = dataInts.interviewers || dataInts.data || [];
 
-                // Tải chi tiết buổi phỏng vấn hiện tại
+                // Tai chi tiet buoi phong van
                 var resDetail = await fetch('/Workspace/GetInterviewDetailForEdit?id=' + encodeURIComponent(interviewId), {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
@@ -5461,7 +5505,6 @@
 
                 var interview = detailData.data || {};
 
-                // Kiểm tra ràng buộc bảo vệ: Đã có phiếu đánh giá nộp thì không sửa được
                 if (interview.hasSubmittedEvaluation) {
                     showToast('Không thể dời lịch vì buổi phỏng vấn đã có phiếu đánh giá được nộp.', false);
                     modal.hide();
@@ -5485,23 +5528,15 @@
                     }
                 }
 
-                var assignedPanelistIds = (interview.panelists || []).map(p => p.interviewerId);
-
-                if (allInterviewers.length > 0) {
-                    panelistSelect.innerHTML = allInterviewers.map(u => {
-                        var uId = u.id || u.Id;
-                        var uName = u.fullName || u.name || u.FullName || 'Nhân sự';
-                        var uEmail = u.email || u.Email || '';
-                        var uRole = u.role || u.Role || 'Interviewer';
-                        var isSel = assignedPanelistIds.includes(uId);
-                        return `<option value="${uId}" ${isSel ? 'selected' : ''}>${uName} (${uRole}) - ${uEmail}</option>`;
-                    }).join('');
-                } else {
-                    panelistSelect.innerHTML = '<option value="">(Chưa có người phỏng vấn trong hệ thống)</option>';
+                var assignedPanelistIds = (interview.panelists || []).map(function(p) { return p.interviewerId; });
+                if (typeof renderPanelistDropdown === 'function') {
+                    renderPanelistDropdown('resched', allInterviewers, assignedPanelistIds);
                 }
             } catch (err) {
                 console.error(err);
-                panelistSelect.innerHTML = '<option value="">(Không thể tải chi tiết)</option>';
+                if (typeof renderPanelistDropdown === 'function') {
+                    renderPanelistDropdown('resched', [], []);
+                }
             }
         }
 
@@ -6136,6 +6171,19 @@
                     this.value = raw > 0 ? formatVndNumber(raw) : '';
                 });
             });
+
+            // Khởi tạo Bootstrap Tooltips cho các nút Pure Icon Action
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"], [data-bs-toggle-second="tooltip"]'));
+            tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                try {
+                    if (typeof bootstrap.Tooltip.getOrCreateInstance === 'function') {
+                        bootstrap.Tooltip.getOrCreateInstance(tooltipTriggerEl);
+                    } else if (!bootstrap.Tooltip.getInstance(tooltipTriggerEl)) {
+                        new bootstrap.Tooltip(tooltipTriggerEl);
+                    }
+                } catch (e) { }
+            });
         });
     </script>
 }
+

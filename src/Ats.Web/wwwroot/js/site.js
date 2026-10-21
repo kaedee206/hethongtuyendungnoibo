@@ -9,7 +9,7 @@ window.escapeHtml = function(text) {
         .replace(/'/g, '&#39;');
 };
 
-// ─── Centralized Stacked Toast Notification Engine (RULE.md Section 4.3.B) ───
+// Hệ thống hiển thị thông báo Toast tập trung
 (function() {
     'use strict';
 

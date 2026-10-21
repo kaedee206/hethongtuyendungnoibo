@@ -20,6 +20,8 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
+    <!-- Top Micro Progress Bar for Instant 0ms-50ms Navigation Transitions -->
+    <div id="atsProgressBar" class="ats-progress-bar" style="position: fixed; top: 0; left: 0; height: 3px; width: 0; background: linear-gradient(90deg, #059669 0%, #10B981 50%, #34D399 100%); z-index: 999999; transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; opacity: 0; pointer-events: none; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);"></div>
     <header class="sticky-top" style="z-index: 1030;">
         <nav class="navbar navbar-expand-lg ats-navbar">
             <div class="container-fluid px-3 px-md-4">
@@ -393,7 +395,7 @@
             <div class="ats-main-area">
 
 
-                <main role="main">
+                <main role="main" id="atsMainContent">
                     @RenderBody()
                 </main>
 
@@ -418,7 +420,7 @@
     {
 
 
-        <main role="main">
+        <main role="main" id="atsMainContent">
             @RenderBody()
         </main>
 
@@ -445,19 +447,26 @@
     <script src="~/js/instant-search.js" asp-append-version="true"></script>
     <script src="~/js/sidebar.js" asp-append-version="true"></script>
     <script src="~/js/candidate-stage.js" asp-append-version="true"></script>
+    <script src="~/js/interview-reschedule.js" asp-append-version="true"></script>
+    <script src="~/js/batch-schedule-interview.js" asp-append-version="true"></script>
+    <script src="~/js/ats-instant-page.js" asp-append-version="true"></script>
 
     @if (User.Identity?.IsAuthenticated == true)
     {
         @await Html.PartialAsync("_CandidateStageModalPartial")
         @await Html.PartialAsync("_CandidateStageHistoryPartial")
         @await Html.PartialAsync("_BatchScheduleInterviewModal")
+        @await Html.PartialAsync("_RescheduleInterviewModal")
+        @await Html.PartialAsync("_CancelInterviewModal")
     }
 
     <div id="globalAntiforgeryContainer" class="d-none">
         @Html.AntiForgeryToken()
     </div>
 
-    @await RenderSectionAsync("Scripts", required: false)
+    <div id="atsPageScripts">
+        @await RenderSectionAsync("Scripts", required: false)
+    </div>
 
     @if (User.Identity?.IsAuthenticated == true && !User.IsInRole(UserRoles.Candidate))
     {

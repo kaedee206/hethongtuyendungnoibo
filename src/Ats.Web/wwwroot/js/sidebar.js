@@ -1,7 +1,6 @@
 /**
  * ATS Sidebar Controller
- * Handles: mobile open/close, desktop collapse/expand, group toggles, active state, localStorage
- * RULE.MD Compliant – NoveraTech ATS v2.0
+ * NoveraTech ATS v2.0
  */
 
 (function () {
@@ -257,33 +256,61 @@
         });
 
         /* ─────────────────────────────────────────
-           4. ACTIVE STATE: Highlight current route
+           4. ACTIVE STATE: Highlight current route (Best-Match / Longest-Matching Target)
+           Đảm bảo DUY NHẤT một liên kết Sidebar được active tại một thời điểm
         ───────────────────────────────────────── */
-        var currentPath = window.location.pathname.toLowerCase().replace(/\/$/, '');
-        var sidebarLinks = sidebar.querySelectorAll('.sidebar-nav-link');
+        function updateAtsSidebarActive() {
+            var currentPath = window.location.pathname.toLowerCase().replace(/\/$/, '') || '/';
+            var sidebarLinks = Array.from(sidebar.querySelectorAll('.sidebar-nav-link'));
 
-        sidebarLinks.forEach(function (link) {
-            var dataPath = (link.getAttribute('data-path') || '').toLowerCase();
-            var href     = (link.getAttribute('href') || '').toLowerCase().replace(/\/$/, '');
-            var target   = dataPath || href;
+            // Xóa class active cũ
+            sidebarLinks.forEach(function (l) { l.classList.remove('active'); });
 
-            var isActive = false;
-            if (target === currentPath) {
-                isActive = true;
-            } else if (target.length > 2
-                && target !== '/dashboard'
-                && target !== '/dashboard/tong-quan'
-                && currentPath.startsWith(target)) {
-                isActive = true;
-            } else if ((target === '/dashboard' || target === '/dashboard/tong-quan')
-                && (currentPath === '/dashboard' || currentPath === '/dashboard/tong-quan')) {
-                isActive = true;
-            }
+            var bestMatchLink = null;
+            var bestMatchScore = -1;
 
-            if (isActive) {
-                link.classList.add('active');
-                // If the parent group is collapsed, auto-expand it
-                var parentSection = link.closest('.sidebar-section');
+            sidebarLinks.forEach(function (link) {
+                // Bỏ qua liên kết ngoài hoặc liên kết mở tab mới (_blank)
+                if (link.getAttribute('target') === '_blank') return;
+
+                var dataPath = (link.getAttribute('data-path') || '').toLowerCase().replace(/\/$/, '');
+                var href     = (link.getAttribute('href') || '').toLowerCase().replace(/\/$/, '');
+                var target   = dataPath || href;
+
+                if (!target) return;
+
+                var isExact = (target === currentPath);
+                var isDashboardAlias = (target === '/dashboard' || target === '/dashboard/tong-quan')
+                    && (currentPath === '/dashboard' || currentPath === '/dashboard/tong-quan');
+
+                // Chỉ cho phép prefix match khi có ranh giới đường dẫn '/' và target.length > 2
+                var isPrefix = (target.length > 2
+                    && target !== '/dashboard'
+                    && target !== '/dashboard/tong-quan'
+                    && target !== '/jobs'
+                    && currentPath.startsWith(target + '/'));
+
+                if (isExact || isDashboardAlias) {
+                    // Khớp chính xác được ưu tiên cao nhất
+                    var score = target.length + 1000;
+                    if (score > bestMatchScore) {
+                        bestMatchScore = score;
+                        bestMatchLink = link;
+                    }
+                } else if (isPrefix) {
+                    var score = target.length;
+                    if (score > bestMatchScore) {
+                        bestMatchScore = score;
+                        bestMatchLink = link;
+                    }
+                }
+            });
+
+            // Chỉ kích hoạt duy nhất liên kết có độ khớp cao nhất
+            if (bestMatchLink) {
+                bestMatchLink.classList.add('active');
+                // Nếu nhóm cha đang thu gọn, tự động bung nhóm ra
+                var parentSection = bestMatchLink.closest('.sidebar-section');
                 if (parentSection) {
                     var sectionId = parentSection.id; // e.g. "section-staff-workspace"
                     var gId       = sectionId.replace('section-', '');
@@ -294,7 +321,10 @@
                     }
                 }
             }
-        });
+        }
+
+        window.updateAtsSidebarActive = updateAtsSidebarActive;
+        updateAtsSidebarActive();
 
         /* ─────────────────────────────────────────
            5. DASHBOARD TAB SWITCHING

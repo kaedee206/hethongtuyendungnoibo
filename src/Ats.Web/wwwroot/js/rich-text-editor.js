@@ -1,8 +1,7 @@
 /**
  * =========================================================
- * NoveraTech ATS — Rich Text Editor Engine (RULE.MD Compliant)
- * Hỗ trợ định dạng: Tiêu đề (H2, H3), In đậm, In nghiêng,
- * Bullet list, Numbered list, Xóa định dạng, Chèn mẫu gợi ý.
+ * NoveraTech ATS — Rich Text Editor Engine
+ * Hỗ trợ định dạng văn bản và tự động đồng bộ Form.
  * Không phụ thuộc thư viện CDN bên ngoài, tự động đồng bộ Form.
  * =========================================================
  */
