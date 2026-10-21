@@ -82,6 +82,10 @@ public class WorkspaceController : Controller
 
     #region Role Redirects (Tránh 404 cho các vai trò nội bộ)
 
+    [HttpGet("")]
+    [HttpGet("Index")]
+    public IActionResult Index() => RedirectToAction("Index", "Home");
+
     [HttpGet("/recruiter/pipeline")]
     public IActionResult RecruiterPipeline() => RedirectToAction("Index", "Home", new { tab = "pipeline" });
 

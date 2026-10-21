@@ -660,9 +660,17 @@
             // Khởi tạo Bootstrap Tooltip cho tất cả ô điểm ma trận
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-                new bootstrap.Tooltip(tooltipTriggerEl, {
-                    delay: { show: 100, hide: 100 }
-                });
+                try {
+                    if (typeof bootstrap.Tooltip.getOrCreateInstance === 'function') {
+                        bootstrap.Tooltip.getOrCreateInstance(tooltipTriggerEl, {
+                            delay: { show: 100, hide: 100 }
+                        });
+                    } else if (!bootstrap.Tooltip.getInstance(tooltipTriggerEl)) {
+                        new bootstrap.Tooltip(tooltipTriggerEl, {
+                            delay: { show: 100, hide: 100 }
+                        });
+                    }
+                } catch (e) { }
             });
         });
 

@@ -65,11 +65,40 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold text-dark">Danh sách người phỏng vấn (Panelists) <span class="text-danger">*</span></label>
-                        <select class="form-select form-select-sm" id="reschedPanelists" multiple size="3" style="border-radius:8px; font-size:0.85rem;" onchange="validateReschedPanelists()">
-                            <!-- Render dynamically from Workspace interviewers -->
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label small fw-semibold text-dark mb-0">Hội đồng phỏng vấn (Panelists) <span class="text-danger">*</span></label>
+                            <span class="badge bg-light text-secondary border small px-2 py-0.5" id="reschedPanelistCountBadge" style="font-size: 0.7rem;">0 người đã chọn</span>
+                        </div>
+                        <div class="dropdown custom-panelist-dropdown" id="reschedPanelistDropdownWrapper">
+                            <button class="btn custom-panelist-btn form-control text-start d-flex justify-content-between align-items-center dropdown-toggle" 
+                                    type="button" id="reschedPanelistDropdownBtn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                <span class="text-truncate flex-grow-1" id="reschedPanelistBtnText">
+                                    <span class="text-muted"><i class="bi bi-people me-1.5 text-secondary"></i>Bấm để chọn người phỏng vấn...</span>
+                                </span>
+                                <i class="bi bi-chevron-down ms-2 small text-muted"></i>
+                            </button>
+                            <div class="dropdown-menu custom-panelist-menu dropdown-menu-start shadow-sm" aria-labelledby="reschedPanelistDropdownBtn">
+                                <div class="px-1 pb-2 border-bottom mb-2">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-light border-end-0 text-muted" style="border-color: #CBD5E1; border-radius: 6px 0 0 6px;"><i class="bi bi-search"></i></span>
+                                        <input type="text" class="form-control custom-panelist-search border-start-0" id="reschedPanelistSearchInput" placeholder="Tìm theo tên, email, vai trò..." style="border-radius: 0 6px 6px 0;" oninput="filterPanelistDropdown('resched')">
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-1.5 px-1">
+                                        <a href="javascript:void(0)" class="text-decoration-none small text-success fw-semibold" style="font-size: 0.72rem;" onclick="selectAllPanelists('resched', true)">
+                                            <i class="bi bi-check-all me-0.5"></i>Chọn tất cả
+                                        </a>
+                                        <a href="javascript:void(0)" class="text-decoration-none small text-muted" style="font-size: 0.72rem;" onclick="selectAllPanelists('resched', false)">
+                                            Bỏ chọn
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="custom-panelist-list" id="reschedPanelistList">
+                                    <div class="text-center py-3 text-muted small"><span class="spinner-border spinner-border-sm me-1 text-success"></span>Đang tải danh sách nhân sự...</div>
+                                </div>
+                            </div>
+                        </div>
+                        <select class="d-none" id="reschedPanelists" multiple onchange="validateReschedPanelists()">
                         </select>
-                        <small class="text-muted" style="font-size:0.75rem;">Giữ Ctrl (Windows) hoặc Cmd (Mac) để chọn hoặc đổi người phỏng vấn.</small>
                         <div id="reschedPanelistError" class="text-danger small mt-1 d-none" style="font-size:0.75rem;">
                             <i class="bi bi-exclamation-circle-fill me-1"></i>Vui lòng chọn ít nhất một người phỏng vấn.
                         </div>
