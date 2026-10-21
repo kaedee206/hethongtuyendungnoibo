@@ -1462,6 +1462,164 @@ namespace Ats.Web.Migrations
                     b.ToTable("evaluation_criterias", (string)null);
                 });
 
+            modelBuilder.Entity("Ats.Web.Models.Entities.EvaluationForm", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("application_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_id");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid>("EvaluatorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("evaluator_id");
+
+                    b.Property<string>("GeneralNotes")
+                        .HasColumnType("text")
+                        .HasColumnName("general_notes");
+
+                    b.Property<Guid>("InterviewId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("interview_id");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("OverallRecommendation")
+                        .HasColumnType("text")
+                        .HasColumnName("overall_recommendation");
+
+                    b.Property<string>("SnapshotVersion")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("snapshot_version");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<decimal>("TotalScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("total_score");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_evaluation_forms");
+
+                    b.HasIndex("ApplicationId")
+                        .HasDatabaseName("ix_evaluation_forms_application_id");
+
+                    b.HasIndex("EvaluatorId")
+                        .HasDatabaseName("ix_evaluation_forms_evaluator_id");
+
+                    b.HasIndex("InterviewId")
+                        .HasDatabaseName("ix_evaluation_forms_interview_id");
+
+                    b.HasIndex("InterviewId", "EvaluatorId")
+                        .HasDatabaseName("ix_evaluation_forms_interview_id_evaluator_id");
+
+                    b.ToTable("evaluation_forms", (string)null);
+                });
+
+            modelBuilder.Entity("Ats.Web.Models.Entities.EvaluationItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("text")
+                        .HasColumnName("comment");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_id");
+
+                    b.Property<string>("CriteriaDescription")
+                        .HasColumnType("text")
+                        .HasColumnName("criteria_description");
+
+                    b.Property<Guid?>("CriteriaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("criteria_id");
+
+                    b.Property<string>("CriteriaName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("criteria_name");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid>("EvaluationFormId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("evaluation_form_id");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer")
+                        .HasColumnName("score");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_id");
+
+                    b.Property<decimal>("Weight")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("weight");
+
+                    b.HasKey("Id")
+                        .HasName("pk_evaluation_items");
+
+                    b.HasIndex("EvaluationFormId")
+                        .HasDatabaseName("ix_evaluation_items_evaluation_form_id");
+
+                    b.ToTable("evaluation_items", (string)null);
+                });
+
             modelBuilder.Entity("Ats.Web.Models.Entities.EvaluationScore", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1519,6 +1677,83 @@ namespace Ats.Web.Migrations
                         .HasDatabaseName("ix_evaluation_scores_evaluation_id");
 
                     b.ToTable("evaluation_scores", (string)null);
+                });
+
+            modelBuilder.Entity("Ats.Web.Models.Entities.InAppNotification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("content");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_id");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<bool>("IsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_read");
+
+                    b.Property<DateTimeOffset?>("ReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("read_at");
+
+                    b.Property<Guid>("RecipientUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recipient_user_id");
+
+                    b.Property<string>("TargetUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("target_url");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("type");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_in_app_notifications");
+
+                    b.HasIndex("RecipientUserId", "IsRead", "CreatedAt")
+                        .HasDatabaseName("ix_in_app_notifications_recipient_isread_created");
+
+                    b.ToTable("in_app_notifications", (string)null);
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.Interview", b =>
@@ -1637,6 +1872,10 @@ namespace Ats.Web.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_deleted");
 
+                    b.Property<bool>("IsReopened")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_reopened");
+
                     b.Property<bool>("IsSubmitted")
                         .HasColumnType("boolean")
                         .HasColumnName("is_submitted");
@@ -1648,6 +1887,18 @@ namespace Ats.Web.Migrations
                     b.Property<int>("Recommendation")
                         .HasColumnType("integer")
                         .HasColumnName("recommendation");
+
+                    b.Property<string>("ReopenReason")
+                        .HasColumnType("text")
+                        .HasColumnName("reopen_reason");
+
+                    b.Property<DateTimeOffset?>("ReopenedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reopened_at");
+
+                    b.Property<Guid?>("ReopenedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reopened_by_user_id");
 
                     b.Property<string>("Strengths")
                         .HasColumnType("text")
@@ -1677,6 +1928,9 @@ namespace Ats.Web.Migrations
 
                     b.HasIndex("InterviewerId")
                         .HasDatabaseName("ix_interview_evaluations_interviewer_id");
+
+                    b.HasIndex("ReopenedByUserId")
+                        .HasDatabaseName("ix_interview_evaluations_reopened_by_user_id");
 
                     b.ToTable("interview_evaluations", (string)null);
                 });
@@ -2234,68 +2488,6 @@ namespace Ats.Web.Migrations
                         .HasDatabaseName("ix_job_requisitions_over_quota_approved_by_id");
 
                     b.ToTable("job_requisitions", (string)null);
-                });
-
-            modelBuilder.Entity("Ats.Web.Models.Entities.Notification", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("content");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_read");
-
-                    b.Property<string>("Link")
-                        .HasColumnType("text")
-                        .HasColumnName("link");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("title");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_notifications");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_notifications_user_id");
-
-                    b.ToTable("notifications", (string)null);
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.OfferApproval", b =>
@@ -3722,6 +3914,48 @@ namespace Ats.Web.Migrations
                     b.Navigation("Department");
                 });
 
+            modelBuilder.Entity("Ats.Web.Models.Entities.EvaluationForm", b =>
+                {
+                    b.HasOne("Ats.Web.Models.Entities.Application", "Application")
+                        .WithMany()
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_evaluation_forms_applications_application_id");
+
+                    b.HasOne("Ats.Web.Models.Entities.User", "Evaluator")
+                        .WithMany()
+                        .HasForeignKey("EvaluatorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_evaluation_forms_users_evaluator_id");
+
+                    b.HasOne("Ats.Web.Models.Entities.Interview", "Interview")
+                        .WithMany()
+                        .HasForeignKey("InterviewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_evaluation_forms_interviews_interview_id");
+
+                    b.Navigation("Application");
+
+                    b.Navigation("Evaluator");
+
+                    b.Navigation("Interview");
+                });
+
+            modelBuilder.Entity("Ats.Web.Models.Entities.EvaluationItem", b =>
+                {
+                    b.HasOne("Ats.Web.Models.Entities.EvaluationForm", "EvaluationForm")
+                        .WithMany("Items")
+                        .HasForeignKey("EvaluationFormId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_evaluation_items_evaluation_forms_evaluation_form_id");
+
+                    b.Navigation("EvaluationForm");
+                });
+
             modelBuilder.Entity("Ats.Web.Models.Entities.EvaluationScore", b =>
                 {
                     b.HasOne("Ats.Web.Models.Entities.EvaluationCriteria", "Criteria")
@@ -3741,6 +3975,18 @@ namespace Ats.Web.Migrations
                     b.Navigation("Criteria");
 
                     b.Navigation("Evaluation");
+                });
+
+            modelBuilder.Entity("Ats.Web.Models.Entities.InAppNotification", b =>
+                {
+                    b.HasOne("Ats.Web.Models.Entities.User", "RecipientUser")
+                        .WithMany()
+                        .HasForeignKey("RecipientUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_in_app_notifications_users_recipient_user_id");
+
+                    b.Navigation("RecipientUser");
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.Interview", b =>
@@ -3771,9 +4017,17 @@ namespace Ats.Web.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_interview_evaluations_users_interviewer_id");
 
+                    b.HasOne("Ats.Web.Models.Entities.User", "ReopenedByUser")
+                        .WithMany()
+                        .HasForeignKey("ReopenedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_interview_evaluations_users_reopened_by_user_id");
+
                     b.Navigation("Interview");
 
                     b.Navigation("Interviewer");
+
+                    b.Navigation("ReopenedByUser");
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.InterviewPanelist", b =>
@@ -3907,18 +4161,6 @@ namespace Ats.Web.Migrations
                     b.Navigation("JobPosition");
 
                     b.Navigation("OverQuotaApprovedBy");
-                });
-
-            modelBuilder.Entity("Ats.Web.Models.Entities.Notification", b =>
-                {
-                    b.HasOne("Ats.Web.Models.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_notifications_users_user_id");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.OfferApproval", b =>
@@ -4210,6 +4452,11 @@ namespace Ats.Web.Migrations
                     b.Navigation("Children");
 
                     b.Navigation("JobPositions");
+                });
+
+            modelBuilder.Entity("Ats.Web.Models.Entities.EvaluationForm", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("Ats.Web.Models.Entities.Interview", b =>

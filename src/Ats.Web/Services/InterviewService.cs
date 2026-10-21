@@ -23,12 +23,14 @@ public class InterviewService(
     ApplicationDbContext dbContext,
     IEmailService emailService,
     IRequisitionAssignmentService? assignmentService,
-    ILogger<InterviewService> logger) : IInterviewService
+    ILogger<InterviewService> logger,
+    INotificationService? notificationService = null) : IInterviewService
 {
     private readonly ApplicationDbContext _dbContext = dbContext;
     private readonly IEmailService _emailService = emailService;
     private readonly IRequisitionAssignmentService? _assignmentService = assignmentService;
     private readonly ILogger<InterviewService> _logger = logger;
+    private readonly INotificationService? _notificationService = notificationService;
 
     private static readonly TimeZoneInfo VietnamTimeZone = GetVietnamTimeZone();
 
@@ -543,6 +545,21 @@ public class InterviewService(
         var panelistStr = string.Join(", ", panelistNames);
         var candEmail = application.Candidate?.Email;
         var candJobTitle = application.JobPosting?.Title ?? "Vị trí tuyển dụng";
+
+        // Gửi In-App Notification bất đồng bộ cho toàn bộ giám khảo được gán vào hội đồng
+        if (_notificationService != null)
+        {
+            foreach (var inv in interviewers)
+            {
+                await _notificationService.QueueNotificationAsync(
+                    inv.Id,
+                    $"Lời mời tham gia hội đồng phỏng vấn: {candJobTitle}",
+                    $"Bạn được mời tham gia phỏng vấn ứng viên {candFullName} cho vị trí '{candJobTitle}' ({roundTitle}) vào lúc {startUtc.ToOffset(TimeSpan.FromHours(7)):HH:mm dd/MM/yyyy}.",
+                    $"/danh-gia/{interview.Id}",
+                    NotificationType.InterviewInvitation,
+                    cancellationToken);
+            }
+        }
 
         if (!string.IsNullOrWhiteSpace(candEmail))
         {
@@ -2042,19 +2059,18 @@ public async Task<BatchSchedulePreviewResultDto> PreviewBatchScheduleAsync(
             .Select(g => g.First())
             .ToList();
 
-        foreach (var invUser in allAffectedInterviewerUsers)
+        if (_notificationService != null)
         {
-            await _dbContext.Notifications.AddAsync(new Notification
+            foreach (var invUser in allAffectedInterviewerUsers)
             {
-                Id = Guid.NewGuid(),
-                UserId = invUser.Id,
-                Title = $"Lịch phỏng vấn đã được dời: {jobTitle}",
-                Content = $"Phiên phỏng vấn ứng viên {candName} ({interview.Title}) đã dời sang {startUtc.ToOffset(TimeSpan.FromHours(7)):HH:mm dd/MM/yyyy}. Hình thức: {(interviewType == InterviewType.ONLINE_MEET ? "Online Google Meet" : "Trực tiếp tại VP")}.{(!string.IsNullOrWhiteSpace(reason) ? $" Lý do: {reason}" : "")}",
-                Link = "/dashboard/lich-phong-van",
-                IsRead = false,
-                CreatedAt = DateTimeOffset.UtcNow,
-                UpdatedAt = DateTimeOffset.UtcNow
-            }, cancellationToken);
+                await _notificationService.QueueNotificationAsync(
+                    invUser.Id,
+                    $"Lịch phỏng vấn đã được dời: {jobTitle}",
+                    $"Phiên phỏng vấn ứng viên {candName} ({interview.Title}) đã dời sang {startUtc.ToOffset(TimeSpan.FromHours(7)):HH:mm dd/MM/yyyy}. Hình thức: {(interviewType == InterviewType.ONLINE_MEET ? "Online Google Meet" : "Trực tiếp tại VP")}.{(!string.IsNullOrWhiteSpace(reason) ? $" Lý do: {reason}" : "")}",
+                    $"/danh-gia/{interview.Id}",
+                    NotificationType.InterviewInvitation,
+                    cancellationToken);
+            }
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -2259,19 +2275,18 @@ public async Task<BatchSchedulePreviewResultDto> PreviewBatchScheduleAsync(
 
         // 6. Gửi In-App Notification cho toàn bộ giám khảo trong hội đồng phỏng vấn
         var activePanelists = interview.Panelists.Where(p => !p.IsDeleted).Select(p => p.Interviewer).Where(u => u != null).ToList();
-        foreach (var panelistUser in activePanelists)
+        if (_notificationService != null)
         {
-            await _dbContext.Notifications.AddAsync(new Notification
+            foreach (var panelistUser in activePanelists)
             {
-                Id = Guid.NewGuid(),
-                UserId = panelistUser.Id,
-                Title = $"Buổi phỏng vấn đã bị huỷ: {jobTitle}",
-                Content = $"Buổi phỏng vấn ứng viên {candName} ({interview.Title}) dự kiến lúc {scheduledTime.ToOffset(TimeSpan.FromHours(7)):HH:mm dd/MM/yyyy} đã bị huỷ. Lý do: {cleanReason}",
-                Link = "/dashboard/lich-phong-van",
-                IsRead = false,
-                CreatedAt = DateTimeOffset.UtcNow,
-                UpdatedAt = DateTimeOffset.UtcNow
-            }, cancellationToken);
+                await _notificationService.QueueNotificationAsync(
+                    panelistUser.Id,
+                    $"Buổi phỏng vấn đã bị huỷ: {jobTitle}",
+                    $"Buổi phỏng vấn ứng viên {candName} ({interview.Title}) dự kiến lúc {scheduledTime.ToOffset(TimeSpan.FromHours(7)):HH:mm dd/MM/yyyy} đã bị huỷ. Lý do: {cleanReason}",
+                    "/dashboard/lich-phong-van",
+                    NotificationType.InterviewInvitation,
+                    cancellationToken);
+            }
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);

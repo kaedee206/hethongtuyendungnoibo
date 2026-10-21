@@ -35,6 +35,7 @@ public class WorkspaceController : Controller
     private readonly IInterviewEvaluationService? _interviewEvaluationService;
     private readonly IInterviewService? _interviewService;
     private readonly ICandidateInterviewService? _candidateInterviewService;
+    private readonly IOfferService? _offerService;
 
     [ActivatorUtilitiesConstructor]
     public WorkspaceController(
@@ -52,7 +53,8 @@ public class WorkspaceController : Controller
         IRequisitionAssignmentService? assignmentService = null,
         IInterviewEvaluationService? interviewEvaluationService = null,
         IInterviewService? interviewService = null,
-        ICandidateInterviewService? candidateInterviewService = null)
+        ICandidateInterviewService? candidateInterviewService = null,
+        IOfferService? offerService = null)
     {
         _dbContext = dbContext;
         _env = env;
@@ -69,6 +71,7 @@ public class WorkspaceController : Controller
         _interviewEvaluationService = interviewEvaluationService;
         _interviewService = interviewService;
         _candidateInterviewService = candidateInterviewService;
+        _offerService = offerService;
     }
 
     public WorkspaceController(
@@ -76,7 +79,7 @@ public class WorkspaceController : Controller
         IWebHostEnvironment env,
         IEmailService emailService,
         ILogger<WorkspaceController> logger)
-        : this(dbContext, env, emailService, null!, null!, null!, logger, null!, null!, null!, null!, null!, null!, null!, null!)
+        : this(dbContext, env, emailService, null!, null!, null!, logger, null!, null!, null!, null!, null!, null!, null!, null!, null!)
     {
     }
 
@@ -1871,6 +1874,17 @@ public class WorkspaceController : Controller
                 }
             });
 
+            // Bắn thông báo In-App chờ phê duyệt Offer cho các Approver / HR Manager
+            if (_offerService != null)
+            {
+                await _offerService.NotifyOfferPendingApprovalAsync(
+                    offer,
+                    application.CandidateId,
+                    candFullName,
+                    application.JobPosting?.Title ?? "Vị trí tuyển dụng",
+                    baseSalary);
+            }
+
             return Json(new
             {
                 success = true,
@@ -1883,6 +1897,34 @@ public class WorkspaceController : Controller
             _logger.LogError(ex, "Lỗi khi tạo đề xuất Offer");
             return Json(new { success = false, message = "Lỗi khi tạo Offer: " + ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Xử lý phản hồi Thư mời nhận việc từ ứng viên (Chấp thuận, Từ chối, Thương lượng lại) (SP-8).
+    /// Bắn thông báo In-App tới Recruiter phụ trách.
+    /// </summary>
+    [HttpPost("RespondOffer")]
+    public async Task<IActionResult> RespondOffer(
+        [FromForm] Guid offerId,
+        [FromForm] string responseType,
+        [FromForm] string? comment,
+        CancellationToken cancellationToken)
+    {
+        if (_offerService == null)
+        {
+            return Json(new { success = false, message = "OfferService chưa được cấu hình." });
+        }
+
+        var normalizedType = responseType?.Trim().ToUpperInvariant();
+        (bool Success, string Message) result = normalizedType switch
+        {
+            "ACCEPT" => await _offerService.AcceptOfferAsync(offerId, comment, cancellationToken),
+            "REJECT" => await _offerService.RejectOfferAsync(offerId, comment, cancellationToken),
+            "REVISE" => await _offerService.ReviseOfferAsync(offerId, comment, cancellationToken),
+            _ => (false, "Loại phản hồi không hợp lệ. Vui lòng chọn ACCEPT, REJECT hoặc REVISE.")
+        };
+
+        return Json(new { success = result.Success, message = result.Message });
     }
 
     /// <summary>

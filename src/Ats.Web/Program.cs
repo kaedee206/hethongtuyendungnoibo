@@ -2,6 +2,7 @@ using System.Threading.RateLimiting;
 using Ats.Web.Data;
 using Ats.Web.Services;
 using Ats.Web.Services.Interfaces;
+using Ats.Web.Services.Notifications;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
@@ -139,6 +140,12 @@ builder.Services.AddScoped<ICandidateEvaluationComparisonService, CandidateEvalu
 builder.Services.AddScoped<ICandidateInterviewService, CandidateInterviewService>();
 builder.Services.AddSingleton<IJobExpirationService, JobExpirationService>();
 builder.Services.AddHostedService<JobExpirationBackgroundService>();
+
+// SP-8: In-App Notification System & Offer Service
+builder.Services.AddSingleton<INotificationChannel, NotificationChannel>();
+builder.Services.AddHostedService<NotificationBackgroundService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IOfferService, OfferService>();
 
 // Cấu hình Rate Limiting bảo vệ các endpoint nhạy cảm (OWASP A04 / A07)
 builder.Services.AddRateLimiter(options =>

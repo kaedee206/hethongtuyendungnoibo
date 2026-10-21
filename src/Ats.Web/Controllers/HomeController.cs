@@ -949,63 +949,6 @@ public class HomeController : Controller
         return RedirectPermanent("/gioi-thieu");
     }
 
-    [HttpGet("/api/notifications/recent")]
-    public async Task<IActionResult> GetRecentNotifications()
-    {
-        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdStr, out var userId))
-        {
-            return Ok(new { success = true, unreadCount = 0, items = Array.Empty<object>() });
-        }
-
-        var notifs = await _dbContext.Notifications
-            .Where(n => n.UserId == userId)
-            .OrderByDescending(n => n.CreatedAt)
-            .Take(10)
-            .ToListAsync();
-
-        return Ok(new
-        {
-            success = true,
-            unreadCount = notifs.Count(n => !n.IsRead),
-            items = notifs.Select(n => new
-            {
-                id = n.Id,
-                title = n.Title,
-                content = n.Content,
-                link = n.Link ?? "/dashboard/ung-vien",
-                isRead = n.IsRead,
-                timeDisplay = n.CreatedAt.ToString("HH:mm dd/MM")
-            })
-        });
-    }
-
-    [HttpPost("/api/notifications/mark-read/{id}")]
-    [Authorize]
-    public async Task<IActionResult> MarkNotificationRead(Guid id)
-    {
-        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdStr, out var currentUserId))
-        {
-            return Unauthorized(new { success = false, message = "Chưa xác thực người dùng." });
-        }
-
-        var notif = await _dbContext.Notifications.FirstOrDefaultAsync(n => n.Id == id);
-        if (notif == null)
-        {
-            return NotFound(new { success = false, message = "Không tìm thấy thông báo." });
-        }
-
-        if (notif.UserId != currentUserId)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Bạn không có quyền sửa đổi thông báo của người khác." });
-        }
-
-        notif.IsRead = true;
-        await _dbContext.SaveChangesAsync();
-        return Ok(new { success = true });
-    }
-
     public IActionResult Privacy()
     {
         return View();

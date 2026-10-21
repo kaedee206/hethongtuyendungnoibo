@@ -16,6 +16,7 @@ public class RequisitionService : IRequisitionService
     private readonly ApplicationDbContext _dbContext;
     private readonly IApprovalRuleService _approvalRuleService;
     private readonly IDepartmentBudgetService _departmentBudgetService;
+    private readonly INotificationService? _notificationService;
     private readonly ILogger<RequisitionService> _logger;
 
     [ActivatorUtilitiesConstructor]
@@ -23,19 +24,30 @@ public class RequisitionService : IRequisitionService
         ApplicationDbContext dbContext,
         IApprovalRuleService approvalRuleService,
         IDepartmentBudgetService departmentBudgetService,
+        INotificationService notificationService,
         ILogger<RequisitionService> logger)
     {
         _dbContext = dbContext;
         _approvalRuleService = approvalRuleService;
         _departmentBudgetService = departmentBudgetService;
+        _notificationService = notificationService;
         _logger = logger;
     }
 
     public RequisitionService(
         ApplicationDbContext dbContext,
         IApprovalRuleService approvalRuleService,
+        IDepartmentBudgetService departmentBudgetService,
         ILogger<RequisitionService> logger)
-        : this(dbContext, approvalRuleService, new DepartmentBudgetService(dbContext, Microsoft.Extensions.Logging.Abstractions.NullLogger<DepartmentBudgetService>.Instance), logger)
+        : this(dbContext, approvalRuleService, departmentBudgetService, null!, logger)
+    {
+    }
+
+    public RequisitionService(
+        ApplicationDbContext dbContext,
+        IApprovalRuleService approvalRuleService,
+        ILogger<RequisitionService> logger)
+        : this(dbContext, approvalRuleService, new DepartmentBudgetService(dbContext, Microsoft.Extensions.Logging.Abstractions.NullLogger<DepartmentBudgetService>.Instance), null!, logger)
     {
     }
 
@@ -43,7 +55,7 @@ public class RequisitionService : IRequisitionService
         ApplicationDbContext dbContext,
         IDepartmentBudgetService departmentBudgetService,
         ILogger<RequisitionService> logger)
-        : this(dbContext, new ApprovalRuleService(dbContext), departmentBudgetService, logger)
+        : this(dbContext, new ApprovalRuleService(dbContext), departmentBudgetService, null!, logger)
     {
     }
 
@@ -835,6 +847,19 @@ public class RequisitionService : IRequisitionService
                     requisition.Status = RequisitionStatus.PENDING_APPROVAL;
                     requisition.UpdatedAt = now;
                     await _dbContext.SaveChangesAsync(cancellationToken);
+
+                    if (_notificationService != null && nextStep.ApproverId != Guid.Empty)
+                    {
+                        var posTitle = requisition.JobPosition?.Title ?? requisition.Code;
+                        await _notificationService.QueueNotificationAsync(
+                            nextStep.ApproverId,
+                            $"Yêu cầu tuyển dụng chờ duyệt: {requisition.Code}",
+                            $"Yêu cầu tuyển dụng vị trí '{posTitle}' ({requisition.Code}) đã được phê duyệt ở bước trước và đang chờ bạn xem xét.",
+                            "/yeu-cau-tuyen-dung",
+                            NotificationType.ApprovalPending,
+                            cancellationToken);
+                    }
+
                     _logger.LogInformation("Người dùng {UserId} đã duyệt bước {Step} cho yêu cầu {Code}. Tự động chuyển bước {NextStep}.",
                         currentUserId, currentStep.StepOrder, requisition.Code, nextStep.StepOrder);
                     return (true, $"Đã phê duyệt thành công Cấp {currentStep.StepOrder}. Yêu cầu tuyển dụng tự động chuyển sang Cấp {nextStep.StepOrder} để tiếp tục xét duyệt.");
@@ -1509,6 +1534,22 @@ public class RequisitionService : IRequisitionService
         }
 
         await _dbContext.RequisitionApprovals.AddRangeAsync(approvalSteps, cancellationToken);
+
+        if (_notificationService != null)
+        {
+            var firstStep = approvalSteps.FirstOrDefault(s => s.StepOrder == 1);
+            if (firstStep != null && firstStep.ApproverId != Guid.Empty)
+            {
+                var posTitle = requisition.JobPosition?.Title ?? requisition.Code;
+                await _notificationService.QueueNotificationAsync(
+                    firstStep.ApproverId,
+                    $"Yêu cầu tuyển dụng chờ duyệt: {requisition.Code}",
+                    $"Yêu cầu tuyển dụng vị trí '{posTitle}' ({requisition.Code}) đang chờ bạn xem xét và phê duyệt.",
+                    "/yeu-cau-tuyen-dung",
+                    NotificationType.ApprovalPending,
+                    cancellationToken);
+            }
+        }
     }
 
     private static string StripHtml(string? html)

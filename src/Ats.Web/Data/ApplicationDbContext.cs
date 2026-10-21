@@ -42,7 +42,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<OfferApproval> OfferApprovals { get; set; }
 
     public DbSet<EmailLog> EmailLogs { get; set; }
-    public DbSet<Notification> Notifications { get; set; }
+    public DbSet<InAppNotification> InAppNotifications { get; set; }
+    public DbSet<InAppNotification> Notifications => InAppNotifications;
 
     public DbSet<CompetencyFramework> CompetencyFrameworks { get; set; }
     public DbSet<CompetencyCriterion> CompetencyCriteria { get; set; }
@@ -534,6 +535,27 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Weight).HasPrecision(18, 4);
             entity.HasIndex(e => e.EvaluationFormId);
+        });
+
+        // SP-8: In-App Notification mapping
+        modelBuilder.Entity<InAppNotification>(entity =>
+        {
+            entity.ToTable("in_app_notifications");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Content).HasMaxLength(1000).IsRequired();
+            entity.Property(e => e.TargetUrl).HasMaxLength(500);
+            entity.Property(e => e.Type).HasConversion<string>().HasMaxLength(50);
+            entity.Property(e => e.IsRead).HasDefaultValue(false);
+
+            entity.HasOne(e => e.RecipientUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.RecipientUserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => new { e.RecipientUserId, e.IsRead, e.CreatedAt })
+                  .HasDatabaseName("ix_in_app_notifications_recipient_isread_created");
         });
     }
 }

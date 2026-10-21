@@ -13,12 +13,13 @@ public class RequisitionAssignmentService : IRequisitionAssignmentService
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly IMemoryCache _memoryCache;
+    private readonly INotificationService? _notificationService;
     private readonly ILogger<RequisitionAssignmentService> _logger;
 
     public RequisitionAssignmentService(
         ApplicationDbContext dbContext,
         ILogger<RequisitionAssignmentService> logger)
-        : this(dbContext, new MemoryCache(new MemoryCacheOptions()), logger)
+        : this(dbContext, new MemoryCache(new MemoryCacheOptions()), null, logger)
     {
     }
 
@@ -26,9 +27,19 @@ public class RequisitionAssignmentService : IRequisitionAssignmentService
         ApplicationDbContext dbContext,
         IMemoryCache memoryCache,
         ILogger<RequisitionAssignmentService> logger)
+        : this(dbContext, memoryCache, null, logger)
+    {
+    }
+
+    public RequisitionAssignmentService(
+        ApplicationDbContext dbContext,
+        IMemoryCache memoryCache,
+        INotificationService? notificationService,
+        ILogger<RequisitionAssignmentService> logger)
     {
         _dbContext = dbContext;
         _memoryCache = memoryCache;
+        _notificationService = notificationService;
         _logger = logger;
     }
 
@@ -532,6 +543,37 @@ public class RequisitionAssignmentService : IRequisitionAssignmentService
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         _memoryCache.Remove("lookup_available_recruiters");
+
+        if (_notificationService != null)
+        {
+            var jobTitle = requisition.JobPosition?.Title ?? requisition.Code;
+            var isAssignedToNewLead = !previousLeadId.HasValue || previousLeadId.Value != model.LeadRecruiterId;
+
+            if (model.LeadRecruiterId != Guid.Empty && isAssignedToNewLead)
+            {
+                await _notificationService.QueueNotificationAsync(
+                    model.LeadRecruiterId,
+                    $"Phân công phụ trách vị trí: {jobTitle}",
+                    $"Bạn đã được phân công làm Recruiter phụ trách chính cho yêu cầu tuyển dụng '{requisition.Code}' ({jobTitle}).",
+                    "/yeu-cau-tuyen-dung/phan-cong",
+                    NotificationType.JobAssigned,
+                    cancellationToken);
+            }
+
+            if (model.SupportingRecruiterIds != null && model.SupportingRecruiterIds.Count > 0)
+            {
+                foreach (var supId in model.SupportingRecruiterIds.Where(id => id != Guid.Empty && id != model.LeadRecruiterId))
+                {
+                    await _notificationService.QueueNotificationAsync(
+                        supId,
+                        $"Phân công hỗ trợ tuyển dụng: {jobTitle}",
+                        $"Bạn đã được phân công tham gia hỗ trợ tuyển dụng cho yêu cầu '{requisition.Code}' ({jobTitle}).",
+                        "/yeu-cau-tuyen-dung/phan-cong",
+                        NotificationType.JobAssigned,
+                        cancellationToken);
+                }
+            }
+        }
 
         var msg = isLeadChanged
             ? $"Đã chuyển giao người phụ trách vị trí '{requisition.JobPosition?.Title ?? requisition.Code}' sang {newLeadUser.FullName} thành công."
