@@ -1,15 +1,18 @@
 /**
  * Quản lý tương tác và kiểm thực dữ liệu cho Form Khai báo Yêu cầu Tuyển dụng (EP-03_Requisition).
  * Hỗ trợ Multi-Step Form (3 bước: Thông tin cơ bản -> Mô tả & Tiêu chuẩn -> Xem lại & Gửi duyệt).
- * Tuân thủ RULE.md & Coding_Convention.md:
- * - Bảo toàn dữ liệu 100% khi chuyển qua lại giữa các bước.
+ * - Bảo toàn dữ liệu khi chuyển qua lại giữa các bước.
  * - Cho phép lưu nháp ở bất kỳ bước nào.
  * - Tự động lưu ngầm định kỳ 30 giây (Auto-Save).
  * - Render bản xem lại (Review summary) trực quan trước khi gửi duyệt.
  */
-document.addEventListener('DOMContentLoaded', function () {
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+        initRequisitionForms();
+    });
+} else {
     initRequisitionForms();
-});
+}
 
 function initRequisitionForms() {
     const forms = document.querySelectorAll('.requisition-entry-form');
@@ -349,9 +352,6 @@ function setupRequisitionForm(form) {
 
                 return true;
             }
-        }
-
-        return true;
     }
 
     function validateDate() {

@@ -687,7 +687,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const duration = Math.max(0.5, performance.now() - startTime).toFixed(1);
         if (latencyBadge && latencyValue) {
             latencyValue.textContent = `${duration}ms`;
-            if (query || dept !== 'all' || loc !== 'all' || lvl !== 'all') {
+            if (query || dept !== 'all' || loc !== 'all' || emp !== 'all') {
                 latencyBadge.classList.remove('d-none');
             } else {
                 latencyBadge.classList.add('d-none');

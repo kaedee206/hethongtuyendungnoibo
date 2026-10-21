@@ -88,6 +88,9 @@ public class JobsController : Controller
         model.LastAutoScanTime = lastScan.ScanTime;
         model.LastAutoScanExpiredCount = lastScan.ExpiredCount;
 
+        ViewBag.Locations = await _catalogService.GetSelectListByTypeAsync("LOCATION");
+        ViewBag.EmploymentTypes = await _catalogService.GetSelectListByTypeAsync("WORK_TYPE");
+
         return View("Manage", model);
     }
 
@@ -618,11 +621,32 @@ public class JobsController : Controller
     }
 
     /// <summary>
+    /// GET /api/jobs/{id} - Lấy chi tiết tin đăng tuyển dụng dạng JSON cho Live Preview và Form Chỉnh sửa trực tiếp
+    /// </summary>
+    [HttpGet("/api/jobs/{id}")]
+    [Authorize]
+    public async Task<IActionResult> GetJobJson(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(new { success = false, message = "Mã bài đăng không hợp lệ." });
+        }
+
+        var model = await _jobService.GetJobDetailAsync(id);
+        if (model == null || model.Job == null)
+        {
+            return NotFound(new { success = false, message = "Không tìm thấy thông tin tin tuyển dụng yêu cầu." });
+        }
+
+        return Ok(new { success = true, data = model.Job });
+    }
+
+    /// <summary>
     /// PATCH /api/jobs/{id} - RESTful Endpoint cập nhật bài đăng tuyển dụng
-    /// RBAC Policy Guard: (user.role == 'Recruiter' || user.department == 'HR') && (isAuthor || isAdmin)
+    /// RBAC Policy Guard: Recruiter / HR / Admin / Author
     /// </summary>
     [HttpPatch("/api/jobs/{id}")]
-    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},{UserRoles.HiringManager}")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.NameAdmin},{UserRoles.NameHRManager},{UserRoles.NameRecruiter},{UserRoles.NameHiringManager},Quản trị viên,Quản trị viên hệ thống,Trưởng phòng nhân sự,Chuyên viên tuyển dụng,Nhân viên tuyển dụng,Trưởng bộ phận,Quản trị hệ thống")]
     [IgnoreAntiforgeryToken]
     public async Task<IActionResult> PatchJob(string id, [FromBody] PatchJobPostingDto dto)
     {
@@ -635,13 +659,21 @@ public class JobsController : Controller
         _ = Guid.TryParse(userIdStr, out var currentUserId);
         var userDept = User.FindFirstValue("Department") ?? "";
         
-        var isRecruiterOrHr = User.IsInRole(UserRoles.Recruiter) || 
-                              User.IsInRole(UserRoles.HRManager) || 
-                              User.IsInRole(UserRoles.Admin) || 
+        var isAdmin = User.IsInRole(UserRoles.Admin) || 
+                      User.IsInRole(UserRoles.HRManager) ||
+                      User.IsInRole(UserRoles.NameAdmin) ||
+                      User.IsInRole(UserRoles.NameHRManager) ||
+                      User.IsInRole("Quản trị viên") ||
+                      User.IsInRole("Quản trị viên hệ thống") ||
+                      User.IsInRole("Trưởng phòng nhân sự");
+
+        var isRecruiterOrHr = isAdmin ||
+                              User.IsInRole(UserRoles.Recruiter) || 
+                              User.IsInRole(UserRoles.NameRecruiter) ||
+                              User.IsInRole("Chuyên viên tuyển dụng") ||
+                              User.IsInRole("Nhân viên tuyển dụng") ||
                               userDept.Equals("HR", StringComparison.OrdinalIgnoreCase) ||
                               userDept.Contains("Nhân sự", StringComparison.OrdinalIgnoreCase);
-
-        var isAdmin = User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager);
 
         JobPosting? posting = null;
         if (Guid.TryParse(id, out var jobGuid))
@@ -672,12 +704,12 @@ public class JobsController : Controller
         var isAuthor = (posting.CreatedById.HasValue && posting.CreatedById == currentUserId) ||
                        (posting.Requisition != null && posting.Requisition.HiringManagerId == currentUserId);
 
-        if (!isRecruiterOrHr || (!isAuthor && !isAdmin))
+        if (!isRecruiterOrHr && !isAdmin && !isAuthor)
         {
             _logger.LogWarning("Truy cập trái phép: User {UserId} cố gắng sửa bài đăng {PostingId} nhưng không thỏa mãn RBAC policy.", currentUserId, posting.Id);
             return StatusCode(StatusCodes.Status403Forbidden, new { 
                 success = false, 
-                message = "Bạn không có quyền chỉnh sửa bài đăng này (Yêu cầu vai trò Recruiter/HR và là tác giả hoặc Quản trị viên)." 
+                message = "Bạn không có quyền chỉnh sửa bài đăng này (Yêu cầu vai trò Recruiter, HR Manager hoặc Quản trị viên)." 
             });
         }
 
@@ -767,7 +799,7 @@ public class JobsController : Controller
     // POST: /Jobs/UpdatePosting
     [HttpPost("UpdatePosting")]
     [ValidateAntiForgeryToken]
-    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},{UserRoles.HiringManager}")]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.NameAdmin},{UserRoles.NameHRManager},{UserRoles.NameRecruiter},{UserRoles.NameHiringManager},Quản trị viên,Quản trị viên hệ thống,Trưởng phòng nhân sự,Chuyên viên tuyển dụng,Nhân viên tuyển dụng,Trưởng bộ phận,Quản trị hệ thống")]
     public async Task<IActionResult> UpdatePosting([FromForm] UpdateJobPostingRequest model)
     {
         if (string.IsNullOrWhiteSpace(model.JobId) || string.IsNullOrWhiteSpace(model.Title))
@@ -779,13 +811,21 @@ public class JobsController : Controller
         _ = Guid.TryParse(userIdStr, out var currentUserId);
         var userDept = User.FindFirstValue("Department") ?? "";
         
-        var isRecruiterOrHr = User.IsInRole(UserRoles.Recruiter) || 
-                              User.IsInRole(UserRoles.HRManager) || 
-                              User.IsInRole(UserRoles.Admin) || 
+        var isAdmin = User.IsInRole(UserRoles.Admin) || 
+                      User.IsInRole(UserRoles.HRManager) ||
+                      User.IsInRole(UserRoles.NameAdmin) ||
+                      User.IsInRole(UserRoles.NameHRManager) ||
+                      User.IsInRole("Quản trị viên") ||
+                      User.IsInRole("Quản trị viên hệ thống") ||
+                      User.IsInRole("Trưởng phòng nhân sự");
+
+        var isRecruiterOrHr = isAdmin ||
+                              User.IsInRole(UserRoles.Recruiter) || 
+                              User.IsInRole(UserRoles.NameRecruiter) ||
+                              User.IsInRole("Chuyên viên tuyển dụng") ||
+                              User.IsInRole("Nhân viên tuyển dụng") ||
                               userDept.Equals("HR", StringComparison.OrdinalIgnoreCase) ||
                               userDept.Contains("Nhân sự", StringComparison.OrdinalIgnoreCase);
-
-        var isAdmin = User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager);
 
         try
         {
@@ -815,11 +855,11 @@ public class JobsController : Controller
                 var isAuthor = (posting.CreatedById.HasValue && posting.CreatedById == currentUserId) ||
                                (posting.Requisition != null && posting.Requisition.HiringManagerId == currentUserId);
 
-                if (!isRecruiterOrHr || (!isAuthor && !isAdmin))
+                if (!isRecruiterOrHr && !isAdmin && !isAuthor)
                 {
                     return StatusCode(StatusCodes.Status403Forbidden, new { 
                         success = false, 
-                        message = "Bạn không có quyền chỉnh sửa bài đăng này (Yêu cầu vai trò Recruiter/HR và là tác giả hoặc Quản trị viên)." 
+                        message = "Bạn không có quyền chỉnh sửa bài đăng này (Yêu cầu vai trò Recruiter, HR Manager hoặc Quản trị viên)." 
                     });
                 }
             }

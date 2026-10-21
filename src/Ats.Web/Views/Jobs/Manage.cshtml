@@ -86,6 +86,40 @@
         font-size: 0.85rem;
         transition: all 0.15s ease;
     }
+    .btn-action-icon:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+    }
+
+    /* Live Preview Container (Desktop vs Mobile Frame) */
+    .preview-frame-container {
+        width: 100%;
+        max-width: 100%;
+        transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+    }
+    .preview-frame-container.is-mobile {
+        max-width: 430px !important;
+        border: 8px solid #1E293B;
+        border-radius: 28px;
+        box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
+        background: #FFFFFF;
+        padding: 14px;
+        margin: 10px auto 25px;
+    }
+    .prev-check-item {
+        position: relative;
+        padding-left: 1.4rem;
+        margin-bottom: 0.5rem;
+    }
+    .prev-check-item::before {
+        content: '\F26E';
+        font-family: 'bootstrap-icons';
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: #059669;
+        font-weight: 700;
+    }
 
     /* Brand Primary Color */
     .btn-novera-primary {
@@ -148,9 +182,9 @@
                 <i class="bi bi-arrow-repeat"></i> <span id="btnTriggerScanText">Quét quá hạn</span>
             </button>
 
-            <!-- Xem cổng ngoài -->
-            <a href="/Jobs" target="_blank" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 shadow-sm" style="border-radius: 8px; font-weight: 500;">
-                <i class="bi bi-box-arrow-up-right"></i> Cổng việc làm
+            <!-- Xem cổng việc làm -->
+            <a href="/Jobs" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 shadow-sm" style="border-radius: 8px; font-weight: 500;">
+                <i class="bi bi-briefcase"></i> Cổng việc làm
             </a>
 
             <!-- Đăng tin mới -->
@@ -314,7 +348,7 @@
                     {
                         @foreach (var item in Model.Items)
                         {
-                            <tr>
+                            <tr id="job-row-@item.Id">
                                 <!-- Tiêu đề & Mã tin -->
                                 <td class="ps-4">
                                     <div class="d-flex align-items-center gap-1.5 mb-1">
@@ -322,22 +356,22 @@
                                             @item.Code
                                         </span>
                                     </div>
-                                    <a href="/Jobs/@(item.Slug ?? item.Id.ToString())" target="_blank" class="fw-bold text-dark text-decoration-none text-truncate d-block" style="max-width: 320px;" title="@item.Title">
+                                    <a href="/Jobs/@(item.Slug ?? item.Id.ToString())" class="fw-bold text-dark text-decoration-none text-truncate d-block" style="max-width: 320px;" title="@item.Title" id="job-title-@item.Id">
                                         @item.Title
                                     </a>
                                 </td>
 
                                 <!-- Phòng ban & Địa điểm -->
                                 <td>
-                                    <div class="fw-medium text-dark">@item.Department</div>
+                                    <div class="fw-medium text-dark" id="job-dept-@item.Id">@item.Department</div>
                                     <div class="text-muted small d-flex align-items-center gap-1 mt-0.5">
-                                        <i class="bi bi-geo-alt"></i> @item.WorkLocation
+                                        <i class="bi bi-geo-alt"></i> <span id="job-loc-@item.Id">@item.WorkLocation</span>
                                     </div>
                                 </td>
 
                                 <!-- Lương -->
                                 <td>
-                                    <span class="font-monospace fw-semibold small" style="color: #059669;">
+                                    <span class="font-monospace fw-semibold small" style="color: #059669;" id="job-salary-@item.Id">
                                         @item.SalaryDisplay
                                     </span>
                                 </td>
@@ -347,7 +381,7 @@
                                     @if (item.ExpiredAt.HasValue)
                                     {
                                         var isPassed = item.ExpiredAt.Value <= DateTimeOffset.UtcNow;
-                                        <div class="font-monospace small @(isPassed ? "text-danger fw-bold" : "text-dark")">
+                                        <div class="font-monospace small @(isPassed ? "text-danger fw-bold" : "text-dark")" id="job-deadline-@item.Id">
                                             @item.ExpiredAt.Value.ToString("dd/MM/yyyy")
                                         </div>
                                         @if (isPassed)
@@ -357,7 +391,7 @@
                                     }
                                     else
                                     {
-                                        <span class="text-muted small">Không giới hạn</span>
+                                        <span class="text-muted small" id="job-deadline-@item.Id">Không giới hạn</span>
                                     }
                                 </td>
 
@@ -369,7 +403,7 @@
                                 </td>
 
                                 <!-- Trạng thái (Không dùng spinner-grow, chuẩn màu RULE.md) -->
-                                <td>
+                                <td id="job-status-@item.Id">
                                     @if (item.IsPublished)
                                     {
                                         <span class="job-badge-status" style="background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0;">
@@ -403,90 +437,74 @@
                                     }
                                 </td>
 
-                                <!-- Thao tác thu gọn gọn gàng: Nhóm icon tinh gọn & Dropdown Menu -->
+                                <!-- Thao tác tinh gọn TopCV ATS: 3 nút biểu tượng với tooltip mô tả -->
                                 <td class="pe-4 text-end text-nowrap">
-                                    <div class="d-inline-flex align-items-center gap-1">
-                                        <!-- Xem bài đăng công khai -->
-                                        <a href="/Jobs/@(item.Slug ?? item.Id.ToString())" target="_blank" class="btn btn-sm btn-outline-secondary btn-action-icon" title="Xem chi tiết JD trên cổng">
+                                    <div class="d-inline-flex align-items-center gap-1.5">
+                                        <!-- 1. Nút Live Preview: Xem trước bài đăng như ứng viên thấy -->
+                                        <button type="button" class="btn btn-sm btn-outline-primary btn-action-icon" 
+                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Xem trước bài đăng (Live Preview)"
+                                                onclick="openJobPreview('@item.Id', '@(item.Slug ?? item.Id.ToString())')">
                                             <i class="bi bi-eye"></i>
-                                        </a>
+                                        </button>
 
-                                        <!-- SCRUM-56: Bảng so sánh năng lực ứng viên -->
-                                        @if (User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Admin) || User.IsInRole("Trưởng phòng nhân sự") || User.IsInRole("Quản trị viên"))
-                                        {
-                                            <a href="/so-sanh-ung-vien/@item.Id" class="btn btn-sm btn-outline-info btn-action-icon" title="Bảng so sánh năng lực ứng viên (SCRUM-56)">
-                                                <i class="bi bi-bar-chart-line text-info"></i>
-                                            </a>
-                                        }
+                                        <!-- 2. Nút Chỉnh sửa trực tiếp: Mở form modal chỉnh sửa bài đăng -->
+                                        <button type="button" class="btn btn-sm btn-outline-warning btn-action-icon text-dark" 
+                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Chỉnh sửa bài đăng trực tiếp"
+                                                onclick="openJobEdit('@item.Id', '@(item.Slug ?? item.Id.ToString())')">
+                                            <i class="bi bi-pencil-square text-dark"></i>
+                                        </button>
 
-                                        @if (item.IsPublished)
-                                        {
-                                            <!-- Nút gỡ tin nhanh -->
-                                            <button type="button" class="btn btn-sm btn-outline-danger btn-action-icon btn-unpublish" 
-                                                    data-job-id="@item.Id" 
-                                                    data-job-title="@item.Title" 
-                                                    data-job-code="@item.Code" 
-                                                    title="Gỡ tin này khỏi cổng tuyển dụng">
-                                                <i class="bi bi-eye-slash-fill"></i>
-                                            </button>
-                                        }
-                                        else if (item.IsClosed || item.IsExpired)
-                                        {
-                                            <!-- Nút đăng lại nhanh -->
-                                            <button type="button" class="btn btn-sm btn-outline-success btn-action-icon btn-republish" 
-                                                    data-job-id="@item.Id" 
-                                                    data-job-title="@item.Title" 
-                                                    data-job-code="@item.Code" 
-                                                    data-deadline="@(item.ExpiredAt?.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.AddDays(30).ToString("yyyy-MM-dd"))"
-                                                    title="Đăng lại / Gia hạn tin tuyển dụng">
-                                                <i class="bi bi-arrow-repeat"></i>
-                                            </button>
-                                        }
-
-                                        <!-- Menu thao tác bổ sung -->
+                                        <!-- 3. Nút Tùy chọn (3 chấm): Chứa Ẩn/Hiện bài đăng và các tính năng phụ -->
                                         <div class="dropdown d-inline-block">
-                                            <button type="button" class="btn btn-sm btn-outline-secondary btn-action-icon" data-bs-toggle="dropdown" aria-expanded="false" title="Thao tác khác">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary btn-action-icon" 
+                                                    data-bs-toggle="dropdown" aria-expanded="false" 
+                                                    data-bs-toggle-second="tooltip" data-bs-placement="top" title="Tùy chọn khác">
                                                 <i class="bi bi-three-dots-vertical"></i>
                                             </button>
-                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" style="border-radius: 8px; font-size: 0.85rem; border-color: #E2E8F0 !important; min-width: 190px;">
+                                            <ul class="dropdown-menu dropdown-menu-end shadow border py-1" style="border-radius: 8px; font-size: 0.85rem; border-color: #E2E8F0 !important; min-width: 210px;">
+                                                @if (item.IsPublished)
+                                                {
+                                                    <li>
+                                                        <a class="dropdown-item py-2 text-danger d-flex align-items-center gap-2 btn-dropdown-unpublish" href="javascript:void(0)"
+                                                           data-job-id="@item.Id" data-job-title="@item.Title" data-job-code="@item.Code">
+                                                            <i class="bi bi-eye-slash-fill"></i> Ẩn / Gỡ tin tuyển dụng
+                                                        </a>
+                                                    </li>
+                                                }
+                                                else if (item.IsClosed || item.IsExpired)
+                                                {
+                                                    <li>
+                                                        <a class="dropdown-item py-2 text-success d-flex align-items-center gap-2 btn-dropdown-republish" href="javascript:void(0)"
+                                                           data-job-id="@item.Id" data-job-title="@item.Title" data-job-code="@item.Code"
+                                                           data-deadline="@(item.ExpiredAt?.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.AddDays(30).ToString("yyyy-MM-dd"))">
+                                                            <i class="bi bi-arrow-repeat"></i> Hiện / Đăng lại tin
+                                                        </a>
+                                                    </li>
+                                                }
+                                                <li><hr class="dropdown-divider my-1"></li>
                                                 <li>
                                                     <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="/kho-tiem-nang/goi-y/@item.Id">
                                                         <i class="bi bi-stars text-warning"></i> Gợi ý ứng viên kho
+                                                    </a>
+                                                </li>
+                                                @if (User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Admin) || User.IsInRole("Trưởng phòng nhân sự") || User.IsInRole("Quản trị viên"))
+                                                {
+                                                    <li>
+                                                        <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="/so-sanh-ung-vien/@item.Id">
+                                                            <i class="bi bi-bar-chart-line text-info"></i> Bảng so sánh ứng viên
+                                                        </a>
+                                                    </li>
+                                                }
+                                                <li>
+                                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="/Jobs/@(item.Slug ?? item.Id.ToString())">
+                                                        <i class="bi bi-file-earmark-text text-secondary"></i> Xem trang JD công khai
                                                     </a>
                                                 </li>
                                                 <li>
                                                     <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)" onclick="copyJobUrl('@(item.Slug ?? item.Id.ToString())')">
                                                         <i class="bi bi-link-45deg text-secondary"></i> Sao chép link JD
                                                     </a>
-                                                @if (User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Admin) || User.IsInRole("Trưởng phòng nhân sự") || User.IsInRole("Quản trị viên"))
-                                                {
-                                                    <li>
-                                                        <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="/so-sanh-ung-vien/@item.Id">
-                                                            <i class="bi bi-bar-chart-line text-info"></i> Bảng so sánh năng lực
-                                                        </a>
-                                                    </li>
-                                                }
-                                                @if (item.IsPublished)
-                                                {
-                                                    <li><hr class="dropdown-divider my-1"></li>
-                                                    <li>
-                                                        <a class="dropdown-item py-2 text-danger d-flex align-items-center gap-2 btn-dropdown-unpublish" href="javascript:void(0)"
-                                                           data-job-id="@item.Id" data-job-title="@item.Title" data-job-code="@item.Code">
-                                                            <i class="bi bi-eye-slash-fill"></i> Gỡ tin tuyển dụng
-                                                        </a>
-                                                    </li>
-                                                }
-                                                else if (item.IsClosed || item.IsExpired)
-                                                {
-                                                    <li><hr class="dropdown-divider my-1"></li>
-                                                    <li>
-                                                        <a class="dropdown-item py-2 text-success d-flex align-items-center gap-2 btn-dropdown-republish" href="javascript:void(0)"
-                                                           data-job-id="@item.Id" data-job-title="@item.Title" data-job-code="@item.Code"
-                                                           data-deadline="@(item.ExpiredAt?.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.AddDays(30).ToString("yyyy-MM-dd"))">
-                                                            <i class="bi bi-arrow-repeat"></i> Đăng lại tin
-                                                        </a>
-                                                    </li>
-                                                }
+                                                </li>
                                             </ul>
                                         </div>
                                     </div>
@@ -608,12 +626,321 @@
                 </div>
             </form>
         </div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL 1: LIVE PREVIEW BÀI ĐĂNG (CHUẨN TOPCV / LINKEDIN ATS)
+     ══════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="jobLivePreviewModal" tabindex="-1" aria-labelledby="jobLivePreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden; background: #F8FAFC;">
+            <!-- Header Modal Preview -->
+            <div class="modal-header bg-white border-bottom py-2.5 px-4 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary-subtle text-primary fw-semibold px-2 py-1 font-monospace" style="font-size: 0.75rem;">LIVE PREVIEW</span>
+                    <h5 class="modal-title fw-bold text-dark mb-0 fs-6" id="jobLivePreviewModalLabel">Xem trước giao diện tin tuyển dụng</h5>
+                </div>
+                
+                <!-- Bộ chuyển đổi thiết bị (Desktop vs Mobile) & Action -->
+                <div class="d-flex align-items-center gap-2">
+                    <div class="btn-group btn-group-sm p-0.5 border rounded-pill bg-light" role="group">
+                        <button type="button" class="btn btn-sm btn-white active px-3 rounded-pill fw-medium shadow-none" id="btnPreviewDesktop" onclick="setPreviewDevice('desktop')">
+                            <i class="bi bi-laptop me-1"></i> Desktop
+                        </button>
+                        <button type="button" class="btn btn-sm text-secondary px-3 rounded-pill fw-medium shadow-none" id="btnPreviewMobile" onclick="setPreviewDevice('mobile')">
+                            <i class="bi bi-phone me-1"></i> Mobile
+                        </button>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-warning text-dark fw-semibold px-3" onclick="switchToEditFromPreview()" style="border-radius: 8px;">
+                        <i class="bi bi-pencil-square me-1"></i> Chỉnh sửa tin
+                    </button>
+                    <a href="#" target="_blank" id="previewExternalLink" class="btn btn-sm btn-outline-secondary px-2.5" style="border-radius: 8px;" title="Mở trang trong tab mới">
+                        <i class="bi bi-box-arrow-up-right"></i>
+                    </a>
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+
+            <!-- Body Modal Preview -->
+            <div class="modal-body p-3 p-md-4" style="background-color: #F8FAFC; min-height: 520px;">
+                <!-- Khung hiển thị mô phỏng thiết bị -->
+                <div class="preview-frame-container mx-auto" id="previewFrameContainer">
+                    
+                    <!-- Thông báo chế độ xem trước TopCV -->
+                    <div class="alert alert-info border-0 shadow-sm d-flex align-items-center justify-content-between py-2 px-3 mb-3" style="border-radius: 10px; background: #EFF6FF; color: #1E40AF;">
+                        <div class="d-flex align-items-center gap-2 small">
+                            <i class="bi bi-info-circle-fill fs-6 text-primary"></i>
+                            <span>Giao diện thực tế mà ứng viên nhìn thấy khi truy cập bài đăng này trên cổng tuyển dụng.</span>
+                        </div>
+                        <span class="badge bg-primary text-white font-monospace" id="prevJobCodeBadge">NT-JOB</span>
+                    </div>
+
+                    <!-- Thẻ Hero Banner Tin tuyển dụng (TopCV Style) -->
+                    <div class="card border-0 shadow-sm p-4 mb-3" style="border-radius: 14px; background: #FFFFFF;">
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                            <span class="badge bg-light text-secondary border font-monospace" id="prevBadgeDept">Phòng IT</span>
+                            <span class="badge bg-light text-secondary border font-monospace" id="prevBadgeLevel">SENIOR</span>
+                            <span class="badge bg-light text-secondary border" id="prevBadgeType">Toàn thời gian</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle" id="prevBadgeStatus">
+                                <span class="d-inline-block rounded-circle bg-success me-1" style="width: 6px; height: 6px;"></span> Đang nhận hồ sơ
+                            </span>
+                        </div>
+
+                        <h3 class="fw-bold text-dark mb-2" id="prevJobTitle" style="letter-spacing: -0.02em;">Tên vị trí tuyển dụng</h3>
+                        <p class="text-muted small mb-3" id="prevJobOverviewShort">Tóm tắt vị trí công việc...</p>
+
+                        <!-- Box 4 thông tin trọng điểm (Key Info Cards - TopCV Highlight) -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-6 col-md-3">
+                                <div class="p-2.5 rounded border bg-light text-center">
+                                    <div class="text-muted small" style="font-size: 0.72rem;"><i class="bi bi-cash-stack text-success me-1"></i>Mức thu nhập</div>
+                                    <div class="fw-bold font-monospace mt-1" style="color: #059669; font-size: 0.88rem;" id="prevSalary">Thương lượng</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="p-2.5 rounded border bg-light text-center">
+                                    <div class="text-muted small" style="font-size: 0.72rem;"><i class="bi bi-geo-alt text-primary me-1"></i>Địa điểm</div>
+                                    <div class="fw-semibold text-dark text-truncate mt-1" style="font-size: 0.85rem;" id="prevLocation">Hà Nội</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="p-2.5 rounded border bg-light text-center">
+                                    <div class="text-muted small" style="font-size: 0.72rem;"><i class="bi bi-clock-history text-danger me-1"></i>Hạn nộp hồ sơ</div>
+                                    <div class="fw-semibold text-dark font-monospace mt-1" style="font-size: 0.85rem;" id="prevDeadline">01/11/2026</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="p-2.5 rounded border bg-light text-center">
+                                    <div class="text-muted small" style="font-size: 0.72rem;"><i class="bi bi-briefcase text-info me-1"></i>Cấp bậc</div>
+                                    <div class="fw-semibold text-dark text-truncate mt-1" style="font-size: 0.85rem;" id="prevLevel">Senior</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Giả lập nút bấm Ứng viên (TopCV Style) -->
+                        <div class="d-flex flex-wrap gap-2 pt-2 border-top">
+                            <button type="button" class="btn btn-novera-primary px-4 fw-bold disabled shadow-sm" style="border-radius: 8px;">
+                                <i class="bi bi-send-fill me-1.5"></i> Ứng tuyển ngay
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary px-3 disabled" style="border-radius: 8px;">
+                                <i class="bi bi-bookmark me-1"></i> Lưu tin
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary px-3 disabled" style="border-radius: 8px;">
+                                <i class="bi bi-share me-1"></i> Chia sẻ
+                            </button>
+                            <span class="text-muted small align-self-center ms-auto fst-italic">
+                                <i class="bi bi-eye text-muted me-1"></i>Giao diện ứng viên xem trước (Không thực hiện ứng tuyển)
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Nội dung chi tiết Job Description -->
+                    <div class="card border-0 shadow-sm p-4 mb-3" style="border-radius: 14px; background: #FFFFFF;">
+                        <!-- 1. Tổng quan vị trí -->
+                        <div class="mb-4" id="prevSectionOverview">
+                            <h5 class="fw-bold text-dark d-flex align-items-center gap-2 mb-2 pb-1 border-bottom" style="font-size: 0.95rem;">
+                                <i class="bi bi-card-text text-success"></i> 1. Tổng quan về vị trí công việc
+                            </h5>
+                            <div class="text-secondary small lh-base" id="prevOverviewContent" style="white-space: pre-line;"></div>
+                        </div>
+
+                        <!-- 2. Trách nhiệm công việc -->
+                        <div class="mb-4" id="prevSectionResponsibilities">
+                            <h5 class="fw-bold text-dark d-flex align-items-center gap-2 mb-2 pb-1 border-bottom" style="font-size: 0.95rem;">
+                                <i class="bi bi-check2-circle text-success"></i> 2. Trách nhiệm công việc chính
+                            </h5>
+                            <div class="text-secondary small lh-base" id="prevRespList"></div>
+                        </div>
+
+                        <!-- 3. Yêu cầu ứng viên -->
+                        <div class="mb-4" id="prevSectionRequirements">
+                            <h5 class="fw-bold text-dark d-flex align-items-center gap-2 mb-2 pb-1 border-bottom" style="font-size: 0.95rem;">
+                                <i class="bi bi-mortarboard text-success"></i> 3. Yêu cầu chuyên môn & Năng lực
+                            </h5>
+                            <div class="text-secondary small lh-base" id="prevReqList"></div>
+                        </div>
+
+                        <!-- 4. Kỹ năng & Công nghệ -->
+                        <div class="mb-4" id="prevSectionTech">
+                            <h5 class="fw-bold text-dark d-flex align-items-center gap-2 mb-2 pb-1 border-bottom" style="font-size: 0.95rem;">
+                                <i class="bi bi-code-slash text-success"></i> 4. Công nghệ & Kỹ năng yêu cầu
+                            </h5>
+                            <div class="d-flex flex-wrap gap-1.5" id="prevTechBadges"></div>
+                        </div>
+
+                        <!-- 5. Quyền lợi & Đãi ngộ -->
+                        <div class="mb-3" id="prevSectionBenefits">
+                            <h5 class="fw-bold text-dark d-flex align-items-center gap-2 mb-2 pb-1 border-bottom" style="font-size: 0.95rem;">
+                                <i class="bi bi-gift text-success"></i> 5. Chế độ đãi ngộ & Quyền lợi
+                            </h5>
+                            <div class="text-secondary small lh-base" id="prevBenefitsList"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Footer Modal Preview -->
+            <div class="modal-footer bg-white border-top py-2.5 px-4 d-flex justify-content-between">
+                <span class="text-muted small">
+                    <i class="bi bi-shield-check text-success me-1"></i>Đồng bộ trực tiếp với hệ thống tuyển dụng NoveraTech ATS
+                </span>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal" style="border-radius: 8px;">Đóng</button>
+                    <button type="button" class="btn btn-sm btn-novera-primary px-3 fw-semibold" onclick="switchToEditFromPreview()" style="border-radius: 8px;">
+                        <i class="bi bi-pencil-square me-1"></i> Mở form chỉnh sửa
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL 2: CHỈNH SỬA BÀI ĐĂNG TRỰC TIẾP (DIRECT EDIT MODAL)
+     ══════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="jobDirectEditModal" tabindex="-1" aria-labelledby="jobDirectEditModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+            <div class="modal-header bg-white border-bottom py-3 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 font-monospace" style="font-size: 0.75rem;">EDITOR</span>
+                    <h5 class="modal-title fw-bold text-dark mb-0 fs-6" id="jobDirectEditModalLabel">
+                        <i class="bi bi-pencil-square text-warning me-1"></i> Chỉnh sửa bài đăng tuyển dụng
+                    </h5>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary px-3" onclick="openPreviewFromCurrentEdit()" style="border-radius: 8px;">
+                        <i class="bi bi-eye me-1"></i> Xem trước (Live Preview)
+                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+
+            <form id="formDirectEdit" onsubmit="handleDirectEditSubmit(event)">
+                <input type="hidden" id="editJobId" name="JobId" value="" />
+                <input type="hidden" id="editJobSlug" value="" />
+
+                <div class="modal-body p-4" style="background: #FAFBFD;">
+                    <div class="alert alert-light border py-2 px-3 mb-3 small d-flex align-items-center justify-content-between" style="border-radius: 8px;">
+                        <div>
+                            <i class="bi bi-shield-check text-success me-1"></i>
+                            Đang chỉnh sửa mã tin: <strong id="editJobCodeDisplay" class="font-monospace text-dark">NT-CODE</strong>
+                        </div>
+                        <span class="text-muted" style="font-size: 0.75rem;">Mọi thay đổi sẽ cập nhật trực tiếp lên cổng tuyển dụng NoveraTech</span>
+                    </div>
+
+                    <!-- Phần 1: Thông tin cơ bản -->
+                    <div class="card border-0 shadow-sm p-3 mb-3" style="border-radius: 10px;">
+                        <h6 class="fw-bold text-dark mb-3 pb-1 border-bottom" style="font-size: 0.88rem;">
+                            <i class="bi bi-info-circle text-primary me-1"></i> 1. Thông tin chung bài đăng
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-8">
+                                <label class="form-label fw-semibold small text-dark">Tiêu đề vị trí tuyển dụng <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm" id="editTitle" required style="border-radius: 6px;" placeholder="Ví dụ: Lead Cloud & AI Solutions Architect" />
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold small text-dark">Phòng ban</label>
+                                <input type="text" class="form-control form-control-sm" id="editDepartment" style="border-radius: 6px;" placeholder="Ví dụ: Phòng Công nghệ Thông tin" />
+                            </div>
+
+                            <div class="col-6 col-md-3">
+                                <label class="form-label fw-semibold small text-dark">Cấp bậc (Level)</label>
+                                <select class="form-select form-select-sm" id="editExperienceLevel" style="border-radius: 6px;">
+                                    <option value="INTERN">Thực tập sinh (Intern)</option>
+                                    <option value="FRESHER">Fresher</option>
+                                    <option value="JUNIOR">Junior</option>
+                                    <option value="MIDDLE">Middle</option>
+                                    <option value="MIDDLE-SENIOR">Middle - Senior</option>
+                                    <option value="SENIOR">Senior</option>
+                                    <option value="LEAD">Tech Lead / Lead</option>
+                                    <option value="MANAGER">Manager / Quản lý</option>
+                                    <option value="DIRECTOR">Director / Giám đốc</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label fw-semibold small text-dark">Mức lương hiển thị</label>
+                                <input type="text" class="form-control form-control-sm font-monospace" id="editSalaryDisplay" style="border-radius: 6px;" placeholder="Ví dụ: 45 - 65 Triệu VND hoặc Thương lượng..." />
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label fw-semibold small text-dark">Địa điểm làm việc</label>
+                                <input type="text" class="form-control form-control-sm" id="editWorkLocation" style="border-radius: 6px;" placeholder="Ví dụ: Hà Nội (Hybrid 2 ngày WFH)" />
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label fw-semibold small text-dark">Hạn nộp hồ sơ (Deadline)</label>
+                                <input type="date" class="form-control form-control-sm font-monospace" id="editDeadline" style="border-radius: 6px;" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Phần 2: Nội dung Job Description chi tiết -->
+                    <div class="card border-0 shadow-sm p-3 mb-2" style="border-radius: 10px;">
+                        <h6 class="fw-bold text-dark mb-3 pb-1 border-bottom" style="font-size: 0.88rem;">
+                            <i class="bi bi-file-earmark-text text-success me-1"></i> 2. Nội dung chi tiết Job Description (TopCV Format)
+                        </h6>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-dark">Tổng quan vị trí (Overview / Summary)</label>
+                            <textarea class="form-control form-control-sm" id="editOverview" rows="2" style="border-radius: 6px;" placeholder="Mô tả tóm tắt vai trò trọng tâm của vị trí này..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-dark">Trách nhiệm công việc chính (Mỗi ý một dòng)</label>
+                            <textarea class="form-control form-control-sm" id="editResponsibilities" rows="4" style="border-radius: 6px;" placeholder="Xây dựng và phát triển kiến trúc hệ thống...&#10;Thiết kế các API microservices hiệu năng cao...&#10;Phối hợp cùng team Tech Lead và Product Manager..."></textarea>
+                            <div class="form-text small text-muted">Nhập các đầu việc chính, mỗi ý cách nhau bằng một lần Enter (xuống dòng).</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-dark">Yêu cầu chuyên môn & Năng lực (Mỗi ý một dòng)</label>
+                            <textarea class="form-control form-control-sm" id="editRequirements" rows="4" style="border-radius: 6px;" placeholder="Tối thiểu 3 năm kinh nghiệm trong lĩnh vực liên quan...&#10;Hiểu sâu về các giải pháp Cloud, Microservices, Security...&#10;Khả năng tư duy logic và giải quyết vấn đề tốt..."></textarea>
+                            <div class="form-text small text-muted">Nhập các tiêu chuẩn kỹ thuật & kinh nghiệm cần thiết cho ứng viên.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-dark">Kỹ năng & Công nghệ yêu cầu (Tech Stack Tags)</label>
+                            <input type="text" class="form-control form-control-sm" id="editTechStack" style="border-radius: 6px;" placeholder="Ví dụ: Azure, AWS, .NET 9, Docker, Kubernetes, AI/LLM, PostgreSQL" />
+                            <div class="form-text small text-muted">Nhập các thẻ công nghệ, phân tách bằng dấu phẩy (,) để tự động sinh badge kỹ năng.</div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold small text-dark">Chế độ đãi ngộ & Quyền lợi (Mỗi ý một dòng)</label>
+                            <textarea class="form-control form-control-sm" id="editBenefits" rows="3" style="border-radius: 6px;" placeholder="Lương tháng 13 + thưởng hiệu quả kinh doanh hàng quý...&#10;Bảo hiểm sức khỏe cao cấp NoveraCare cho bản thân và gia đình...&#10;Chính sách Hybrid linh hoạt 2 ngày WFH / tuần..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-white border-top py-3 px-4 d-flex justify-content-between">
+                    <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy bỏ</button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary px-3" onclick="openPreviewFromCurrentEdit()" style="border-radius: 8px;">
+                            <i class="bi bi-eye me-1"></i> Xem trước trước khi lưu
+                        </button>
+                        <button type="submit" class="btn btn-sm btn-novera-primary px-4 fw-semibold" id="btnSaveDirectEdit" style="border-radius: 8px;">
+                            <span class="spinner-border spinner-border-sm me-1 d-none" id="spinnerSaveDirectEdit"></span>
+                            <i class="bi bi-check-lg me-1" id="iconSaveDirectEdit"></i> Lưu thay đổi
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
 @section Scripts {
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // ── KHỞI TẠO BOOTSTRAP TOOLTIPS ──
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"], [data-bs-toggle-second="tooltip"]'));
+        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+            try {
+                if (typeof bootstrap.Tooltip.getOrCreateInstance === 'function') {
+                    bootstrap.Tooltip.getOrCreateInstance(tooltipTriggerEl);
+                } else if (!bootstrap.Tooltip.getInstance(tooltipTriggerEl)) {
+                    new bootstrap.Tooltip(tooltipTriggerEl);
+                }
+            } catch (e) { }
+        });
+
         // ── 1. MODAL GỠ TIN THỦ CÔNG ──
         const unpublishModalEl = document.getElementById('unpublishModal');
         const unpublishModal = new bootstrap.Modal(unpublishModalEl);
@@ -735,6 +1062,317 @@
                 btnTriggerScanText.textContent = 'Quét quá hạn';
             }
         });
+
+        // ── 4. LIVE PREVIEW MODAL CONTROLLER ──
+        const previewModalEl = document.getElementById('jobLivePreviewModal');
+        const previewModal = new bootstrap.Modal(previewModalEl);
+        const editModalEl = document.getElementById('jobDirectEditModal');
+        const editModal = new bootstrap.Modal(editModalEl);
+
+        let currentPreviewJobId = null;
+        let currentPreviewSlug = null;
+        let currentEditJobId = null;
+        let currentEditSlug = null;
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        window.setPreviewDevice = function(device) {
+            const container = document.getElementById('previewFrameContainer');
+            const btnDesktop = document.getElementById('btnPreviewDesktop');
+            const btnMobile = document.getElementById('btnPreviewMobile');
+
+            if (device === 'mobile') {
+                container.classList.add('is-mobile');
+                btnMobile.classList.add('btn-white', 'active');
+                btnMobile.classList.remove('text-secondary');
+                btnDesktop.classList.remove('btn-white', 'active');
+                btnDesktop.classList.add('text-secondary');
+            } else {
+                container.classList.remove('is-mobile');
+                btnDesktop.classList.add('btn-white', 'active');
+                btnDesktop.classList.remove('text-secondary');
+                btnMobile.classList.remove('btn-white', 'active');
+                btnMobile.classList.add('text-secondary');
+            }
+        };
+
+        window.bindJobPreviewData = function(job) {
+            document.getElementById('prevJobCodeBadge').textContent = job.code || 'NT-JOB';
+            document.getElementById('prevBadgeDept').textContent = job.department || 'Phòng ban';
+            document.getElementById('prevBadgeLevel').textContent = (job.experienceLevel || 'SENIOR').toUpperCase();
+            document.getElementById('prevBadgeType').textContent = job.employmentType || 'Toàn thời gian';
+            document.getElementById('prevJobTitle').textContent = job.title || 'Tiêu đề tuyển dụng';
+            document.getElementById('prevJobOverviewShort').textContent = job.overview || job.positionDescription || 'Đang cập nhật tóm tắt vị trí...';
+            
+            document.getElementById('prevSalary').textContent = job.salaryDisplay || 'Thương lượng';
+            document.getElementById('prevLocation').textContent = job.workLocation || 'Hà Nội';
+            document.getElementById('prevLevel').textContent = job.experienceLevel || 'Senior';
+
+            if (job.deadline) {
+                const dl = new Date(job.deadline);
+                document.getElementById('prevDeadline').textContent = isNaN(dl.getTime()) ? job.deadline : `${String(dl.getDate()).padStart(2, '0')}/${String(dl.getMonth() + 1).padStart(2, '0')}/${dl.getFullYear()}`;
+            } else {
+                document.getElementById('prevDeadline').textContent = 'Không giới hạn';
+            }
+
+            // External link
+            const extLink = document.getElementById('previewExternalLink');
+            extLink.href = '/Jobs/' + (job.slug || job.id);
+
+            // 1. Overview
+            const overviewEl = document.getElementById('prevOverviewContent');
+            overviewEl.textContent = job.overview || job.positionDescription || 'Chưa cập nhật nội dung tổng quan.';
+
+            // 2. Responsibilities
+            const respListEl = document.getElementById('prevRespList');
+            respListEl.innerHTML = '';
+            const resps = Array.isArray(job.responsibilities) ? job.responsibilities : (job.responsibilities ? job.responsibilities.split('\n') : []);
+            if (resps.length > 0) {
+                resps.filter(r => r && r.trim()).forEach(r => {
+                    const item = document.createElement('div');
+                    item.className = 'prev-check-item';
+                    item.innerHTML = escapeHtml(r.trim());
+                    respListEl.appendChild(item);
+                });
+                document.getElementById('prevSectionResponsibilities').classList.remove('d-none');
+            } else {
+                document.getElementById('prevSectionResponsibilities').classList.add('d-none');
+            }
+
+            // 3. Requirements
+            const reqListEl = document.getElementById('prevReqList');
+            reqListEl.innerHTML = '';
+            const reqs = Array.isArray(job.requirements) ? job.requirements : (job.requirements ? job.requirements.split('\n') : []);
+            if (reqs.length > 0) {
+                reqs.filter(r => r && r.trim()).forEach(r => {
+                    const item = document.createElement('div');
+                    item.className = 'prev-check-item';
+                    item.innerHTML = escapeHtml(r.trim());
+                    reqListEl.appendChild(item);
+                });
+                document.getElementById('prevSectionRequirements').classList.remove('d-none');
+            } else {
+                document.getElementById('prevSectionRequirements').classList.add('d-none');
+            }
+
+            // 4. Tech Stack
+            const techEl = document.getElementById('prevTechBadges');
+            techEl.innerHTML = '';
+            const techs = Array.isArray(job.techStack) ? job.techStack : (job.techStack ? job.techStack.split(',').map(s => s.trim()) : []);
+            if (techs.length > 0 && techs[0]) {
+                techs.forEach(t => {
+                    if (!t) return;
+                    const badge = document.createElement('span');
+                    badge.className = 'badge bg-light text-dark border px-2.5 py-1.5 font-monospace';
+                    badge.style.borderRadius = '6px';
+                    badge.style.fontSize = '0.78rem';
+                    badge.textContent = t;
+                    techEl.appendChild(badge);
+                });
+                document.getElementById('prevSectionTech').classList.remove('d-none');
+            } else {
+                document.getElementById('prevSectionTech').classList.add('d-none');
+            }
+
+            // 5. Benefits
+            const beneListEl = document.getElementById('prevBenefitsList');
+            beneListEl.innerHTML = '';
+            const benes = Array.isArray(job.benefits) ? job.benefits : (job.benefits ? job.benefits.split('\n') : []);
+            if (benes.length > 0) {
+                benes.filter(b => b && b.trim()).forEach(b => {
+                    const item = document.createElement('div');
+                    item.className = 'prev-check-item';
+                    item.innerHTML = escapeHtml(b.trim());
+                    beneListEl.appendChild(item);
+                });
+                document.getElementById('prevSectionBenefits').classList.remove('d-none');
+            } else {
+                document.getElementById('prevSectionBenefits').classList.add('d-none');
+            }
+        };
+
+        window.openJobPreview = async function(jobId, jobSlug) {
+            currentPreviewJobId = jobId;
+            currentPreviewSlug = jobSlug;
+
+            const modalInstance = bootstrap.Modal.getOrCreateInstance(document.getElementById('jobLivePreviewModal'));
+            modalInstance.show();
+
+            try {
+                const res = await fetch(`/api/jobs/${encodeURIComponent(jobId)}`);
+                if (!res.ok) throw new Error('Không thể tải bài đăng');
+                const json = await res.json();
+                if (json.success && json.data) {
+                    window.bindJobPreviewData(json.data);
+                } else {
+                    if (window.NoveraToast) window.NoveraToast.show(json.message || 'Lỗi khi tải thông tin bài đăng.', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                if (window.NoveraToast) window.NoveraToast.show('Không thể tải dữ liệu xem trước bài đăng.', 'error');
+            }
+        };
+
+        window.switchToEditFromPreview = function() {
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('jobLivePreviewModal')).hide();
+            if (currentPreviewJobId) {
+                window.openJobEdit(currentPreviewJobId, currentPreviewSlug);
+            }
+        };
+
+        // ── 5. DIRECT EDIT MODAL CONTROLLER ──
+        window.openJobEdit = async function(jobId, jobSlug) {
+            currentEditJobId = jobId;
+            currentEditSlug = jobSlug;
+
+            const modalInstance = bootstrap.Modal.getOrCreateInstance(document.getElementById('jobDirectEditModal'));
+            document.getElementById('editJobId').value = jobId;
+            document.getElementById('editJobSlug').value = jobSlug || jobId;
+            document.getElementById('editJobCodeDisplay').textContent = 'Đang tải dữ liệu...';
+            modalInstance.show();
+
+            try {
+                const res = await fetch(`/api/jobs/${encodeURIComponent(jobId)}`);
+                if (!res.ok) throw new Error('Không thể tải bài đăng');
+                const json = await res.json();
+                if (json.success && json.data) {
+                    const job = json.data;
+                    document.getElementById('editJobId').value = job.id;
+                    document.getElementById('editJobSlug').value = job.slug || job.id;
+                    document.getElementById('editJobCodeDisplay').textContent = job.code || 'NT-JOB';
+                    document.getElementById('editTitle').value = job.title || '';
+                    document.getElementById('editDepartment').value = job.department || '';
+                    document.getElementById('editExperienceLevel').value = (job.experienceLevel || 'SENIOR').toUpperCase();
+                    document.getElementById('editSalaryDisplay').value = job.salaryDisplay || '';
+                    document.getElementById('editWorkLocation').value = job.workLocation || '';
+                    
+                    if (job.deadline) {
+                        const dl = new Date(job.deadline);
+                        if (!isNaN(dl.getTime())) {
+                            document.getElementById('editDeadline').value = dl.toISOString().split('T')[0];
+                        }
+                    } else {
+                        document.getElementById('editDeadline').value = '';
+                    }
+
+                    document.getElementById('editOverview').value = job.overview || job.positionDescription || '';
+                    document.getElementById('editResponsibilities').value = Array.isArray(job.responsibilities) ? job.responsibilities.join('\n') : (job.responsibilities || '');
+                    document.getElementById('editRequirements').value = Array.isArray(job.requirements) ? job.requirements.join('\n') : (job.requirements || '');
+                    document.getElementById('editTechStack').value = Array.isArray(job.techStack) ? job.techStack.join(', ') : (job.techStack || '');
+                    document.getElementById('editBenefits').value = Array.isArray(job.benefits) ? job.benefits.join('\n') : (job.benefits || '');
+                } else {
+                    if (window.NoveraToast) window.NoveraToast.show(json.message || 'Lỗi khi tải thông tin bài đăng.', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                if (window.NoveraToast) window.NoveraToast.show('Không thể tải dữ liệu để chỉnh sửa.', 'error');
+            }
+        };
+
+        window.openPreviewFromCurrentEdit = function() {
+            const mockJob = {
+                id: document.getElementById('editJobId').value,
+                slug: document.getElementById('editJobSlug').value,
+                code: document.getElementById('editJobCodeDisplay').textContent,
+                title: document.getElementById('editTitle').value,
+                department: document.getElementById('editDepartment').value,
+                experienceLevel: document.getElementById('editExperienceLevel').value,
+                salaryDisplay: document.getElementById('editSalaryDisplay').value,
+                workLocation: document.getElementById('editWorkLocation').value,
+                deadline: document.getElementById('editDeadline').value,
+                overview: document.getElementById('editOverview').value,
+                responsibilities: document.getElementById('editResponsibilities').value.split('\n').filter(s => s.trim()),
+                requirements: document.getElementById('editRequirements').value.split('\n').filter(s => s.trim()),
+                techStack: document.getElementById('editTechStack').value.split(',').map(s => s.trim()).filter(Boolean),
+                benefits: document.getElementById('editBenefits').value.split('\n').filter(s => s.trim())
+            };
+            currentPreviewJobId = mockJob.id;
+            currentPreviewSlug = mockJob.slug;
+
+            window.bindJobPreviewData(mockJob);
+            previewModal.show();
+        };
+
+        window.handleDirectEditSubmit = async function(e) {
+            e.preventDefault();
+            const jobId = document.getElementById('editJobId').value;
+            if (!jobId) return;
+
+            const btnSave = document.getElementById('btnSaveDirectEdit');
+            const spinner = document.getElementById('spinnerSaveDirectEdit');
+            const icon = document.getElementById('iconSaveDirectEdit');
+
+            btnSave.disabled = true;
+            spinner.classList.remove('d-none');
+            icon.classList.add('d-none');
+
+            const payload = {
+                title: document.getElementById('editTitle').value.trim(),
+                department: document.getElementById('editDepartment').value.trim(),
+                experienceLevel: document.getElementById('editExperienceLevel').value,
+                salaryDisplay: document.getElementById('editSalaryDisplay').value.trim(),
+                workLocation: document.getElementById('editWorkLocation').value.trim(),
+                deadline: document.getElementById('editDeadline').value ? document.getElementById('editDeadline').value + 'T23:59:59Z' : null,
+                overview: document.getElementById('editOverview').value.trim(),
+                responsibilities: document.getElementById('editResponsibilities').value.trim(),
+                requirements: document.getElementById('editRequirements').value.trim(),
+                techStack: document.getElementById('editTechStack').value.trim(),
+                benefits: document.getElementById('editBenefits').value.trim()
+            };
+
+            try {
+                const res = await fetch(`/api/jobs/${encodeURIComponent(jobId)}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    // Cập nhật DOM trên dòng tương ứng của bảng
+                    const titleEl = document.getElementById(`job-title-${jobId}`);
+                    if (titleEl) titleEl.textContent = payload.title;
+
+                    const deptEl = document.getElementById(`job-dept-${jobId}`);
+                    if (deptEl) deptEl.textContent = payload.department;
+
+                    const locEl = document.getElementById(`job-loc-${jobId}`);
+                    if (locEl) locEl.textContent = payload.workLocation;
+
+                    const salaryEl = document.getElementById(`job-salary-${jobId}`);
+                    if (salaryEl) salaryEl.textContent = payload.salaryDisplay;
+
+                    const deadlineEl = document.getElementById(`job-deadline-${jobId}`);
+                    if (deadlineEl && payload.deadline) {
+                        const dl = new Date(payload.deadline);
+                        deadlineEl.textContent = `${String(dl.getDate()).padStart(2, '0')}/${String(dl.getMonth() + 1).padStart(2, '0')}/${dl.getFullYear()}`;
+                    }
+
+                    if (window.NoveraToast) window.NoveraToast.show('Cập nhật tin tuyển dụng thành công!', 'success');
+                    else alert('Cập nhật bài đăng tuyển dụng thành công!');
+
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('jobDirectEditModal')).hide();
+                } else {
+                    if (window.NoveraToast) window.NoveraToast.show(data.message || 'Lỗi cập nhật tin tuyển dụng.', 'error');
+                    else alert(data.message || 'Lỗi cập nhật bài đăng.');
+                }
+            } catch (err) {
+                console.error(err);
+                if (window.NoveraToast) window.NoveraToast.show('Không thể kết nối đến máy chủ để cập nhật.', 'error');
+                else alert('Lỗi kết nối máy chủ.');
+            } finally {
+                btnSave.disabled = false;
+                spinner.classList.add('d-none');
+                icon.classList.remove('d-none');
+            }
+        };
 
         // Sao chép link JD helper
         window.copyJobUrl = function(slugOrId) {
