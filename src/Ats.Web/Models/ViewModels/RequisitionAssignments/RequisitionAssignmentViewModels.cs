@@ -76,6 +76,7 @@ public class RequisitionAssignmentListViewModel
 {
     public string? Search { get; set; }
     public Guid? SelectedDepartmentId { get; set; }
+    public string? SelectedDepartmentName { get; set; }
     public Guid? SelectedRecruiterId { get; set; }
     public string? AssignmentFilter { get; set; } // ALL, ASSIGNED, UNASSIGNED
 
@@ -91,6 +92,18 @@ public class RequisitionAssignmentListViewModel
     public List<RequisitionAssignmentItemViewModel> Items { get; set; } = new();
     public List<RecruiterOptionViewModel> AvailableRecruiters { get; set; } = new();
     public List<RecruiterWorkloadViewModel> RecruiterWorkloads { get; set; } = new();
+
+    // ── Thuộc tính Phân trang Backend (5, 10, 25, 50, 75, 100) ──
+    public int CurrentPage { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+    public int TotalRecords { get; set; }
+    public int TotalPages => PageSize > 0 ? (int)Math.Ceiling(TotalRecords / (double)PageSize) : 0;
+    public bool HasPreviousPage => CurrentPage > 1;
+    public bool HasNextPage => CurrentPage < TotalPages;
+    public static readonly int[] AllowedPageSizes = new[] { 5, 10, 25, 50, 75, 100 };
+
+    public int FromItemIndex => TotalRecords == 0 ? 0 : (CurrentPage - 1) * PageSize + 1;
+    public int ToItemIndex => Math.Min(CurrentPage * PageSize, TotalRecords);
 
     public int AssignedPercentage => TotalOpenRequisitions > 0
         ? (int)Math.Round((double)AssignedRequisitionsCount * 100 / TotalOpenRequisitions)

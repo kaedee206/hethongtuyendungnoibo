@@ -5,19 +5,30 @@ using Ats.Web.Models.Enums;
 using Ats.Web.Models.ViewModels.RequisitionAssignments;
 using Ats.Web.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Ats.Web.Services;
 
 public class RequisitionAssignmentService : IRequisitionAssignmentService
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly IMemoryCache _memoryCache;
     private readonly ILogger<RequisitionAssignmentService> _logger;
 
     public RequisitionAssignmentService(
         ApplicationDbContext dbContext,
         ILogger<RequisitionAssignmentService> logger)
+        : this(dbContext, new MemoryCache(new MemoryCacheOptions()), logger)
+    {
+    }
+
+    public RequisitionAssignmentService(
+        ApplicationDbContext dbContext,
+        IMemoryCache memoryCache,
+        ILogger<RequisitionAssignmentService> logger)
     {
         _dbContext = dbContext;
+        _memoryCache = memoryCache;
         _logger = logger;
     }
 
@@ -26,21 +37,115 @@ public class RequisitionAssignmentService : IRequisitionAssignmentService
         Guid? departmentId = null,
         Guid? recruiterId = null,
         string? assignmentFilter = null,
+        int page = 1,
+        int pageSize = 10,
+        string? department = null,
         CancellationToken cancellationToken = default)
     {
+        var validPageSize = RequisitionAssignmentListViewModel.AllowedPageSizes.Contains(pageSize) ? pageSize : 10;
+        var validPage = page < 1 ? 1 : page;
+
         var model = new RequisitionAssignmentListViewModel
         {
             Search = search,
             SelectedDepartmentId = departmentId,
+            SelectedDepartmentName = department,
             SelectedRecruiterId = recruiterId,
-            AssignmentFilter = assignmentFilter ?? "ALL"
+            AssignmentFilter = assignmentFilter ?? "ALL",
+            CurrentPage = validPage,
+            PageSize = validPageSize
         };
 
         // 1. Tải danh sách Recruiters khả dụng
         model.AvailableRecruiters = await GetAvailableRecruitersAsync(cancellationToken);
         model.TotalActiveRecruitersCount = model.AvailableRecruiters.Count;
 
-        // 2. Query JobRequisitions (Bỏ qua bản nháp, đã hủy, và đã từ chối)
+        // 2. Base Query JobRequisitions (Bỏ qua bản nháp, đã hủy, và đã từ chối)
+        var baseQuery = _dbContext.JobRequisitions
+            .AsNoTracking()
+            .Where(r => !r.IsDeleted && 
+                        r.Status != RequisitionStatus.DRAFT && 
+                        r.Status != RequisitionStatus.CANCELLED &&
+                        r.Status != RequisitionStatus.REJECTED);
+
+        model.TotalOpenRequisitions = await baseQuery.CountAsync(cancellationToken);
+        model.AssignedRequisitionsCount = await baseQuery.CountAsync(r => r.AssignedRecruiterId != null, cancellationToken);
+        model.UnassignedRequisitionsCount = model.TotalOpenRequisitions - model.AssignedRequisitionsCount;
+
+        // 3. Tính toán RecruiterWorkloads trên TOÀN BỘ vị trí mở (đảm bảo không bị giới hạn bởi phân trang)
+        var allActiveRequisitions = await _dbContext.JobRequisitions
+            .AsNoTracking()
+            .Include(r => r.JobPosition)
+            .Include(r => r.RequisitionRecruiters.Where(rr => !rr.IsDeleted))
+            .Where(r => !r.IsDeleted && 
+                        r.Status != RequisitionStatus.DRAFT && 
+                        r.Status != RequisitionStatus.CANCELLED &&
+                        r.Status != RequisitionStatus.REJECTED)
+            .Select(r => new
+            {
+                r.Id,
+                r.Code,
+                JobTitle = r.JobPosition != null ? r.JobPosition.Title : "Chưa phân bổ chức danh",
+                r.AssignedRecruiterId,
+                SupportingRecruiterIds = r.RequisitionRecruiters
+                    .Where(rr => !rr.IsDeleted && !rr.IsPrimary && rr.RecruiterId != r.AssignedRecruiterId)
+                    .Select(rr => rr.RecruiterId)
+                    .ToList()
+            })
+            .ToListAsync(cancellationToken);
+
+        var allReqIds = allActiveRequisitions.Select(r => r.Id).ToList();
+        var allPipelineStats = await _dbContext.Applications
+            .AsNoTracking()
+            .Where(a => !a.IsDeleted && a.Status == ApplicationStatus.IN_PROCESS && allReqIds.Contains(a.JobPosting.RequisitionId))
+            .GroupBy(a => a.JobPosting.RequisitionId)
+            .Select(g => new { RequisitionId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.RequisitionId, x => x.Count, cancellationToken);
+
+        model.RecruiterWorkloads = model.AvailableRecruiters.Select(rec =>
+        {
+            var leadJobs = allActiveRequisitions
+                .Where(i => i.AssignedRecruiterId == rec.Id)
+                .Select(i => new RequisitionAssignmentItemViewModel
+                {
+                    RequisitionId = i.Id,
+                    Code = i.Code,
+                    JobPositionTitle = i.JobTitle,
+                    LeadRecruiterId = i.AssignedRecruiterId,
+                    InProcessCandidatesCount = allPipelineStats.TryGetValue(i.Id, out var c) ? c : 0
+                })
+                .ToList();
+
+            var supportJobs = allActiveRequisitions
+                .Where(i => i.SupportingRecruiterIds.Contains(rec.Id))
+                .Select(i => new RequisitionAssignmentItemViewModel
+                {
+                    RequisitionId = i.Id,
+                    Code = i.Code,
+                    JobPositionTitle = i.JobTitle,
+                    LeadRecruiterId = i.AssignedRecruiterId,
+                    InProcessCandidatesCount = allPipelineStats.TryGetValue(i.Id, out var c) ? c : 0
+                })
+                .ToList();
+
+            var allAssigned = leadJobs.Concat(supportJobs).DistinctBy(i => i.RequisitionId).ToList();
+            var totalPipeline = allAssigned.Sum(i => i.InProcessCandidatesCount);
+
+            return new RecruiterWorkloadViewModel
+            {
+                RecruiterId = rec.Id,
+                FullName = rec.FullName,
+                Email = rec.Email,
+                JobTitle = rec.JobTitle,
+                DepartmentName = rec.DepartmentName,
+                LeadCount = leadJobs.Count,
+                SupportCount = supportJobs.Count,
+                TotalCandidatesInPipeline = totalPipeline,
+                AssignedPositions = allAssigned
+            };
+        }).OrderByDescending(w => w.LeadCount).ThenBy(w => w.FullName).ToList();
+
+        // 4. Query & Filter cho Bảng danh sách phân công
         var query = _dbContext.JobRequisitions
             .AsNoTracking()
             .Include(r => r.JobPosition)
@@ -53,11 +158,6 @@ public class RequisitionAssignmentService : IRequisitionAssignmentService
                         r.Status != RequisitionStatus.DRAFT && 
                         r.Status != RequisitionStatus.CANCELLED &&
                         r.Status != RequisitionStatus.REJECTED);
-
-        // Đếm tổng số vị trí đang mở trên toàn hệ thống trước khi lọc
-        model.TotalOpenRequisitions = await query.CountAsync(cancellationToken);
-        model.AssignedRequisitionsCount = await query.CountAsync(r => r.AssignedRecruiterId != null, cancellationToken);
-        model.UnassignedRequisitionsCount = model.TotalOpenRequisitions - model.AssignedRequisitionsCount;
 
         // Lọc theo tìm kiếm từ khóa
         if (!string.IsNullOrWhiteSpace(search))
@@ -74,6 +174,10 @@ public class RequisitionAssignmentService : IRequisitionAssignmentService
         if (departmentId.HasValue && departmentId.Value != Guid.Empty)
         {
             query = query.Where(r => r.DepartmentId == departmentId.Value);
+        }
+        else if (!string.IsNullOrWhiteSpace(department))
+        {
+            query = query.Where(r => r.Department != null && r.Department.Name == department);
         }
 
         // Lọc theo Recruiter
@@ -94,15 +198,25 @@ public class RequisitionAssignmentService : IRequisitionAssignmentService
             query = query.Where(r => r.AssignedRecruiterId == null);
         }
 
+        // Đếm tổng số bản ghi khớp bộ lọc
+        model.TotalRecords = await query.CountAsync(cancellationToken);
+        if (model.TotalPages > 0 && model.CurrentPage > model.TotalPages)
+        {
+            model.CurrentPage = model.TotalPages;
+        }
+
+        // Phân trang tầng Database (OFFSET / LIMIT)
         var dbItems = await query
             .OrderByDescending(r => r.UpdatedAt)
+            .Skip((model.CurrentPage - 1) * model.PageSize)
+            .Take(model.PageSize)
             .ToListAsync(cancellationToken);
 
-        // Lấy thống kê số lượng ứng viên theo RequisitionId
-        var reqIds = dbItems.Select(r => r.Id).ToList();
+        // Lấy thống kê số lượng ứng viên CHỈ cho các Requisition Id của trang hiện tại
+        var pageReqIds = dbItems.Select(r => r.Id).ToList();
         var appStats = await _dbContext.Applications
             .AsNoTracking()
-            .Where(a => !a.IsDeleted && reqIds.Contains(a.JobPosting.RequisitionId))
+            .Where(a => !a.IsDeleted && pageReqIds.Contains(a.JobPosting.RequisitionId))
             .GroupBy(a => a.JobPosting.RequisitionId)
             .Select(g => new
             {
@@ -112,13 +226,18 @@ public class RequisitionAssignmentService : IRequisitionAssignmentService
             })
             .ToDictionaryAsync(x => x.RequisitionId, cancellationToken);
 
-        // Populate danh sách phòng ban cho filter bar
-        model.Departments = await _dbContext.Departments
-            .AsNoTracking()
-            .Where(d => !d.IsDeleted)
-            .OrderBy(d => d.Name)
-            .Select(d => d.Name)
-            .ToListAsync(cancellationToken);
+        // Populate danh sách phòng ban cho filter bar (IMemoryCache TTL 10 phút)
+        model.Departments = await _memoryCache.GetOrCreateAsync("lookup_departments_names", async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+            return await _dbContext.Departments
+                .AsNoTracking()
+                .Where(d => !d.IsDeleted)
+                .OrderBy(d => d.Name)
+                .Select(d => d.Name)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+        }) ?? new List<string>();
 
         model.Items = dbItems.Select(r =>
         {
@@ -163,28 +282,6 @@ public class RequisitionAssignmentService : IRequisitionAssignmentService
                 LastHandoverAt = lastHandover?.TransferredAt
             };
         }).ToList();
-
-        // 3. Populate RecruiterWorkloads (Góc nhìn Khối lượng công việc & Năng lực tiếp nhận của từng Recruiter)
-        model.RecruiterWorkloads = model.AvailableRecruiters.Select(rec =>
-        {
-            var leadJobs = model.Items.Where(i => i.LeadRecruiterId == rec.Id).ToList();
-            var supportJobs = model.Items.Where(i => i.SupportingRecruiters.Any(s => s.RecruiterId == rec.Id)).ToList();
-            var allAssigned = leadJobs.Concat(supportJobs).DistinctBy(i => i.RequisitionId).ToList();
-            var totalPipeline = allAssigned.Sum(i => i.InProcessCandidatesCount);
-
-            return new RecruiterWorkloadViewModel
-            {
-                RecruiterId = rec.Id,
-                FullName = rec.FullName,
-                Email = rec.Email,
-                JobTitle = rec.JobTitle,
-                DepartmentName = rec.DepartmentName,
-                LeadCount = leadJobs.Count,
-                SupportCount = supportJobs.Count,
-                TotalCandidatesInPipeline = totalPipeline,
-                AssignedPositions = allAssigned
-            };
-        }).OrderByDescending(w => w.LeadCount).ThenBy(w => w.FullName).ToList();
 
         return model;
     }
@@ -434,6 +531,7 @@ public class RequisitionAssignmentService : IRequisitionAssignmentService
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+        _memoryCache.Remove("lookup_available_recruiters");
 
         var msg = isLeadChanged
             ? $"Đã chuyển giao người phụ trách vị trí '{requisition.JobPosition?.Title ?? requisition.Code}' sang {newLeadUser.FullName} thành công."
@@ -479,56 +577,61 @@ public class RequisitionAssignmentService : IRequisitionAssignmentService
     public async Task<List<RecruiterOptionViewModel>> GetAvailableRecruitersAsync(
         CancellationToken cancellationToken = default)
     {
-        // Lấy tất cả user có vai trò RECRUITER hoặc HR
-        var recruiters = await _dbContext.Users
-            .AsNoTracking()
-            .Include(u => u.DepartmentEntity)
-            .Where(u => u.Status != "DELETED" &&
-                        (u.Role.ToUpper().Contains("RECRUITER") ||
-                         u.Role.ToUpper().Contains("HR") ||
-                         u.UserRoles.Any(ur => ur.Role.Code == RoleCode.RECRUITER || ur.Role.Code == RoleCode.HR_MANAGER)))
-            .OrderBy(u => u.FullName)
-            .ToListAsync(cancellationToken);
-
-        // Đếm số job mà mỗi recruiter đang là lead và support
-        var activeReqs = await _dbContext.JobRequisitions
-            .AsNoTracking()
-            .Where(r => !r.IsDeleted && r.Status != RequisitionStatus.CANCELLED && r.Status != RequisitionStatus.DRAFT)
-            .Select(r => new { r.Id, r.AssignedRecruiterId })
-            .ToListAsync(cancellationToken);
-
-        var activeLeadsFromRr = await _dbContext.RequisitionRecruiters
-            .AsNoTracking()
-            .Where(rr => !rr.IsDeleted && rr.IsPrimary)
-            .Select(rr => new { rr.RequisitionId, rr.RecruiterId })
-            .ToListAsync(cancellationToken);
-
-        var activeSupports = await _dbContext.RequisitionRecruiters
-            .AsNoTracking()
-            .Where(rr => !rr.IsDeleted && !rr.IsPrimary)
-            .Select(rr => rr.RecruiterId)
-            .ToListAsync(cancellationToken);
-
-        return recruiters.Select(u =>
+        return await _memoryCache.GetOrCreateAsync("lookup_available_recruiters", async entry =>
         {
-            var leadReqIds = activeReqs
-                .Where(r => r.AssignedRecruiterId == u.Id)
-                .Select(r => r.Id)
-                .Union(activeLeadsFromRr.Where(rr => rr.RecruiterId == u.Id).Select(rr => rr.RequisitionId))
-                .Distinct()
-                .ToList();
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(3);
 
-            return new RecruiterOptionViewModel
+            // Lấy tất cả user có vai trò RECRUITER hoặc HR
+            var recruiters = await _dbContext.Users
+                .AsNoTracking()
+                .Include(u => u.DepartmentEntity)
+                .Where(u => u.Status != "DELETED" &&
+                            (u.Role.ToUpper().Contains("RECRUITER") ||
+                             u.Role.ToUpper().Contains("HR") ||
+                             u.UserRoles.Any(ur => ur.Role.Code == RoleCode.RECRUITER || ur.Role.Code == RoleCode.HR_MANAGER)))
+                .OrderBy(u => u.FullName)
+                .ToListAsync(cancellationToken);
+
+            // Đếm số job mà mỗi recruiter đang là lead và support
+            var activeReqs = await _dbContext.JobRequisitions
+                .AsNoTracking()
+                .Where(r => !r.IsDeleted && r.Status != RequisitionStatus.CANCELLED && r.Status != RequisitionStatus.DRAFT)
+                .Select(r => new { r.Id, r.AssignedRecruiterId })
+                .ToListAsync(cancellationToken);
+
+            var activeLeadsFromRr = await _dbContext.RequisitionRecruiters
+                .AsNoTracking()
+                .Where(rr => !rr.IsDeleted && rr.IsPrimary)
+                .Select(rr => new { rr.RequisitionId, rr.RecruiterId })
+                .ToListAsync(cancellationToken);
+
+            var activeSupports = await _dbContext.RequisitionRecruiters
+                .AsNoTracking()
+                .Where(rr => !rr.IsDeleted && !rr.IsPrimary)
+                .Select(rr => rr.RecruiterId)
+                .ToListAsync(cancellationToken);
+
+            return recruiters.Select(u =>
             {
-                Id = u.Id,
-                FullName = u.FullName,
-                Email = u.Email,
-                DepartmentName = u.DepartmentEntity?.Name ?? u.Department ?? "Phòng Nhân Sự",
-                JobTitle = u.JobTitle ?? "Chuyên viên tuyển dụng",
-                ActiveLeadCount = leadReqIds.Count,
-                ActiveSupportCount = activeSupports.Count(id => id == u.Id)
-            };
-        }).ToList();
+                var leadReqIds = activeReqs
+                    .Where(r => r.AssignedRecruiterId == u.Id)
+                    .Select(r => r.Id)
+                    .Union(activeLeadsFromRr.Where(rr => rr.RecruiterId == u.Id).Select(rr => rr.RequisitionId))
+                    .Distinct()
+                    .ToList();
+
+                return new RecruiterOptionViewModel
+                {
+                    Id = u.Id,
+                    FullName = u.FullName,
+                    Email = u.Email,
+                    DepartmentName = u.DepartmentEntity?.Name ?? u.Department ?? "Phòng Nhân Sự",
+                    JobTitle = u.JobTitle ?? "Chuyên viên tuyển dụng",
+                    ActiveLeadCount = leadReqIds.Count,
+                    ActiveSupportCount = activeSupports.Count(id => id == u.Id)
+                };
+            }).ToList();
+        }) ?? new List<RecruiterOptionViewModel>();
     }
 
     public async Task<List<Guid>> GetAssignedRequisitionIdsForRecruiterAsync(

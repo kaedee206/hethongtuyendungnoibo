@@ -8,13 +8,16 @@ namespace Ats.Web.Services.Interfaces;
 public interface IRequisitionAssignmentService
 {
     /// <summary>
-    /// Lấy danh sách tổng hợp phân công recruiter cho các yêu cầu tuyển dụng kèm KPI.
+    /// Lấy danh sách tổng hợp phân công recruiter cho các yêu cầu tuyển dụng kèm KPI và phân trang backend.
     /// </summary>
     Task<RequisitionAssignmentListViewModel> GetAssignmentOverviewAsync(
         string? search = null,
         Guid? departmentId = null,
         Guid? recruiterId = null,
         string? assignmentFilter = null,
+        int page = 1,
+        int pageSize = 10,
+        string? department = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

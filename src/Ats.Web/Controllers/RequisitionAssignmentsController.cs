@@ -11,7 +11,7 @@ namespace Ats.Web.Controllers;
 /// Quản lý phân công Recruiter phụ trách yêu cầu tuyển dụng và lịch sử chuyển giao (Scrum 26).
 /// Chỉ dành cho Trưởng phòng Nhân sự và Admin hệ thống.
 /// </summary>
-[Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},Quản trị viên,Trưởng phòng nhân sự,Quản trị viên hệ thống")]
+[Authorize(Roles = $"{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.Recruiter},Quản trị viên,Trưởng phòng nhân sự,Quản trị viên hệ thống,Nhân viên tuyển dụng")]
 [Route("phan-cong-recruiter")]
 [Route("yeu-cau-tuyen-dung/phan-cong")]
 public class RequisitionAssignmentsController : Controller
@@ -42,11 +42,21 @@ public class RequisitionAssignmentsController : Controller
     public async Task<IActionResult> Index(
         [FromQuery] string? search,
         [FromQuery] Guid? departmentId,
+        [FromQuery] string? department,
         [FromQuery] Guid? recruiterId,
         [FromQuery] string? filter,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
         CancellationToken cancellationToken = default)
     {
-        var model = await _assignmentService.GetAssignmentOverviewAsync(search, departmentId, recruiterId, filter, cancellationToken);
+        if (page < 1) page = 1;
+        if (!RequisitionAssignmentListViewModel.AllowedPageSizes.Contains(pageSize))
+        {
+            pageSize = 10;
+        }
+
+        var model = await _assignmentService.GetAssignmentOverviewAsync(
+            search, departmentId, recruiterId, filter, page, pageSize, department, cancellationToken);
         return View(model);
     }
 

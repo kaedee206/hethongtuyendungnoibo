@@ -204,7 +204,7 @@
                                 <option value="">-- Tất cả phòng ban --</option>
                                 @foreach (var dept in Model.Departments)
                                 {
-                                    <option value="@dept">@dept</option>
+                                    <option value="@dept" selected="@(Model.SelectedDepartmentName == dept)">@dept</option>
                                 }
                             </select>
                         </div>
@@ -215,7 +215,7 @@
                                 <option value="">-- Tất cả Recruiter --</option>
                                 @foreach (var rec in Model.AvailableRecruiters)
                                 {
-                                    <option value="@rec.UserId">@rec.FullName (@rec.ActiveLeadCount chính / @rec.ActiveSupportingCount phụ)</option>
+                                    <option value="@rec.UserId" selected="@(Model.SelectedRecruiterId == rec.UserId)">@rec.FullName (@rec.ActiveLeadCount chính / @rec.ActiveSupportingCount phụ)</option>
                                 }
                             </select>
                         </div>
@@ -223,7 +223,7 @@
                         <!-- Status Quick Pills -->
                         <div class="col-12 col-md-2 d-flex justify-content-md-end">
                             <select id="filterStatusSelect" class="form-select form-select-sm" style="border-radius: 8px; border-color: #E2E8F0; font-size: 0.85rem;">
-                                <option value="">-- Trạng thái --</option>
+                                <option value="" selected="@(string.IsNullOrEmpty(Model.AssignmentFilter) || Model.AssignmentFilter == "ALL")">-- Tất cả trạng thái --</option>
                                 <option value="UNASSIGNED" selected="@(Model.AssignmentFilter == "UNASSIGNED")">Chưa phân công</option>
                                 <option value="ASSIGNED" selected="@(Model.AssignmentFilter == "ASSIGNED")">Đã có phụ trách</option>
                             </select>
@@ -233,16 +233,16 @@
                     <!-- Quick Filter Badges -->
                     <div class="d-flex flex-wrap gap-2 mt-2.5 pt-2.5 border-top align-items-center" style="border-color: #F1F5F9 !important;">
                         <span class="text-muted small fw-medium me-1" style="font-size: 0.78rem;">Lọc nhanh:</span>
-                        <button type="button" class="btn btn-xs quick-filter-btn active" data-filter="ALL" 
+                        <button type="button" class="btn btn-xs quick-filter-btn @(string.IsNullOrEmpty(Model.AssignmentFilter) || Model.AssignmentFilter == "ALL" ? "active" : "")" data-filter="ALL" 
                                 style="font-size: 0.75rem; border-radius: 6px; padding: 3px 10px;">
                             Tất cả (@Model.TotalRequisitions)
                         </button>
-                        <button type="button" class="btn btn-xs quick-filter-btn @(Model.UnassignedRequisitionsCount > 0 ? "btn-warning-soft" : "")" 
+                        <button type="button" class="btn btn-xs quick-filter-btn @(Model.AssignmentFilter == "UNASSIGNED" ? "active btn-warning-soft" : (Model.UnassignedRequisitionsCount > 0 ? "btn-warning-soft" : ""))" 
                                 data-filter="UNASSIGNED" 
                                 style="font-size: 0.75rem; border-radius: 6px; padding: 3px 10px;">
                             <i class="bi bi-exclamation-circle me-1"></i>Cần phân công ngay (@Model.UnassignedRequisitionsCount)
                         </button>
-                        <button type="button" class="btn btn-xs quick-filter-btn" data-filter="ASSIGNED" 
+                        <button type="button" class="btn btn-xs quick-filter-btn @(Model.AssignmentFilter == "ASSIGNED" ? "active" : "")" data-filter="ASSIGNED" 
                                 style="font-size: 0.75rem; border-radius: 6px; padding: 3px 10px;">
                             <i class="bi bi-check2 me-1"></i>Đã phân công (@Model.AssignedRequisitionsCount)
                         </button>
@@ -365,7 +365,15 @@
                                                     <div>
                                                         <div class="fw-bold text-amber-800" style="font-size: 0.78rem;">Chưa có phụ trách</div>
                                                         <button type="button" class="btn btn-link btn-xs p-0 text-amber-700 text-decoration-none fw-semibold btn-assign-action"
-                                                                data-req-id="@item.RequisitionId" style="font-size: 0.72rem;">
+                                                                data-req-id="@item.RequisitionId"
+                                                                data-req-code="@item.Code"
+                                                                data-req-title="@item.JobTitle"
+                                                                data-req-dept="@item.DepartmentName"
+                                                                data-req-quantity="@item.Quantity"
+                                                                data-req-candidates="@item.TotalCandidatesCount"
+                                                                data-lead-id=""
+                                                                data-support-ids=""
+                                                                style="font-size: 0.72rem;">
                                                             + Chỉ định ngay &rarr;
                                                         </button>
                                                     </div>
@@ -409,18 +417,27 @@
                                             }
                                         </td>
 
-                                        <!-- Thao tác -->
-                                        <td class="pe-4 py-3.5 text-end">
-                                            <div class="btn-group btn-group-sm">
-                                                <button type="button" class="btn btn-novera-emerald btn-assign-action"
+                                        <!-- Thao tác phân công & Lịch sử -->
+                                        <td class="pe-4 py-3.5 text-end text-nowrap">
+                                            <div class="d-inline-flex align-items-center justify-content-end gap-1.5">
+                                                <button type="button" class="btn btn-sm @(item.HasLeadRecruiter ? "btn-outline-primary" : "btn-novera-emerald") btn-assign-action d-inline-flex align-items-center gap-1.5 px-2.5 py-1"
                                                         data-req-id="@item.RequisitionId"
-                                                        title="@(item.HasLeadRecruiter ? "Điều chuyển / Thay đổi phân công" : "Chỉ định chuyên viên phụ trách")">
-                                                    <i class="bi @(item.HasLeadRecruiter ? "bi-arrow-left-right" : "bi-person-plus") me-1"></i>
-                                                    @(item.HasLeadRecruiter ? "Điều chuyển" : "Phân công")
+                                                        data-req-code="@item.Code"
+                                                        data-req-title="@item.JobTitle"
+                                                        data-req-dept="@item.DepartmentName"
+                                                        data-req-quantity="@item.Quantity"
+                                                        data-req-candidates="@item.TotalCandidatesCount"
+                                                        data-lead-id="@(item.LeadRecruiterId?.ToString() ?? "")"
+                                                        data-support-ids="@string.Join(",", item.SupportingRecruiters.Select(s => s.RecruiterId))"
+                                                        data-bs-toggle="tooltip" data-bs-placement="top"
+                                                        title="@(item.HasLeadRecruiter ? "Điều chuyển / Thay đổi Recruiter phụ trách" : "Phân công chuyên viên phụ trách")">
+                                                    <i class="bi @(item.HasLeadRecruiter ? "bi-arrow-left-right" : "bi-person-plus")"></i>
+                                                    <span class="small fw-semibold">@(item.HasLeadRecruiter ? "Điều chuyển" : "Phân công")</span>
                                                 </button>
-                                                <button type="button" class="btn btn-outline-secondary btn-history-action"
+                                                <button type="button" class="btn btn-sm btn-outline-secondary btn-action-icon btn-history-action"
                                                         data-req-id="@item.RequisitionId"
                                                         data-req-title="@item.JobTitle"
+                                                        data-bs-toggle="tooltip" data-bs-placement="top"
                                                         title="Xem lịch sử chuyển giao">
                                                     <i class="bi bi-clock-history"></i>
                                                 </button>
@@ -432,6 +449,66 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Card Footer: Thanh Phân Trang Backend Chuẩn Đẹp (5 / 10 / 25 / 50 / 75 / 100) -->
+                @if (Model.TotalRecords > 0)
+                {
+                    <div class="card-footer bg-white border-top py-3 px-3 px-md-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3" style="border-color: #E2E8F0 !important;">
+                        <!-- Bên trái: Bộ chọn số dòng / trang và phạm vi bản ghi -->
+                        <div class="d-flex flex-wrap align-items-center gap-2 small text-muted">
+                            <span>Hiển thị:</span>
+                            <select id="selectPageSize" class="form-select form-select-sm" style="width: auto; font-size: 0.8rem; border-color: #CBD5E1; border-radius: 6px;">
+                                @foreach (var size in Ats.Web.Models.ViewModels.RequisitionAssignments.RequisitionAssignmentListViewModel.AllowedPageSizes)
+                                {
+                                    <option value="@size" selected="@(Model.PageSize == size)">@size dòng / trang</option>
+                                }
+                            </select>
+                            <span>
+                                (Từ <strong class="text-slate-900 font-monospace">@Model.FromItemIndex</strong> đến <strong class="text-slate-900 font-monospace">@Model.ToItemIndex</strong> trong tổng số <strong class="text-slate-900 font-monospace">@Model.TotalRecords</strong> yêu cầu)
+                            </span>
+                        </div>
+
+                        <!-- Bên phải: Nút phân trang Trước / Số trang / Tiếp -->
+                        @if (Model.TotalPages > 1)
+                        {
+                            <nav aria-label="Phân trang vị trí tuyển dụng">
+                                <ul class="pagination pagination-sm mb-0 gap-1">
+                                    <!-- Nút Trước -->
+                                    <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                                        <a class="page-link" href="@Url.Action("Index", new { page = Model.CurrentPage - 1, pageSize = Model.PageSize, search = Model.Search, department = Model.SelectedDepartmentName, departmentId = Model.SelectedDepartmentId, recruiterId = Model.SelectedRecruiterId, filter = Model.AssignmentFilter })" 
+                                           style="border-radius: 6px;" aria-label="Trang trước">
+                                            <i class="bi bi-chevron-left me-1"></i>Trước
+                                        </a>
+                                    </li>
+
+                                    <!-- Các số trang thông minh -->
+                                    @for (int p = 1; p <= Model.TotalPages; p++)
+                                    {
+                                        if (Model.TotalPages <= 7 || p == 1 || p == Model.TotalPages || Math.Abs(p - Model.CurrentPage) <= 1)
+                                        {
+                                            <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                                                <a class="page-link" href="@Url.Action("Index", new { page = p, pageSize = Model.PageSize, search = Model.Search, department = Model.SelectedDepartmentName, departmentId = Model.SelectedDepartmentId, recruiterId = Model.SelectedRecruiterId, filter = Model.AssignmentFilter })" 
+                                                   style="border-radius: 6px;">@p</a>
+                                            </li>
+                                        }
+                                        else if ((p == 2 && Model.CurrentPage > 3) || (p == Model.TotalPages - 1 && Model.CurrentPage < Model.TotalPages - 2))
+                                        {
+                                            <li class="page-item disabled"><span class="page-link" style="border-radius: 6px;">...</span></li>
+                                        }
+                                    }
+
+                                    <!-- Nút Tiếp -->
+                                    <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                                        <a class="page-link" href="@Url.Action("Index", new { page = Model.CurrentPage + 1, pageSize = Model.PageSize, search = Model.Search, department = Model.SelectedDepartmentName, departmentId = Model.SelectedDepartmentId, recruiterId = Model.SelectedRecruiterId, filter = Model.AssignmentFilter })" 
+                                           style="border-radius: 6px;" aria-label="Trang tiếp">
+                                            Tiếp<i class="bi bi-chevron-right ms-1"></i>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        }
+                    </div>
+                }
             </div>
         </div>
 
@@ -984,295 +1061,362 @@
 
 @section Scripts {
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const filterSearchInput = document.getElementById('filterSearchInput');
-        const filterDepartmentSelect = document.getElementById('filterDepartmentSelect');
-        const filterRecruiterSelect = document.getElementById('filterRecruiterSelect');
-        const filterStatusSelect = document.getElementById('filterStatusSelect');
-        const tableRows = document.querySelectorAll('.assignment-row');
-        const quickFilterBtns = document.querySelectorAll('.quick-filter-btn');
+    function initRequisitionAssignmentsPage() {
+        var filterSearchInput = document.getElementById('filterSearchInput');
+        var filterDepartmentSelect = document.getElementById('filterDepartmentSelect');
+        var filterRecruiterSelect = document.getElementById('filterRecruiterSelect');
+        var filterStatusSelect = document.getElementById('filterStatusSelect');
+        var quickFilterBtns = document.querySelectorAll('.quick-filter-btn');
 
-        // Client-side filtering with full synchronization
-        function applyFilters() {
-            const search = (filterSearchInput.value || '').trim().toLowerCase();
-            const dept = filterDepartmentSelect.value;
-            const recId = filterRecruiterSelect.value;
-            const status = filterStatusSelect.value;
-
-            // Sync quick filter buttons
-            quickFilterBtns.forEach(btn => {
-                const f = btn.getAttribute('data-filter');
-                if ((!status && f === 'ALL') || (status === f)) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
+        // Khởi tạo Bootstrap Tooltip an toàn
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+            try {
+                if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                    bootstrap.Tooltip.getOrCreateInstance(tooltipTriggerEl);
                 }
+            } catch (e) { }
+        });
+
+        // Backend Filter & Pagination Navigation Trigger
+        function triggerServerFilter(page, overrideFilter) {
+            page = page || 1;
+            var params = new URLSearchParams();
+            params.set('page', page);
+
+            var selectPageSize = document.getElementById('selectPageSize');
+            if (selectPageSize && selectPageSize.value) {
+                params.set('pageSize', selectPageSize.value);
+            }
+
+            var searchVal = (filterSearchInput && filterSearchInput.value) ? filterSearchInput.value.trim() : '';
+            if (searchVal) params.set('search', searchVal);
+
+            var deptVal = filterDepartmentSelect ? filterDepartmentSelect.value : '';
+            if (deptVal) params.set('department', deptVal);
+
+            var recVal = filterRecruiterSelect ? filterRecruiterSelect.value : '';
+            if (recVal) params.set('recruiterId', recVal);
+
+            var filterVal = (overrideFilter !== undefined && overrideFilter !== null) ? overrideFilter : (filterStatusSelect ? filterStatusSelect.value : '');
+            if (filterVal && filterVal !== 'ALL') {
+                params.set('filter', filterVal);
+            }
+
+            window.location.href = window.location.pathname + '?' + params.toString();
+        }
+
+        var selectPageSize = document.getElementById('selectPageSize');
+        if (selectPageSize) {
+            selectPageSize.addEventListener('change', function () {
+                triggerServerFilter(1);
             });
+        }
 
-            let visibleCount = 0;
-            tableRows.forEach(row => {
-                const title = row.getAttribute('data-title') || '';
-                const code = row.getAttribute('data-code') || '';
-                const rowDept = row.getAttribute('data-dept') || '';
-                const leadId = row.getAttribute('data-lead-id') || '';
-                const supportIds = (row.getAttribute('data-support-ids') || '').split(',');
-                const rowStatus = row.getAttribute('data-status') || '';
+        if (filterDepartmentSelect) {
+            filterDepartmentSelect.addEventListener('change', function () {
+                triggerServerFilter(1);
+            });
+        }
 
-                let matchSearch = !search || title.includes(search) || code.includes(search) || rowDept.toLowerCase().includes(search);
-                let matchDept = !dept || rowDept === dept;
-                let matchStatus = !status || rowStatus === status;
-                let matchRec = !recId || leadId === recId || supportIds.includes(recId);
+        if (filterRecruiterSelect) {
+            filterRecruiterSelect.addEventListener('change', function () {
+                triggerServerFilter(1);
+            });
+        }
 
-                if (matchSearch && matchDept && matchStatus && matchRec) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
+        if (filterStatusSelect) {
+            filterStatusSelect.addEventListener('change', function () {
+                triggerServerFilter(1);
+            });
+        }
+
+        if (filterSearchInput) {
+            filterSearchInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    triggerServerFilter(1);
                 }
             });
         }
 
-        filterSearchInput.addEventListener('input', applyFilters);
-        filterDepartmentSelect.addEventListener('change', applyFilters);
-        filterRecruiterSelect.addEventListener('change', applyFilters);
-        filterStatusSelect.addEventListener('change', applyFilters);
-
-        // Quick filter buttons click
-        quickFilterBtns.forEach(btn => {
+        quickFilterBtns.forEach(function (btn) {
             btn.addEventListener('click', function () {
-                const filter = this.getAttribute('data-filter');
-                if (filter === 'ALL') {
-                    filterStatusSelect.value = '';
-                } else {
-                    filterStatusSelect.value = filter;
-                }
-                applyFilters();
+                var filter = this.getAttribute('data-filter');
+                triggerServerFilter(1, filter);
             });
         });
 
-        // Click on KPI card unassigned
-        const cardUnassignedFilter = document.getElementById('cardUnassignedFilter');
+        var cardUnassignedFilter = document.getElementById('cardUnassignedFilter');
         if (cardUnassignedFilter) {
             cardUnassignedFilter.addEventListener('click', function () {
-                document.getElementById('tab-requisitions-btn').click();
-                filterStatusSelect.value = 'UNASSIGNED';
-                applyFilters();
+                triggerServerFilter(1, 'UNASSIGNED');
             });
         }
 
-        // Click on KPI card recruiter -> Switch to Tab 2
-        const cardRecruiterTabSwitch = document.getElementById('cardRecruiterTabSwitch');
+        var cardRecruiterTabSwitch = document.getElementById('cardRecruiterTabSwitch');
         if (cardRecruiterTabSwitch) {
             cardRecruiterTabSwitch.addEventListener('click', function () {
-                document.getElementById('tab-workloads-btn').click();
+                var tabBtn = document.getElementById('tab-workloads-btn');
+                if (tabBtn) tabBtn.click();
             });
         }
 
-        // Reset all filters
-        document.getElementById('btnResetFilters').addEventListener('click', function () {
-            filterSearchInput.value = '';
-            filterDepartmentSelect.value = '';
-            filterRecruiterSelect.value = '';
-            filterStatusSelect.value = '';
-            applyFilters();
-        });
+        var btnResetFilters = document.getElementById('btnResetFilters');
+        if (btnResetFilters) {
+            btnResetFilters.addEventListener('click', function () {
+                window.location.href = window.location.pathname;
+            });
+        }
 
-        // Refresh button
-        document.getElementById('btnRefreshData').addEventListener('click', function () {
-            window.location.reload();
-        });
+        var btnRefreshData = document.getElementById('btnRefreshData');
+        if (btnRefreshData) {
+            btnRefreshData.addEventListener('click', function () {
+                window.location.reload();
+            });
+        }
 
         // ==========================================
         // ASSIGN MODAL LOGIC
         // ==========================================
-        const assignModalEl = document.getElementById('assignModal');
-        const assignModal = new bootstrap.Modal(assignModalEl);
-        const modalReqId = document.getElementById('modalRequisitionId');
-        const modalCurrentLeadId = document.getElementById('modalCurrentLeadId');
-        const modalReqCode = document.getElementById('modalReqCode');
-        const modalReqTitle = document.getElementById('modalReqTitle');
-        const modalReqDepartment = document.getElementById('modalReqDepartment');
-        const modalReqCountInfo = document.getElementById('modalReqCountInfo');
-        const modalLeadSelect = document.getElementById('modalLeadSelect');
-        const supportingChecks = document.querySelectorAll('.supporting-check');
-        const supportingWrappers = document.querySelectorAll('.supporting-option-wrapper');
-        const handoverSection = document.getElementById('handoverSection');
-        const modalReasonInput = document.getElementById('modalReasonInput');
-        const assignForm = document.getElementById('assignForm');
+        var assignModalEl = document.getElementById('assignModal');
+        var modalReqId = document.getElementById('modalRequisitionId');
+        var modalCurrentLeadId = document.getElementById('modalCurrentLeadId');
+        var modalReqCode = document.getElementById('modalReqCode');
+        var modalReqTitle = document.getElementById('modalReqTitle');
+        var modalReqDepartment = document.getElementById('modalReqDepartment');
+        var modalReqCountInfo = document.getElementById('modalReqCountInfo');
+        var modalLeadSelect = document.getElementById('modalLeadSelect');
+        var supportingChecks = document.querySelectorAll('.supporting-check');
+        var supportingWrappers = document.querySelectorAll('.supporting-option-wrapper');
+        var handoverSection = document.getElementById('handoverSection');
+        var modalReasonInput = document.getElementById('modalReasonInput');
+        var assignForm = document.getElementById('assignForm');
 
         function checkHandoverRequirement() {
-            const currentLead = modalCurrentLeadId.value;
-            const newLead = modalLeadSelect.value;
+            var currentLead = modalCurrentLeadId ? modalCurrentLeadId.value : '';
+            var newLead = modalLeadSelect ? modalLeadSelect.value : '';
 
-            // Disable selected lead in supporting list
-            supportingWrappers.forEach(wrap => {
-                const uid = wrap.getAttribute('data-user-id');
-                const chk = wrap.querySelector('.supporting-check');
-                if (uid === newLead) {
-                    chk.checked = false;
-                    chk.disabled = true;
-                    wrap.style.opacity = '0.4';
-                } else {
-                    chk.disabled = false;
-                    wrap.style.opacity = '1';
+            supportingWrappers.forEach(function (wrap) {
+                var uid = wrap.getAttribute('data-user-id');
+                var chk = wrap.querySelector('.supporting-check');
+                if (chk) {
+                    if (uid === newLead) {
+                        chk.checked = false;
+                        chk.disabled = true;
+                        wrap.style.opacity = '0.4';
+                    } else {
+                        chk.disabled = false;
+                        wrap.style.opacity = '1';
+                    }
                 }
             });
 
-            // Handover is required ONLY when there was an existing lead and it is changed
-            if (currentLead && newLead && currentLead !== newLead) {
-                handoverSection.style.display = 'block';
-                modalReasonInput.setAttribute('required', 'required');
-            } else {
-                handoverSection.style.display = 'none';
-                modalReasonInput.removeAttribute('required');
-                modalReasonInput.classList.remove('is-invalid');
+            if (handoverSection && modalReasonInput) {
+                if (currentLead && newLead && currentLead !== newLead) {
+                    handoverSection.style.display = 'block';
+                    modalReasonInput.setAttribute('required', 'required');
+                } else {
+                    handoverSection.style.display = 'none';
+                    modalReasonInput.removeAttribute('required');
+                    modalReasonInput.classList.remove('is-invalid');
+                }
             }
         }
 
-        modalLeadSelect.addEventListener('change', checkHandoverRequirement);
+        if (modalLeadSelect) {
+            modalLeadSelect.addEventListener('change', checkHandoverRequirement);
+        }
 
-        // Open Assign Modal via button
-        document.querySelectorAll('.btn-assign-action').forEach(btn => {
+        document.querySelectorAll('.btn-assign-action').forEach(function (btn) {
             btn.addEventListener('click', async function () {
-                const reqId = this.getAttribute('data-req-id');
-                modalReqId.value = reqId;
+                var reqId = this.getAttribute('data-req-id');
+                var reqCode = this.getAttribute('data-req-code') || '';
+                var reqTitle = this.getAttribute('data-req-title') || '';
+                var reqDept = this.getAttribute('data-req-dept') || '';
+                var reqQty = this.getAttribute('data-req-quantity') || '0';
+                var reqCandidates = this.getAttribute('data-req-candidates') || '0';
+                var currentLead = this.getAttribute('data-lead-id') || '';
+                var suppIds = (this.getAttribute('data-support-ids') || '').split(',').filter(Boolean);
 
-                try {
-                    const res = await fetch(`/phan-cong-recruiter/detail/${reqId}`);
-                    const json = await res.json();
-                    if (!json.success) {
-                        alert(json.message || 'Không thể lấy thông tin vị trí.');
-                        return;
-                    }
+                if (modalReqId) modalReqId.value = reqId;
+                if (modalReqCode) modalReqCode.textContent = reqCode || 'YÊU CẦU TUYỂN DỤNG';
+                if (modalReqTitle) modalReqTitle.textContent = reqTitle || 'Vị trí tuyển dụng';
+                if (modalReqDepartment) modalReqDepartment.textContent = reqDept ? ('Phòng ban: ' + reqDept) : '';
+                if (modalReqCountInfo) modalReqCountInfo.textContent = reqQty + ' chỉ tiêu / ' + reqCandidates + ' hồ sơ';
+                if (modalCurrentLeadId) modalCurrentLeadId.value = currentLead;
+                if (modalLeadSelect) modalLeadSelect.value = currentLead;
 
-                    const data = json.data;
-                    modalReqCode.textContent = data.code;
-                    modalReqTitle.textContent = data.jobTitle;
-                    modalReqDepartment.textContent = `Phòng ban: ${data.departmentName} • Cấp bậc: ${data.jobLevel || 'Middle'}`;
-                    modalReqCountInfo.textContent = `${data.quantity} chỉ tiêu / ${data.applicantCount} ứng viên`;
+                supportingChecks.forEach(function (chk) {
+                    chk.checked = suppIds.includes(chk.value);
+                });
 
-                    modalCurrentLeadId.value = data.leadRecruiterId || '';
-                    modalLeadSelect.value = data.leadRecruiterId || '';
-
-                    // Reset supporting checkboxes
-                    const currentSupportingIds = data.supportingRecruiters ? data.supportingRecruiters.map(s => s.recruiterId) : [];
-                    supportingChecks.forEach(chk => {
-                        chk.checked = currentSupportingIds.includes(chk.value);
-                    });
-
-                    // Clear handover fields
+                if (modalReasonInput) {
                     modalReasonInput.value = '';
-                    document.getElementById('modalNotesInput').value = '';
+                    modalReasonInput.classList.remove('is-invalid');
+                }
+                var modalNotesInput = document.getElementById('modalNotesInput');
+                if (modalNotesInput) modalNotesInput.value = '';
 
-                    checkHandoverRequirement();
-                    assignModal.show();
+                checkHandoverRequirement();
+
+                if (assignModalEl && typeof bootstrap !== 'undefined') {
+                    bootstrap.Modal.getOrCreateInstance(assignModalEl).show();
+                }
+
+                // Tải chi tiết thời gian thực để cập nhật mới nhất
+                try {
+                    var res = await fetch('/phan-cong-recruiter/detail/' + reqId);
+                    if (res.ok) {
+                        var json = await res.json();
+                        if (json && json.success && json.data) {
+                            var data = json.data;
+                            if (modalReqCode) modalReqCode.textContent = data.code || reqCode;
+                            if (modalReqTitle) modalReqTitle.textContent = data.jobPositionTitle || data.jobTitle || reqTitle;
+                            if (modalReqDepartment) modalReqDepartment.textContent = 'Phòng ban: ' + (data.departmentName || reqDept);
+                            if (modalReqCountInfo) modalReqCountInfo.textContent = (data.quantity || reqQty) + ' chỉ tiêu / ' + (data.totalCandidatesCount || data.applicantCount || reqCandidates) + ' hồ sơ';
+
+                            var freshLeadId = data.leadRecruiterId || currentLead;
+                            if (modalCurrentLeadId) modalCurrentLeadId.value = freshLeadId;
+                            if (modalLeadSelect) modalLeadSelect.value = freshLeadId;
+
+                            var freshSuppIds = data.supportingRecruiters ? data.supportingRecruiters.map(function (s) { return s.recruiterId; }) : suppIds;
+                            supportingChecks.forEach(function (chk) {
+                                chk.checked = freshSuppIds.includes(chk.value);
+                            });
+
+                            checkHandoverRequirement();
+                        }
+                    }
                 } catch (err) {
-                    console.error(err);
-                    alert('Lỗi kết nối máy chủ.');
+                    console.warn('Lỗi đồng bộ chi tiết phân công:', err);
                 }
             });
         });
 
-        // Form validation on submit
-        assignForm.addEventListener('submit', function (e) {
-            const currentLead = modalCurrentLeadId.value;
-            const newLead = modalLeadSelect.value;
+        if (assignForm) {
+            assignForm.addEventListener('submit', function (e) {
+                var currentLead = modalCurrentLeadId ? modalCurrentLeadId.value : '';
+                var newLead = modalLeadSelect ? modalLeadSelect.value : '';
 
-            if (currentLead && newLead && currentLead !== newLead) {
-                if (!modalReasonInput.value.trim()) {
-                    e.preventDefault();
-                    modalReasonInput.classList.add('is-invalid');
-                    modalReasonInput.focus();
-                    return false;
+                if (currentLead && newLead && currentLead !== newLead) {
+                    if (modalReasonInput && !modalReasonInput.value.trim()) {
+                        e.preventDefault();
+                        modalReasonInput.classList.add('is-invalid');
+                        modalReasonInput.focus();
+                        return false;
+                    }
                 }
-            }
 
-            const btn = document.getElementById('btnSubmitAssign');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Đang lưu...';
-        });
+                if (window.atsInstant && typeof window.atsInstant.clearCache === 'function') {
+                    window.atsInstant.clearCache();
+                }
+
+                var btn = document.getElementById('btnSubmitAssign');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Đang lưu...';
+                }
+            });
+        }
 
         // ==========================================
         // HANDOVER HISTORY MODAL LOGIC
         // ==========================================
-        const historyModalEl = document.getElementById('historyModal');
-        const historyModal = new bootstrap.Modal(historyModalEl);
-        const historySubtitle = document.getElementById('historyModalSubtitle');
-        const historyLoadingSpinner = document.getElementById('historyLoadingSpinner');
-        const historyTimelineContainer = document.getElementById('historyTimelineContainer');
-        const historyTimelineList = document.getElementById('historyTimelineList');
-        const historyEmptyState = document.getElementById('historyEmptyState');
+        var historyModalEl = document.getElementById('historyModal');
+        var historySubtitle = document.getElementById('historyModalSubtitle');
+        var historyLoadingSpinner = document.getElementById('historyLoadingSpinner');
+        var historyTimelineContainer = document.getElementById('historyTimelineContainer');
+        var historyTimelineList = document.getElementById('historyTimelineList');
+        var historyEmptyState = document.getElementById('historyEmptyState');
 
-        document.querySelectorAll('.btn-history-action').forEach(btn => {
+        document.querySelectorAll('.btn-history-action').forEach(function (btn) {
             btn.addEventListener('click', async function () {
-                const reqId = this.getAttribute('data-req-id');
-                const reqTitle = this.getAttribute('data-req-title');
+                var reqId = this.getAttribute('data-req-id');
+                var reqTitle = this.getAttribute('data-req-title') || 'Vị trí tuyển dụng';
 
-                historySubtitle.textContent = `Vị trí: ${reqTitle}`;
-                historyLoadingSpinner.style.display = 'block';
-                historyTimelineContainer.style.display = 'none';
-                historyEmptyState.style.display = 'none';
-                historyTimelineList.innerHTML = '';
+                if (historySubtitle) historySubtitle.textContent = 'Vị trí: ' + reqTitle;
+                if (historyLoadingSpinner) historyLoadingSpinner.style.display = 'block';
+                if (historyTimelineContainer) historyTimelineContainer.style.display = 'none';
+                if (historyEmptyState) historyEmptyState.style.display = 'none';
+                if (historyTimelineList) historyTimelineList.innerHTML = '';
 
-                historyModal.show();
+                if (historyModalEl && typeof bootstrap !== 'undefined') {
+                    bootstrap.Modal.getOrCreateInstance(historyModalEl).show();
+                }
 
                 try {
-                    const res = await fetch(`/phan-cong-recruiter/lich-su/${reqId}`);
-                    const json = await res.json();
+                    var res = await fetch('/phan-cong-recruiter/lich-su/' + reqId);
+                    var json = await res.json();
 
-                    historyLoadingSpinner.style.display = 'none';
+                    if (historyLoadingSpinner) historyLoadingSpinner.style.display = 'none';
 
-                    if (json.success && json.data && json.data.length > 0) {
-                        historyTimelineContainer.style.display = 'block';
-                        
-                        json.data.forEach(item => {
-                            const isLeadChange = item.handoverType === 'LEAD_HANDOVER' || item.handoverType === 'PRIMARY_TRANSFER';
-                            const isInitial = item.handoverType === 'INITIAL_ASSIGNMENT';
-                            const badgeIcon = isLeadChange ? 'bi-arrow-left-right' : (isInitial ? 'bi-check-lg' : 'bi-people');
-                            const badgeClass = isLeadChange ? 'badge-lead' : (isInitial ? 'badge-initial' : 'badge-support');
+                    if (json && json.success && json.data && json.data.length > 0) {
+                        if (historyTimelineContainer) historyTimelineContainer.style.display = 'block';
 
-                            const node = document.createElement('div');
+                        json.data.forEach(function (item) {
+                            var hType = item.handoverType || item.HandoverType || '';
+                            var hDisplay = item.handoverTypeDisplay || item.HandoverTypeDisplay || 'Chuyển giao';
+                            var fromName = item.fromRecruiterName || item.FromRecruiterName;
+                            var toName = item.toRecruiterName || item.ToRecruiterName || 'Chuyên viên';
+                            var timeDisplay = item.transferredAtDisplay || item.TransferredAtDisplay || '';
+                            var byName = item.transferredByName || item.TransferredByName || 'Quản trị viên';
+                            var reason = item.reason || item.Reason || '';
+                            var notes = item.notes || item.Notes || '';
+
+                            var isLeadChange = hType === 'LEAD_HANDOVER' || hType === 'PRIMARY_TRANSFER';
+                            var isInitial = hType === 'INITIAL_ASSIGNMENT';
+                            var badgeIcon = isLeadChange ? 'bi-arrow-left-right' : (isInitial ? 'bi-check-lg' : 'bi-people');
+                            var badgeClass = isLeadChange ? 'badge-lead' : (isInitial ? 'badge-initial' : 'badge-support');
+
+                            var node = document.createElement('div');
                             node.className = 'timeline-item';
-                            node.innerHTML = `
-                                <div class="timeline-badge ${badgeClass}">
-                                    <i class="bi ${badgeIcon}"></i>
-                                </div>
-                                <div class="card border p-3 shadow-xs rounded-3" style="background: #FFFFFF; border-color: #E2E8F0 !important;">
-                                    <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
-                                        <div class="fw-semibold text-slate-900 small">
-                                            <span class="badge ${isLeadChange ? 'bg-amber-50 text-amber-800' : (isInitial ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-100 text-slate-700')} me-1.5" style="border-radius: 6px;">
-                                                ${item.handoverTypeDisplay}
-                                            </span>
-                                            ${item.fromRecruiterName ? `Từ: <strong>${item.fromRecruiterName}</strong> <span class="text-muted mx-1">&rarr;</span> ` : ''}
-                                            Đến: <strong class="text-slate-900">${item.toRecruiterName}</strong>
-                                        </div>
-                                        <div class="text-muted small font-monospace" style="font-size: 0.73rem; font-family: 'JetBrains Mono', monospace;">
-                                            <i class="bi bi-clock me-1"></i>${item.transferredAtDisplay}
-                                        </div>
-                                    </div>
-                                    <div class="text-muted small" style="font-size: 0.75rem;">
-                                        Thực hiện bởi: <strong class="text-slate-800">${item.transferredByName}</strong>
-                                    </div>
-                                    ${item.reason ? `<div class="mt-2 text-slate-800 small p-2 rounded-2 border" style="background: #F8FAFC; border-color: #E2E8F0 !important;">
-                                        <strong class="text-slate-900">Lý do:</strong> ${item.reason}
-                                    </div>` : ''}
-                                    ${item.notes ? `<div class="mt-1.5 text-muted small fst-italic" style="font-size: 0.75rem;">
-                                        <strong>Ghi chú:</strong> ${item.notes}
-                                    </div>` : ''}
-                                </div>
-                            `;
-                            historyTimelineList.appendChild(node);
+                            node.innerHTML =
+                                '<div class="timeline-badge ' + badgeClass + '">' +
+                                    '<i class="bi ' + badgeIcon + '"></i>' +
+                                '</div>' +
+                                '<div class="card border p-3 shadow-xs rounded-3" style="background: #FFFFFF; border-color: #E2E8F0 !important;">' +
+                                    '<div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">' +
+                                        '<div class="fw-semibold text-slate-900 small">' +
+                                            '<span class="badge ' + (isLeadChange ? 'bg-amber-50 text-amber-800' : (isInitial ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-100 text-slate-700')) + ' me-1.5" style="border-radius: 6px;">' +
+                                                hDisplay +
+                                            '</span>' +
+                                            (fromName ? ('Từ: <strong>' + fromName + '</strong> <span class="text-muted mx-1">&rarr;</span> ') : '') +
+                                            'Đến: <strong class="text-slate-900">' + toName + '</strong>' +
+                                        '</div>' +
+                                        '<div class="text-muted small font-monospace" style="font-size: 0.73rem; font-family: \'JetBrains Mono\', monospace;">' +
+                                            '<i class="bi bi-clock me-1"></i>' + timeDisplay +
+                                        '</div>' +
+                                    '</div>' +
+                                    '<div class="text-muted small" style="font-size: 0.75rem;">' +
+                                        'Thực hiện bởi: <strong class="text-slate-800">' + byName + '</strong>' +
+                                    '</div>' +
+                                    (reason ? ('<div class="mt-2 text-slate-800 small p-2 rounded-2 border" style="background: #F8FAFC; border-color: #E2E8F0 !important;">' +
+                                        '<strong class="text-slate-900">Lý do:</strong> ' + reason +
+                                    '</div>') : '') +
+                                    (notes ? ('<div class="mt-1.5 text-muted small fst-italic" style="font-size: 0.75rem;">' +
+                                        '<strong>Ghi chú:</strong> ' + notes +
+                                    '</div>') : '') +
+                                '</div>';
+                            if (historyTimelineList) historyTimelineList.appendChild(node);
                         });
                     } else {
-                        historyEmptyState.style.display = 'block';
+                        if (historyEmptyState) historyEmptyState.style.display = 'block';
                     }
                 } catch (err) {
-                    console.error(err);
-                    historyLoadingSpinner.style.display = 'none';
-                    historyEmptyState.style.display = 'block';
+                    console.error('Lỗi tải lịch sử chuyển giao:', err);
+                    if (historyLoadingSpinner) historyLoadingSpinner.style.display = 'none';
+                    if (historyEmptyState) historyEmptyState.style.display = 'block';
                 }
             });
         });
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initRequisitionAssignmentsPage);
+    } else {
+        initRequisitionAssignmentsPage();
+    }
+    window.initRequisitionAssignmentsPage = initRequisitionAssignmentsPage;
 </script>
 }
