@@ -13,6 +13,7 @@ using Ats.Web.Models.ViewModels.Referral;
 using Ats.Web.Models.ViewModels.CandidateMerge;
 using Ats.Web.Exceptions;
 using Ats.Web.Models.ViewModels.CandidateTimeline;
+using Ats.Web.Models.ViewModels.Offers;
 
 namespace Ats.Web.Controllers;
 
@@ -35,6 +36,7 @@ public class WorkspaceController : Controller
     private readonly IInterviewEvaluationService? _interviewEvaluationService;
     private readonly IInterviewService? _interviewService;
     private readonly ICandidateInterviewService? _candidateInterviewService;
+    private readonly IOfferService? _offerService;
 
     [ActivatorUtilitiesConstructor]
     public WorkspaceController(
@@ -52,7 +54,8 @@ public class WorkspaceController : Controller
         IRequisitionAssignmentService? assignmentService = null,
         IInterviewEvaluationService? interviewEvaluationService = null,
         IInterviewService? interviewService = null,
-        ICandidateInterviewService? candidateInterviewService = null)
+        ICandidateInterviewService? candidateInterviewService = null,
+        IOfferService? offerService = null)
     {
         _dbContext = dbContext;
         _env = env;
@@ -69,6 +72,7 @@ public class WorkspaceController : Controller
         _interviewEvaluationService = interviewEvaluationService;
         _interviewService = interviewService;
         _candidateInterviewService = candidateInterviewService;
+        _offerService = offerService;
     }
 
     public WorkspaceController(
@@ -76,7 +80,7 @@ public class WorkspaceController : Controller
         IWebHostEnvironment env,
         IEmailService emailService,
         ILogger<WorkspaceController> logger)
-        : this(dbContext, env, emailService, null!, null!, null!, logger, null!, null!, null!, null!, null!, null!, null!, null!)
+        : this(dbContext, env, emailService, null!, null!, null!, logger, null!, null!, null!, null!, null!, null!, null!, null!, null!)
     {
     }
 
@@ -1734,150 +1738,183 @@ public class WorkspaceController : Controller
     }
 
     /// <summary>
-    /// Đề xuất Thư mời nhận việc (Job Offer) cho ứng viên.
+    /// Lấy dữ liệu khởi tạo Form Soạn đề xuất Offer (SCRUM-340).
     /// </summary>
-    [HttpPost("CreateOffer")]
-    [ValidateAntiForgeryToken]
+    [HttpGet("GetOfferFormData")]
     [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager}")]
-    public async Task<IActionResult> CreateOffer(
-        [FromForm] Guid applicationId,
-        [FromForm] decimal baseSalary,
-        [FromForm] decimal? bonusAllowance,
-        [FromForm] decimal? totalPackage,
-        [FromForm] DateTime? proposedJoinDate,
-        [FromForm] string? contractType,
-        [FromForm] string? note)
+    public async Task<IActionResult> GetOfferFormData([FromQuery] Guid applicationId, CancellationToken cancellationToken)
     {
         try
         {
-            var application = await _dbContext.Applications
-                .Include(a => a.Candidate)
-                .Include(a => a.JobPosting)
-                .Include(a => a.CurrentStage)
-                .FirstOrDefaultAsync(a => a.Id == applicationId);
-
-            if (application == null)
+            if (_offerService == null)
             {
-                return Json(new { success = false, message = "Không tìm thấy hồ sơ ứng viên." });
+                return Json(new { success = false, message = "Dịch vụ Offer chưa được khởi tạo." });
             }
 
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             _ = Guid.TryParse(userIdStr, out var currentUserId);
 
-            // Scrum 26: Recruiter chỉ được tạo Offer cho ứng viên của vị trí được giao
-            var isRecruiterOnly = User?.Identity?.IsAuthenticated == true &&
-                                  User.IsInRole(UserRoles.Recruiter) &&
-                                  !User.IsInRole(UserRoles.Admin) &&
-                                  !User.IsInRole(UserRoles.HRManager);
-            if (isRecruiterOnly && _assignmentService != null && currentUserId != Guid.Empty)
-            {
-                var canAccess = await _assignmentService.CanRecruiterAccessApplicationAsync(currentUserId, applicationId);
-                if (!canAccess)
-                {
-                    return Json(new { success = false, message = "Bạn không có quyền tạo đề xuất Offer cho hồ sơ này do không phụ trách vị trí tuyển dụng tương ứng." });
-                }
-            }
-
-            if (baseSalary <= 0)
-            {
-                return Json(new { success = false, message = "Mức lương cơ bản phải lớn hơn 0." });
-            }
-
-            var recruiterId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync());
-
-            var offer = await _dbContext.JobOffers.FirstOrDefaultAsync(o => o.ApplicationId == application.Id);
-            var joinDate = proposedJoinDate.HasValue
-                ? DateOnly.FromDateTime(proposedJoinDate.Value)
-                : DateOnly.FromDateTime(DateTime.UtcNow.AddDays(14));
-
-            var total = totalPackage ?? (baseSalary + (bonusAllowance ?? 0));
-
-            if (offer == null)
-            {
-                offer = new JobOffer
-                {
-                    Id = Guid.NewGuid(),
-                    ApplicationId = application.Id,
-                    CreatedByRecruiterId = recruiterId,
-                    BaseSalary = baseSalary,
-                    BonusAllowance = bonusAllowance,
-                    TotalPackage = total,
-                    ProposedJoinDate = joinDate,
-                    ProbationPeriodMonths = 2,
-                    ContractType = contractType ?? "Chính thức (Toàn thời gian)",
-                    Status = OfferStatus.PENDING_APPROVAL,
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    UpdatedAt = DateTimeOffset.UtcNow
-                };
-                await _dbContext.JobOffers.AddAsync(offer);
-            }
-            else
-            {
-                offer.BaseSalary = baseSalary;
-                offer.BonusAllowance = bonusAllowance;
-                offer.TotalPackage = total;
-                offer.ProposedJoinDate = joinDate;
-                offer.ContractType = contractType ?? offer.ContractType;
-                offer.Status = OfferStatus.PENDING_APPROVAL;
-                offer.UpdatedAt = DateTimeOffset.UtcNow;
-            }
-
-            // Chuyển giai đoạn sang Stage 5: Offer
-            var offerStage = await _dbContext.PipelineStages.FirstOrDefaultAsync(s => s.StageOrder == 5 || s.Name.Contains("Offer"));
-            if (offerStage != null)
-            {
-                var prev = application.CurrentStageId;
-                application.CurrentStageId = offerStage.Id;
-                application.StageEnteredAt = DateTimeOffset.UtcNow;
-                application.IsSlaOverdue = false;
-                application.SlaOverdueAlertedAt = null;
-                application.UpdatedAt = DateTimeOffset.UtcNow;
-
-                await _dbContext.ApplicationStageHistories.AddAsync(new ApplicationStageHistory
-                {
-                    Id = Guid.NewGuid(),
-                    ApplicationId = application.Id,
-                    FromStageId = prev,
-                    ToStageId = offerStage.Id,
-                    ChangedByUserId = recruiterId,
-                    Comment = $"Đề xuất Thư mời nhận việc: Lương cơ bản {baseSalary:N0} VNĐ. Ngày dự kiến nhận việc: {joinDate:dd/MM/yyyy}.",
-                    CreatedAt = DateTimeOffset.UtcNow
-                });
-            }
-
-            await _dbContext.SaveChangesAsync();
-
-            // Gửi email thông báo Thư mời nhận việc cho ứng viên
-            var candFullName = $"{application.Candidate.FirstName} {application.Candidate.LastName}".Trim();
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    var joinDateTime = joinDate.ToDateTime(TimeOnly.MinValue);
-                    await _emailService.SendOfferLetterNotificationAsync(
-                        application.Candidate.Email,
-                        candFullName,
-                        application.JobPosting.Title,
-                        baseSalary,
-                        joinDateTime);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning("Không thể gửi email thư mời Offer: {Msg}", ex.Message);
-                }
-            });
-
-            return Json(new
-            {
-                success = true,
-                message = $"💼 Đã tạo Đề xuất Offer (Lương: {baseSalary:N0} VNĐ) và gửi thông báo tới ứng viên {candFullName} thành công!",
-                offerId = offer.Id
-            });
+            var data = await _offerService.GetOfferFormInitDataAsync(applicationId, currentUserId, cancellationToken);
+            return Json(new { success = true, data });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Lỗi khi tạo đề xuất Offer");
-            return Json(new { success = false, message = "Lỗi khi tạo Offer: " + ex.Message });
+            _logger.LogError(ex, "Lỗi khi lấy dữ liệu khởi tạo Offer cho hồ sơ {AppId}", applicationId);
+            return Json(new { success = false, message = "Lỗi khi nạp thông tin Offer: " + ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Sinh giao diện xem trước Thư mời nhận việc (SCRUM-340 Preview).
+    /// </summary>
+    [HttpPost("PreviewOffer")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager}")]
+    public async Task<IActionResult> PreviewOffer([FromBody] JobOfferInputModel input, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_offerService == null)
+            {
+                return BadRequest("Dịch vụ Offer chưa được khởi tạo.");
+            }
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+            var preview = await _offerService.GenerateOfferPreviewAsync(input, currentUserId, cancellationToken);
+            return PartialView("~/Views/Shared/_OfferLetterPreviewPartial.cshtml", preview);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi xem trước thư mời nhận việc");
+            return BadRequest("Lỗi khi xem trước thư mời: " + ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Đề xuất Thư mời nhận việc (Job Offer): Hỗ trợ Lưu nháp (DRAFT) hoặc Gửi duyệt (PENDING_APPROVAL) (SCRUM-340).
+    /// Hỗ trợ cả submit JSON payload hoặc FormData.
+    /// </summary>
+    [HttpPost("SaveOffer")]
+    [HttpPost("CreateOffer")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager}")]
+    public async Task<IActionResult> SaveOffer(
+        [FromBody] JobOfferInputModel? jsonModel,
+        [FromForm] Guid? applicationId,
+        [FromForm] decimal? baseSalary,
+        [FromForm] decimal? bonusAllowance,
+        [FromForm] decimal? totalPackage,
+        [FromForm] DateTime? proposedJoinDate,
+        [FromForm] DateTime? expirationDate,
+        [FromForm] string? jobTitle,
+        [FromForm] Guid? jobPositionId,
+        [FromForm] string? contractType,
+        [FromForm] string? workLocation,
+        [FromForm] string? salaryJustification,
+        [FromForm] string? notes,
+        [FromForm] bool? isDraft,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+            var model = jsonModel;
+            if (model == null)
+            {
+                if (!applicationId.HasValue || !baseSalary.HasValue)
+                {
+                    return Json(new { success = false, message = "Thiếu dữ liệu hồ sơ hoặc mức lương cơ bản." });
+                }
+
+                model = new JobOfferInputModel
+                {
+                    ApplicationId = applicationId.Value,
+                    JobPositionId = jobPositionId,
+                    JobTitle = jobTitle ?? string.Empty,
+                    WorkLocation = workLocation,
+                    BaseSalary = baseSalary.Value,
+                    BonusAllowance = bonusAllowance,
+                    TotalPackage = totalPackage,
+                    ProposedJoinDate = proposedJoinDate.HasValue ? DateOnly.FromDateTime(proposedJoinDate.Value) : null,
+                    ExpirationDate = expirationDate.HasValue ? DateOnly.FromDateTime(expirationDate.Value) : null,
+                    ContractType = contractType ?? "Chính thức (Toàn thời gian)",
+                    SalaryJustification = salaryJustification,
+                    Notes = notes,
+                    IsDraft = isDraft ?? false
+                };
+            }
+
+            if (_offerService != null)
+            {
+                var result = await _offerService.SaveOfferAsync(model, currentUserId, cancellationToken);
+                return Json(new
+                {
+                    success = result.Success,
+                    message = result.Message,
+                    offerId = result.OfferId,
+                    isDraft = result.IsDraft,
+                    errors = result.Errors
+                });
+            }
+
+            return Json(new { success = false, message = "Dịch vụ Offer chưa sẵn sàng." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi lưu đề xuất Offer");
+            return Json(new { success = false, message = "Lỗi khi xử lý Offer: " + ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Hiển thị thư mời nhận việc từ bản ghi đã lưu theo Id (SCRUM-340).
+    /// </summary>
+    [HttpGet("PreviewOfferLetter/{id}")]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager}")]
+    public async Task<IActionResult> PreviewOfferLetter([FromRoute] Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_offerService == null) return NotFound("Dịch vụ Offer chưa sẵn sàng.");
+
+            var preview = await _offerService.GetOfferPreviewByIdAsync(id, cancellationToken);
+            if (preview == null) return NotFound("Không tìm thấy đề xuất Offer.");
+
+            return PartialView("~/Views/Shared/_OfferLetterPreviewPartial.cshtml", preview);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi tải thư mời nhận việc {OfferId}", id);
+            return BadRequest("Lỗi khi tải thư mời: " + ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Rút lại / Hủy bỏ một đề xuất Offer đang hiệu lực (SCRUM-340).
+    /// </summary>
+    [HttpPost("WithdrawOffer")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.HiringManager}")]
+    public async Task<IActionResult> WithdrawOffer([FromForm] Guid offerId, [FromForm] string? reason, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_offerService == null) return Json(new { success = false, message = "Dịch vụ Offer chưa sẵn sàng." });
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+
+            var result = await _offerService.WithdrawOfferAsync(offerId, currentUserId, reason ?? "Rút lại bởi chuyên viên tuyển dụng", cancellationToken);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi rút lại Offer {OfferId}", offerId);
+            return Json(new { success = false, message = "Lỗi khi rút lại Offer: " + ex.Message });
         }
     }
 
