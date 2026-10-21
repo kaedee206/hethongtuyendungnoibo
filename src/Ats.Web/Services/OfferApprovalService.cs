@@ -544,13 +544,13 @@ public class OfferApprovalService(
 
         // Tìm người duyệt Cấp 1 (HR Manager)
         var hrManagerUser = await _dbContext.Users
-            .FirstOrDefaultAsync(u => !u.IsDeleted && (u.Role == UserRoles.HRManager || u.Role == "HR_MANAGER" || u.Role == "HR Manager" || u.Role == "Trưởng phòng Nhân sự"), cancellationToken)
+            .FirstOrDefaultAsync(u => u.Status == "ACTIVE" && (u.Role == UserRoles.HRManager || u.Role == "HR_MANAGER" || u.Role == "HR Manager" || u.Role == "Trưởng phòng Nhân sự"), cancellationToken)
             ?? await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == "hr@noveratech.vn" || u.Email == "phuong.nguyen@noveratech.digital", cancellationToken)
             ?? await _dbContext.Users.FirstOrDefaultAsync(u => u.Role == UserRoles.Admin, cancellationToken);
 
         // Tìm người duyệt Cấp 2 (Ban Giám Đốc / Approver)
         var approverUser = await _dbContext.Users
-            .FirstOrDefaultAsync(u => !u.IsDeleted && (u.Role == UserRoles.Approver || u.Role == "APPROVER" || u.Role == "Người duyệt" || u.Role == "Ban Giám Đốc"), cancellationToken)
+            .FirstOrDefaultAsync(u => u.Status == "ACTIVE" && (u.Role == UserRoles.Approver || u.Role == "APPROVER" || u.Role == "Người duyệt" || u.Role == "Ban Giám Đốc"), cancellationToken)
             ?? await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == "bod@noveratech.vn" || u.Email == "minh.tran@noveratech.digital", cancellationToken)
             ?? await _dbContext.Users.FirstOrDefaultAsync(u => u.Role == UserRoles.Admin, cancellationToken);
 
