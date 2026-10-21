@@ -475,6 +475,7 @@ public class OfferService(
         OfferStatus.ACCEPTED => "Ứng viên đã đồng ý",
         OfferStatus.REJECTED => "Bị từ chối",
         OfferStatus.WITHDRAWN => "Đã rút lại",
+        OfferStatus.EXPIRED => "Hết hạn",
         _ => status.ToString()
     };
 }

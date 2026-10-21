@@ -536,7 +536,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasIndex(e => e.EvaluationFormId);
         });
 
-        // JobOffer mapping & relationships (SCRUM-340)
+        // JobOffer mapping & relationships (SCRUM-340 & SCRUM-342)
         modelBuilder.Entity<JobOffer>(entity =>
         {
             entity.HasOne(o => o.JobPosition)
@@ -544,8 +544,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(o => o.JobPositionId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            entity.Property(o => o.ResponseToken).HasColumnName("response_token");
+            entity.Property(o => o.CandidateRespondedAt).HasColumnName("candidate_responded_at");
+            entity.Property(o => o.CandidateFeedback).HasColumnName("candidate_feedback");
+            entity.Property(o => o.ExpiredAt).HasColumnName("expired_at");
+
             entity.HasIndex(o => o.ApplicationId);
             entity.HasIndex(o => o.Status);
+            entity.HasIndex(o => o.ResponseToken);
         });
     }
 }

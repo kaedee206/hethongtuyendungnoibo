@@ -636,6 +636,7 @@ public class OfferApprovalService(
         OfferStatus.ACCEPTED => "Ứng viên đã nhận việc",
         OfferStatus.REJECTED => "Bị từ chối",
         OfferStatus.WITHDRAWN => "Đã rút lại",
+        OfferStatus.EXPIRED => "Hết hạn",
         _ => status.ToString()
     };
 

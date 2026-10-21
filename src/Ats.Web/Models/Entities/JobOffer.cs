@@ -28,6 +28,15 @@ public class JobOffer : BaseEntity
     public string? Notes { get; set; }
     public OfferStatus Status { get; set; } = OfferStatus.DRAFT;
 
+    // SCRUM-342: Phản hồi từ ứng viên và quản lý thời hạn
+    public string? ResponseToken { get; set; }
+    public DateTimeOffset? CandidateRespondedAt { get; set; }
+    public string? CandidateFeedback { get; set; }
+    public DateTimeOffset? ExpiredAt { get; set; }
+
+    public bool IsExpired() => Status == OfferStatus.EXPIRED || 
+        (ExpirationDate.HasValue && ExpirationDate.Value < DateOnly.FromDateTime(DateTime.UtcNow) && (Status == OfferStatus.SENT_TO_CANDIDATE || Status == OfferStatus.APPROVED));
+
     public Application Application { get; set; } = null!;
     public User CreatedByRecruiter { get; set; } = null!;
     public JobPosition? JobPosition { get; set; }
