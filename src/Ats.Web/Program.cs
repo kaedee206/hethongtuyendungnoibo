@@ -2,6 +2,8 @@ using System.Threading.RateLimiting;
 using Ats.Web.Data;
 using Ats.Web.Services;
 using Ats.Web.Services.Interfaces;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 
 DotNetEnv.Env.TraversePath().Load();
@@ -31,6 +33,48 @@ builder.Services.AddControllersWithViews(options =>
     options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute());
 });
 builder.Services.AddMemoryCache();
+
+// Lưu trữ khóa mã hóa cố định tránh mất session và token xác thực khi khởi động lại server
+var keysFolder = Path.Combine(builder.Environment.ContentRootPath, "dataprotection-keys");
+if (builder.Environment.IsProduction() && Directory.Exists("/app"))
+{
+    keysFolder = "/app/dataprotection-keys";
+}
+if (!Directory.Exists(keysFolder))
+{
+    Directory.CreateDirectory(keysFolder);
+}
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(keysFolder))
+    .SetApplicationName("AtsWeb");
+
+// Nén phản hồi HTTP (Brotli & Gzip) tối ưu tốc độ tải trang
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
+    {
+        "text/html",
+        "text/plain",
+        "text/css",
+        "application/javascript",
+        "text/javascript",
+        "application/json",
+        "text/json",
+        "image/svg+xml"
+    });
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
+{
+    options.Level = System.IO.Compression.CompressionLevel.Fastest;
+});
+builder.Services.Configure<GzipCompressionProviderOptions>(options =>
+{
+    options.Level = System.IO.Compression.CompressionLevel.Fastest;
+});
 
 builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(options =>
 {
@@ -280,6 +324,7 @@ app.UseStatusCodePagesWithReExecute("/errors/{0}");
 
 app.UseForwardedHeaders();
 app.UseHttpsRedirection();
+app.UseResponseCompression();
 
 // Bổ sung các HTTP Security Headers (OWASP A05)
 app.UseMiddleware<Ats.Web.Middlewares.SecurityHeadersMiddleware>();
@@ -311,9 +356,66 @@ app.UseStaticFiles(new StaticFileOptions
             var fileName = System.IO.Path.GetFileName(path);
             ctx.Context.Response.Headers.Append("Content-Disposition", $"attachment; filename=\"{fileName}\"");
         }
+        else if (path.StartsWith("/css/", StringComparison.OrdinalIgnoreCase) ||
+                 path.StartsWith("/js/", StringComparison.OrdinalIgnoreCase) ||
+                 path.StartsWith("/lib/", StringComparison.OrdinalIgnoreCase) ||
+                 path.StartsWith("/img/", StringComparison.OrdinalIgnoreCase))
+        {
+            // Aggressive caching cho static assets có query string asp-append-version (1 năm)
+            if (ctx.Context.Request.Query.ContainsKey("v"))
+            {
+                ctx.Context.Response.Headers.Append("Cache-Control", "public, max-age=31536000, immutable");
+            }
+            else
+            {
+                ctx.Context.Response.Headers.Append("Cache-Control", "public, max-age=86400");
+            }
+        }
     }
 });
 app.MapStaticAssets();
+
+// Phục vụ ảnh đại diện và media kèm fallback ảnh mặc định nếu file không tồn tại
+app.MapMethods("/uploads/{folder:regex(^(avatars|media)$)}/{fileName}", new[] { "GET", "HEAD" }, (string folder, string fileName, IWebHostEnvironment env) =>
+{
+    var webRoot = env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot");
+    var filePath = Path.Combine(webRoot, "uploads", folder, fileName);
+
+    if (File.Exists(filePath))
+    {
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        var mime = ext switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".webp" => "image/webp",
+            ".gif" => "image/gif",
+            _ => "application/octet-stream"
+        };
+        return Results.File(filePath, mime);
+    }
+
+    var altFolder = folder.Equals("avatars", StringComparison.OrdinalIgnoreCase) ? "media" : "avatars";
+    var altPath = Path.Combine(webRoot, "uploads", altFolder, fileName);
+    if (File.Exists(altPath))
+    {
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        var mime = ext switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".webp" => "image/webp",
+            ".gif" => "image/gif",
+            _ => "application/octet-stream"
+        };
+        return Results.File(altPath, mime);
+    }
+
+    var defaultAvatar = Path.Combine(webRoot, "img", "logo-icon-dark-transparent.png");
+    return File.Exists(defaultAvatar)
+        ? Results.File(defaultAvatar, "image/png")
+        : Results.NotFound();
+});
 
 app.MapControllerRoute(
     name: "default",
