@@ -375,6 +375,44 @@ using (var scope = app.Services.CreateScope())
             UPDATE pipeline_stages SET sla_days = 3, is_sla_enabled = true WHERE stage_order = 5 AND (sla_days IS NULL OR sla_days = 0);
             UPDATE pipeline_stages SET sla_days = 0, is_sla_enabled = false WHERE stage_order IN (6, 7);
         ");
+
+        // SCRUM-340, SCRUM-341, SCRUM-342: Bổ sung các cột Offer và Thư mời nhận việc cho môi trường local & server
+        await dbContext.Database.ExecuteSqlRawAsync(@"
+            ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS job_title text;
+            ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS work_location text;
+            ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS expiration_date date;
+            ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS proposed_join_date date;
+            ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS probation_period_months integer;
+            ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS contract_type text;
+            ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS offer_letter_path text;
+            ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS is_above_budget boolean NOT NULL DEFAULT false;
+            ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS is_outside_band boolean NOT NULL DEFAULT false;
+            ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS salary_justification text;
+            ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS notes text;
+
+            ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS response_token text;
+            ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS candidate_responded_at timestamp with time zone;
+            ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS candidate_feedback text;
+            ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS expired_at timestamp with time zone;
+            CREATE INDEX IF NOT EXISTS ix_job_offers_response_token ON job_offers (response_token);
+
+            CREATE TABLE IF NOT EXISTS offer_approvals (
+                id UUID PRIMARY KEY,
+                offer_id UUID NOT NULL REFERENCES job_offers(id) ON DELETE CASCADE,
+                approver_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+                level INTEGER NOT NULL DEFAULT 1,
+                status INTEGER NOT NULL DEFAULT 0,
+                comment TEXT,
+                decided_at TIMESTAMPTZ,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+            CREATE INDEX IF NOT EXISTS ix_offer_approvals_offer_id ON offer_approvals (offer_id);
+        ");
     }
     catch (Exception e)
     {
