@@ -643,14 +643,7 @@ public class CandidateService(
             .Select(s => new SelectListItem
             {
                 Value = s.ToString(),
-                Text = s switch
-                {
-                    CandidateSource.PORTAL => "Cổng tuyển dụng",
-                    CandidateSource.REFERRAL => "Giới thiệu nội bộ",
-                    CandidateSource.LINKEDIN => "LinkedIn",
-                    CandidateSource.HEADHUNTER => "Headhunter",
-                    _ => "Khác"
-                },
+                Text = s.GetDisplayName(),
                 Selected = criteria.Source.HasValue && criteria.Source.Value == s
             })
             .ToList();

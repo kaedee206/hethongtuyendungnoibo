@@ -12,6 +12,9 @@ public enum CandidateSource
     HEADHUNTER = 3,
     OTHER = 4,
     DIRECT = 5,
+    TOPCV = 6,
+    VIETNAMWORKS = 7,
+    FACEBOOK = 8,
     HEADHUNT = HEADHUNTER
 }
 
@@ -23,10 +26,13 @@ public static class CandidateSourceExtensions
     public static string GetDisplayName(this CandidateSource source) => source switch
     {
         CandidateSource.LINKEDIN => "LinkedIn",
-        CandidateSource.PORTAL => "Cổng tuyển dụng (Portal)",
+        CandidateSource.PORTAL => "Website công ty (Portal)",
         CandidateSource.REFERRAL => "Giới thiệu nội bộ (Referral)",
         CandidateSource.HEADHUNTER => "Headhunt / Tuyển dụng ngoài",
         CandidateSource.DIRECT => "Nộp trực tiếp (Direct)",
+        CandidateSource.TOPCV => "TopCV",
+        CandidateSource.VIETNAMWORKS => "VietnamWorks",
+        CandidateSource.FACEBOOK => "Facebook",
         CandidateSource.OTHER => "Nguồn khác",
         _ => source.ToString()
     };
