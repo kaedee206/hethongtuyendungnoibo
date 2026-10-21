@@ -95,6 +95,7 @@ builder.Services.AddScoped<ICandidateEvaluationComparisonService, CandidateEvalu
 builder.Services.AddScoped<ICandidateInterviewService, CandidateInterviewService>();
 builder.Services.AddScoped<IOfferService, OfferService>();
 builder.Services.AddScoped<IOfferApprovalService, OfferApprovalService>();
+builder.Services.AddScoped<ICandidateOfferService, CandidateOfferService>();
 builder.Services.AddSingleton<IJobExpirationService, JobExpirationService>();
 builder.Services.AddHostedService<JobExpirationBackgroundService>();
 
