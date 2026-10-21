@@ -180,6 +180,18 @@
                             <span class="sidebar-nav-link-text">Yêu cầu tuyển dụng</span>
                         </span>
                     </a>
+                    @if (isHiringManager || isAdmin || isHrManager)
+                    {
+                        <a href="/yeu-cau-tuyen-dung/tien-do"
+                           class="sidebar-nav-link"
+                           data-path="/yeu-cau-tuyen-dung/tien-do"
+                           data-tooltip="Tiến độ vị trí sở hữu">
+                            <span class="sidebar-nav-link-content">
+                                <i class="bi bi-graph-up-arrow"></i>
+                                <span class="sidebar-nav-link-text">Tiến độ vị trí của tôi</span>
+                            </span>
+                        </a>
+                    }
                     <a href="/dashboard/phe-duyet"
                        class="sidebar-nav-link"
                        data-path="/dashboard/phe-duyet"
