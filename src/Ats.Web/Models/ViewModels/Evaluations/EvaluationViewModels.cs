@@ -29,6 +29,8 @@ public class EvaluationFormGenerateViewModel
     public Guid ApplicationId { get; set; }
     public Guid InterviewId { get; set; }
     public Guid EvaluatorId { get; set; }
+    public Guid CandidateId { get; set; }
+    public Guid? JobPositionId { get; set; }
 
     public string CandidateName { get; set; } = string.Empty;
     public string CandidateEmail { get; set; } = string.Empty;

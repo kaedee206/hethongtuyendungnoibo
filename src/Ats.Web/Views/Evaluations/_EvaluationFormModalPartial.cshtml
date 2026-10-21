@@ -99,10 +99,17 @@
                     </div>
                 </div>
 
-                <div class="col-12 col-md-3 text-center text-md-end">
+                <div class="col-12 col-md-3 text-center text-md-end d-flex flex-column flex-sm-row align-items-center justify-content-center justify-content-md-end gap-2">
                     <span id="eval-score-rating-badge" class="badge bg-secondary text-white px-3 py-2 rounded-2 fw-semibold fs-6">
                         <i class="bi bi-clock me-1"></i>Chưa chấm điểm
                     </span>
+                    <button type="button" class="btn btn-outline-primary btn-sm rounded-2 d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold py-1.5 px-2.5"
+                            data-bs-toggle="offcanvas" data-bs-target="#offcanvasInterviewQuestions" aria-controls="offcanvasInterviewQuestions"
+                            title="Mở bộ câu hỏi gợi ý và Rubric chuẩn (SP-7)">
+                        <i class="bi bi-patch-question-fill text-primary"></i>
+                        <span>Gợi ý câu hỏi</span>
+                        <span id="header-question-count-badge" class="badge bg-primary text-white rounded-pill ms-0.5">0</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -274,4 +281,110 @@
             </div>
         }
     </form>
+
+    <!-- ── Nút Nổi Kích Hoạt Bộ Câu Hỏi Gợi Ý (Floating Trigger - SP-7) ── -->
+    <button type="button" id="btn-floating-questions" class="btn btn-primary rounded-pill shadow-lg d-flex align-items-center gap-2 px-3 py-2"
+            style="position: fixed; right: 24px; bottom: 28px; z-index: 1040; border: 2px solid #FFFFFF; transition: all 0.2s ease;"
+            data-bs-toggle="offcanvas" data-bs-target="#offcanvasInterviewQuestions" aria-controls="offcanvasInterviewQuestions"
+            title="Mở bộ câu hỏi gợi ý và Rubric đánh giá (SP-7)">
+        <i class="bi bi-lightbulb-fill text-warning fs-5"></i>
+        <span class="fw-semibold d-none d-sm-inline">Gợi ý câu hỏi & Rubric</span>
+        <span id="floating-question-count-badge" class="badge bg-white text-primary rounded-pill">0</span>
+    </button>
+
+    <!-- ── Offcanvas: Bộ câu hỏi gợi ý & Rubric chuẩn (User Story SP-7 / AC1, AC2, AC3, AC4) ── -->
+    <div class="offcanvas offcanvas-end shadow-lg" tabindex="-1" id="offcanvasInterviewQuestions" aria-labelledby="offcanvasInterviewQuestionsLabel"
+         data-candidate-id="@Model.CandidateId" data-interview-id="@Model.InterviewId" data-position-id="@(Model.JobPositionId?.ToString() ?? "")"
+         style="width: 580px; max-width: 96vw; z-index: 1060; border-left: 1px solid #E2E8F0;">
+        
+        <div class="offcanvas-header p-3 border-bottom" style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #F8FAFC;">
+            <div class="d-flex align-items-center gap-2">
+                <div class="rounded-3 bg-primary bg-opacity-25 p-2 text-primary border border-primary-subtle">
+                    <i class="bi bi-patch-question-fill fs-5 text-white"></i>
+                </div>
+                <div>
+                    <h6 class="offcanvas-title fw-bold text-white mb-0" id="offcanvasInterviewQuestionsLabel">
+                        Gợi ý câu hỏi & Rubric chuẩn
+                    </h6>
+                    <div class="small" style="font-size: 0.76rem; color: #94A3B8;">
+                        <span>@Model.CandidateName</span> • <span>@Model.JobTitle</span> • <span>Vòng @Model.InterviewRound</span>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+
+        <!-- Thanh thống kê nhanh (AC2) -->
+        <div class="bg-light p-2.5 px-3 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2" style="font-size: 0.76rem;">
+            <div class="d-flex align-items-center gap-3">
+                <div>
+                    <span class="text-muted">Tổng số:</span>
+                    <strong id="stat-total-questions" class="text-dark ms-1">0</strong>
+                </div>
+                <div>
+                    <span class="text-muted">Chưa hỏi:</span>
+                    <strong id="stat-unasked-questions" class="text-primary ms-1">0</strong>
+                </div>
+                <div>
+                    <span class="text-muted">Vòng này:</span>
+                    <strong id="stat-current-round-questions" class="text-success ms-1">0</strong>
+                </div>
+                <div>
+                    <span class="text-muted">Vòng trước:</span>
+                    <strong id="stat-previous-rounds-questions" class="text-danger ms-1">0</strong>
+                </div>
+            </div>
+            <div class="badge bg-white text-secondary border px-2 py-1">
+                <i class="bi bi-shield-check text-success me-1"></i>Tránh trùng lặp
+            </div>
+        </div>
+
+        <div class="offcanvas-body p-3 d-flex flex-column">
+            <!-- Khu vực bộ lọc câu hỏi (AC1, AC2) -->
+            <div class="mb-3">
+                <!-- Dropdown lọc theo tiêu chí -->
+                <label class="form-label small fw-semibold text-muted text-uppercase mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                    <i class="bi bi-funnel-fill text-primary me-1"></i>Lọc theo tiêu chí đánh giá (AC1)
+                </label>
+                <select id="filter-question-criteria" class="form-select form-select-sm rounded-2 mb-2" style="font-size: 0.8rem;">
+                    <option value="">-- Tất cả tiêu chí đánh giá --</option>
+                </select>
+
+                <!-- Ô tìm kiếm từ khóa -->
+                <div class="input-group input-group-sm mb-2">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" id="search-question-keyword" class="form-control border-start-0 ps-0" placeholder="Tìm câu hỏi theo từ khóa, ý chính..." style="font-size: 0.8rem;">
+                </div>
+
+                <!-- Tabs/Pills lọc trạng thái hỏi (AC2) -->
+                <div class="d-flex flex-wrap gap-1.5 pt-1">
+                    <button type="button" class="btn btn-sm btn-primary active filter-question-status-pill rounded-2 py-1 px-2.5" data-status="all" style="font-size: 0.74rem;">
+                        Tất cả (<span id="pill-count-all">0</span>)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light text-secondary filter-question-status-pill rounded-2 py-1 px-2.5" data-status="unasked" style="font-size: 0.74rem;">
+                        <i class="bi bi-circle text-muted me-1"></i>Chưa hỏi (<span id="pill-count-unasked">0</span>)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light text-secondary filter-question-status-pill rounded-2 py-1 px-2.5" data-status="current" style="font-size: 0.74rem;">
+                        <i class="bi bi-check-circle-fill text-success me-1"></i>Đã hỏi vòng này (<span id="pill-count-current">0</span>)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light text-secondary filter-question-status-pill rounded-2 py-1 px-2.5" data-status="previous" style="font-size: 0.74rem;">
+                        <i class="bi bi-exclamation-triangle-fill text-danger me-1"></i>Vòng trước (<span id="pill-count-previous">0</span>)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Danh sách câu hỏi cuộn độc lập (AC3, AC4) -->
+            <div class="flex-grow-1 overflow-auto pe-1" id="questions-list-scroll-area">
+                <!-- Loading Spinner -->
+                <div id="questions-loading-spinner" class="text-center py-5">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                    <div class="small text-muted mt-2">Đang tải danh sách câu hỏi & gợi ý...</div>
+                </div>
+
+                <div id="suggested-questions-list"></div>
+            </div>
+        </div>
+    </div>
 </div>

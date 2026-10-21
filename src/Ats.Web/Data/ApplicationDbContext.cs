@@ -47,6 +47,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<CompetencyFramework> CompetencyFrameworks { get; set; }
     public DbSet<CompetencyCriterion> CompetencyCriteria { get; set; }
     public DbSet<InterviewQuestionBank> InterviewQuestionBanks { get; set; }
+    public DbSet<CandidateAskedQuestion> CandidateAskedQuestions { get; set; }
     public DbSet<RecruitmentCatalog> RecruitmentCatalogs { get; set; }
     public DbSet<CandidateMergeHistory> CandidateMergeHistories { get; set; }
     public DbSet<CandidateInteraction> CandidateInteractions { get; set; }
@@ -534,6 +535,54 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Weight).HasPrecision(18, 4);
             entity.HasIndex(e => e.EvaluationFormId);
+        });
+
+        // SP-7: Ngân hàng câu hỏi & Lịch sử câu hỏi đã hỏi ứng viên qua các vòng
+        modelBuilder.Entity<InterviewQuestionBank>(entity =>
+        {
+            entity.ToTable("interview_question_banks");
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.JobPosition)
+                .WithMany()
+                .HasForeignKey(e => e.JobPositionId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.CompetencyFramework)
+                .WithMany()
+                .HasForeignKey(e => e.CompetencyFrameworkId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.CompetencyCriterion)
+                .WithMany()
+                .HasForeignKey(e => e.CompetencyCriterionId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasIndex(e => e.JobPositionId);
+            entity.HasIndex(e => e.CompetencyFrameworkId);
+            entity.HasIndex(e => e.CompetencyCriterionId);
+        });
+
+        modelBuilder.Entity<CandidateAskedQuestion>(entity =>
+        {
+            entity.ToTable("candidate_asked_questions");
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.Candidate)
+                .WithMany()
+                .HasForeignKey(e => e.CandidateId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Question)
+                .WithMany()
+                .HasForeignKey(e => e.QuestionId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Interview)
+                .WithMany()
+                .HasForeignKey(e => e.InterviewId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.AskedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.AskedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(e => e.CandidateId);
+            entity.HasIndex(e => e.InterviewId);
+            entity.HasIndex(e => e.QuestionId);
+            entity.HasIndex(e => new { e.CandidateId, e.InterviewId, e.QuestionId });
         });
     }
 }

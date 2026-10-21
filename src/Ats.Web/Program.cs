@@ -137,6 +137,7 @@ builder.Services.AddScoped<ICvParserService, CvParserService>();
 builder.Services.AddScoped<ICandidateExportService, CandidateExportService>();
 builder.Services.AddScoped<ICandidateEvaluationComparisonService, CandidateEvaluationComparisonService>();
 builder.Services.AddScoped<ICandidateInterviewService, CandidateInterviewService>();
+builder.Services.AddScoped<IInterviewQuestionSuggestionService, InterviewQuestionSuggestionService>();
 builder.Services.AddSingleton<IJobExpirationService, JobExpirationService>();
 builder.Services.AddHostedService<JobExpirationBackgroundService>();
 
@@ -603,6 +604,28 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE interview_question_banks ADD COLUMN IF NOT EXISTS suggested_answer TEXT;
             ALTER TABLE interview_question_banks ADD COLUMN IF NOT EXISTS competency_framework_id UUID;
             ALTER TABLE interview_question_banks ADD COLUMN IF NOT EXISTS competency_criterion_id UUID;
+            ALTER TABLE interview_question_banks ADD COLUMN IF NOT EXISTS job_position_id UUID;
+            ALTER TABLE interview_question_banks ADD COLUMN IF NOT EXISTS expected_answer TEXT;
+            ALTER TABLE interview_question_banks ADD COLUMN IF NOT EXISTS key_points TEXT;
+            ALTER TABLE interview_question_banks ADD COLUMN IF NOT EXISTS good_answer_rubric TEXT;
+
+            CREATE TABLE IF NOT EXISTS candidate_asked_questions (
+                id UUID PRIMARY KEY,
+                candidate_id UUID NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+                question_id UUID NOT NULL REFERENCES interview_question_banks(id) ON DELETE RESTRICT,
+                interview_id UUID NOT NULL REFERENCES interviews(id) ON DELETE CASCADE,
+                interview_round INTEGER NOT NULL DEFAULT 1,
+                asked_by_user_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+                asked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                notes TEXT,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+            CREATE INDEX IF NOT EXISTS ix_candidate_asked_questions_cand_round ON candidate_asked_questions (candidate_id, interview_id, question_id);
 
             DO $$ 
             DECLARE
