@@ -211,14 +211,38 @@ public class PendingOfferDto
 {
     public Guid OfferId { get; set; }
     public Guid ApplicationId { get; set; }
+    public Guid CandidateId { get; set; }
     public string CandidateName { get; set; } = string.Empty;
     public string CandidateEmail { get; set; } = string.Empty;
     public string JobTitle { get; set; } = string.Empty;
+    public int Version { get; set; } = 1;
     public decimal BaseSalary { get; set; }
+    public decimal? BonusAllowance { get; set; }
     public decimal TotalPackage { get; set; }
+    public DateOnly? ProposedJoinDate { get; set; }
+    public string? ContractType { get; set; }
     public string SalaryDisplay { get; set; } = string.Empty;
     public OfferStatus Status { get; set; }
     public string CreatedDateDisplay { get; set; } = string.Empty;
+    public string StatusText => Status switch
+    {
+        OfferStatus.DRAFT => "Bản nháp",
+        OfferStatus.PENDING_APPROVAL => "Chờ duyệt",
+        OfferStatus.APPROVED => "Đã duyệt",
+        OfferStatus.SENT_TO_CANDIDATE => "Đã gửi",
+        OfferStatus.ACCEPTED => "Đồng ý",
+        OfferStatus.REJECTED => "Từ chối",
+        OfferStatus.REPLACED => "Đã thay thế",
+        _ => Status.ToString()
+    };
+    public string StatusBadgeClass => Status switch
+    {
+        OfferStatus.APPROVED => "bg-success text-white",
+        OfferStatus.ACCEPTED => "bg-success text-white",
+        OfferStatus.REJECTED => "bg-danger text-white",
+        OfferStatus.REPLACED => "bg-secondary text-white",
+        _ => "bg-warning text-dark"
+    };
 }
 
 public class PipelineFunnelStageDto

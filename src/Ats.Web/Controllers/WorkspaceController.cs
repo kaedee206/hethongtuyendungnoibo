@@ -2202,6 +2202,24 @@ public class WorkspaceController : Controller
                         link = i.LocationOrLink ?? "Chưa có",
                         status = i.Status.ToString()
                     }),
+                    offers = app.JobOffers.OrderByDescending(o => o.Version).ThenByDescending(o => o.CreatedAt).Select(o => new
+                    {
+                        id = o.Id,
+                        version = o.Version,
+                        salaryDisplay = $"{o.BaseSalary:N0} VNĐ",
+                        baseSalary = o.BaseSalary,
+                        bonusAllowance = o.BonusAllowance ?? 0,
+                        joinDate = o.ProposedJoinDate.HasValue ? o.ProposedJoinDate.Value.ToString("dd/MM/yyyy") : "Chưa ấn định",
+                        joinDateRaw = o.ProposedJoinDate.HasValue ? o.ProposedJoinDate.Value.ToString("yyyy-MM-dd") : "",
+                        contractType = o.ContractType ?? "Chính thức",
+                        probationMonths = o.ProbationPeriodMonths ?? 2,
+                        status = o.Status.ToString(),
+                        rejectionReason = o.RejectionReasonCategory.HasValue ? o.RejectionReasonCategory.Value.ToString() : null,
+                        rejectionNotes = o.RejectionNotes,
+                        expectedSalary = o.ExpectedSalary,
+                        canBeRejected = o.Status != OfferStatus.ACCEPTED && o.Status != OfferStatus.REPLACED && o.Status != OfferStatus.REJECTED,
+                        canBeRevised = o.Status != OfferStatus.ACCEPTED && o.Status != OfferStatus.REPLACED
+                    }),
                     histories = app.StageHistories.OrderByDescending(h => h.CreatedAt).Select(h => new
                     {
                         comment = h.Comment ?? "Cập nhật tiến trình",

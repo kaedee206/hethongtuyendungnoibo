@@ -450,6 +450,7 @@
     <script src="~/js/interview-reschedule.js" asp-append-version="true"></script>
     <script src="~/js/batch-schedule-interview.js" asp-append-version="true"></script>
     <script src="~/js/ats-instant-page.js" asp-append-version="true"></script>
+    <script src="~/js/offer-management.js" asp-append-version="true"></script>
 
     @if (User.Identity?.IsAuthenticated == true)
     {
@@ -458,6 +459,8 @@
         @await Html.PartialAsync("_BatchScheduleInterviewModal")
         @await Html.PartialAsync("_RescheduleInterviewModal")
         @await Html.PartialAsync("_CancelInterviewModal")
+        @await Html.PartialAsync("_RejectOfferModalPartial")
+        @await Html.PartialAsync("_ReviseOfferModalPartial")
     }
 
     <div id="globalAntiforgeryContainer" class="d-none">

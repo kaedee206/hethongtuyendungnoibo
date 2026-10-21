@@ -1,0 +1,125 @@
+<!-- ============================================================== -->
+<!-- MODAL: GHI NHẬN ỨNG VIÊN TỪ CHỐI OFFER (USER STORY SP-7)       -->
+<!-- ============================================================== -->
+<div class="modal fade" id="rejectOfferModal" tabindex="-1" aria-labelledby="rejectOfferModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header border-0 pb-0" style="background: #FFF5F5;">
+                <div class="d-flex align-items-center gap-2.5">
+                    <div class="d-flex align-items-center justify-content-center rounded-3" style="width: 42px; height: 42px; background: #FEE2E2; color: #DC2626;">
+                        <i class="bi bi-x-octagon-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="rejectOfferModalLabel" style="font-size: 1.05rem;">
+                            Ghi nhận Ứng viên Từ chối Offer
+                        </h5>
+                        <small class="text-muted" style="font-size: 0.76rem;">Phân loại nguyên nhân mất người &amp; cập nhật chính sách nhân sự (SP-7)</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formRejectOffer" onsubmit="OfferManager.submitReject(event); return false;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="rejectOfferId" name="OfferId" />
+                <input type="hidden" id="rejectOfferCandidateId" />
+                <input type="hidden" id="rejectOfferApplicationId" />
+
+                <div class="modal-body py-3">
+                    <!-- Tóm tắt ứng viên & offer bị từ chối -->
+                    <div class="p-2.5 mb-3 rounded-2" style="background: #F8FAFC; border: 1px solid #E2E8F0;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-dark" id="rejectOfferCandidateName" style="font-size: 0.9rem;">-</span>
+                            <span class="badge rounded-pill bg-light text-muted border px-2 py-1" id="rejectOfferVersionBadge" style="font-size: 0.72rem; font-family:'JetBrains Mono',monospace;">v1</span>
+                        </div>
+                        <div class="text-muted small mt-0.5" id="rejectOfferJobTitle">-</div>
+                        <div class="text-success small fw-semibold mt-1" id="rejectOfferCurrentSalaryDisplay" style="font-family:'JetBrains Mono',monospace;">-</div>
+                    </div>
+
+                    <!-- Danh mục lý do từ chối -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark mb-1">
+                            Lý do từ chối chính <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select form-select-sm rounded-2" id="rejectOfferReasonCategory" name="ReasonCategory" required onchange="OfferManager.onCategoryChange(this)">
+                            <option value="">-- Chọn danh mục lý do chuẩn --</option>
+                            <option value="1">Lương / Đãi ngộ (Compensation)</option>
+                            <option value="2">Địa điểm / Khoảng cách (Location)</option>
+                            <option value="3">Đã nhận việc nơi khác (Accepted Another Offer)</option>
+                            <option value="4">Lý do cá nhân / Gia đình (Personal / Family)</option>
+                            <option value="5">Khác (Other)</option>
+                        </select>
+                        <div class="form-text text-muted small mt-1" style="font-size: 0.75rem;">
+                            <i class="bi bi-info-circle me-1"></i>Dữ liệu danh mục phục vụ báo cáo phân tích lý do mất ứng viên cho HR.
+                        </div>
+                    </div>
+
+                    <!-- Mức lương ứng viên kỳ vọng (Hiển thị khi chọn Lương/Đãi ngộ) -->
+                    <div class="mb-3 d-none" id="rejectOfferExpectedSalaryGroup">
+                        <div class="p-2.5 rounded-2" style="background: #FEF3C7; border: 1px solid #FDE68A;">
+                            <label class="form-label small fw-bold text-dark mb-1">
+                                <i class="bi bi-cash-stack text-warning me-1"></i>Mức lương ứng viên kỳ vọng (Gross/tháng - VNĐ) <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" class="form-control form-control-sm rounded-2 font-mono" id="rejectOfferExpectedSalary" name="ExpectedSalary" placeholder="VD: 35000000" min="1000000" step="500000" />
+                            <div class="text-muted small mt-1" style="font-size: 0.74rem;">
+                                Ghi nhận kỳ vọng thu nhập thực tế của ứng viên để xem xét điều chỉnh chính sách đãi ngộ.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ghi chú chi tiết phản hồi -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark mb-1">Chi tiết phản hồi của ứng viên</label>
+                        <textarea class="form-control form-control-sm rounded-2" id="rejectOfferNotes" name="RejectionNotes" rows="2" placeholder="Ghi nhận các chia sẻ cụ thể của ứng viên khi từ chối..."></textarea>
+                    </div>
+
+                    <!-- Gợi ý đưa vào Kho tiềm năng (Talent Pool) -->
+                    <div class="p-3 rounded-2" style="background: #F0FDF4; border: 1px solid #BBF7D0;">
+                        <div class="form-check form-switch mb-1">
+                            <input class="form-check-input" type="checkbox" id="rejectOfferAddToTalentPool" name="AddToTalentPool" value="true" onchange="OfferManager.toggleTalentPoolExtra(this)" checked>
+                            <label class="form-check-label fw-bold text-success small" for="rejectOfferAddToTalentPool">
+                                <i class="bi bi-star-fill text-warning me-1"></i>Gợi ý: Đưa ứng viên vào Kho tiềm năng (Talent Pool)
+                            </label>
+                        </div>
+                        <div class="text-muted small mb-2" style="font-size: 0.76rem;">
+                            Tự động gắn tag và lưu hồ sơ ứng viên vào Kho tiềm năng kèm kỳ vọng để ưu tiên kết nối các đợt tuyển sau.
+                        </div>
+
+                        <div id="rejectOfferTalentPoolFields">
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold text-dark mb-1">Chức danh phù hợp tiếp cận</label>
+                                <input type="text" class="form-control form-control-sm rounded-2" id="rejectOfferTalentPoolTargetTitle" name="TalentPoolTargetJobTitle" placeholder="Vd: Backend Engineer, Team Lead" />
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-7">
+                                    <label class="form-label small fw-semibold text-dark mb-1">Lý do lưu kho tiềm năng</label>
+                                    <input type="text" class="form-control form-control-sm rounded-2" id="rejectOfferTalentPoolReason" name="TalentPoolReason" placeholder="Vd: Ứng viên tốt, từ chối do mức đãi ngộ" />
+                                </div>
+                                <div class="col-5">
+                                    <label class="form-label small fw-semibold text-dark mb-1">Đánh giá tiềm năng</label>
+                                    <select class="form-select form-select-sm rounded-2" id="rejectOfferTalentPoolRating" name="TalentPoolRating">
+                                        <option value="5">⭐⭐⭐⭐⭐ 5/5</option>
+                                        <option value="4" selected>⭐⭐⭐⭐ 4/5</option>
+                                        <option value="3">⭐⭐⭐ 3/5</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="form-label small fw-semibold text-dark mb-1">Ghi chú chuyên môn lưu kho</label>
+                                <textarea class="form-control form-control-sm rounded-2" id="rejectOfferTalentPoolNotes" name="TalentPoolNotes" rows="1" placeholder="Kỹ năng nổi bật, thời điểm phù hợp để liên hệ lại..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 pt-0 px-3 pb-3">
+                    <button type="button" class="btn btn-sm btn-light px-3 rounded-2" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-sm btn-danger px-4 rounded-2 fw-semibold d-inline-flex align-items-center gap-1.5" id="btnSubmitRejectOffer">
+                        <span class="spinner-border spinner-border-sm d-none" id="spinnerRejectOffer"></span>
+                        <i class="bi bi-x-circle"></i>
+                        <span>Xác nhận Từ chối</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

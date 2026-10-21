@@ -140,8 +140,11 @@ public class CandidateApplicationHistoryViewModel
     // Chi tiết phỏng vấn
     public List<CandidateInterviewHistoryItemViewModel> Interviews { get; set; } = [];
 
-    // Chi tiết Offer nếu có
+    // Chi tiết Offer nếu có (Offer mới nhất)
     public CandidateOfferHistoryItemViewModel? Offer { get; set; }
+
+    // Toàn bộ lịch sử các phiên bản Offer (v1, v2, ...) của đợt ứng tuyển
+    public List<CandidateOfferHistoryItemViewModel> AllOffers { get; set; } = [];
 
     // Lịch sử chuyển bước (Audit Trail)
     public List<CandidateStageHistoryItemViewModel> StageHistories { get; set; } = [];
@@ -171,14 +174,55 @@ public class CandidateInterviewHistoryItemViewModel
 public class CandidateOfferHistoryItemViewModel
 {
     public Guid OfferId { get; set; }
+    public Guid ApplicationId { get; set; }
+    public int Version { get; set; } = 1;
+    public Guid? ParentOfferId { get; set; }
     public decimal BaseSalary { get; set; }
     public decimal? BonusAllowance { get; set; }
     public decimal? TotalPackage { get; set; }
     public DateOnly? ProposedJoinDate { get; set; }
+    public int? ProbationPeriodMonths { get; set; }
     public string ContractType { get; set; } = string.Empty;
     public string Status { get; set; } = "PENDING_APPROVAL";
+    public string? RejectionReasonCategory { get; set; }
+    public string? RejectionReasonCategoryDisplay { get; set; }
+    public string? RejectionNotes { get; set; }
+    public decimal? ExpectedSalary { get; set; }
+    public DateTimeOffset? RejectedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+
     public string FormattedBaseSalary => $"{BaseSalary:N0} VNĐ";
+    public string FormattedTotalPackage => TotalPackage.HasValue ? $"{TotalPackage.Value:N0} VNĐ" : $"{BaseSalary:N0} VNĐ";
+    public string FormattedExpectedSalary => ExpectedSalary.HasValue ? $"{ExpectedSalary.Value:N0} VNĐ" : string.Empty;
     public string FormattedJoinDate => ProposedJoinDate.HasValue ? ProposedJoinDate.Value.ToString("dd/MM/yyyy") : "Chưa ấn định";
+    public string FormattedCreatedAt => CreatedAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm");
+
+    public string StatusBadgeClass => Status switch
+    {
+        "APPROVED" => "bg-success text-white",
+        "ACCEPTED" => "bg-success text-white",
+        "SENT_TO_CANDIDATE" => "bg-info text-dark",
+        "REJECTED" => "bg-danger text-white",
+        "REPLACED" or "SUPERSEDED" => "bg-secondary text-white",
+        "PENDING_APPROVAL" => "bg-warning text-dark",
+        _ => "bg-light text-dark border"
+    };
+
+    public string StatusText => Status switch
+    {
+        "DRAFT" => "Bản nháp (Draft)",
+        "PENDING_APPROVAL" => "Chờ duyệt (Pending)",
+        "APPROVED" => "Đã duyệt (Approved)",
+        "SENT_TO_CANDIDATE" => "Đã gửi ứng viên (Sent)",
+        "ACCEPTED" => "Đồng ý (Accepted)",
+        "REJECTED" => "Từ chối (Rejected)",
+        "WITHDRAWN" => "Đã rút lại (Withdrawn)",
+        "REPLACED" or "SUPERSEDED" => "Đã thay thế (Replaced)",
+        _ => Status
+    };
+
+    public bool CanBeRejected => Status != "ACCEPTED" && Status != "REPLACED" && Status != "SUPERSEDED" && Status != "REJECTED";
+    public bool CanBeRevised => Status != "ACCEPTED" && Status != "REPLACED" && Status != "SUPERSEDED";
 }
 
 public class CandidateStageHistoryItemViewModel

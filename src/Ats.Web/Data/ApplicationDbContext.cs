@@ -535,5 +535,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(e => e.Weight).HasPrecision(18, 4);
             entity.HasIndex(e => e.EvaluationFormId);
         });
+
+        // SP-7: Cấu hình quan hệ tự tham chiếu phiên bản Offer (JobOffer Self-referencing Revision Flow)
+        modelBuilder.Entity<JobOffer>(entity =>
+        {
+            entity.HasOne(o => o.ParentOffer)
+                  .WithMany(o => o.RevisedOffers)
+                  .HasForeignKey(o => o.ParentOfferId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(o => o.ParentOfferId);
+            entity.HasIndex(o => o.Status);
+        });
     }
 }

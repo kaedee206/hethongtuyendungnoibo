@@ -27,6 +27,11 @@ public class Candidate : BaseEntity
     public Guid? MergedIntoCandidateId { get; set; }
     public DateTimeOffset? MergedAt { get; set; }
 
+    // SP-7 / Scrum 45: Cờ đánh dấu Kho ứng viên tiềm năng (Talent Pool)
+    public bool IsInTalentPool { get; set; } = false;
+    public string? TalentPoolNotes { get; set; }
+    public DateTimeOffset? TalentPoolAddedAt { get; set; }
+
     public User? User { get; set; }
     public User? ReferrerUser { get; set; }
     public Candidate? MergedIntoCandidate { get; set; }

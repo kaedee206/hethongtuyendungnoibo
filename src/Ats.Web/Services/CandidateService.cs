@@ -246,17 +246,48 @@ public class CandidateService(
                         };
                     }).ToList(),
 
-                // Offer
-                Offer = app.JobOffers.OrderByDescending(o => o.CreatedAt).Select(o => new CandidateOfferHistoryItemViewModel
+                // Offer (SP-7: Hỗ trợ nhiều phiên bản offer & thương lượng lại)
+                Offer = app.JobOffers.OrderByDescending(o => o.Version).ThenByDescending(o => o.CreatedAt).Select(o => new CandidateOfferHistoryItemViewModel
                 {
                     OfferId = o.Id,
+                    ApplicationId = o.ApplicationId,
+                    Version = o.Version,
+                    ParentOfferId = o.ParentOfferId,
                     BaseSalary = o.BaseSalary,
                     BonusAllowance = o.BonusAllowance,
                     TotalPackage = o.TotalPackage,
                     ProposedJoinDate = o.ProposedJoinDate,
+                    ProbationPeriodMonths = o.ProbationPeriodMonths,
                     ContractType = o.ContractType ?? string.Empty,
-                    Status = o.Status.ToString()
+                    Status = o.Status.ToString(),
+                    RejectionReasonCategory = o.RejectionReasonCategory.HasValue ? o.RejectionReasonCategory.Value.ToString() : null,
+                    RejectionReasonCategoryDisplay = o.RejectionReasonCategory.HasValue ? o.RejectionReasonCategory.Value.GetDisplayName() : null,
+                    RejectionNotes = o.RejectionNotes,
+                    ExpectedSalary = o.ExpectedSalary,
+                    RejectedAt = o.RejectedAt,
+                    CreatedAt = o.CreatedAt
                 }).FirstOrDefault(),
+
+                AllOffers = app.JobOffers.OrderBy(o => o.Version).ThenBy(o => o.CreatedAt).Select(o => new CandidateOfferHistoryItemViewModel
+                {
+                    OfferId = o.Id,
+                    ApplicationId = o.ApplicationId,
+                    Version = o.Version,
+                    ParentOfferId = o.ParentOfferId,
+                    BaseSalary = o.BaseSalary,
+                    BonusAllowance = o.BonusAllowance,
+                    TotalPackage = o.TotalPackage,
+                    ProposedJoinDate = o.ProposedJoinDate,
+                    ProbationPeriodMonths = o.ProbationPeriodMonths,
+                    ContractType = o.ContractType ?? string.Empty,
+                    Status = o.Status.ToString(),
+                    RejectionReasonCategory = o.RejectionReasonCategory.HasValue ? o.RejectionReasonCategory.Value.ToString() : null,
+                    RejectionReasonCategoryDisplay = o.RejectionReasonCategory.HasValue ? o.RejectionReasonCategory.Value.GetDisplayName() : null,
+                    RejectionNotes = o.RejectionNotes,
+                    ExpectedSalary = o.ExpectedSalary,
+                    RejectedAt = o.RejectedAt,
+                    CreatedAt = o.CreatedAt
+                }).ToList(),
 
                 // Stage History
                 StageHistories = app.StageHistories

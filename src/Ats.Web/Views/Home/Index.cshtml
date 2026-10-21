@@ -1945,10 +1945,13 @@
                                     @foreach (var offer in Model.PendingOffers)
                                     {
                                         <div class="col-12 col-md-6 col-xl-4">
-                                            <div class="p-3.5 h-100 d-flex flex-column justify-content-between" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-left: 4px solid #D97706; border-radius: 10px;">
+                                            <div class="p-3.5 h-100 d-flex flex-column justify-content-between shadow-xs" style="background: #FFFFFF; border: 1px solid #E2E8F0; border-left: 4px solid #D97706; border-radius: 10px;">
                                                 <div>
                                                     <div class="d-flex justify-content-between align-items-start mb-1.5">
-                                                        <span class="fw-bold text-dark" style="font-size: 0.95rem;">@offer.CandidateName</span>
+                                                        <div class="d-flex align-items-center gap-1.5">
+                                                            <span class="fw-bold text-dark" style="font-size: 0.95rem;">@offer.CandidateName</span>
+                                                            <span class="badge rounded-pill bg-dark text-white font-mono" style="font-size: 0.65rem;">v@(offer.Version)</span>
+                                                        </div>
                                                         <span class="fw-bold text-success font-mono" style="font-size:0.85rem;">
                                                             @offer.SalaryDisplay
                                                         </span>
@@ -1956,15 +1959,34 @@
                                                     <div class="text-muted mb-1" style="font-size: 0.8rem;">
                                                         Vị trí: <b class="text-dark">@offer.JobTitle</b>
                                                     </div>
-                                                    <div class="text-muted small" style="font-size: 0.72rem;">
-                                                        Ngày khởi tạo: @offer.CreatedDateDisplay
+                                                    <div class="d-flex justify-content-between align-items-center text-muted small" style="font-size: 0.72rem;">
+                                                        <span>Khởi tạo: @offer.CreatedDateDisplay</span>
+                                                        <span class="badge @offer.StatusBadgeClass" style="font-size: 0.66rem;">@offer.StatusText</span>
                                                     </div>
                                                 </div>
-                                                <div class="mt-3 pt-2" style="border-top: 1px solid #E2E8F0;">
-                                                    <button type="button" class="btn btn-sm btn-success w-100 fw-semibold py-1.5" style="border-radius: 8px; font-size: 0.8rem;"
+                                                <div class="mt-3 pt-2" style="border-top: 1px solid #F1F5F9;">
+                                                    <button type="button" class="btn btn-sm btn-success w-100 fw-semibold py-1.5 mb-1.5" style="border-radius: 8px; font-size: 0.8rem;"
                                                             onclick="approveSelectedOffer('@offer.OfferId', '@offer.CandidateName', '@offer.JobTitle', '@offer.SalaryDisplay')">
                                                         <i class="bi bi-check2-all me-1"></i> Phê Duyệt Thư Mời (Offer)
                                                     </button>
+                                                    <div class="d-flex gap-1.5">
+                                                        <button type="button" class="btn btn-sm btn-outline-warning text-dark flex-grow-1 py-1" style="border-radius: 6px; font-size: 0.74rem;"
+                                                                title="Thương lượng lại lương / ngày nhận việc"
+                                                                onclick="OfferManager.openRevise('@offer.OfferId', '@offer.CandidateName', '@offer.JobTitle', @offer.BaseSalary, @(offer.BonusAllowance ?? 0), '@(offer.ProposedJoinDate?.ToString("yyyy-MM-dd") ?? "")', '@(offer.ContractType ?? "")', @offer.Version, 2)">
+                                                            <i class="bi bi-arrow-repeat text-warning me-0.5"></i> Thương lượng lại
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-outline-danger flex-grow-1 py-1" style="border-radius: 6px; font-size: 0.74rem;"
+                                                                title="Ghi nhận ứng viên từ chối offer"
+                                                                onclick="OfferManager.openReject('@offer.OfferId', '@offer.CandidateName', '@offer.JobTitle', '@offer.SalaryDisplay', '@offer.CandidateId', '@offer.ApplicationId', @offer.Version)">
+                                                            <i class="bi bi-x-circle me-0.5"></i> Từ chối
+                                                        </button>
+                                                        @if (offer.CandidateId != Guid.Empty)
+                                                        {
+                                                            <a href="/ung-vien/@offer.CandidateId" class="btn btn-sm btn-outline-secondary px-2 py-1" style="border-radius: 6px; font-size: 0.74rem;" title="Xem hồ sơ chi tiết">
+                                                                <i class="bi bi-person"></i>
+                                                            </a>
+                                                        }
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -5959,12 +5981,17 @@
                     `).join('');
 
                     var offersHtml = (d.offers || []).map(o => `
-                        <div class="p-2.5 mb-2" style="background:#FEF3C7; border:1px solid #FDE68A; border-radius:8px;">
+                        <div class="p-2.5 mb-2 rounded-2" style="background:#FFFDF5; border:1px solid #FDE68A;">
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="fw-bold text-dark">Lương: ${o.salaryDisplay}</span>
-                                <span class="badge ${o.status === 'APPROVED' ? 'bg-success' : 'bg-warning text-dark'}">${o.status}</span>
+                                <span class="fw-bold text-dark"><span class="badge rounded-pill bg-dark text-white font-mono me-1" style="font-size:0.65rem;">v${o.version || 1}</span>${o.salaryDisplay}</span>
+                                <span class="badge ${o.status === 'APPROVED' ? 'bg-success' : (o.status === 'REJECTED' ? 'bg-danger' : (o.status === 'REPLACED' ? 'bg-secondary' : 'bg-warning text-dark'))}" style="font-size:0.7rem;">${o.status}</span>
                             </div>
-                            <div class="small text-muted mt-1">Gia nhập: ${o.joinDate} · Hạn offer: ${o.expirationDate}</div>
+                            <div class="small text-muted mt-1">Gia nhập: <b>${o.joinDate}</b> · Hợp đồng: ${o.contractType || 'Chính thức'}</div>
+                            ${o.rejectionReason ? `<div class="small text-danger mt-1"><i class="bi bi-x-circle me-1"></i>Từ chối: ${o.rejectionReason} ${o.expectedSalary ? `(Kỳ vọng: ${Number(o.expectedSalary).toLocaleString('vi-VN')} VNĐ)` : ''}</div>` : ''}
+                            <div class="d-flex gap-1.5 mt-2 pt-1.5 border-top">
+                                ${o.canBeRevised ? `<button type="button" class="btn btn-xs btn-outline-warning text-dark py-0.5 px-2 rounded" style="font-size:0.72rem; background:#FFFBEB;" onclick="bootstrap.Modal.getInstance(document.getElementById('candidateDetailModal')).hide(); OfferManager.openRevise('${o.id}', '${escapeHtml(d.candidateName)}', '${escapeHtml(d.jobTitle)}', ${o.baseSalary}, ${o.bonusAllowance}, '${o.joinDateRaw}', '${escapeHtml(o.contractType)}', ${o.version || 1}, ${o.probationMonths || 2})"><i class="bi bi-arrow-repeat text-warning me-1"></i>Thương lượng lại</button>` : ''}
+                                ${o.canBeRejected ? `<button type="button" class="btn btn-xs btn-outline-danger py-0.5 px-2 rounded" style="font-size:0.72rem;" onclick="bootstrap.Modal.getInstance(document.getElementById('candidateDetailModal')).hide(); OfferManager.openReject('${o.id}', '${escapeHtml(d.candidateName)}', '${escapeHtml(d.jobTitle)}', '${o.salaryDisplay}', '${d.candidateId || ''}', '${d.id || applicationId}', ${o.version || 1})"><i class="bi bi-x-circle me-1"></i>Từ chối</button>` : ''}
+                            </div>
                         </div>
                     `).join('');
 

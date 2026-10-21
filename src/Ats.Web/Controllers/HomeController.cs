@@ -574,11 +574,16 @@ public class HomeController : Controller
                 {
                     OfferId = o.Id,
                     ApplicationId = o.ApplicationId,
+                    CandidateId = cand?.Id ?? Guid.Empty,
                     CandidateName = candName,
                     CandidateEmail = cand?.Email ?? "",
                     JobTitle = o.Application?.JobPosting?.Title ?? "Vị trí tuyển dụng",
+                    Version = o.Version,
                     BaseSalary = o.BaseSalary,
+                    BonusAllowance = o.BonusAllowance,
                     TotalPackage = o.TotalPackage,
+                    ProposedJoinDate = o.ProposedJoinDate,
+                    ContractType = o.ContractType,
                     SalaryDisplay = $"{o.BaseSalary:N0} VNĐ",
                     Status = o.Status,
                     CreatedDateDisplay = o.CreatedAt.ToString("dd/MM/yyyy")
