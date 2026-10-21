@@ -209,26 +209,57 @@
 
 @section Scripts {
 <script>
-let flatDeptList = [];
-let deptModalObj = null;
-let assignModalObj = null;
-let toastObj = null;
+var flatDeptList = window.deptFlatList || [];
+var deptModalObj = null;
+var assignModalObj = null;
+var toastObj = null;
 
-document.addEventListener('DOMContentLoaded', () => {
-    deptModalObj = new bootstrap.Modal(document.getElementById('deptModal'));
-    assignModalObj = new bootstrap.Modal(document.getElementById('assignManagerModal'));
-    toastObj = new bootstrap.Toast(document.getElementById('deptToast'), { delay: 4500 });
+function getDeptModal() {
+    var el = document.getElementById('deptModal');
+    return el ? bootstrap.Modal.getOrCreateInstance(el) : null;
+}
+
+function getAssignModal() {
+    var el = document.getElementById('assignManagerModal');
+    return el ? bootstrap.Modal.getOrCreateInstance(el) : null;
+}
+
+function initDepartmentPage() {
+    deptModalObj = getDeptModal();
+    assignModalObj = getAssignModal();
+    var toastEl = document.getElementById('deptToast');
+    if (toastEl) toastObj = bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 4500 });
 
     loadDepartmentTree();
 
-    document.getElementById('deptSearchInput').addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase().trim();
-        filterTreeNodes(query);
-    });
+    var searchInput = document.getElementById('deptSearchInput');
+    if (searchInput && !searchInput.dataset.bound) {
+        searchInput.dataset.bound = 'true';
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            filterTreeNodes(query);
+        });
+    }
 
-    document.getElementById('deptForm').addEventListener('submit', handleSaveDept);
-    document.getElementById('btnSaveManager').addEventListener('click', handleSaveManager);
-});
+    var deptForm = document.getElementById('deptForm');
+    if (deptForm && !deptForm.dataset.bound) {
+        deptForm.dataset.bound = 'true';
+        deptForm.addEventListener('submit', handleSaveDept);
+    }
+
+    var btnSaveManager = document.getElementById('btnSaveManager');
+    if (btnSaveManager && !btnSaveManager.dataset.bound) {
+        btnSaveManager.dataset.bound = 'true';
+        btnSaveManager.addEventListener('click', handleSaveManager);
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDepartmentPage);
+} else {
+    initDepartmentPage();
+}
+
 
 function showToast(message, isSuccess = true) {
     const toastEl = document.getElementById('deptToast');
@@ -442,7 +473,8 @@ function openCreateDeptModal(parentId = null) {
     if (parentId) {
         document.getElementById('deptParentSelect').value = parentId;
     }
-    deptModalObj.show();
+    const modal = getDeptModal();
+    if (modal) modal.show();
 }
 
 async function openEditDeptModal(deptId) {
@@ -459,7 +491,8 @@ async function openEditDeptModal(deptId) {
             document.getElementById('deptName').value = d.name;
             document.getElementById('deptParentSelect').value = d.parentId || '';
             document.getElementById('deptManagerSelect').value = d.managerId || '';
-            deptModalObj.show();
+            const modal = getDeptModal();
+            if (modal) modal.show();
         } else {
             showToast(result.message || 'Không thể lấy thông tin phòng ban.', false);
         }
@@ -495,7 +528,8 @@ async function handleSaveDept(e) {
         });
         const result = await res.json();
         if (res.ok && result.isSuccess) {
-            deptModalObj.hide();
+            const modal = getDeptModal();
+            if (modal) modal.hide();
             showToast(result.message || (isEdit ? 'Cập nhật thành công.' : 'Tạo mới thành công.'), true);
             loadDepartmentTree();
         } else {
@@ -510,7 +544,8 @@ function openAssignManagerModal(deptId, deptName) {
     document.getElementById('assignDeptId').value = deptId;
     document.getElementById('assignDeptName').textContent = deptName;
     document.getElementById('newManagerSelect').value = '';
-    assignModalObj.show();
+    const modal = getAssignModal();
+    if (modal) modal.show();
 }
 
 async function handleSaveManager() {

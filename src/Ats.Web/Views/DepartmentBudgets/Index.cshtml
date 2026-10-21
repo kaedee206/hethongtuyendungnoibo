@@ -723,12 +723,12 @@
 
 @section Scripts {
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        function initDepartmentBudgetsPage() {
             // Elements
             const budgetModalElement = document.getElementById('budgetModal');
             if (!budgetModalElement) return;
 
-            const budgetModal = new bootstrap.Modal(budgetModalElement);
+            const budgetModal = bootstrap.Modal.getOrCreateInstance(budgetModalElement);
             const modalTitleText = document.getElementById('modalTitleText');
             const modalDepartmentId = document.getElementById('modalDepartmentId');
             const modalYear = document.getElementById('modalYear');
@@ -866,6 +866,12 @@
                     budgetModal.show();
                 });
             });
-        });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initDepartmentBudgetsPage);
+        } else {
+            initDepartmentBudgetsPage();
+        }
     </script>
 }

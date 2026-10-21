@@ -199,15 +199,19 @@
 
 @section Scripts {
     <script>
-        // Mock dữ liệu ban đầu
-        let questionsData = [];
-        let questionModal = null;
-        let deleteModal = null;
-        let toastObj = null;
+        var questionsData = window.qbQuestionsData || [];
+        var questionModal = null;
+        var deleteModal = null;
+        var toastObj = null;
+
+        function initQuestionBankPage() {
+            var modalEl = document.getElementById('questionModal');
+            if (modalEl) questionModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            fetchQuestions();
+        }
 
         $(document).ready(function () {
-            questionModal = new bootstrap.Modal(document.getElementById('questionModal'));
-            fetchQuestions();
+            initQuestionBankPage();
         });
 
         function getDifficultyBadge(level) {

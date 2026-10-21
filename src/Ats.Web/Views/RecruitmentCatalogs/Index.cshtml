@@ -220,9 +220,11 @@
 
 @section Scripts {
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        function initRecruitmentCatalogsPage() {
             const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
-            const catalogModal = new bootstrap.Modal(document.getElementById('catalogModal'));
+            const modalEl = document.getElementById('catalogModal');
+            if (!modalEl) return;
+            const catalogModal = bootstrap.Modal.getOrCreateInstance(modalEl);
             const catalogForm = document.getElementById('catalogForm');
             const itemIdInput = document.getElementById('catalogItemId');
             const typeSelect = document.getElementById('modalCatalogType');
@@ -518,6 +520,12 @@
                     else alert(err.message);
                 }
             }
-        });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initRecruitmentCatalogsPage);
+        } else {
+            initRecruitmentCatalogsPage();
+        }
     </script>
 }
