@@ -29,6 +29,8 @@ services:
     image: authelia/authelia:latest
     container_name: ats-authelia-sso
     restart: always
+    ports:
+      - "127.0.0.1:9091:9091"
     volumes:
       - ./authelia/configuration.yml:/config/configuration.yml
       - ./authelia/users_database.yml:/config/users_database.yml
@@ -60,6 +62,8 @@ services:
       dockerfile: Dockerfile
     container_name: ats-web-app
     restart: always
+    ports:
+      - "127.0.0.1:8080:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
@@ -79,6 +83,7 @@ services:
       SESSION_IDLE_TIMEOUT_MINUTES: "30"
     volumes:
       - ats_uploads:/app/wwwroot/uploads
+      - ats_dataprotection_keys:/app/dataprotection-keys
     depends_on:
       - postgres
       - authelia
@@ -87,36 +92,6 @@ services:
         limits:
           cpus: "1.5"
           memory: 450M
-    networks:
-      - novera-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  # 4. Nginx Reverse Proxy & SSL Router (Cổng duy nhất mở 80 & 443 ra ngoài)
-  nginx:
-    image: nginx:alpine
-    container_name: ats-nginx-proxy
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./nginx/custom:/etc/nginx/custom:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - /var/www/certbot:/var/www/certbot:ro
-    depends_on:
-      - ats-web
-      - authelia
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 80M
     networks:
       - novera-network
     logging:
@@ -135,3 +110,5 @@ volumes:
     name: ats_postgres_data
   ats_uploads:
     name: ats_uploads_data
+  ats_dataprotection_keys:
+    name: ats_dataprotection_keys
