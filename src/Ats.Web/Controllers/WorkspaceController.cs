@@ -37,6 +37,7 @@ public class WorkspaceController : Controller
     private readonly IInterviewService? _interviewService;
     private readonly ICandidateInterviewService? _candidateInterviewService;
     private readonly IOfferService? _offerService;
+    private readonly IOfferApprovalService? _offerApprovalService;
 
     [ActivatorUtilitiesConstructor]
     public WorkspaceController(
@@ -55,7 +56,8 @@ public class WorkspaceController : Controller
         IInterviewEvaluationService? interviewEvaluationService = null,
         IInterviewService? interviewService = null,
         ICandidateInterviewService? candidateInterviewService = null,
-        IOfferService? offerService = null)
+        IOfferService? offerService = null,
+        IOfferApprovalService? offerApprovalService = null)
     {
         _dbContext = dbContext;
         _env = env;
@@ -73,6 +75,7 @@ public class WorkspaceController : Controller
         _interviewService = interviewService;
         _candidateInterviewService = candidateInterviewService;
         _offerService = offerService;
+        _offerApprovalService = offerApprovalService;
     }
 
     public WorkspaceController(
@@ -80,7 +83,7 @@ public class WorkspaceController : Controller
         IWebHostEnvironment env,
         IEmailService emailService,
         ILogger<WorkspaceController> logger)
-        : this(dbContext, env, emailService, null!, null!, null!, logger, null!, null!, null!, null!, null!, null!, null!, null!, null!)
+        : this(dbContext, env, emailService, null!, null!, null!, logger, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!)
     {
     }
 
@@ -527,12 +530,149 @@ public class WorkspaceController : Controller
     #region Staff Actions (Nhân sự & Quản trị tương tác thực thi)
 
     /// <summary>
-    /// Duyệt Offer cho ứng viên: Cập nhật JobOffer thành APPROVED và Application thành HIRED.
+    /// Lấy chi tiết thông tin phê duyệt Offer theo hạn mức lương (SCRUM-341).
+    /// </summary>
+    [HttpGet("GetOfferApprovalDetail")]
+    [HttpGet("GetOfferApprovalDetail/{offerId}")]
+    [Authorize(Roles = $"{UserRoles.Approver},{UserRoles.HRManager},{UserRoles.Admin}")]
+    public async Task<IActionResult> GetOfferApprovalDetail([FromQuery] Guid? id, [FromRoute] Guid? offerId, CancellationToken cancellationToken)
+    {
+        var targetOfferId = id ?? offerId ?? Guid.Empty;
+        if (targetOfferId == Guid.Empty)
+        {
+            return Json(new { success = false, message = "Mã đề xuất Offer không hợp lệ." });
+        }
+
+        if (_offerApprovalService == null)
+        {
+            return Json(new { success = false, message = "Dịch vụ phê duyệt Offer chưa sẵn sàng." });
+        }
+
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        _ = Guid.TryParse(userIdStr, out var currentUserId);
+        var role = User.FindFirstValue(ClaimTypes.Role) ?? "";
+
+        try
+        {
+            var detail = await _offerApprovalService.GetOfferApprovalDetailAsync(targetOfferId, currentUserId, role, cancellationToken);
+            if (detail == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy đề xuất Offer hoặc bạn không có quyền xem." });
+            }
+
+            return Json(new { success = true, data = detail });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi lấy chi tiết phê duyệt Offer {OfferId}", targetOfferId);
+            return Json(new { success = false, message = "Lỗi khi tải thông tin phê duyệt: " + ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Thực hiện 1 trong 3 hành động phê duyệt Offer: Duyệt (APPROVE), Từ chối (REJECT), Yêu cầu sửa (CHANGES_REQUESTED) (SCRUM-341).
+    /// </summary>
+    [HttpPost("SubmitOfferDecision")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Approver},{UserRoles.HRManager},{UserRoles.Admin}")]
+    public async Task<IActionResult> SubmitOfferDecision(
+        [FromBody] OfferApprovalDecisionInputModel? jsonModel,
+        [FromForm] OfferApprovalDecisionInputModel? formModel,
+        CancellationToken cancellationToken)
+    {
+        var model = jsonModel ?? formModel;
+        if (model == null || model.OfferId == Guid.Empty)
+        {
+            return Json(new { success = false, message = "Dữ liệu quyết định duyệt Offer không hợp lệ." });
+        }
+
+        if (_offerApprovalService == null)
+        {
+            return Json(new { success = false, message = "Dịch vụ phê duyệt Offer chưa sẵn sàng." });
+        }
+
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        _ = Guid.TryParse(userIdStr, out var currentUserId);
+        var role = User.FindFirstValue(ClaimTypes.Role) ?? "";
+
+        var actionNormalized = model.Decision?.Trim().ToUpperInvariant() ?? "";
+        if (actionNormalized != "APPROVE" && actionNormalized != "REJECT" && actionNormalized != "CHANGES_REQUESTED")
+        {
+            return Json(new { success = false, message = "Hành động phê duyệt không hợp lệ. Vui lòng chọn Duyệt, Từ chối hoặc Yêu cầu sửa." });
+        }
+
+        if ((actionNormalized == "REJECT" || actionNormalized == "CHANGES_REQUESTED") && string.IsNullOrWhiteSpace(model.Comment))
+        {
+            return Json(new { success = false, message = "Bắt buộc phải nhập ý kiến/lý do khi Từ chối hoặc Yêu cầu sửa đổi Offer." });
+        }
+
+        try
+        {
+            var result = await _offerApprovalService.SubmitApprovalDecisionAsync(model, currentUserId, role, cancellationToken);
+            return Json(new
+            {
+                success = result.Success,
+                message = result.Message,
+                offerId = result.OfferId,
+                offerStatus = result.OfferStatus?.ToString(),
+                stepStatus = result.StepStatus?.ToString(),
+                isFinalApproval = result.IsFinalApproval
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi xử lý quyết định phê duyệt Offer {OfferId}", model.OfferId);
+            return Json(new { success = false, message = "Lỗi hệ thống khi xử lý phê duyệt: " + ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Từ chối Offer kèm ý kiến bắt buộc (SCRUM-341).
+    /// </summary>
+    [HttpPost("RejectOffer")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Approver},{UserRoles.Admin},{UserRoles.HRManager}")]
+    public async Task<IActionResult> RejectOffer([FromForm] Guid offerId, [FromForm] string comment, CancellationToken cancellationToken)
+    {
+        return await SubmitOfferDecision(null, new OfferApprovalDecisionInputModel
+        {
+            OfferId = offerId,
+            Decision = "REJECT",
+            Comment = comment
+        }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Yêu cầu sửa đổi Offer kèm ý kiến bắt buộc (SCRUM-341).
+    /// </summary>
+    [HttpPost("RequestChangesOffer")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Approver},{UserRoles.Admin},{UserRoles.HRManager}")]
+    public async Task<IActionResult> RequestChangesOffer([FromForm] Guid offerId, [FromForm] string comment, CancellationToken cancellationToken)
+    {
+        return await SubmitOfferDecision(null, new OfferApprovalDecisionInputModel
+        {
+            OfferId = offerId,
+            Decision = "CHANGES_REQUESTED",
+            Comment = comment
+        }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Duyệt Offer cho ứng viên: Chuyển qua luồng IOfferApprovalService hoặc xử lý trực tiếp (SCRUM-341).
     /// </summary>
     [HttpPost("ApproveOffer")]
     [ValidateAntiForgeryToken]
     [Authorize(Roles = $"{UserRoles.Approver},{UserRoles.Admin},{UserRoles.HRManager}")]
-    public async Task<IActionResult> ApproveOffer([FromForm] Guid? offerId, [FromForm] string? candidateName)
+    public async Task<IActionResult> ApproveOffer([FromForm] Guid? offerId, [FromForm] string? candidateName, [FromForm] string? comment, CancellationToken cancellationToken)
     {
         try
         {
@@ -544,7 +684,7 @@ public class WorkspaceController : Controller
                         .ThenInclude(a => a.Candidate)
                     .Include(o => o.Application)
                         .ThenInclude(a => a.JobPosting)
-                    .FirstOrDefaultAsync(o => o.Id == offerId.Value);
+                    .FirstOrDefaultAsync(o => o.Id == offerId.Value, cancellationToken);
             }
 
             if (offer == null)
@@ -557,7 +697,7 @@ public class WorkspaceController : Controller
                         .ThenInclude(a => a.JobPosting)
                     .Where(o => o.Status == OfferStatus.PENDING_APPROVAL || o.Status == OfferStatus.DRAFT)
                     .OrderByDescending(o => o.CreatedAt)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync(cancellationToken);
             }
 
             if (offer == null)
@@ -565,13 +705,36 @@ public class WorkspaceController : Controller
                 return Json(new { success = false, message = "Không tìm thấy Thư mời Offer đang chờ duyệt." });
             }
 
-            // Cập nhật trạng thái Offer
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _ = Guid.TryParse(userIdStr, out var currentUserId);
+            var role = User.FindFirstValue(ClaimTypes.Role) ?? "";
+
+            if (_offerApprovalService != null)
+            {
+                var approvalResult = await _offerApprovalService.SubmitApprovalDecisionAsync(new OfferApprovalDecisionInputModel
+                {
+                    OfferId = offer.Id,
+                    Decision = "APPROVE",
+                    Comment = comment
+                }, currentUserId, role, cancellationToken);
+
+                return Json(new
+                {
+                    success = approvalResult.Success,
+                    message = approvalResult.Message,
+                    offerId = offer.Id,
+                    offerStatus = approvalResult.OfferStatus?.ToString(),
+                    stepStatus = approvalResult.StepStatus?.ToString(),
+                    isFinalApproval = approvalResult.IsFinalApproval
+                });
+            }
+
+            // Fallback nếu service chưa cấu hình
             offer.Status = OfferStatus.APPROVED;
             offer.UpdatedAt = DateTimeOffset.UtcNow;
 
-            // Chuyển Application sang Stage 6: Tuyển dụng thành công
-            var stageSuccess = await _dbContext.PipelineStages.FirstOrDefaultAsync(s => s.StageOrder == 6)
-                ?? await _dbContext.PipelineStages.FirstOrDefaultAsync(s => s.Name.Contains("thành công"));
+            var stageSuccess = await _dbContext.PipelineStages.FirstOrDefaultAsync(s => s.StageOrder == 6, cancellationToken)
+                ?? await _dbContext.PipelineStages.FirstOrDefaultAsync(s => s.Name.Contains("thành công"), cancellationToken);
 
             if (stageSuccess != null && offer.Application != null)
             {
@@ -582,9 +745,7 @@ public class WorkspaceController : Controller
                 offer.Application.SlaOverdueAlertedAt = null;
                 offer.Application.UpdatedAt = DateTimeOffset.UtcNow;
 
-                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                _ = Guid.TryParse(userIdStr, out var currentUserId);
-                var effectiveUserId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync());
+                var effectiveUserId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstOrDefaultAsync(cancellationToken));
 
                 await _dbContext.ApplicationStageHistories.AddAsync(new ApplicationStageHistory
                 {
@@ -595,10 +756,10 @@ public class WorkspaceController : Controller
                     ChangedByUserId = effectiveUserId,
                     Comment = $"Thư mời nhận việc đã được phê duyệt bởi {User.Identity?.Name} (Mức lương: {offer.BaseSalary:N0} VNĐ).",
                     CreatedAt = DateTimeOffset.UtcNow
-                });
+                }, cancellationToken);
             }
 
-            await _dbContext.SaveChangesAsync();
+            await _dbContext.SaveChangesAsync(cancellationToken);
 
             var candName = offer.Application?.Candidate?.FirstName ?? candidateName ?? "Ứng viên";
             return Json(new
