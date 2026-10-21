@@ -931,6 +931,120 @@ public static class DatabaseSeeder
             await context.SaveChangesAsync();
         }
 
+        // SCRUM-342: Seed Offer cho ứng viên Nguyễn Đức Hiếu (duchieu12022006@gmail.com) để kiểm thử phản hồi thư mời nhận việc
+        var candHieuUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "duchieu12022006@gmail.com");
+        var candRole = await context.Roles.FirstOrDefaultAsync(r => r.Code == RoleCode.CANDIDATE);
+        if (candHieuUser == null)
+        {
+            candHieuUser = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = "duchieu12022006@gmail.com",
+                FullName = "Nguyễn Đức Hiếu",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456@@"),
+                Status = "ACTIVE",
+                UserType = UserType.EXTERNAL_CANDIDATE,
+                Role = UserRoles.Candidate,
+                RoleId = candRole?.Id,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await context.Users.AddAsync(candHieuUser);
+            if (candRole != null)
+            {
+                await context.UserRoles.AddAsync(new UserRole { UserId = candHieuUser.Id, RoleId = candRole.Id });
+            }
+            await context.SaveChangesAsync();
+        }
+
+        var candidateHieu = await context.Candidates.FirstOrDefaultAsync(c => c.Email == "duchieu12022006@gmail.com");
+        if (candidateHieu == null)
+        {
+            candidateHieu = new Candidate
+            {
+                Id = Guid.NewGuid(),
+                UserId = candHieuUser.Id,
+                Email = "duchieu12022006@gmail.com",
+                FirstName = "Hiếu",
+                LastName = "Nguyễn Đức",
+                Phone = "0987654321",
+                CurrentCompany = "Tech Corp",
+                CurrentTitle = "Mid Software Engineer",
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await context.Candidates.AddAsync(candidateHieu);
+            await context.SaveChangesAsync();
+        }
+
+        var appHieu = await context.Applications.FirstOrDefaultAsync(a => a.CandidateId == candidateHieu.Id && a.JobPostingId == dotnetJob.Id);
+        if (appHieu == null)
+        {
+            var firstResume = await context.Resumes.FirstOrDefaultAsync();
+            appHieu = new Application
+            {
+                Id = Guid.NewGuid(),
+                JobPostingId = dotnetJob.Id,
+                CandidateId = candidateHieu.Id,
+                ResumeId = firstResume?.Id ?? Guid.NewGuid(),
+                CurrentStageId = stage5.Id,
+                Status = ApplicationStatus.IN_PROCESS,
+                AppliedAt = DateTimeOffset.UtcNow.AddDays(-5),
+                CreatedAt = DateTimeOffset.UtcNow.AddDays(-5),
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await context.Applications.AddAsync(appHieu);
+            await context.SaveChangesAsync();
+        }
+
+        var offerHieu = await context.JobOffers.FirstOrDefaultAsync(o => o.ApplicationId == appHieu.Id);
+        if (offerHieu == null)
+        {
+            offerHieu = new JobOffer
+            {
+                Id = Guid.NewGuid(),
+                ApplicationId = appHieu.Id,
+                CreatedByRecruiterId = hrRecruiter.Id,
+                JobPositionId = dotnetJob.Requisition.JobPositionId,
+                JobTitle = "Senior Backend .NET Developer",
+                WorkLocation = "Tầng 12, Tòa nhà NoveraTech, Cầu Giấy, Hà Nội",
+                BaseSalary = 35000000,
+                BonusAllowance = 5000000,
+                TotalPackage = 40000000,
+                ProposedJoinDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(15)),
+                ExpirationDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(7)),
+                ProbationPeriodMonths = 2,
+                ContractType = "Hợp đồng lao động chính thức không xác định thời hạn",
+                Notes = "Chào mừng bạn gia nhập đội ngũ NoveraTech. Thư mời có hiệu lực trong 7 ngày tới.",
+                Status = OfferStatus.SENT_TO_CANDIDATE,
+                ResponseToken = "demo-offer-token-duchieu-2026",
+                CreatedAt = DateTimeOffset.UtcNow.AddDays(-1),
+                UpdatedAt = DateTimeOffset.UtcNow.AddDays(-1)
+            };
+            await context.JobOffers.AddAsync(offerHieu);
+            await context.SaveChangesAsync();
+        }
+        else
+        {
+            if (string.IsNullOrEmpty(offerHieu.ResponseToken))
+            {
+                offerHieu.ResponseToken = "demo-offer-token-duchieu-2026";
+            }
+            if (offerHieu.Status == OfferStatus.DRAFT || offerHieu.Status == OfferStatus.PENDING_APPROVAL)
+            {
+                offerHieu.Status = OfferStatus.SENT_TO_CANDIDATE;
+                offerHieu.ExpirationDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(7));
+            }
+            await context.SaveChangesAsync();
+        }
+
+        var adminDucAnh = await context.Users.FirstOrDefaultAsync(u => u.Email == "duc.anh@noveratech.digital");
+        if (adminDucAnh != null)
+        {
+            adminDucAnh.PasswordHash = BCrypt.Net.BCrypt.HashPassword("ducanh123@@");
+            await context.SaveChangesAsync();
+        }
+
         // 17. Seed RejectionReasons (SCRUM-42)
         if (!await context.RejectionReasons.AnyAsync())
         {

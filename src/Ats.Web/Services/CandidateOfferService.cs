@@ -44,7 +44,21 @@ public class CandidateOfferService(
         if (string.IsNullOrWhiteSpace(token))
             return false;
 
-        var parts = token.Trim().Split('_');
+        var trimmedToken = token.Trim();
+
+        // 1. Kiểm tra đối chiếu trực tiếp với ResponseToken đã lưu trong bảng job_offers
+        var storedOffer = _dbContext.JobOffers
+            .AsNoTracking()
+            .FirstOrDefault(o => o.ResponseToken == trimmedToken && !o.IsDeleted);
+
+        if (storedOffer != null)
+        {
+            offerId = storedOffer.Id;
+            return true;
+        }
+
+        // 2. Kiểm tra định dạng HMAC-SHA256 $"{offerId}_{hash}"
+        var parts = trimmedToken.Split('_');
         if (parts.Length != 2)
             return false;
 

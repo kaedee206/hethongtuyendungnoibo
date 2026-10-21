@@ -378,6 +378,7 @@ using (var scope = app.Services.CreateScope())
 
         // SCRUM-340, SCRUM-341, SCRUM-342: Bổ sung các cột Offer và Thư mời nhận việc cho môi trường local & server
         await dbContext.Database.ExecuteSqlRawAsync(@"
+            ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS job_position_id uuid;
             ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS job_title text;
             ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS work_location text;
             ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS expiration_date date;
@@ -395,6 +396,17 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS candidate_feedback text;
             ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS expired_at timestamp with time zone;
             CREATE INDEX IF NOT EXISTS ix_job_offers_response_token ON job_offers (response_token);
+            CREATE INDEX IF NOT EXISTS ix_job_offers_job_position_id ON job_offers (job_position_id);
+
+            ALTER TABLE job_requisitions ADD COLUMN IF NOT EXISTS is_over_quota boolean NOT NULL DEFAULT false;
+            ALTER TABLE job_requisitions ADD COLUMN IF NOT EXISTS over_quota_approved_at timestamp with time zone;
+            ALTER TABLE job_requisitions ADD COLUMN IF NOT EXISTS over_quota_approved_by_id uuid;
+            ALTER TABLE job_requisitions ADD COLUMN IF NOT EXISTS over_quota_reason text;
+
+            ALTER TABLE interview_evaluations ADD COLUMN IF NOT EXISTS is_reopened boolean NOT NULL DEFAULT false;
+            ALTER TABLE interview_evaluations ADD COLUMN IF NOT EXISTS reopen_reason text;
+            ALTER TABLE interview_evaluations ADD COLUMN IF NOT EXISTS reopened_at timestamp with time zone;
+            ALTER TABLE interview_evaluations ADD COLUMN IF NOT EXISTS reopened_by_user_id uuid;
 
             CREATE TABLE IF NOT EXISTS offer_approvals (
                 id UUID PRIMARY KEY,
