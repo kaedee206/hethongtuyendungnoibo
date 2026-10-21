@@ -20,6 +20,7 @@ public class RequisitionsController : Controller
     private readonly IRequisitionService _requisitionService;
     private readonly Ats.Web.Data.ApplicationDbContext _dbContext;
     private readonly IDepartmentBudgetService _departmentBudgetService;
+    private readonly IPositionProgressService? _positionProgressService;
     private readonly ILogger<RequisitionsController> _logger;
 
     [ActivatorUtilitiesConstructor]
@@ -27,12 +28,14 @@ public class RequisitionsController : Controller
         IRequisitionService requisitionService,
         Ats.Web.Data.ApplicationDbContext dbContext,
         IDepartmentBudgetService departmentBudgetService,
-        ILogger<RequisitionsController> logger)
+        ILogger<RequisitionsController> logger,
+        IPositionProgressService? positionProgressService = null)
     {
         _requisitionService = requisitionService;
         _dbContext = dbContext;
         _departmentBudgetService = departmentBudgetService;
         _logger = logger;
+        _positionProgressService = positionProgressService;
     }
 
     public RequisitionsController(
@@ -43,7 +46,8 @@ public class RequisitionsController : Controller
             requisitionService,
             dbContext,
             new DepartmentBudgetService(null!, Microsoft.Extensions.Logging.Abstractions.NullLogger<DepartmentBudgetService>.Instance),
-            logger)
+            logger,
+            null)
     {
     }
 
@@ -624,5 +628,48 @@ public class RequisitionsController : Controller
             message = result.Message
         });
     }
+
+    /// <summary>
+    /// GET: /yeu-cau-tuyen-dung/tien-do/{id?} hoặc /requisitions/progress/{id?}
+    /// Màn hình theo dõi tiến độ tuyển dụng vị trí sở hữu của Trưởng bộ phận (SCRUM-351).
+    /// </summary>
+    [HttpGet("tien-do/{id:guid?}")]
+    [HttpGet("progress/{id:guid?}")]
+    public async Task<IActionResult> PositionProgress(Guid? id, CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        var isElevated = User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter);
+        var service = _positionProgressService ?? new PositionProgressService(_dbContext, Microsoft.Extensions.Logging.Abstractions.NullLogger<PositionProgressService>.Instance);
+        var model = await service.GetPositionProgressDetailAsync(id, userId, isElevated, cancellationToken);
+
+        if (model == null || model.SelectedRequisitionId == Guid.Empty)
+        {
+            TempData["ErrorMessage"] = "Bạn chưa có vị trí tuyển dụng nào được phân công hoặc không tìm thấy yêu cầu này.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        return View(model);
+    }
+
+    /// <summary>
+    /// GET: /yeu-cau-tuyen-dung/api/{id}/progress-data
+    /// API trả về dữ liệu tiến độ tuyển dụng phục vụ chuyển đổi nhanh vị trí (SCRUM-351).
+    /// </summary>
+    [HttpGet("api/{id:guid}/progress-data")]
+    public async Task<IActionResult> GetPositionProgressApi(Guid id, CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        var isElevated = User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter);
+        var service = _positionProgressService ?? new PositionProgressService(_dbContext, Microsoft.Extensions.Logging.Abstractions.NullLogger<PositionProgressService>.Instance);
+        var model = await service.GetPositionProgressDetailAsync(id, userId, isElevated, cancellationToken);
+
+        if (model == null || model.SelectedRequisitionId == Guid.Empty)
+        {
+            return NotFound(new { success = false, message = "Không tìm thấy dữ liệu tiến độ tuyển dụng của vị trí này." });
+        }
+
+        return Ok(new { success = true, data = model });
+    }
 }
+
 
