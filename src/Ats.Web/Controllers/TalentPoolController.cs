@@ -8,9 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Ats.Web.Controllers;
 
 /// <summary>
-/// Controller Quản lý Kho Ứng viên Tiềm năng (Scrum 45 - Talent Pool Management).
-/// Dành cho Trưởng phòng Nhân sự, Quản trị viên và Chuyên viên tuyển dụng.
-/// Tuân thủ quy chuẩn C# 12 Primary Constructors, Attribute Routing kebab-case.
+/// Quản lý kho ứng viên tiềm năng và gợi ý hồ sơ phù hợp.
 /// </summary>
 [Authorize(Roles = $"{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.Recruiter},{UserRoles.HiringManager}")]
 [Route("kho-tiem-nang")]
@@ -26,7 +24,6 @@ public class TalentPoolController(
 
     // GET: /kho-tiem-nang hoặc /TalentPool
     [HttpGet]
-    [HttpGet("")]
     public async Task<IActionResult> Index(
         [FromQuery] string? search,
         [FromQuery] string? jobTitle,
@@ -41,19 +38,33 @@ public class TalentPoolController(
         return View(model); // Views/TalentPool/Index.cshtml
     }
 
-    // GET: /kho-tiem-nang/goi-y/{jobId} hoặc /TalentPool/Suggestions/{jobId}
+    // GET: /kho-tiem-nang/goi-y hoặc /kho-tiem-nang/goi-y/{jobId}
+    [HttpGet("goi-y")]
+    [HttpGet("Suggestions")]
     [HttpGet("goi-y/{jobId:guid}")]
     [HttpGet("Suggestions/{jobId:guid}")]
-    public async Task<IActionResult> Suggestions(Guid jobId, CancellationToken cancellationToken)
+    public async Task<IActionResult> Suggestions(Guid? jobId, CancellationToken cancellationToken)
     {
-        var model = await _talentPoolService.GetSuggestedCandidatesForJobAsync(jobId, cancellationToken);
+        if (!jobId.HasValue || jobId.Value == Guid.Empty)
+        {
+            var firstJobId = await _talentPoolService.GetFirstActiveJobPostingIdAsync(cancellationToken);
+            if (firstJobId.HasValue && firstJobId.Value != Guid.Empty)
+            {
+                return RedirectToAction(nameof(Suggestions), new { jobId = firstJobId.Value });
+            }
+
+            TempData["ErrorMessage"] = "Hiện chưa có tin tuyển dụng nào đang mở để gợi ý ứng viên tiềm năng.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var model = await _talentPoolService.GetSuggestedCandidatesForJobAsync(jobId.Value, cancellationToken);
         if (model == null)
         {
             TempData["ErrorMessage"] = "Không tìm thấy thông tin vị trí tuyển dụng tương ứng.";
             return RedirectToAction(nameof(Index));
         }
 
-        return View(model); // Views/TalentPool/Suggestions.cshtml
+        return View(model);
     }
 
     // GET: /kho-tiem-nang/api/goi-y/{jobId}

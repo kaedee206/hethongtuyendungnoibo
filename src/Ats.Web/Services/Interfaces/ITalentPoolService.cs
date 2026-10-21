@@ -27,6 +27,12 @@ public interface ITalentPoolService
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Lấy ID của tin tuyển dụng đang mở đầu tiên để điều hướng mặc định.
+    /// </summary>
+    Task<Guid?> GetFirstActiveJobPostingIdAsync(
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Đánh dấu và đưa một ứng viên vào kho tiềm năng kèm lý do chi tiết.
     /// </summary>
     Task<(bool Success, string Message, Guid? Id)> AddCandidateToPoolAsync(

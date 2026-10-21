@@ -10,107 +10,106 @@
 }
 
 <style>
-    /* Modern Talent Pool Suggestions Styling */
-    .suggestion-hero-card {
+    /* Bố cục trang Gợi ý ứng viên */
+    .suggestion-header-card {
         background: #FFFFFF;
         border: 1px solid #E2E8F0;
-        border-radius: 16px;
-        box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
         position: relative;
         overflow: hidden;
     }
-    .suggestion-hero-card::before {
+    .suggestion-header-card::before {
         content: '';
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
-        height: 4px;
+        height: 3px;
         background: linear-gradient(90deg, #059669 0%, #10B981 50%, #3B82F6 100%);
     }
 
-    .metric-tile {
-        padding: 0.85rem 1.15rem;
-        border-radius: 12px;
-        transition: all 0.2s ease;
-        min-width: 130px;
-    }
-    .metric-tile-emerald {
-        background: #F0FDF4;
-        border: 1px solid #BBF7D0;
-    }
-    .metric-tile-blue {
-        background: #EFF6FF;
-        border: 1px solid #BFDBFE;
+    .kpi-chip {
+        padding: 0.5rem 0.85rem;
+        border-radius: 10px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
     }
 
-    .suggestion-card {
+    .candidate-card {
         background: #FFFFFF;
         border: 1px solid #E2E8F0;
-        border-radius: 14px;
-        transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease, border-color 0.18s ease;
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        border-radius: 12px;
+        padding: 1.25rem;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
     }
-    .suggestion-card:hover {
+    .candidate-card:hover {
         transform: translateY(-2px);
         border-color: #CBD5E1;
-        box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.08);
+        box-shadow: 0 6px 16px -2px rgba(15, 23, 42, 0.08);
     }
 
-    /* Score Badge Variants */
-    .match-score-pill {
+    /* Huy hiệu độ khớp */
+    .match-badge {
         font-family: 'JetBrains Mono', monospace;
         font-weight: 700;
-        font-size: 0.95rem;
-        padding: 0.35rem 0.75rem;
-        border-radius: 10px;
+        font-size: 0.85rem;
+        padding: 0.3rem 0.65rem;
+        border-radius: 8px;
         display: inline-flex;
         align-items: center;
         gap: 0.35rem;
-        letter-spacing: -0.02em;
+        white-space: nowrap;
     }
-    .match-pill-high {
+    .match-badge-high {
         background: #ECFDF5;
         color: #047857;
         border: 1px solid #A7F3D0;
     }
-    .match-pill-medium {
+    .match-badge-medium {
         background: #EFF6FF;
         color: #1D4ED8;
         border: 1px solid #BFDBFE;
     }
-    .match-pill-low {
+    .match-badge-low {
         background: #F8FAFC;
         color: #475569;
         border: 1px solid #E2E8F0;
     }
 
-    /* Recruiter Quote Box */
-    .recruiter-note-box {
+    /* Thẻ ghi nhận vòng trước */
+    .candidate-note-quote {
+        padding: 0.5rem 0.75rem;
+        border-left: 3px solid #10B981;
         background: #F8FAFC;
-        border: 1px solid #F1F5F9;
-        border-left: 3px solid #059669;
-        border-radius: 8px;
-        padding: 0.65rem 0.85rem;
-        font-size: 0.82rem;
+        border-radius: 0 8px 8px 0;
+        font-size: 0.8rem;
+        line-height: 1.45;
     }
 
-    /* Skills Pill */
-    .skill-chip {
+    /* Tag kỹ năng */
+    .skill-tag {
+        background: #F1F5F9;
+        color: #334155;
+        border-radius: 6px;
+        font-size: 0.74rem;
+        font-weight: 500;
+        padding: 0.2rem 0.5rem;
+        display: inline-flex;
+        align-items: center;
+    }
+    .skill-tag-match {
         background: #ECFDF5;
         color: #065F46;
         border: 1px solid #A7F3D0;
-        border-radius: 6px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        padding: 0.2rem 0.55rem;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
     }
 
-    /* Filter buttons toolbar */
-    .filter-tab-btn {
+    /* Nút lọc */
+    .filter-btn {
         font-size: 0.82rem;
         font-weight: 500;
         padding: 0.35rem 0.75rem;
@@ -121,19 +120,18 @@
         transition: all 0.15s ease;
         cursor: pointer;
     }
-    .filter-tab-btn:hover {
+    .filter-btn:hover {
         background: #F8FAFC;
         color: #0F172A;
-        border-color: #CBD5E1;
     }
-    .filter-tab-btn.active {
+    .filter-btn.active {
         background: #0F172A;
         color: #FFFFFF;
         border-color: #0F172A;
     }
 
-    /* View Switcher Button */
-    .view-toggle-btn {
+    /* Nút đổi dạng xem Grid / List */
+    .view-btn {
         width: 32px;
         height: 32px;
         padding: 0;
@@ -145,22 +143,25 @@
         background: #FFFFFF;
         color: #64748B;
     }
-    .view-toggle-btn.active {
+    .view-btn.active {
         background: #059669;
         border-color: #059669;
         color: #FFFFFF;
     }
 
-    /* List mode styling for suggestion-card */
-    .suggestion-list-mode .suggestion-col {
+    /* Chế độ danh sách (List View) */
+    .suggestion-list-mode .candidate-col {
         width: 100% !important;
         max-width: 100% !important;
+    }
+    .suggestion-list-mode .candidate-card {
+        padding: 1rem 1.25rem;
     }
 </style>
 
 <div class="container-fluid px-3 px-lg-4 py-3">
 
-    <!-- ── Breadcrumb & Top Actions ── -->
+    <!-- Thanh điều hướng và tác vụ nhanh -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0" style="font-size: 0.82rem;">
@@ -178,7 +179,6 @@
             </ol>
         </nav>
         <div class="d-flex align-items-center gap-2 flex-wrap">
-            <!-- Job Switcher Dropdown -->
             @if (Model.AvailableOpenJobs.Any())
             {
                 <div class="dropdown">
@@ -188,7 +188,7 @@
                         <span>Đổi vị trí khác (@Model.AvailableOpenJobs.Count)</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow border mt-1 py-1" style="border-radius: 10px; min-width: 300px; max-height: 380px; overflow-y: auto; font-size: 0.82rem;">
-                        <li class="dropdown-header text-uppercase text-muted fw-bold" style="font-size: 0.7rem;">Chọn vị trí tuyển dụng để đối chiếu:</li>
+                        <li class="dropdown-header text-uppercase text-muted fw-bold" style="font-size: 0.7rem;">Chọn vị trí tuyển dụng:</li>
                         @foreach (var j in Model.AvailableOpenJobs)
                         {
                             <li>
@@ -202,7 +202,7 @@
                 </div>
             }
 
-            <a href="/Jobs/@Model.JobId" target="_blank" class="btn btn-sm btn-white border rounded-3 d-inline-flex align-items-center gap-1.5 text-secondary shadow-none" style="font-size: 0.82rem; border-color: #CBD5E1; height: 32px;" title="Xem bản mô tả công việc (JD) đầy đủ">
+            <a href="/Jobs/@Model.JobId" class="btn btn-sm btn-white border rounded-3 d-inline-flex align-items-center gap-1.5 text-secondary shadow-none" style="font-size: 0.82rem; border-color: #CBD5E1; height: 32px;" title="Xem mô tả công việc">
                 <i class="bi bi-file-earmark-text text-primary"></i>
                 <span class="d-none d-sm-inline">Xem JD tin tuyển dụng</span>
             </a>
@@ -213,77 +213,70 @@
         </div>
     </div>
 
-
-
-    <!-- ── Hero Banner: Job Context & Matching Stats ── -->
-    <div class="suggestion-hero-card p-4 mb-4">
-        <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-4">
+    <!-- Khối thông tin vị trí tuyển dụng & chỉ số đề xuất -->
+    <div class="suggestion-header-card p-3 p-md-4 mb-3.5">
+        <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3">
             <div class="flex-grow-1">
-                <!-- Meta tags row -->
+                <!-- Nhãn phòng ban & mã tin -->
                 <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
                     <span class="badge font-monospace px-2.5 py-1 text-white fw-bold" style="background: #0F172A; border-radius: 6px; font-size: 0.75rem;">
-                        <i class="bi bi-hash"></i>@Model.JobCode
+                        @Model.JobCode
                     </span>
                     <span class="badge px-2.5 py-1 fw-semibold text-secondary" style="background: #F1F5F9; border-radius: 6px; font-size: 0.75rem; border: 1px solid #E2E8F0;">
                         <i class="bi bi-building me-1"></i>@Model.DepartmentName
                     </span>
                     <span class="badge px-2.5 py-1 fw-semibold" style="background: #EEF2FF; color: #4F46E5; border: 1px solid #C7D2FE; border-radius: 6px; font-size: 0.75rem;">
-                        <i class="bi bi-stars me-1"></i>Gợi ý thông minh
+                        <i class="bi bi-stars me-1"></i>Gợi ý tự động
                     </span>
                 </div>
 
-                <!-- Main Job Title -->
-                <h3 class="fw-bold text-dark mb-1.5" style="letter-spacing: -0.02em; font-size: 1.45rem;">
+                <!-- Tên vị trí tuyển dụng -->
+                <h4 class="fw-bold text-dark mb-1" style="letter-spacing: -0.01em;">
                     @Model.JobTitle
-                </h3>
+                </h4>
 
-                <!-- Subtitle / Context description -->
-                <p class="text-muted mb-0" style="font-size: 0.84rem; line-height: 1.5; max-width: 760px;">
-                    Hệ thống tự động rà soát hồ sơ trong Kho tiềm năng dựa trên chức danh chuyên môn, từ khóa công nghệ, kết quả đánh giá phỏng vấn và thành tích ở các đợt tuyển dụng trước.
+                <p class="text-muted mb-0 small" style="line-height: 1.45; max-width: 720px;">
+                    Hệ thống rà soát từ kho ứng viên dựa trên chức danh chuyên môn, từ khóa kỹ năng và lịch sử đánh giá phỏng vấn.
                 </p>
 
-                <!-- Key Skills Required (Only clean, real skills) -->
+                <!-- Kỹ năng yêu cầu -->
                 @if (Model.SkillsRequired != null && Model.SkillsRequired.Any())
                 {
-                    <div class="d-flex align-items-center gap-1.5 flex-wrap mt-3 pt-2.5" style="border-top: 1px solid #F1F5F9;">
-                        <span class="text-muted fw-semibold me-1" style="font-size: 0.78rem;">
-                            <i class="bi bi-tag text-success me-1"></i>Kỹ năng trọng tâm:
-                        </span>
+                    <div class="d-flex align-items-center gap-1.5 flex-wrap mt-2.5">
+                        <span class="text-muted small fw-medium me-1">Kỹ năng trọng tâm:</span>
                         @foreach (var sk in Model.SkillsRequired)
                         {
-                            <span class="badge" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.6rem; border-radius: 6px;">
-                                @sk
-                            </span>
+                            <span class="skill-tag skill-tag-match">@sk</span>
                         }
                     </div>
                 }
             </div>
 
-            <!-- KPI Metric Tiles -->
-            <div class="d-flex align-items-center gap-3 flex-shrink-0">
-                <div class="metric-tile metric-tile-emerald text-center">
-                    <div class="h2 fw-bold text-success mb-0 font-monospace">@Model.Suggestions.Count</div>
-                    <div class="text-xs fw-semibold text-success mt-0.5" style="letter-spacing: 0.01em;">Ứng viên đề xuất</div>
+            <!-- Chỉ số nhanh -->
+            <div class="d-flex align-items-center gap-2.5 flex-shrink-0">
+                <div class="kpi-chip">
+                    <span class="h4 fw-bold text-success mb-0 font-monospace">@Model.Suggestions.Count</span>
+                    <span class="small text-muted fw-semibold">Ứng viên đề xuất</span>
                 </div>
-                <div class="metric-tile metric-tile-blue text-center">
-                    <div class="h2 fw-bold text-primary mb-0 font-monospace">@highMatchCount</div>
-                    <div class="text-xs fw-semibold text-primary mt-0.5" style="letter-spacing: 0.01em;">Độ khớp cao (≥75%)</div>
+                <div class="kpi-chip">
+                    <span class="h4 fw-bold text-primary mb-0 font-monospace">@highMatchCount</span>
+                    <span class="small text-muted fw-semibold">Khớp cao (≥75%)</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ── Suggestions List / Empty State ── -->
+    <!-- Danh sách ứng viên đề xuất -->
     @if (!Model.Suggestions.Any())
     {
-        <div class="card border-0 shadow-sm bg-white text-center py-5" style="border: 1px solid #E2E8F0 !important; border-radius: 14px;">
+        <div class="card border-0 shadow-sm bg-white text-center py-5" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
             <div class="py-4">
                 <div class="d-inline-flex p-3 rounded-circle mb-3" style="background:#F1F5F9; color:#64748B;">
                     <i class="bi bi-person-x fs-1"></i>
                 </div>
-                <h5 class="fw-bold text-dark mb-1.5">Chưa tìm thấy ứng viên tiềm năng phù hợp với vị trí này</h5>
-                <p class="text-muted small mb-3" style="max-width: 480px; margin: 0 auto; line-height: 1.5;">
-                    Hiện trong Kho chưa có hồ sơ có kỹ năng hoặc chức danh tương thích với <strong>@Model.JobTitle</strong>. Bạn có thể mở rộng tìm kiếm thủ công trong toàn bộ kho lưu trữ.
+                <h5 class="fw-bold text-dark mb-1">Chưa có ứng viên tiềm năng phù hợp với vị trí này</h5>
+                <p class="text-muted small mb-3" style="max-width: 460px; margin: 0 auto;">
+                    Hiện trong Kho chưa có hồ sơ có kỹ năng hoặc chức danh tương thích với <strong>@Model.JobTitle</strong>.
                 </p>
                 <a href="/kho-tiem-nang" class="btn btn-sm btn-primary rounded-3 px-3.5 py-2 shadow-sm fw-semibold" style="background: #059669; border-color: #059669; font-size: 0.84rem;">
                     <i class="bi bi-collection me-1.5"></i>Xem tất cả ứng viên trong Kho
@@ -293,33 +286,33 @@
     }
     else
     {
-        <!-- ── Filter & Search Toolbar ── -->
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2.5 mb-3.5 p-2.5 rounded-3 bg-white border" style="border-color: #E2E8F0 !important;">
+        <!-- Thanh bộ lọc & tìm kiếm nhanh -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3 p-2 rounded-3 bg-white border" style="border-color: #E2E8F0 !important;">
             <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                <button type="button" class="filter-tab-btn active" onclick="applyCandidateFilter('ALL', this)">
+                <button type="button" class="filter-btn active" onclick="applyCandidateFilter('ALL', this)">
                     Tất cả <span class="badge rounded-pill bg-light text-dark ms-1">@Model.Suggestions.Count</span>
                 </button>
                 @if (highMatchCount > 0)
                 {
-                    <button type="button" class="filter-tab-btn" onclick="applyCandidateFilter('HIGH', this)">
+                    <button type="button" class="filter-btn" onclick="applyCandidateFilter('HIGH', this)">
                         <i class="bi bi-shield-check text-success me-1"></i>Khớp cao ≥75% <span class="badge rounded-pill bg-light text-dark ms-1">@highMatchCount</span>
                     </button>
                 }
                 @if (medMatchCount > 0)
                 {
-                    <button type="button" class="filter-tab-btn" onclick="applyCandidateFilter('MEDIUM', this)">
+                    <button type="button" class="filter-btn" onclick="applyCandidateFilter('MEDIUM', this)">
                         <i class="bi bi-check-circle text-primary me-1"></i>Khớp khá 50-74% <span class="badge rounded-pill bg-light text-dark ms-1">@medMatchCount</span>
                     </button>
                 }
                 @if (lowMatchCount > 0)
                 {
-                    <button type="button" class="filter-tab-btn" onclick="applyCandidateFilter('LOW', this)">
+                    <button type="button" class="filter-btn" onclick="applyCandidateFilter('LOW', this)">
                         Tiềm năng <span class="badge rounded-pill bg-light text-dark ms-1">@lowMatchCount</span>
                     </button>
                 }
                 @if (notAppliedCount > 0)
                 {
-                    <button type="button" class="filter-tab-btn" onclick="applyCandidateFilter('NOT_APPLIED', this)">
+                    <button type="button" class="filter-btn" onclick="applyCandidateFilter('NOT_APPLIED', this)">
                         <i class="bi bi-send text-secondary me-1"></i>Chưa mời <span class="badge rounded-pill bg-light text-dark ms-1">@notAppliedCount</span>
                     </button>
                 }
@@ -328,58 +321,55 @@
             <div class="d-flex align-items-center gap-2 w-100 w-md-auto justify-content-between justify-content-md-end">
                 <div class="input-group input-group-sm" style="max-width: 240px;">
                     <span class="input-group-text bg-light border-end-0" style="border-color: #E2E8F0;"><i class="bi bi-search text-muted"></i></span>
-                    <input type="text" id="candidateSearchInput" class="form-control border-start-0" placeholder="Lọc nhanh tên, kỹ năng..." style="border-color: #E2E8F0; font-size: 0.8rem;" oninput="onSearchCandidates(this.value)" autocomplete="off" />
+                    <input type="text" id="candidateSearchInput" class="form-control border-start-0" placeholder="Lọc tên, kỹ năng..." style="border-color: #E2E8F0; font-size: 0.8rem;" oninput="onSearchCandidates(this.value)" autocomplete="off" />
                 </div>
 
-                <!-- View Mode Toggle: Grid (2 cols) vs List (1 col) -->
+                <!-- Chuyển chế độ Lưới / Danh sách -->
                 <div class="btn-group btn-group-sm" role="group" aria-label="Chế độ xem">
-                    <button type="button" class="view-toggle-btn active" id="btnViewGrid" onclick="setSuggestionViewMode('grid')" title="Dạng lưới 2 cột">
+                    <button type="button" class="view-btn active" id="btnViewGrid" onclick="setSuggestionViewMode('grid')" title="Dạng lưới 2 cột">
                         <i class="bi bi-grid-fill"></i>
                     </button>
-                    <button type="button" class="view-toggle-btn" id="btnViewList" onclick="setSuggestionViewMode('list')" title="Dạng danh sách 1 cột">
+                    <button type="button" class="view-btn" id="btnViewList" onclick="setSuggestionViewMode('list')" title="Dạng danh sách 1 cột">
                         <i class="bi bi-view-stacked"></i>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- ── Candidates Cards Container ── -->
+        <!-- Khung danh sách thẻ ứng viên -->
         <div class="row g-3" id="suggestionCardsContainer">
             @foreach (var s in Model.Suggestions)
             {
                 var isHigh = s.MatchScore >= 75;
                 var isMedium = s.MatchScore >= 50 && s.MatchScore < 75;
-                var pillClass = isHigh ? "match-pill-high" : (isMedium ? "match-pill-medium" : "match-pill-low");
+                var badgeClass = isHigh ? "match-badge-high" : (isMedium ? "match-badge-medium" : "match-badge-low");
                 var scoreCategory = isHigh ? "HIGH" : (isMedium ? "MEDIUM" : "LOW");
                 var ratingVal = s.Rating ?? 0;
 
-                <div class="col-12 col-lg-6 suggestion-col candidate-item-card"
+                <div class="col-12 col-lg-6 candidate-col candidate-item-card"
                      data-score="@s.MatchScore"
                      data-category="@scoreCategory"
                      data-applied="@(s.HasAppliedToThisJob ? "true" : "false")"
                      data-name="@s.CandidateFullName.ToLower()"
                      data-title="@s.TargetJobTitle.ToLower()"
                      data-skills="@string.Join(" ", s.MatchingSkills).ToLower()">
-                    <div class="suggestion-card p-3.5 h-100 d-flex flex-column justify-content-between">
+                    <div class="candidate-card h-100 d-flex flex-column justify-content-between">
                         <div>
-                            <!-- Header: Avatar, Name, Title & Match Score Badge -->
-                            <div class="d-flex align-items-start justify-content-between gap-3 mb-2.5">
-                                <div class="d-flex align-items-start gap-3">
-                                    <!-- Avatar -->
-                                    <div class="d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0 shadow-sm"
-                                         style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); font-size: 1.15rem;">
+                            <!-- Đầu thẻ: Avatar, Tên, Đánh giá & Điểm khớp -->
+                            <div class="d-flex align-items-start justify-content-between gap-2.5 mb-2.5">
+                                <div class="d-flex align-items-start gap-2.5">
+                                    <div class="d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                                         style="width: 42px; height: 42px; border-radius: 10px; background: #0F172A; font-size: 1.1rem;">
                                         @(s.CandidateFullName.Length > 0 ? s.CandidateFullName.Substring(0, 1).ToUpper() : "?")
                                     </div>
-
-                                    <!-- Candidate Info -->
                                     <div>
                                         <div class="d-flex align-items-center gap-2 flex-wrap">
-                                            <a href="/ung-vien/@s.CandidateId" class="fw-bold text-dark text-decoration-none hover-primary mb-0" style="font-size: 1.02rem;" target="_blank">
+                                            <a href="/ung-vien/@s.CandidateId" class="fw-bold text-dark text-decoration-none hover-primary mb-0" style="font-size: 0.98rem;">
                                                 @s.CandidateFullName
                                             </a>
                                             @if (ratingVal > 0)
                                             {
-                                                <div class="d-inline-flex align-items-center text-warning" title="Đánh giá năng lực: @ratingVal/5 sao">
+                                                <div class="d-inline-flex align-items-center text-warning" title="Đánh giá: @ratingVal/5 sao">
                                                     @for (int i = 1; i <= 5; i++)
                                                     {
                                                         <i class="bi @(i <= ratingVal ? "bi-star-fill text-warning" : "bi-star text-muted opacity-25")" style="font-size: 0.72rem;"></i>
@@ -388,105 +378,83 @@
                                             }
                                         </div>
 
-                                        <div class="text-muted mt-0.5" style="font-size: 0.8rem;">
-                                            <i class="bi bi-briefcase text-secondary opacity-75 me-1"></i>Chức danh quan tâm: <strong class="text-dark">@s.TargetJobTitle</strong>
+                                        <div class="text-muted small mt-0.5">
+                                            <span>Chức danh quan tâm:</span> <strong class="text-dark">@s.TargetJobTitle</strong>
                                         </div>
 
-                                        <!-- Contact details -->
-                                        <div class="d-flex align-items-center gap-3 text-muted mt-1 font-monospace flex-wrap" style="font-size: 0.76rem;">
-                                            <span><i class="bi bi-envelope me-1 text-secondary opacity-75"></i>@s.CandidateEmail</span>
+                                        <!-- Thông tin liên hệ -->
+                                        <div class="d-flex align-items-center gap-3 text-muted mt-1.5 font-monospace flex-wrap" style="font-size: 0.78rem;">
+                                            <span>
+                                                <i class="bi bi-envelope me-1 text-slate-400"></i><!--email_off-->@s.CandidateEmail<!--/email_off-->
+                                            </span>
                                             @if (!string.IsNullOrWhiteSpace(s.CandidatePhone))
                                             {
-                                                <span><i class="bi bi-telephone me-1 text-secondary opacity-75"></i>@s.CandidatePhone</span>
+                                                <span><i class="bi bi-telephone me-1 text-slate-400"></i>@s.CandidatePhone</span>
                                             }
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Match Score Pill -->
-                                <div class="text-end flex-shrink-0">
-                                    <div class="match-score-pill @pillClass">
+                                <!-- Huy hiệu độ khớp & thanh tiến độ -->
+                                <div class="text-end flex-shrink-0" style="min-width: 90px;">
+                                    <div class="match-badge @badgeClass">
                                         <i class="bi @(isHigh ? "bi-shield-check" : (isMedium ? "bi-check-circle" : "bi-stars"))"></i>
                                         <span>@s.MatchScore%</span>
                                     </div>
-                                    <div class="text-muted fw-semibold mt-0.5" style="font-size: 0.72rem;">
-                                        @(isHigh ? "Rất phù hợp" : (isMedium ? "Khớp khá" : "Tiềm năng"))
+                                    <div class="progress mt-1.5" style="height: 5px; background: #E2E8F0; border-radius: 4px;">
+                                        <div class="progress-bar @(isHigh ? "bg-success" : (isMedium ? "bg-primary" : "bg-secondary"))"
+                                             role="progressbar" style="width: @s.MatchScore%; border-radius: 4px;"></div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Match Highlights Breakdown -->
-                            <div class="p-2.5 rounded-3 mb-2.5" style="background: #F8FAFC; border: 1px solid #E2E8F0;">
-                                <div class="d-flex align-items-center justify-content-between mb-1.5">
-                                    <span class="fw-bold text-uppercase text-secondary tracking-wider" style="font-size: 0.72rem; letter-spacing: 0.04em;">
-                                        <i class="bi bi-stars text-primary me-1"></i>Điểm tương đồng chính
-                                    </span>
-                                    @if (!string.IsNullOrWhiteSpace(s.LastStageReached))
-                                    {
-                                        <span class="badge bg-light text-secondary border fw-normal" style="font-size: 0.7rem; border-radius: 5px;">
-                                            Vòng trước: @s.LastStageReached
-                                        </span>
-                                    }
+                            <!-- Điểm nổi bật & Kỹ năng khớp -->
+                            <div class="mt-2.5 pt-2 border-top">
+                                <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-1.5">
+                                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                        @if (!string.IsNullOrWhiteSpace(s.LastStageReached))
+                                        {
+                                            <span class="badge bg-light text-secondary border fw-normal" style="font-size: 0.72rem; border-radius: 6px;">
+                                                Vòng trước: @s.LastStageReached
+                                            </span>
+                                        }
+                                        @foreach (var msk in s.MatchingSkills)
+                                        {
+                                            <span class="skill-tag skill-tag-match">
+                                                <i class="bi bi-check me-0.5"></i>@msk
+                                            </span>
+                                        }
+                                    </div>
                                 </div>
-                                <div class="d-flex flex-column gap-1">
-                                    @foreach (var reason in s.MatchReasons)
-                                    {
-                                        <div class="d-flex align-items-start gap-2" style="font-size: 0.79rem; color: #334155; line-height: 1.45;">
-                                            <i class="bi bi-check2 text-success fw-bold flex-shrink-0 mt-0.5" style="font-size: 0.85rem;"></i>
-                                            <span>@reason</span>
-                                        </div>
-                                    }
-                                </div>
+
+                                <!-- Ghi nhận từ đợt tuyển dụng trước -->
+                                @if (!string.IsNullOrWhiteSpace(s.Reason))
+                                {
+                                    <div class="candidate-note-quote mt-2">
+                                        <i class="bi bi-chat-quote text-success me-1"></i>
+                                        <span class="fst-italic text-secondary">"@s.Reason"</span>
+                                    </div>
+                                }
                             </div>
-
-                            <!-- Recruiter Note from previous recruitment -->
-                            @if (!string.IsNullOrWhiteSpace(s.Reason))
-                            {
-                                <div class="recruiter-note-box mb-2.5">
-                                    <div class="d-flex align-items-center gap-1.5 text-muted fw-semibold mb-1" style="font-size: 0.72rem;">
-                                        <i class="bi bi-chat-left-quote-fill text-success" style="font-size: 0.75rem;"></i>
-                                        <span>Ghi nhận từ vòng tuyển dụng trước:</span>
-                                    </div>
-                                    <div class="text-dark fst-italic" style="font-size: 0.79rem; line-height: 1.45;">
-                                        "@s.Reason"
-                                    </div>
-                                </div>
-                            }
-
-                            <!-- Matching Skills Tags -->
-                            @if (s.MatchingSkills.Any())
-                            {
-                                <div class="d-flex align-items-center gap-1.5 flex-wrap mb-2">
-                                    <span class="text-muted fw-semibold" style="font-size: 0.74rem;">
-                                        <i class="bi bi-tag text-secondary opacity-75 me-1"></i>Kỹ năng khớp:
-                                    </span>
-                                    @foreach (var msk in s.MatchingSkills)
-                                    {
-                                        <span class="skill-chip">
-                                            <i class="bi bi-check me-0.5"></i>@msk
-                                        </span>
-                                    }
-                                </div>
-                            }
                         </div>
 
-                        <!-- Card Footer Actions -->
-                        <div class="pt-2.5 mt-3 d-flex align-items-center justify-content-between gap-2" style="border-top: 1px solid #F1F5F9;">
-                            <a href="/ung-vien/@s.CandidateId" class="btn btn-sm btn-outline-secondary rounded-3 d-inline-flex align-items-center gap-1.5 shadow-none" style="font-size: 0.78rem; padding: 0.35rem 0.75rem;" target="_blank">
+                        <!-- Chân thẻ: Nút tác vụ -->
+                        <div class="pt-2.5 mt-3 d-flex align-items-center justify-content-between gap-2 border-top">
+                            <a href="/ung-vien/@s.CandidateId" class="btn btn-sm btn-outline-secondary rounded-2 d-inline-flex align-items-center gap-1.5" style="font-size: 0.78rem; padding: 0.35rem 0.75rem;">
                                 <i class="bi bi-file-earmark-person"></i>
                                 <span>Xem hồ sơ</span>
                             </a>
 
                             @if (s.HasAppliedToThisJob)
                             {
-                                <span class="badge d-inline-flex align-items-center gap-1.5" style="background:#F1F5F9; color:#475569; border:1px solid #CBD5E1; border-radius: 8px; padding: 0.45rem 0.8rem; font-size: 0.76rem; font-weight: 600;">
+                                <span class="badge d-inline-flex align-items-center gap-1.5" style="background:#F1F5F9; color:#475569; border:1px solid #CBD5E1; border-radius: 6px; padding: 0.4rem 0.75rem; font-size: 0.76rem; font-weight: 600;">
                                     <i class="bi bi-check2-circle text-success"></i>Đã nộp vị trí này
                                 </span>
                             }
                             else
                             {
-                                <button type="button" class="btn btn-sm btn-success rounded-3 d-inline-flex align-items-center gap-1.5 shadow-sm text-white fw-semibold"
-                                        style="background: #059669; border-color: #059669; font-size: 0.8rem; padding: 0.38rem 0.9rem;"
+                                <button type="button" class="btn btn-sm btn-success rounded-2 d-inline-flex align-items-center gap-1.5 shadow-sm text-white fw-semibold"
+                                        style="background: #059669; border-color: #059669; font-size: 0.8rem; padding: 0.35rem 0.85rem;"
                                         onclick="openQuickInviteModal('@s.TalentPoolId', '@s.CandidateFullName', '@Model.JobId', '@Model.JobTitle')">
                                     <i class="bi bi-send-fill"></i>
                                     <span>Mời ứng tuyển</span>
@@ -498,13 +466,13 @@
             }
         </div>
 
-        <!-- Empty search/filter state -->
-        <div id="noMatchFilterState" class="card border-0 shadow-sm bg-white text-center py-5 d-none mt-3" style="border: 1px solid #E2E8F0 !important; border-radius: 14px;">
+        <!-- Trạng thái không tìm thấy theo bộ lọc -->
+        <div id="noMatchFilterState" class="card border-0 shadow-sm bg-white text-center py-5 d-none mt-3" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
             <div class="py-3">
                 <i class="bi bi-funnel text-muted fs-2 mb-2 d-block"></i>
-                <h6 class="fw-bold text-dark mb-1">Không tìm thấy ứng viên phù hợp với bộ lọc</h6>
-                <p class="text-muted small mb-2">Vui lòng điều chỉnh lại từ khóa tìm kiếm hoặc chọn bộ lọc "Tất cả".</p>
-                <button type="button" class="btn btn-sm btn-outline-secondary rounded-3" onclick="resetCandidateFilters()">
+                <h6 class="fw-bold text-dark mb-1">Không tìm thấy ứng viên phù hợp</h6>
+                <p class="text-muted small mb-2">Thử điều chỉnh lại từ khóa hoặc chọn bộ lọc "Tất cả".</p>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-2" onclick="resetCandidateFilters()">
                     Đặt lại bộ lọc
                 </button>
             </div>
@@ -513,34 +481,32 @@
 
 </div>
 
-<!-- ══════════════════════════════════════════════════════════════ -->
-<!-- MODAL: XÁC NHẬN MỜI ỨNG TUYỂN VỊ TRÍ NÀY                    -->
-<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- Modal xác nhận mời ứng tuyển -->
 <div class="modal fade" id="quickInviteModal" tabindex="-1" aria-labelledby="quickInviteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
-            <div class="modal-header border-0 pb-0 pt-3.5 px-4">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header border-0 pb-0 pt-3 px-4">
                 <div class="d-flex align-items-center gap-2.5">
-                    <div class="d-flex align-items-center justify-content-center text-success rounded-3" style="width: 38px; height: 38px; background: #ECFDF5; border: 1px solid #A7F3D0;">
+                    <div class="d-flex align-items-center justify-content-center text-success rounded-2" style="width: 36px; height: 36px; background: #ECFDF5; border: 1px solid #A7F3D0;">
                         <i class="bi bi-send-fill fs-5"></i>
                     </div>
                     <div>
                         <h5 class="modal-title fw-bold text-dark mb-0" id="quickInviteModalLabel" style="font-size: 1.05rem;">
                             Mời Ứng Viên Vào Vị Trí Tuyển Dụng
                         </h5>
-                        <small class="text-muted" style="font-size: 0.78rem;">Tự động tạo hồ sơ ứng tuyển mới từ kho tiềm năng</small>
+                        <small class="text-muted" style="font-size: 0.78rem;">Tự động tạo hồ sơ ứng tuyển từ kho tiềm năng</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <form action="/kho-tiem-nang/moi-ung-tuyen" method="post">
+            <form action="/kho-tiem-nang/moi-ung-tuyen" method="post" id="quickInviteForm" onsubmit="handleQuickInviteSubmit(event)">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="TalentPoolId" id="quickInviteTalentPoolId" />
                 <input type="hidden" name="JobPostingId" id="quickInviteJobPostingId" />
 
                 <div class="modal-body py-3 px-4">
-                    <div class="p-3 mb-3 rounded-3" style="background:#F8FAFC; border:1px solid #E2E8F0;">
+                    <div class="p-3 mb-3 rounded-2" style="background:#F8FAFC; border:1px solid #E2E8F0;">
                         <div class="d-flex justify-content-between mb-1.5">
                             <span class="text-muted small">Ứng viên:</span>
                             <span class="fw-bold text-dark small" id="quickInviteCandidateName">-</span>
@@ -553,7 +519,7 @@
 
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-dark">Ghi chú tiếp cận / trao đổi</label>
-                        <textarea name="Note" class="form-control form-control-sm rounded-3" rows="3" placeholder="Ghi chú về việc liên hệ, ứng viên đã được hệ thống gợi ý từ kho tiềm năng..."></textarea>
+                        <textarea name="Note" class="form-control form-control-sm rounded-2" rows="3" placeholder="Ghi chú về việc liên hệ, ứng viên đã được hệ thống gợi ý từ kho tiềm năng..."></textarea>
                     </div>
 
                     <div class="form-check form-switch p-0 d-flex align-items-center gap-2">
@@ -564,9 +530,9 @@
                     </div>
                 </div>
 
-                <div class="modal-footer border-0 pt-0 px-4 pb-3.5">
-                    <button type="button" class="btn btn-sm btn-light border rounded-3 px-3" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-sm btn-success rounded-3 px-4 text-white fw-semibold shadow-sm" style="background: #059669; border-color: #059669;">
+                <div class="modal-footer border-0 pt-0 px-4 pb-3">
+                    <button type="button" class="btn btn-sm btn-light border rounded-2 px-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" id="btnSubmitQuickInvite" class="btn btn-sm btn-success rounded-2 px-4 text-white fw-semibold shadow-sm" style="background: #059669; border-color: #059669;">
                         <i class="bi bi-send-fill me-1"></i>Xác nhận & Mời
                     </button>
                 </div>
@@ -577,43 +543,57 @@
 
 @section Scripts {
 <script>
-    let currentFilterCategory = 'ALL';
-    let currentSearchText = '';
+    var currentFilterCategory = window.currentFilterCategory || 'ALL';
+    var currentSearchText = window.currentSearchText || '';
 
-    function openQuickInviteModal(talentPoolId, candidateName, jobId, jobTitle) {
-        document.getElementById('quickInviteTalentPoolId').value = talentPoolId;
-        document.getElementById('quickInviteJobPostingId').value = jobId;
-        document.getElementById('quickInviteCandidateName').textContent = candidateName;
-        document.getElementById('quickInviteJobTitle').textContent = jobTitle;
-        new bootstrap.Modal(document.getElementById('quickInviteModal')).show();
-    }
+    window.openQuickInviteModal = function (talentPoolId, candidateName, jobId, jobTitle) {
+        var poolIdEl = document.getElementById('quickInviteTalentPoolId');
+        var jobIdEl = document.getElementById('quickInviteJobPostingId');
+        var nameEl = document.getElementById('quickInviteCandidateName');
+        var titleEl = document.getElementById('quickInviteJobTitle');
+        var modalEl = document.getElementById('quickInviteModal');
 
-    function applyCandidateFilter(category, btnElement) {
+        if (poolIdEl) poolIdEl.value = talentPoolId;
+        if (jobIdEl) jobIdEl.value = jobId;
+        if (nameEl) nameEl.textContent = candidateName;
+        if (titleEl) titleEl.textContent = jobTitle;
+
+        if (modalEl && typeof bootstrap !== 'undefined') {
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+    };
+
+    window.handleQuickInviteSubmit = function (e) {
+        if (window.atsInstant && typeof window.atsInstant.clearCache === 'function') {
+            window.atsInstant.clearCache();
+        }
+    };
+
+    window.applyCandidateFilter = function (category, btnElement) {
         currentFilterCategory = category || 'ALL';
-        const buttons = document.querySelectorAll('.filter-tab-btn');
-        buttons.forEach(b => b.classList.remove('active'));
+        var buttons = document.querySelectorAll('.filter-btn');
+        buttons.forEach(function (b) { b.classList.remove('active'); });
         if (btnElement) btnElement.classList.add('active');
         renderFilteredCards();
-    }
+    };
 
-    function onSearchCandidates(query) {
+    window.onSearchCandidates = function (query) {
         currentSearchText = (query || '').trim().toLowerCase();
         renderFilteredCards();
-    }
+    };
 
     function renderFilteredCards() {
-        const cards = document.querySelectorAll('.candidate-item-card');
-        let visibleCount = 0;
+        var cards = document.querySelectorAll('.candidate-item-card');
+        var visibleCount = 0;
 
-        cards.forEach(card => {
-            const category = card.getAttribute('data-category');
-            const isApplied = card.getAttribute('data-applied') === 'true';
-            const name = card.getAttribute('data-name') || '';
-            const title = card.getAttribute('data-title') || '';
-            const skills = card.getAttribute('data-skills') || '';
+        cards.forEach(function (card) {
+            var category = card.getAttribute('data-category');
+            var isApplied = card.getAttribute('data-applied') === 'true';
+            var name = card.getAttribute('data-name') || '';
+            var title = card.getAttribute('data-title') || '';
+            var skills = card.getAttribute('data-skills') || '';
 
-            // Category match
-            let categoryMatch = false;
+            var categoryMatch = false;
             if (currentFilterCategory === 'ALL') {
                 categoryMatch = true;
             } else if (currentFilterCategory === 'HIGH') {
@@ -626,10 +606,9 @@
                 categoryMatch = (!isApplied);
             }
 
-            // Search match
-            let searchMatch = true;
+            var searchMatch = true;
             if (currentSearchText.length > 0) {
-                const combined = `${name} ${title} ${skills}`;
+                var combined = name + ' ' + title + ' ' + skills;
                 searchMatch = combined.includes(currentSearchText);
             }
 
@@ -641,7 +620,7 @@
             }
         });
 
-        const noMatchEl = document.getElementById('noMatchFilterState');
+        var noMatchEl = document.getElementById('noMatchFilterState');
         if (noMatchEl) {
             if (visibleCount === 0) {
                 noMatchEl.classList.remove('d-none');
@@ -651,23 +630,23 @@
         }
     }
 
-    function resetCandidateFilters() {
+    window.resetCandidateFilters = function () {
         currentFilterCategory = 'ALL';
         currentSearchText = '';
-        const searchInput = document.getElementById('candidateSearchInput');
+        var searchInput = document.getElementById('candidateSearchInput');
         if (searchInput) searchInput.value = '';
-        const allBtn = document.querySelector('.filter-tab-btn');
+        var allBtn = document.querySelector('.filter-btn');
         if (allBtn) {
-            document.querySelectorAll('.filter-tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
             allBtn.classList.add('active');
         }
         renderFilteredCards();
-    }
+    };
 
-    function setSuggestionViewMode(mode) {
-        const container = document.getElementById('suggestionCardsContainer');
-        const btnGrid = document.getElementById('btnViewGrid');
-        const btnList = document.getElementById('btnViewList');
+    window.setSuggestionViewMode = function (mode) {
+        var container = document.getElementById('suggestionCardsContainer');
+        var btnGrid = document.getElementById('btnViewGrid');
+        var btnList = document.getElementById('btnViewList');
         if (!container) return;
 
         if (mode === 'list') {
@@ -679,6 +658,6 @@
             if (btnGrid) btnGrid.classList.add('active');
             if (btnList) btnList.classList.remove('active');
         }
-    }
+    };
 </script>
 }

@@ -385,6 +385,16 @@ public class TalentPoolService(
         };
     }
 
+    public async Task<Guid?> GetFirstActiveJobPostingIdAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.JobPostings
+            .AsNoTracking()
+            .Where(j => !j.IsDeleted && j.Status == JobPostingStatus.PUBLISHED)
+            .OrderByDescending(j => j.PublishedAt)
+            .Select(j => (Guid?)j.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<(bool Success, string Message, Guid? Id)> AddCandidateToPoolAsync(
         AddTalentPoolCandidateInputModel model,
         Guid currentUserId,
