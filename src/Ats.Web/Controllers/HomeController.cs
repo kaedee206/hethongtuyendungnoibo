@@ -584,7 +584,7 @@ public class HomeController : Controller
 
                 bool isOutside = o.IsOutsideBand || o.IsAboveBudget || (maxBand.HasValue && o.BaseSalary > maxBand.Value);
 
-                var pendingStep = o.Approvals.Where(a => a.Status == "PENDING").OrderBy(a => a.Level).FirstOrDefault();
+                var pendingStep = o.Approvals.Where(a => a.Status == ApprovalStatus.PENDING).OrderBy(a => a.Level).FirstOrDefault();
                 int currentLevel = pendingStep?.Level ?? 1;
                 string currentLevelDisplay = currentLevel switch
                 {
