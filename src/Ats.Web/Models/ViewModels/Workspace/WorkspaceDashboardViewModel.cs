@@ -227,6 +227,12 @@ public class PendingOfferDto
     public string CurrentLevelDisplay { get; set; } = "Cấp 1 (Trưởng phòng NS)";
     public bool CanCurrentUserApprove { get; set; } = true;
     public string? RecruiterNotes { get; set; }
+
+    // SCRUM-342: Thời hạn & Phản hồi từ ứng viên
+    public string? ExpirationDateDisplay { get; set; }
+    public bool IsExpired { get; set; }
+    public string? CandidateFeedback { get; set; }
+    public DateTimeOffset? CandidateRespondedAt { get; set; }
 }
 
 public class PipelineFunnelStageDto

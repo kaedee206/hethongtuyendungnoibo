@@ -487,11 +487,37 @@ public class EmailService : IEmailService
         string jobTitle,
         decimal baseSalary,
         DateTime? startDate,
+        string? responseUrl = null,
+        DateOnly? expirationDate = null,
+        string? workLocation = null,
+        decimal? bonusAllowance = null,
+        string? notes = null,
         CancellationToken cancellationToken = default)
     {
         var subject = $"🌟 [Chúc mừng] Thư mời nhận việc (Offer Letter) từ NoveraTech — Vị trí {jobTitle}";
         var salaryStr = $"{baseSalary:N0} VNĐ/tháng";
         var dateStr = startDate.HasValue ? startDate.Value.ToString("dd/MM/yyyy") : "Theo thỏa thuận tiếp nhận";
+        var locationStr = !string.IsNullOrWhiteSpace(workLocation) ? workLocation : "Tòa nhà Novera Tower, Cầu Giấy, Hà Nội";
+        var expirationStr = expirationDate.HasValue ? expirationDate.Value.ToString("dd/MM/yyyy") : "07 ngày kể từ ngày gửi";
+
+        var actionButtonHtml = !string.IsNullOrWhiteSpace(responseUrl) ? $@"
+                <div style=""text-align: center; margin: 32px 0 24px 0;"">
+                    <a href=""{responseUrl}"" style=""display: inline-block; background: #059669; color: #FFFFFF; font-weight: 700; font-size: 1rem; padding: 14px 36px; border-radius: 8px; text-decoration: none; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);"">
+                        👉 XEM THƯ MỜI VÀ PHẢN HỒI CHÍNH THỨC
+                    </a>
+                    <div style=""color: #DC2626; font-size: 0.85rem; font-weight: 600; margin-top: 10px;"">
+                        ⏰ Liên kết có hiệu lực đến hết ngày: <strong>{expirationStr}</strong>
+                    </div>
+                    <div style=""color: #64748B; font-size: 0.8rem; margin-top: 4px;"">
+                        (Quá thời hạn trên, đề xuất nhận việc sẽ tự động chuyển sang trạng thái Hết hạn)
+                    </div>
+                </div>" : "";
+
+        var bonusRowHtml = bonusAllowance.HasValue && bonusAllowance.Value > 0 ? $@"
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Phụ cấp & Thưởng:</td>
+                            <td style=""padding: 6px 0; color: #0F172A; font-weight: 600;"">{bonusAllowance.Value:N0} VNĐ/tháng</td>
+                        </tr>" : "";
 
         var body = $@"
         <div style=""font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden;"">
@@ -507,16 +533,25 @@ public class EmailService : IEmailService
                 <div style=""background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 18px; margin: 20px 0; font-size: 0.9rem;"">
                     <table style=""width: 100%; border-collapse: collapse;"">
                         <tr>
-                            <td style=""padding: 6px 0; color: #64748B; width: 150px;"">Chức danh bổ nhiệm:</td>
+                            <td style=""padding: 6px 0; color: #64748B; width: 160px;"">Chức danh bổ nhiệm:</td>
                             <td style=""padding: 6px 0; color: #0F172A; font-weight: 700;"">{jobTitle}</td>
                         </tr>
                         <tr>
                             <td style=""padding: 6px 0; color: #64748B;"">Mức lương cơ bản:</td>
                             <td style=""padding: 6px 0; color: #059669; font-weight: 800; font-size: 1.05rem;"">{salaryStr}</td>
                         </tr>
+                        {bonusRowHtml}
                         <tr>
                             <td style=""padding: 6px 0; color: #64748B;"">Ngày bắt đầu dự kiến:</td>
                             <td style=""padding: 6px 0; color: #0F172A; font-weight: 600;"">{dateStr}</td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Địa điểm làm việc:</td>
+                            <td style=""padding: 6px 0; color: #0F172A; font-weight: 500;"">{locationStr}</td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Thời hạn phản hồi:</td>
+                            <td style=""padding: 6px 0; color: #DC2626; font-weight: 700;"">Hết ngày {expirationStr}</td>
                         </tr>
                         <tr>
                             <td style=""padding: 6px 0; color: #64748B;"">Gói phúc lợi đi kèm:</td>
@@ -524,6 +559,12 @@ public class EmailService : IEmailService
                         </tr>
                     </table>
                 </div>
+
+                {actionButtonHtml}
+
+                <p style=""color: #475569; font-size: 0.9rem; line-height: 1.6;"">
+                    Để xem đầy đủ điều khoản và trả lời chính thức thay vì trao đổi miệng, vui lòng nhấn vào nút phản hồi phía trên hoặc truy cập liên kết trong thời hạn quy định.
+                </p>
                 <p style=""color: #475569; font-size: 0.9rem; line-height: 1.6;"">
                     Chúng tôi tin tưởng rằng với tài năng và tâm huyết của bạn, bạn sẽ cùng NoveraTech tạo nên những bước tiến công nghệ đột phá.
                 </p>

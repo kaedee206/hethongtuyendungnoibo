@@ -67,6 +67,11 @@ public interface IEmailService
         string jobTitle,
         decimal baseSalary,
         DateTime? startDate,
+        string? responseUrl = null,
+        DateOnly? expirationDate = null,
+        string? workLocation = null,
+        decimal? bonusAllowance = null,
+        string? notes = null,
         CancellationToken cancellationToken = default);
 
     Task<bool> SendRejectionLetterAsync(
