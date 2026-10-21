@@ -253,6 +253,8 @@ public class CandidateOfferService(
         var offer = await _dbContext.JobOffers
             .Include(o => o.Application)
                 .ThenInclude(a => a.Candidate)
+            .Include(o => o.Application)
+                .ThenInclude(a => a.JobPosting)
             .Include(o => o.CreatedByRecruiter)
             .FirstOrDefaultAsync(o => o.Id == offerId && !o.IsDeleted, cancellationToken);
 
@@ -354,6 +356,46 @@ public class CandidateOfferService(
 
             _logger.LogInformation("Ứng viên {CandName} đã CHẤP NHẬN offer {OfferId}. Pipeline cập nhật sang HIRED.", candName, offer.Id);
 
+            // Gửi email xác nhận cho ứng viên và thông báo cho recruiter
+            try
+            {
+                var jobTitle = !string.IsNullOrWhiteSpace(offer.JobTitle)
+                    ? offer.JobTitle
+                    : (offer.Application.JobPosting?.Title ?? "Chuyên viên");
+
+                var startDate = offer.ProposedJoinDate.HasValue
+                    ? offer.ProposedJoinDate.Value.ToDateTime(TimeOnly.MinValue)
+                    : (DateTime?)null;
+
+                await _emailService.SendOfferResponseConfirmationAsync(
+                    candidateEmail: cand.Email,
+                    candidateName: candName,
+                    jobTitle: jobTitle,
+                    isAccepted: true,
+                    feedback: feedbackClean,
+                    startDate: startDate,
+                    baseSalary: offer.BaseSalary,
+                    cancellationToken: CancellationToken.None);
+
+                if (offer.CreatedByRecruiter != null && !string.IsNullOrWhiteSpace(offer.CreatedByRecruiter.Email))
+                {
+                    await _emailService.SendRecruiterOfferResponseAlertAsync(
+                        recruiterEmail: offer.CreatedByRecruiter.Email,
+                        recruiterName: offer.CreatedByRecruiter.FullName ?? "Recruiter",
+                        candidateName: candName,
+                        candidateEmail: cand.Email,
+                        jobTitle: jobTitle,
+                        isAccepted: true,
+                        feedback: feedbackClean,
+                        respondedAt: offer.CandidateRespondedAt,
+                        cancellationToken: CancellationToken.None);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gửi email xác nhận đồng ý nhận việc tới {CandidateEmail}", cand.Email);
+            }
+
             return CandidateOfferResponseResult.Ok(
                 $"🎉 Chúc mừng bạn đã hoàn tất chấp nhận Thư mời nhận việc vị trí {offer.JobTitle} tại NoveraTech! " +
                 $"Bộ phận nhân sự sẽ liên hệ với bạn để hoàn thiện các thủ tục tiếp nhận.",
@@ -402,6 +444,40 @@ public class CandidateOfferService(
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Ứng viên {CandName} đã TỪ CHỐI offer {OfferId}. Pipeline cập nhật sang REJECTED.", candName, offer.Id);
+
+            // Gửi email xác nhận từ chối cho ứng viên và thông báo cho recruiter
+            try
+            {
+                var jobTitle = !string.IsNullOrWhiteSpace(offer.JobTitle)
+                    ? offer.JobTitle
+                    : (offer.Application.JobPosting?.Title ?? "Chuyên viên");
+
+                await _emailService.SendOfferResponseConfirmationAsync(
+                    candidateEmail: cand.Email,
+                    candidateName: candName,
+                    jobTitle: jobTitle,
+                    isAccepted: false,
+                    feedback: feedbackClean,
+                    cancellationToken: CancellationToken.None);
+
+                if (offer.CreatedByRecruiter != null && !string.IsNullOrWhiteSpace(offer.CreatedByRecruiter.Email))
+                {
+                    await _emailService.SendRecruiterOfferResponseAlertAsync(
+                        recruiterEmail: offer.CreatedByRecruiter.Email,
+                        recruiterName: offer.CreatedByRecruiter.FullName ?? "Recruiter",
+                        candidateName: candName,
+                        candidateEmail: cand.Email,
+                        jobTitle: jobTitle,
+                        isAccepted: false,
+                        feedback: feedbackClean,
+                        respondedAt: offer.CandidateRespondedAt,
+                        cancellationToken: CancellationToken.None);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gửi email xác nhận từ chối nhận việc tới {CandidateEmail}", cand.Email);
+            }
 
             return CandidateOfferResponseResult.Ok(
                 $"Cảm ơn bạn đã phản hồi thư mời nhận việc. Chúng tôi đã ghi nhận quyết định của bạn và chúc bạn luôn thành công trên con đường sự nghiệp.",

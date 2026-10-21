@@ -287,6 +287,17 @@ public class CandidateOfferServiceTests
         interaction.Should().NotBeNull();
         interaction!.Title.Should().Contain("chấp nhận");
         interaction.Content.Should().Contain(input.Feedback);
+
+        // Assert: Đã gửi email xác nhận cho ứng viên
+        mockEmail.Verify(e => e.SendOfferResponseConfirmationAsync(
+            candidate.Email,
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            true,
+            input.Feedback,
+            It.IsAny<DateTime?>(),
+            It.IsAny<decimal?>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -328,6 +339,17 @@ public class CandidateOfferServiceTests
             .FirstOrDefaultAsync(h => h.ApplicationId == app.Id);
         stageHistory.Should().NotBeNull();
         stageHistory!.Comment.Should().Contain("TỪ CHỐI");
+
+        // Assert: Đã gửi email xác nhận từ chối cho ứng viên
+        mockEmail.Verify(e => e.SendOfferResponseConfirmationAsync(
+            candidate.Email,
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            false,
+            input.Feedback,
+            It.IsAny<DateTime?>(),
+            It.IsAny<decimal?>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

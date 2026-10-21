@@ -1,3 +1,4 @@
+using System.Text;
 using Ats.Web.Data;
 using Ats.Web.Models.DTOs;
 using Ats.Web.Models.Entities;
@@ -37,7 +38,7 @@ public class EmailService : IEmailService
             var smtpPortStr = Environment.GetEnvironmentVariable("SMTP_PORT") ?? "587";
             var smtpPort = int.TryParse(smtpPortStr, out var port) ? port : 587;
             var smtpEmail = Environment.GetEnvironmentVariable("SMTP_EMAIL") ?? "";
-            var smtpPassword = Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? "";
+            var smtpPassword = (Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? "").Trim().Replace(" ", "");
 
             if (!string.IsNullOrWhiteSpace(smtpEmail) && !string.IsNullOrWhiteSpace(smtpPassword))
             {
@@ -49,17 +50,44 @@ public class EmailService : IEmailService
                 var builder = new BodyBuilder { HtmlBody = request.Body };
                 email.Body = builder.ToMessageBody();
 
-                using var smtp = new SmtpClient();
-                // Timeout 5 giây để tránh chặn luồng web
-                smtp.Timeout = 5000;
-                await smtp.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls, cancellationToken);
-                await smtp.AuthenticateAsync(smtpEmail, smtpPassword, cancellationToken);
-                await smtp.SendAsync(email, cancellationToken);
-                await smtp.DisconnectAsync(true, cancellationToken);
+                var maxAttempts = 2;
+                Exception? lastEx = null;
 
-                log.Status = "SENT";
-                log.SentAt = DateTimeOffset.UtcNow;
-                _logger.LogInformation("Đã gửi email thành công tới {ToEmail} (Tiêu đề: {Subject})", request.ToEmail, request.Subject);
+                for (var attempt = 1; attempt <= maxAttempts; attempt++)
+                {
+                    try
+                    {
+                        using var smtp = new SmtpClient();
+                        smtp.Timeout = 15000; // 15 giây
+                        await smtp.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls, cancellationToken);
+                        await smtp.AuthenticateAsync(smtpEmail, smtpPassword, cancellationToken);
+                        await smtp.SendAsync(email, cancellationToken);
+                        await smtp.DisconnectAsync(true, cancellationToken);
+
+                        log.Status = "SENT";
+                        log.SentAt = DateTimeOffset.UtcNow;
+                        log.ErrorMessage = null;
+                        _logger.LogInformation("Đã gửi email thành công tới {ToEmail} (Tiêu đề: {Subject})", request.ToEmail, request.Subject);
+                        break;
+                    }
+                    catch (Exception ex) when (attempt < maxAttempts)
+                    {
+                        lastEx = ex;
+                        _logger.LogWarning("Thử gửi email lần {Attempt} tới {ToEmail} gặp lỗi ({Error}). Sẽ thử lại sau 1s...", attempt, request.ToEmail, ex.Message);
+                        await Task.Delay(1000, CancellationToken.None);
+                    }
+                    catch (Exception ex)
+                    {
+                        lastEx = ex;
+                    }
+                }
+
+                if (log.Status != "SENT" && lastEx != null)
+                {
+                    log.Status = "FAILED";
+                    log.ErrorMessage = lastEx.Message;
+                    _logger.LogError(lastEx, "Gửi email tới {ToEmail} thất bại sau {MaxAttempts} lần thử", request.ToEmail, maxAttempts);
+                }
             }
             else
             {
@@ -80,8 +108,8 @@ public class EmailService : IEmailService
             {
                 using var scope = _scopeFactory.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                await db.EmailLogs.AddAsync(log, cancellationToken);
-                await db.SaveChangesAsync(cancellationToken);
+                await db.EmailLogs.AddAsync(log, CancellationToken.None);
+                await db.SaveChangesAsync(CancellationToken.None);
             }
             catch (Exception dbEx)
             {
@@ -849,5 +877,177 @@ public class EmailService : IEmailService
         </div>";
 
         return await SendEmailAsync(new SendEmailRequestDto(recipientEmail, subject, body), cancellationToken);
+    }
+
+    public async Task<bool> SendOfferResponseConfirmationAsync(
+        string candidateEmail,
+        string candidateName,
+        string jobTitle,
+        bool isAccepted,
+        string? feedback = null,
+        DateTime? startDate = null,
+        decimal? baseSalary = null,
+        CancellationToken cancellationToken = default)
+    {
+        var subject = isAccepted
+            ? $"🎉 [Xác nhận thành công] Bạn đã đồng ý nhận việc vị trí {jobTitle} — NoveraTech"
+            : $"[NoveraTech Careers] Xác nhận phản hồi đề xuất nhận việc vị trí {jobTitle}";
+
+        var headerBg = isAccepted
+            ? "background: linear-gradient(135deg, #059669 0%, #047857 100%);"
+            : "background: linear-gradient(135deg, #475569 0%, #334155 100%);";
+
+        var headerTitle = isAccepted
+            ? "XÁC NHẬN ĐỒNG Ý NHẬN VIỆC THÀNH CÔNG"
+            : "XÁC NHẬN PHẢN HỒI THƯ MỜI NHẬN VIỆC";
+
+        var statusBadge = isAccepted
+            ? "<span style=\"display: inline-block; background: #DCFCE7; color: #166534; font-weight: 700; padding: 4px 12px; border-radius: 9999px; font-size: 0.85rem;\">✓ ĐỒNG Ý NHẬN VIỆC (ACCEPTED)</span>"
+            : "<span style=\"display: inline-block; background: #FEE2E2; color: #991B1B; font-weight: 700; padding: 4px 12px; border-radius: 9999px; font-size: 0.85rem;\">✕ TỪ CHỐI NHẬN VIỆC (REJECTED)</span>";
+
+        var detailRows = new StringBuilder();
+        detailRows.Append($@"<tr>
+            <td style=""padding: 8px 0; color: #64748B; width: 150px;"">Vị trí:</td>
+            <td style=""padding: 8px 0; color: #0F172A; font-weight: 700;"">{jobTitle}</td>
+        </tr>");
+
+        if (baseSalary.HasValue && baseSalary.Value > 0)
+        {
+            detailRows.Append($@"<tr>
+                <td style=""padding: 8px 0; color: #64748B;"">Mức lương thỏa thuận:</td>
+                <td style=""padding: 8px 0; color: #059669; font-weight: 700;"">{baseSalary.Value:N0} VNĐ/tháng</td>
+            </tr>");
+        }
+
+        if (startDate.HasValue)
+        {
+            detailRows.Append($@"<tr>
+                <td style=""padding: 8px 0; color: #64748B;"">Ngày nhận việc dự kiến:</td>
+                <td style=""padding: 8px 0; color: #0F172A; font-weight: 600;"">{startDate.Value:dd/MM/yyyy}</td>
+            </tr>");
+        }
+
+        if (!string.IsNullOrWhiteSpace(feedback))
+        {
+            detailRows.Append($@"<tr>
+                <td style=""padding: 8px 0; color: #64748B;"">Ý kiến / Ghi chú của bạn:</td>
+                <td style=""padding: 8px 0; color: #0F172A; font-style: italic;"">{feedback}</td>
+            </tr>");
+        }
+
+        var nextStepMessage = isAccepted
+            ? @"<div style=""background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 0.88rem; color: #14532D; line-height: 1.6;"">
+                <div style=""font-weight: 700; margin-bottom: 4px;"">🚀 Các bước tiếp theo:</div>
+                Bộ phận Nhân sự & Tiếp nhận nhân tài (HR & Onboarding) sẽ sớm liên hệ trực tiếp với bạn qua email và số điện thoại để hướng dẫn hoàn thiện hồ sơ nhận việc, chuẩn bị trang thiết bị làm việc và gửi lịch trình cho ngày đầu tiên gia nhập NoveraTech.
+               </div>"
+            : @"<div style=""background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 0.88rem; color: #475569; line-height: 1.6;"">
+                Chúng tôi chân thành cảm ơn thời gian và sự quan tâm của bạn dành cho NoveraTech. Dữ liệu hồ sơ của bạn sẽ được lưu giữ trong Mạng lưới Nhân tài NoveraTech để kết nối cho các cơ hội phù hợp hơn trong tương lai.
+               </div>";
+
+        var body = $@"
+        <div style=""font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden;"">
+            <div style=""{headerBg} padding: 24px; text-align: center;"">
+                <h2 style=""color: #FFFFFF; margin: 0; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em;"">{headerTitle}</h2>
+                <div style=""color: #E2E8F0; font-size: 0.82rem; margin-top: 4px;"">NOVERATECH CAREERS & TALENT ACQUISITION</div>
+            </div>
+            <div style=""padding: 28px 24px;"">
+                <p style=""font-size: 1rem; color: #0F172A; margin-top: 0;"">Xin chào <strong>{candidateName}</strong>,</p>
+                <p style=""color: #475569; font-size: 0.92rem; line-height: 1.6;"">
+                    Hệ thống Tuyển dụng NoveraTech trân trọng thông báo đã tiếp nhận và ghi nhận thành công phản hồi chính thức của bạn đối với Thư mời nhận việc:
+                </p>
+
+                <div style=""background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px 20px; margin: 20px 0; font-size: 0.9rem;"">
+                    <div style=""margin-bottom: 12px;"">
+                        <strong>Quyết định phản hồi:</strong> {statusBadge}
+                    </div>
+                    <table style=""width: 100%; border-collapse: collapse; border-top: 1px solid #E2E8F0; padding-top: 8px;"">
+                        {detailRows}
+                    </table>
+                </div>
+
+                {nextStepMessage}
+
+                <p style=""color: #475569; font-size: 0.88rem; line-height: 1.6;"">
+                    Nếu bạn có bất kỳ câu hỏi nào cần giải đáp thêm, đừng ngần ngại trả lời trực tiếp email này hoặc liên hệ hotline Tuyển dụng NoveraTech.
+                </p>
+            </div>
+            <div style=""background: #F1F5F9; padding: 14px; text-align: center; font-size: 0.75rem; color: #64748B; border-top: 1px solid #E2E8F0;"">
+                Tập đoàn Công nghệ NoveraTech · Phòng Quản trị & Phát triển Nhân tài
+            </div>
+        </div>";
+
+        return await SendEmailAsync(new SendEmailRequestDto(candidateEmail, subject, body), cancellationToken);
+    }
+
+    public async Task<bool> SendRecruiterOfferResponseAlertAsync(
+        string recruiterEmail,
+        string recruiterName,
+        string candidateName,
+        string candidateEmail,
+        string jobTitle,
+        bool isAccepted,
+        string? feedback = null,
+        DateTimeOffset? respondedAt = null,
+        CancellationToken cancellationToken = default)
+    {
+        var subject = isAccepted
+            ? $"🔔 [Ứng viên ĐỒNG Ý Offer] {candidateName} đã chấp nhận đề xuất vị trí {jobTitle}"
+            : $"⚠️ [Ứng viên TỪ CHỐI Offer] {candidateName} đã từ chối đề xuất vị trí {jobTitle}";
+
+        var respTimeStr = respondedAt.HasValue
+            ? respondedAt.Value.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm:ss dd/MM/yyyy")
+            : DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm:ss dd/MM/yyyy");
+
+        var statusBadge = isAccepted
+            ? "<span style=\"display: inline-block; background: #DCFCE7; color: #166534; font-weight: 700; padding: 4px 12px; border-radius: 9999px; font-size: 0.85rem;\">✓ ĐÃ CHẤP NHẬN (HIRED)</span>"
+            : "<span style=\"display: inline-block; background: #FEE2E2; color: #991B1B; font-weight: 700; padding: 4px 12px; border-radius: 9999px; font-size: 0.85rem;\">✕ ĐÃ TỪ CHỐI (REJECTED)</span>";
+
+        var body = $@"
+        <div style=""font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden;"">
+            <div style=""background: #0F172A; padding: 22px; text-align: center;"">
+                <h2 style=""color: #38BDF8; margin: 0; font-size: 1.25rem; font-weight: 700;"">THÔNG BÁO PHẢN HỒI THƯ MỜI NHẬN VIỆC</h2>
+                <div style=""color: #94A3B8; font-size: 0.82rem; margin-top: 4px;"">NOVERATECH RECRUITMENT PIPELINE AUTOMATION</div>
+            </div>
+            <div style=""padding: 26px 22px;"">
+                <p style=""font-size: 0.95rem; color: #0F172A; margin-top: 0;"">Kính gửi <strong>{recruiterName}</strong>,</p>
+                <p style=""color: #475569; font-size: 0.9rem; line-height: 1.6;"">
+                    Hệ thống xin thông báo ứng viên <strong>{candidateName}</strong> vừa phản hồi chính thức về Thư mời nhận việc (Job Offer):
+                </p>
+
+                <div style=""background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin: 18px 0; font-size: 0.88rem;"">
+                    <table style=""width: 100%; border-collapse: collapse;"">
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B; width: 140px;"">Ứng viên:</td>
+                            <td style=""padding: 6px 0; color: #0F172A; font-weight: 700;"">{candidateName} ({candidateEmail})</td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Vị trí:</td>
+                            <td style=""padding: 6px 0; color: #0F172A; font-weight: 600;"">{jobTitle}</td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Quyết định:</td>
+                            <td style=""padding: 6px 0;"">{statusBadge}</td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Thời điểm phản hồi:</td>
+                            <td style=""padding: 6px 0; color: #0F172A;"">{respTimeStr}</td>
+                        </tr>
+                        <tr>
+                            <td style=""padding: 6px 0; color: #64748B;"">Ý kiến của ứng viên:</td>
+                            <td style=""padding: 6px 0; color: #0F172A; font-style: italic;"">{(string.IsNullOrWhiteSpace(feedback) ? "Không có ghi chú thêm." : feedback)}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style=""background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 12px 16px; font-size: 0.85rem; color: #1E40AF;"">
+                    💡 <strong>Cập nhật tự động:</strong> Trạng thái hồ sơ trên Pipeline tuyển dụng đã được đồng bộ tự động sang <strong>{(isAccepted ? "HIRED (Tuyển dụng thành công)" : "REJECTED")}</strong>.
+                </div>
+            </div>
+            <div style=""background: #F1F5F9; padding: 14px; text-align: center; font-size: 0.75rem; color: #64748B; border-top: 1px solid #E2E8F0;"">
+                NoveraTech Careers · ATS Automation Center
+            </div>
+        </div>";
+
+        return await SendEmailAsync(new SendEmailRequestDto(recruiterEmail, subject, body), cancellationToken);
     }
 }

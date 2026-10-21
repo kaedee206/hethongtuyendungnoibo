@@ -976,6 +976,12 @@ public static class DatabaseSeeder
             await context.Candidates.AddAsync(candidateHieu);
             await context.SaveChangesAsync();
         }
+        else
+        {
+            candidateHieu.FirstName = "Hiếu";
+            candidateHieu.LastName = "Nguyễn Đức";
+            await context.SaveChangesAsync();
+        }
 
         var appHieu = await context.Applications.FirstOrDefaultAsync(a => a.CandidateId == candidateHieu.Id && a.JobPostingId == dotnetJob.Id);
         if (appHieu == null)
@@ -1026,15 +1032,13 @@ public static class DatabaseSeeder
         }
         else
         {
-            if (string.IsNullOrEmpty(offerHieu.ResponseToken))
-            {
-                offerHieu.ResponseToken = "demo-offer-token-duchieu-2026";
-            }
-            if (offerHieu.Status == OfferStatus.DRAFT || offerHieu.Status == OfferStatus.PENDING_APPROVAL)
-            {
-                offerHieu.Status = OfferStatus.SENT_TO_CANDIDATE;
-                offerHieu.ExpirationDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(7));
-            }
+            offerHieu.ResponseToken = "demo-offer-token-duchieu-2026";
+            offerHieu.Status = OfferStatus.SENT_TO_CANDIDATE;
+            offerHieu.ExpirationDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(7));
+            offerHieu.CandidateRespondedAt = null;
+            offerHieu.CandidateFeedback = null;
+            appHieu.Status = ApplicationStatus.IN_PROCESS;
+            appHieu.CurrentStageId = stage5.Id;
             await context.SaveChangesAsync();
         }
 

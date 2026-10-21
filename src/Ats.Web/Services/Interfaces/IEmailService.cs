@@ -119,4 +119,25 @@ public interface IEmailService
         DateTimeOffset scheduledStartTime,
         string cancellationReason,
         CancellationToken cancellationToken = default);
+
+    Task<bool> SendOfferResponseConfirmationAsync(
+        string candidateEmail,
+        string candidateName,
+        string jobTitle,
+        bool isAccepted,
+        string? feedback = null,
+        DateTime? startDate = null,
+        decimal? baseSalary = null,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> SendRecruiterOfferResponseAlertAsync(
+        string recruiterEmail,
+        string recruiterName,
+        string candidateName,
+        string candidateEmail,
+        string jobTitle,
+        bool isAccepted,
+        string? feedback = null,
+        DateTimeOffset? respondedAt = null,
+        CancellationToken cancellationToken = default);
 }
