@@ -280,37 +280,6 @@
                                     <div id="@collapseId" class="accordion-collapse collapse @(isFirst ? "show" : "")" aria-labelledby="heading_@collapseId">
                                         <div class="accordion-body p-3 p-lg-4" style="background: #FAFAFA; border-top: 1px solid #E2E8F0;">
                                             
-                                            <div class="d-flex flex-wrap align-items-center gap-2 mb-3 p-2 bg-white border rounded-2">
-                                                <span class="small fw-semibold text-dark">Đánh giá sàng lọc:</span>
-                                                <div class="d-inline-flex align-items-center gap-1" role="group" aria-label="Đánh giá hồ sơ từ 1 đến 5 sao">
-                                                    @for (var rating = 1; rating <= 5; rating++)
-                                                    {
-                                                        var selected = app.Rating.HasValue && app.Rating.Value >= rating;
-                                                        <button type="button"
-                                                                class="btn btn-link p-0 border-0 application-rating-star @(selected ? "text-warning" : "text-secondary")"
-                                                                data-application-id="@app.ApplicationId"
-                                                                data-rating="@rating"
-                                                                aria-label="Đánh giá @rating trên 5 sao"
-                                                                aria-pressed="@(app.Rating == rating)"
-                                                                onclick="saveApplicationRating(this)"
-                                                                title="@rating/5">
-                                                            <i class="bi @(selected ? "bi-star-fill" : "bi-star")"></i>
-                                                        </button>
-                                                    }
-                                                </div>
-                                                <span class="small text-muted" id="rating-value-@app.ApplicationId">
-                                                    @(app.Rating.HasValue ? $"{app.Rating}/5" : "Chưa đánh giá")
-                                                </span>
-                                                <button type="button" class="btn btn-sm btn-link text-muted p-0 ms-1"
-                                                        id="rating-clear-@app.ApplicationId"
-                                                        data-application-id="@app.ApplicationId" data-rating=""
-                                                        onclick="saveApplicationRating(this)" aria-label="Xóa đánh giá hiện tại"
-                                                        style="@(app.Rating.HasValue ? "" : "display:none")">
-                                                    Xóa
-                                                </button>
-                                                <span class="small text-danger d-none" id="rating-error-@app.ApplicationId" role="status"></span>
-                                            </div>
-
                                             <!-- Key Roles Info -->
                                             <div class="row g-2 mb-3">
                                                 <div class="col-12 col-md-6">
@@ -595,13 +564,12 @@
                             Gợi ý nhãn phổ biến (bấm để thêm nhanh):
                         </small>
                         <div class="d-flex flex-wrap gap-1.5">
-                            @if (!Model.AvailableTags.Any())
+                            @foreach (var sug in Model.SuggestedTags)
                             {
-                                <span class="small text-muted">Danh mục nhãn chưa có mục nào.</span>
-                            }
-                            else
-                            {
-                                <span class="small text-muted">Chọn nhãn đã khai báo trong danh mục bên dưới.</span>
+                                <button type="button" class="btn btn-sm btn-light border rounded-2 py-0.5 px-2 text-dark" 
+                                        style="font-size: 0.74rem;" onclick="addQuickTag('@sug')">
+                                    + @sug
+                                </button>
                             }
                         </div>
                     </div>
@@ -612,13 +580,7 @@
                         <input type="hidden" name="CandidateId" value="@Model.CandidateId" />
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light border-end-0"><i class="bi bi-tag text-muted"></i></span>
-                            <select id="candidateTagCatalogSelect" name="CatalogId" class="form-select" required>
-                                <option value="">Chọn nhãn...</option>
-                                @foreach (var availableTag in Model.AvailableTags)
-                                {
-                                    <option value="@availableTag.Id">@availableTag.Name</option>
-                                }
-                            </select>
+                            <input type="text" id="customTagNameInput" name="TagName" class="form-control" placeholder="Nhập tên nhãn mới..." required />
                             <button type="submit" id="btnAddTagSubmit" class="btn btn-success text-white rounded-end-2 px-3 fw-semibold">
                                 <i class="bi bi-plus-lg me-1"></i>Thêm nhãn
                             </button>
@@ -660,7 +622,7 @@
                                     <option value="FLAG">Lưu ý rủi ro / Cân nhắc</option>
                                 </select>
                             </div>
-                            <textarea name="Content" id="noteContentInput" class="form-control rounded-2 mb-2" rows="2" maxlength="4000"
+                            <textarea name="Content" id="noteContentInput" class="form-control rounded-2 mb-2" rows="2" 
                                       placeholder="Nhập chi tiết trao đổi, thái độ, mức kỳ vọng, hoặc nhận định..." required style="font-size: 0.82rem;"></textarea>
                             <div class="d-flex justify-content-end">
                                 <button type="submit" id="btnAddNoteSubmit" class="btn btn-sm btn-primary rounded-2 text-white px-3 fw-semibold">
@@ -996,13 +958,24 @@
         }
     }
 
-    // 2. Xử lý gắn nhãn từ danh mục
+    // 2. Thêm nhãn nhanh từ danh mục gợi ý
+    function addQuickTag(tagName) {
+        const input = document.getElementById('customTagNameInput');
+        if (input) {
+            input.value = tagName;
+            document.getElementById('addTagForm').requestSubmit();
+        }
+    }
+
+    // 3. Xử lý Thêm Nhãn qua AJAX
     async function handleTagFormSubmit(e) {
         e.preventDefault();
+        const input = document.getElementById('customTagNameInput');
+        const tagName = input.value.trim();
+        if (!tagName) return;
+
         const form = document.getElementById('addTagForm');
         const formData = new FormData(form);
-        const select = document.getElementById('candidateTagCatalogSelect');
-        if (!select.value) return;
         const submitBtn = document.getElementById('btnAddTagSubmit');
         submitBtn.disabled = true;
 
@@ -1022,40 +995,36 @@
                 const noTags = document.getElementById('noTagsText');
                 if (noTags) noTags.remove();
 
-                if (!document.getElementById(`tag-pill-${tag.id}`)) {
-                    const chip = document.createElement('span');
-                    chip.id = `tag-pill-${tag.id}`;
-                    chip.className = 'candidate-tag-chip rounded-2 px-2.5 py-1 text-white d-inline-flex align-items-center gap-1.5 shadow-xs';
-                    chip.style.background = tag.colorCode || '#059669';
-                    chip.style.fontSize = '0.78rem';
-                    chip.style.fontWeight = '500';
-                    const icon = document.createElement('i');
-                    icon.className = 'bi bi-tag-fill';
-                    const label = document.createElement('span');
-                    label.textContent = tag.tagName;
-                    const removeButton = document.createElement('button');
-                    removeButton.type = 'button';
-                    removeButton.className = 'btn btn-link text-white p-0 ms-1';
-                    removeButton.title = 'Gỡ nhãn này';
-                    removeButton.setAttribute('aria-label', `Gỡ nhãn ${tag.tagName}`);
-                    removeButton.innerHTML = '<i class="bi bi-x-circle-fill" aria-hidden="true"></i>';
-                    removeButton.addEventListener('click', () => removeCandidateTag(tag.id));
-                    chip.append(icon, label, removeButton);
-                    container.appendChild(chip);
-                    updateTagsCount(1);
-                }
-                select.value = '';
+                // Tạo chip nhãn mới
+                const span = document.createElement('span');
+                span.id = `tag-pill-${tag.id}`;
+                span.className = 'candidate-tag-chip rounded-2 px-2.5 py-1 text-white d-inline-flex align-items-center gap-1.5 shadow-xs';
+                span.style.background = tag.colorCode || '#059669';
+                span.style.fontSize = '0.78rem';
+                span.style.fontWeight = '500';
+                span.innerHTML = `
+                    <i class="bi bi-tag-fill" style="font-size:0.65rem;"></i>
+                    <span>${tag.tagName}</span>
+                    <button type="button" class="btn btn-link text-white p-0 ms-1" style="line-height:1; opacity:0.85;" onclick="removeCandidateTag('${tag.id}')" title="Gỡ nhãn này">
+                        <i class="bi bi-x-circle-fill" style="font-size:0.75rem;"></i>
+                    </button>
+                `;
+                container.appendChild(span);
+                input.value = '';
+
+                // Cập nhật đếm
+                updateTagsCount(1);
             } else {
                 alert(result.message || 'Lỗi khi gắn nhãn.');
             }
         } catch (err) {
-            alert('Không thể lưu nhãn do lỗi kết nối.');
+            alert('Lỗi kết nối: ' + err.message);
         } finally {
             submitBtn.disabled = false;
         }
     }
 
-    // 3. Xóa nhãn qua AJAX
+    // 4. Xóa Nhãn qua AJAX
     async function removeCandidateTag(tagId) {
         if (!confirm('Bạn có chắc chắn muốn gỡ nhãn này?')) return;
 
@@ -1093,54 +1062,6 @@
         }
     }
 
-    // 4. Lưu điểm sàng lọc theo hồ sơ ứng tuyển
-    async function saveApplicationRating(button) {
-        const applicationId = button.dataset.applicationId;
-        const rating = button.dataset.rating;
-        const formData = new FormData();
-        formData.append('rating', rating);
-        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-        if (token) formData.append('__RequestVerificationToken', token);
-
-        const controls = document.querySelectorAll(`[data-application-id="${applicationId}"][data-rating]`);
-        controls.forEach(control => control.disabled = true);
-        const status = document.getElementById(`rating-error-${applicationId}`);
-        status.classList.add('d-none');
-
-        try {
-            const response = await fetch(`/ung-vien/applications/${applicationId}/rating`, {
-                method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                body: formData
-            });
-            const result = await response.json();
-            if (!response.ok || !result.success) {
-                throw new Error(result.message || 'Không thể lưu đánh giá.');
-            }
-
-            const currentRating = result.rating || 0;
-            document.querySelectorAll(`.application-rating-star[data-application-id="${applicationId}"]`).forEach(star => {
-                const isSelected = Number(star.dataset.rating) <= currentRating;
-                star.classList.toggle('text-warning', isSelected);
-                star.classList.toggle('text-secondary', !isSelected);
-                star.querySelector('i').className = `bi ${isSelected ? 'bi-star-fill' : 'bi-star'}`;
-                star.setAttribute('aria-pressed', String(Number(star.dataset.rating) === currentRating));
-            });
-            document.getElementById(`rating-value-${applicationId}`).textContent =
-                currentRating ? `${currentRating}/5` : 'Chưa đánh giá';
-            document.getElementById(`rating-clear-${applicationId}`).style.display = currentRating ? '' : 'none';
-            status.textContent = result.message;
-            status.classList.remove('d-none', 'text-danger');
-            status.classList.add('text-success');
-        } catch (err) {
-            status.textContent = err.message || 'Không thể lưu đánh giá.';
-            status.classList.remove('d-none', 'text-success');
-            status.classList.add('text-danger');
-        } finally {
-            controls.forEach(control => control.disabled = false);
-        }
-    }
-
     // 5. Xử lý Thêm Ghi Chú qua AJAX
     async function handleNoteFormSubmit(e) {
         e.preventDefault();
@@ -1170,43 +1091,21 @@
                 noteDiv.id = `note-item-${note.id}`;
                 noteDiv.className = 'p-3 bg-white border rounded-2 shadow-xs';
                 noteDiv.style.borderColor = '#E2E8F0';
-                const header = document.createElement('div');
-                header.className = 'd-flex justify-content-between align-items-start mb-1.5';
-                const identity = document.createElement('div');
-                identity.className = 'd-flex align-items-center gap-1.5';
-                const author = document.createElement('span');
-                author.className = 'fw-bold text-dark';
-                author.style.fontSize = '0.82rem';
-                author.textContent = note.authorName;
-                const type = document.createElement('span');
-                type.className = `badge ${note.noteTypeClass} rounded-2`;
-                type.style.fontSize = '0.68rem';
-                type.textContent = note.noteTypeBadge;
-                identity.append(author, type);
-
-                const actions = document.createElement('div');
-                actions.className = 'd-flex align-items-center gap-2';
-                const createdAt = document.createElement('span');
-                createdAt.className = 'text-muted font-monospace';
-                createdAt.style.fontSize = '0.72rem';
-                createdAt.textContent = note.formattedCreatedAt;
-                const deleteButton = document.createElement('button');
-                deleteButton.type = 'button';
-                deleteButton.className = 'btn btn-link p-0 text-danger';
-                deleteButton.title = 'Xóa ghi chú này';
-                deleteButton.setAttribute('aria-label', 'Xóa ghi chú này');
-                deleteButton.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
-                deleteButton.addEventListener('click', () => deleteCandidateNote(note.id));
-                actions.append(createdAt, deleteButton);
-                header.append(identity, actions);
-
-                const contentElement = document.createElement('p');
-                contentElement.className = 'mb-0 text-secondary';
-                contentElement.style.fontSize = '0.82rem';
-                contentElement.style.lineHeight = '1.5';
-                contentElement.style.whiteSpace = 'pre-line';
-                contentElement.textContent = note.content;
-                noteDiv.append(header, contentElement);
+                noteDiv.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start mb-1.5">
+                        <div class="d-flex align-items-center gap-1.5">
+                            <span class="fw-bold text-dark" style="font-size: 0.82rem;">${note.authorName}</span>
+                            <span class="badge ${note.noteTypeClass} rounded-2" style="font-size: 0.68rem;">${note.noteTypeBadge}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-muted font-monospace" style="font-size: 0.72rem;">${note.formattedCreatedAt}</span>
+                            <button type="button" class="btn btn-link p-0 text-danger" onclick="deleteCandidateNote('${note.id}')" title="Xóa ghi chú này">
+                                <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="mb-0 text-secondary" style="font-size: 0.82rem; line-height: 1.5; white-space: pre-line;">${escapeHtml(note.content)}</p>
+                `;
                 container.prepend(noteDiv);
                 textarea.value = '';
                 updateNotesCount(1);

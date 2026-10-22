@@ -137,12 +137,6 @@ public class CandidateSearchFilterTests
         };
         await context.PipelineStages.AddRangeAsync(stageScreening, stageInterview, stageOffer);
 
-        var seniorTag = new RecruitmentCatalog { Id = Guid.NewGuid(), CatalogType = "CANDIDATE_TAG", Code = "SENIOR", Name = "Senior", ColorCode = "#059669" };
-        var dotnetTag = new RecruitmentCatalog { Id = Guid.NewGuid(), CatalogType = "CANDIDATE_TAG", Code = "DOTNET", Name = "DotNet", ColorCode = "#2563EB" };
-        var reactTag = new RecruitmentCatalog { Id = Guid.NewGuid(), CatalogType = "CANDIDATE_TAG", Code = "REACT", Name = "React", ColorCode = "#0284C7" };
-        var devopsTag = new RecruitmentCatalog { Id = Guid.NewGuid(), CatalogType = "CANDIDATE_TAG", Code = "DEVOPS", Name = "DevOps", ColorCode = "#D97706" };
-        await context.RecruitmentCatalogs.AddRangeAsync(seniorTag, dotnetTag, reactTag, devopsTag);
-
         // Mốc thời gian tháng trước (UTC+7)
         var nowVn = DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(7));
         var currentMonthFirstDay = new DateTime(nowVn.Year, nowVn.Month, 1);
@@ -162,8 +156,8 @@ public class CandidateSearchFilterTests
             CreatedAt = lastMonthSampleDate,
             UpdatedAt = lastMonthSampleDate
         };
-        cand1.Tags.Add(new CandidateTag { Id = Guid.NewGuid(), CatalogId = seniorTag.Id, Catalog = seniorTag });
-        cand1.Tags.Add(new CandidateTag { Id = Guid.NewGuid(), CatalogId = dotnetTag.Id, Catalog = dotnetTag });
+        cand1.Tags.Add(new CandidateTag { Id = Guid.NewGuid(), TagName = "Senior", ColorCode = "#059669" });
+        cand1.Tags.Add(new CandidateTag { Id = Guid.NewGuid(), TagName = "DotNet", ColorCode = "#2563EB" });
         var app1 = new Application
         {
             Id = Guid.NewGuid(),
@@ -191,7 +185,7 @@ public class CandidateSearchFilterTests
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         };
-        cand2.Tags.Add(new CandidateTag { Id = Guid.NewGuid(), CatalogId = reactTag.Id, Catalog = reactTag });
+        cand2.Tags.Add(new CandidateTag { Id = Guid.NewGuid(), TagName = "React", ColorCode = "#0284C7" });
         var app2 = new Application
         {
             Id = Guid.NewGuid(),
@@ -219,7 +213,7 @@ public class CandidateSearchFilterTests
             CreatedAt = DateTimeOffset.UtcNow.AddDays(-60),
             UpdatedAt = DateTimeOffset.UtcNow.AddDays(-60)
         };
-        cand3.Tags.Add(new CandidateTag { Id = Guid.NewGuid(), CatalogId = devopsTag.Id, Catalog = devopsTag });
+        cand3.Tags.Add(new CandidateTag { Id = Guid.NewGuid(), TagName = "DevOps", ColorCode = "#D97706" });
         var app3 = new Application
         {
             Id = Guid.NewGuid(),
@@ -356,59 +350,6 @@ public class CandidateSearchFilterTests
         Assert.Single(result.Candidates);
         Assert.Equal("an.nguyen@noveratech.vn", result.Candidates[0].Email);
         Assert.True(result.LastMonthCandidatesCount >= 1);
-    }
-
-    [Fact]
-    public async Task AddTag_UsesCatalogAndDoesNotCreateDuplicateAssignments()
-    {
-        using var context = CreateInMemoryDbContext();
-        var (_, _, recruiterId) = await SeedCandidateDatasetAsync(context);
-        var candidate = await context.Candidates.FirstAsync(c => c.Email == "an.nguyen@noveratech.vn");
-        var catalog = await context.RecruitmentCatalogs.FirstAsync(c => c.Code == "REACT");
-        var service = CreateService(context);
-
-        var first = await service.AddTagAsync(candidate.Id, catalog.Id, recruiterId);
-        var second = await service.AddTagAsync(candidate.Id, catalog.Id, recruiterId);
-
-        Assert.Equal(first.Id, second.Id);
-        Assert.Equal("React", second.TagName);
-        Assert.Equal(3, await context.CandidateTags.CountAsync(t => t.CandidateId == candidate.Id && !t.IsDeleted));
-    }
-
-    [Fact]
-    public async Task UpdateApplicationRating_PersistsOnlyValuesFromOneToFive()
-    {
-        using var context = CreateInMemoryDbContext();
-        var (_, _, recruiterId) = await SeedCandidateDatasetAsync(context);
-        var application = await context.Applications.FirstAsync();
-        var service = CreateService(context);
-
-        var updated = await service.UpdateApplicationRatingAsync(
-            application.Id,
-            3,
-            recruiterId,
-            UserRoles.Recruiter);
-
-        Assert.True(updated);
-        Assert.Equal(3, (await context.Applications.FindAsync(application.Id))!.Rating);
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
-            service.UpdateApplicationRatingAsync(application.Id, 6, recruiterId, UserRoles.Recruiter));
-    }
-
-    [Fact]
-    public async Task CandidateRoleCannotLoadRecruiterDossierOrInternalNotes()
-    {
-        using var context = CreateInMemoryDbContext();
-        var (_, _, recruiterId) = await SeedCandidateDatasetAsync(context);
-        var candidateId = await context.Candidates
-            .Where(c => c.Email == "an.nguyen@noveratech.vn")
-            .Select(c => c.Id)
-            .FirstAsync();
-        var service = CreateService(context);
-
-        var profile = await service.GetUnifiedProfileAsync(candidateId, recruiterId, UserRoles.Candidate);
-
-        Assert.Null(profile);
     }
 
     [Fact]

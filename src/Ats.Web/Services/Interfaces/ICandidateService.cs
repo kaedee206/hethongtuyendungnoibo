@@ -36,16 +36,10 @@ public interface ICandidateService
     /// Thêm nhãn (Tag / Label) phân loại ứng viên.
     /// </summary>
     Task<CandidateTagViewModel> AddTagAsync(
-        Guid candidateId,
-        Guid catalogId,
+        Guid candidateId, 
+        string tagName, 
+        string? colorCode, 
         Guid currentUserId, 
-        CancellationToken cancellationToken = default);
-
-    Task<bool> UpdateApplicationRatingAsync(
-        Guid applicationId,
-        int? rating,
-        Guid currentUserId,
-        string currentUserRole,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -53,7 +47,6 @@ public interface ICandidateService
     /// </summary>
     Task<bool> RemoveTagAsync(
         Guid tagId, 
-        Guid candidateId,
         Guid currentUserId, 
         CancellationToken cancellationToken = default);
 
@@ -72,7 +65,6 @@ public interface ICandidateService
     /// </summary>
     Task<bool> DeleteNoteAsync(
         Guid noteId, 
-        Guid candidateId,
         Guid currentUserId, 
         CancellationToken cancellationToken = default);
 

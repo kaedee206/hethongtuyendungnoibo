@@ -227,21 +227,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(t => t.CreatedByUserId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        modelBuilder.Entity<CandidateTag>()
-            .HasOne(t => t.Catalog)
-            .WithMany()
-            .HasForeignKey(t => t.CatalogId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<CandidateTag>()
-            .HasIndex(t => new { t.CandidateId, t.CatalogId })
-            .IsUnique()
-            .HasFilter("\"is_deleted\" = false");
-
-        modelBuilder.Entity<CandidateNote>()
-            .Property(n => n.Content)
-            .HasMaxLength(4000);
-
         modelBuilder.Entity<CandidateNote>()
             .HasOne(n => n.Candidate)
             .WithMany(c => c.Notes)
