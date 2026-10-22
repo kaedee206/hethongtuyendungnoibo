@@ -137,6 +137,7 @@ builder.Services.AddScoped<ICvParserService, CvParserService>();
 builder.Services.AddScoped<ICandidateExportService, CandidateExportService>();
 builder.Services.AddScoped<ICandidateEvaluationComparisonService, CandidateEvaluationComparisonService>();
 builder.Services.AddScoped<ICandidateInterviewService, CandidateInterviewService>();
+builder.Services.AddScoped<ICandidateMultiRoundEvaluationService, CandidateMultiRoundEvaluationService>();
 builder.Services.AddSingleton<IJobExpirationService, JobExpirationService>();
 builder.Services.AddHostedService<JobExpirationBackgroundService>();
 
