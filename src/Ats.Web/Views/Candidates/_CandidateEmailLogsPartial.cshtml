@@ -1,0 +1,148 @@
+@model Ats.Web.Models.ViewModels.Candidates.CandidateEmailLogListViewModel
+
+<div id="emailLogsListWrapper">
+    @Html.AntiForgeryToken()
+    <!-- Bộ lọc trạng thái (Filter Tabs) -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 pb-2 border-bottom">
+        <div class="btn-group btn-group-sm" role="group" aria-label="Bộ lọc trạng thái email">
+            <button type="button" 
+                    class="btn @(string.IsNullOrEmpty(Model.CurrentFilter) || Model.CurrentFilter == "ALL" ? "btn-primary" : "btn-outline-secondary") rounded-start-2 px-2.5 py-1" 
+                    onclick="filterEmailLogs('ALL')">
+                Tất cả <span class="badge bg-white text-dark ms-1">@Model.TotalCount</span>
+            </button>
+            <button type="button" 
+                    class="btn @(Model.CurrentFilter == "SENT" ? "btn-success" : "btn-outline-secondary") px-2.5 py-1" 
+                    onclick="filterEmailLogs('SENT')">
+                <i class="bi bi-check2 me-1"></i>Thành công <span class="badge bg-white text-dark ms-1">@Model.SentCount</span>
+            </button>
+            <button type="button" 
+                    class="btn @(Model.CurrentFilter == "QUEUED" ? "btn-warning text-dark" : "btn-outline-secondary") px-2.5 py-1" 
+                    onclick="filterEmailLogs('QUEUED')">
+                <i class="bi bi-hourglass-split me-1"></i>Đang chờ <span class="badge bg-white text-dark ms-1">@Model.QueuedCount</span>
+            </button>
+            <button type="button" 
+                    class="btn @(Model.CurrentFilter == "FAILED" ? "btn-danger" : "btn-outline-secondary") rounded-end-2 px-2.5 py-1" 
+                    onclick="filterEmailLogs('FAILED')">
+                <i class="bi bi-exclamation-triangle me-1"></i>Thất bại <span class="badge bg-white text-dark ms-1">@Model.FailedCount</span>
+            </button>
+        </div>
+
+        <button type="button" class="btn btn-sm btn-outline-secondary rounded-2 px-2 py-1" onclick="reloadEmailLogs()" title="Tải lại danh sách">
+            <i class="bi bi-arrow-clockwise"></i> Làm mới
+        </button>
+    </div>
+
+    @if (!Model.Items.Any())
+    {
+        <div class="text-center py-4 text-muted bg-light rounded-2 border" style="border-style: dashed !important;">
+            <i class="bi bi-envelope-x display-6 text-secondary mb-2 d-block"></i>
+            <p class="fw-semibold mb-1" style="font-size: 0.88rem;">Chưa có nhật ký email nào</p>
+            <small class="text-muted" style="font-size: 0.78rem;">
+                @(Model.CurrentFilter == "ALL" ? "Hệ thống chưa gửi email tự động nào cho ứng viên này." : $"Không tìm thấy email nào ở trạng thái '{Model.CurrentFilter}'.")
+            </small>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.82rem;">
+                <thead class="table-light text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <tr>
+                        <th style="width: 32%;">Mẫu thư & Tiêu đề</th>
+                        <th style="width: 22%;">Thời điểm gửi</th>
+                        <th style="width: 26%;">Trạng thái</th>
+                        <th class="text-end" style="width: 20%;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr id="email-log-row-@item.Id">
+                            <td>
+                                <div class="d-flex align-items-center gap-1.5 mb-1">
+                                    <span class="badge rounded-2 bg-light text-dark border px-1.5 py-0.5" style="font-size: 0.7rem; font-weight: 500;">
+                                        @item.EmailType
+                                    </span>
+                                </div>
+                                <div class="fw-semibold text-dark text-truncate" style="max-width: 240px;" title="@item.Subject">
+                                    @item.Subject
+                                </div>
+                                <small class="text-muted d-block" style="font-size: 0.72rem;">
+                                    <i class="bi bi-person me-1"></i>@(item.TriggeredByUserName ?? "Hệ thống tự động")
+                                </small>
+                            </td>
+                            <td>
+                                <div class="font-monospace text-dark" style="font-size: 0.78rem;">
+                                    @item.FormattedTime
+                                </div>
+                                <small class="text-muted" style="font-size: 0.7rem;">
+                                    Đến: <span class="font-monospace">@item.RecipientEmail</span>
+                                </small>
+                            </td>
+                            <td>
+                                @if (item.Status == "SENT")
+                                {
+                                    <span class="badge rounded-2 px-2 py-1" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 0.73rem;">
+                                        <i class="bi bi-check-circle-fill me-1"></i>Thành công
+                                    </span>
+                                }
+                                else if (item.Status == "QUEUED" || item.Status == "PENDING")
+                                {
+                                    <div>
+                                        <span class="badge rounded-2 px-2 py-1" style="background: #FEF3C7; color: #D97706; border: 1px solid #FDE68A; font-size: 0.73rem;">
+                                            <i class="bi bi-hourglass-split me-1"></i>Đang chờ gửi
+                                        </span>
+                                        <small class="text-muted d-block mt-0.5" style="font-size: 0.7rem;">(Trong hàng đợi ngầm)</small>
+                                    </div>
+                                }
+                                else if (item.Status == "FAILED")
+                                {
+                                    <div>
+                                        <span class="badge rounded-2 px-2 py-1" style="background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA; font-size: 0.73rem;">
+                                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Gửi thất bại
+                                        </span>
+                                        <div class="text-danger small mt-0.5 font-monospace" style="font-size: 0.7rem;">
+                                            Đã thử: @item.RetryCount/@item.MaxRetries lần
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(item.ErrorMessage))
+                                        {
+                                            <div class="text-muted text-truncate mt-0.5" style="font-size: 0.68rem; max-width: 180px;" title="@item.ErrorMessage">
+                                                Lỗi: @item.ErrorMessage
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="badge rounded-2 bg-secondary text-white px-2 py-1" style="font-size: 0.73rem;">
+                                        @item.Status
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <div class="d-inline-flex align-items-center gap-1">
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-secondary rounded-2 p-1 px-2" 
+                                            onclick="openEmailDetailModal('@item.Id')" 
+                                            title="Xem nội dung chi tiết">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    @if (item.CanResend)
+                                    {
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-danger rounded-2 p-1 px-2 btn-resend-email" 
+                                                data-log-id="@item.Id"
+                                                onclick="resendEmail('@item.Id', this)" 
+                                                title="Gửi lại thư thất bại">
+                                            <i class="bi bi-arrow-repeat"></i> Gửi lại
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

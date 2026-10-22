@@ -750,6 +750,32 @@
                 </div>
             </div>
 
+            <!-- 3. THẺ NHẬT KÝ EMAIL ĐÃ GỬI (SP-8) -->
+            <div class="card border-0 shadow-sm bg-white mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 12px; overflow: hidden;">
+                <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center" style="border-bottom: 1px solid #F1F5F9;">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="p-1.5 rounded-2" style="background:#EFF6FF; color:#2563EB;">
+                            <i class="bi bi-envelope-paper fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">Nhật Ký Email Tuyển Dụng</h6>
+                            <small class="text-muted" style="font-size: 0.75rem;">Theo dõi trạng thái gửi thư tự động qua hàng đợi (SP-8)</small>
+                        </div>
+                    </div>
+                    <span class="badge rounded-2 px-2 py-1 bg-light text-muted border" style="font-size: 0.72rem;">
+                        <i class="bi bi-clock-history me-1"></i>Hàng đợi bất đồng bộ
+                    </span>
+                </div>
+                <div class="card-body p-3 p-lg-4">
+                    <div id="candidateEmailLogsContainer">
+                        <div class="text-center py-4 text-muted">
+                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                            <span style="font-size: 0.85rem;">Đang tải nhật ký email...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
     </div>
@@ -1036,6 +1062,37 @@
 
 <!-- Container Modal Khởi Tạo Checklist (Nạp AJAX) -->
 <div id="initOnboardingModalContainer"></div>
+
+<!-- Modal Xem Chi Tiết Email (SP-8) -->
+<div class="modal fade" id="candidateEmailDetailModal" tabindex="-1" aria-labelledby="candidateEmailDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header border-bottom py-3 px-4 bg-white">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-1.5 rounded-2" style="background:#EFF6FF; color:#2563EB;">
+                        <i class="bi bi-envelope-paper fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="candidateEmailDetailModalLabel" style="font-size: 1.05rem;">
+                            Chi Tiết Email Tuyển Dụng
+                        </h5>
+                        <small class="text-muted" style="font-size: 0.78rem;">Nhật ký và nội dung thư gửi cho ứng viên</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="candidateEmailDetailModalBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+            </div>
+            <div class="modal-footer border-top py-2.5 px-4 bg-light d-flex justify-content-between">
+                <div id="emailDetailModalFooterAction"></div>
+                <button type="button" class="btn btn-sm btn-secondary rounded-2 px-3" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
 <script src="~/js/interview-conflict.js"></script>
@@ -1718,5 +1775,201 @@
             }
         }
     }
+
+    // ==========================================
+    // USER STORY SP-8: EMAIL LOGS & RESEND SCRIPTS
+    // ==========================================
+    let currentEmailFilter = 'ALL';
+
+    async function loadEmailLogs(filter = 'ALL') {
+        currentEmailFilter = filter;
+        const container = document.getElementById('candidateEmailLogsContainer');
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="text-center py-4 text-muted">
+                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                <span style="font-size: 0.85rem;">Đang tải nhật ký email...</span>
+            </div>
+        `;
+
+        try {
+            const url = `/ung-vien/${candidateId}/email-logs?partial=true&filter=${encodeURIComponent(filter)}`;
+            const response = await fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!response.ok) throw new Error('Không thể tải nhật ký email.');
+            const html = await response.text();
+            container.innerHTML = html;
+        } catch (err) {
+            container.innerHTML = `
+                <div class="alert alert-danger p-3 my-2" style="font-size: 0.82rem;">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> ${err.message || 'Lỗi khi tải nhật ký email.'}
+                    <button type="button" class="btn btn-sm btn-link p-0 text-danger ms-2 fw-semibold" onclick="loadEmailLogs('${filter}')">Thử lại</button>
+                </div>
+            `;
+        }
+    }
+
+    function filterEmailLogs(filter) {
+        loadEmailLogs(filter);
+    }
+
+    function reloadEmailLogs() {
+        loadEmailLogs(currentEmailFilter);
+    }
+
+    async function openEmailDetailModal(logId) {
+        const modalEl = document.getElementById('candidateEmailDetailModal');
+        const modalBody = document.getElementById('candidateEmailDetailModalBody');
+        const footerAction = document.getElementById('emailDetailModalFooterAction');
+        if (!modalEl || !modalBody) return;
+
+        footerAction.innerHTML = '';
+        modalBody.innerHTML = `
+            <div class="text-center py-4 text-muted">
+                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                <span>Đang tải thông tin thư...</span>
+            </div>
+        `;
+
+        const bsModal = new bootstrap.Modal(modalEl);
+        bsModal.show();
+
+        try {
+            const response = await fetch(`/ung-vien/email-logs/${logId}`);
+            if (!response.ok) throw new Error('Không thể lấy chi tiết email.');
+            const res = await response.json();
+            if (!res.success || !res.data) throw new Error(res.message || 'Không tìm thấy thông tin email.');
+
+            const d = res.data;
+            const statusBadge = d.status === 'SENT' 
+                ? '<span class="badge px-2 py-1" style="background:#ECFDF5;color:#047857;border:1px solid #A7F3D0;"><i class="bi bi-check-circle-fill me-1"></i>Thành công</span>'
+                : (d.status === 'FAILED'
+                    ? '<span class="badge px-2 py-1" style="background:#FEE2E2;color:#DC2626;border:1px solid #FECACA;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Thất bại</span>'
+                    : '<span class="badge px-2 py-1" style="background:#FEF3C7;color:#D97706;border:1px solid #FDE68A;"><i class="bi bi-hourglass-split me-1"></i>Đang chờ gửi</span>');
+
+            const formattedCreated = d.createdAt ? new Date(d.createdAt).toLocaleString('vi-VN') : '—';
+            const formattedSent = d.sentAt ? new Date(d.sentAt).toLocaleString('vi-VN') : 'Chưa gửi / Đang chờ';
+
+            modalBody.innerHTML = `
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm table-bordered align-middle mb-0" style="font-size: 0.82rem;">
+                        <tbody>
+                            <tr>
+                                <td class="text-muted bg-light" style="width: 140px;">Mẫu email:</td>
+                                <td class="fw-semibold text-dark">${d.emailType || 'Chung'}</td>
+                                <td class="text-muted bg-light" style="width: 130px;">Trạng thái:</td>
+                                <td>${statusBadge}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted bg-light">Người nhận:</td>
+                                <td class="font-monospace text-dark">${d.recipientEmail}</td>
+                                <td class="text-muted bg-light">Người kích hoạt:</td>
+                                <td>${d.triggeredByUserName || 'Hệ thống tự động'}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted bg-light">Thời điểm tạo:</td>
+                                <td class="font-monospace">${formattedCreated}</td>
+                                <td class="text-muted bg-light">Thời điểm gửi:</td>
+                                <td class="font-monospace">${formattedSent}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted bg-light">Số lần thử:</td>
+                                <td colspan="3" class="font-monospace">${d.retryCount} / ${d.maxRetries} lần</td>
+                            </tr>
+                            ${d.errorMessage ? `
+                            <tr class="table-danger">
+                                <td class="text-danger fw-semibold">Thông báo lỗi:</td>
+                                <td colspan="3" class="text-danger font-monospace" style="word-break: break-all;">${d.errorMessage}</td>
+                            </tr>` : ''}
+                            <tr>
+                                <td class="text-muted bg-light">Tiêu đề thư:</td>
+                                <td colspan="3" class="fw-bold text-dark">${d.subject}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="border rounded-2 p-3 bg-white" style="max-height: 400px; overflow-y: auto;">
+                    <div class="small fw-semibold text-muted mb-2 text-uppercase" style="letter-spacing: 0.5px;">Nội dung thư:</div>
+                    <div class="email-preview-content border-top pt-2">
+                        ${d.htmlBody || '<p class="text-muted fst-italic">Không có nội dung HTML lưu trữ.</p>'}
+                    </div>
+                </div>
+            `;
+
+            if (d.canResend) {
+                footerAction.innerHTML = `
+                    <button type="button" class="btn btn-sm btn-danger rounded-2 px-3 fw-semibold" onclick="resendEmail('${d.id}', this)">
+                        <i class="bi bi-arrow-repeat me-1"></i> Gửi lại thư này
+                    </button>
+                `;
+            }
+        } catch (err) {
+            modalBody.innerHTML = `
+                <div class="alert alert-danger p-3 my-2" style="font-size: 0.82rem;">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> ${err.message || 'Lỗi khi tải thông tin chi tiết.'}
+                </div>
+            `;
+        }
+    }
+
+    async function resendEmail(logId, btnElement) {
+        if (!confirm('Bạn có chắc chắn muốn gửi lại email này cho ứng viên không?')) {
+            return;
+        }
+
+        const originalHtml = btnElement ? btnElement.innerHTML : '';
+        if (btnElement) {
+            btnElement.disabled = true;
+            btnElement.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Đang xử lý...';
+        }
+
+        try {
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : '';
+
+            const response = await fetch(`/ung-vien/email-logs/${logId}/resend`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const res = await response.json();
+            if (res.success) {
+                const modalEl = document.getElementById('candidateEmailDetailModal');
+                const bsModal = bootstrap.Modal.getInstance(modalEl);
+                if (bsModal) bsModal.hide();
+
+                if (window.NoveraToast) {
+                    window.NoveraToast.success(res.message || 'Đã đưa email vào hàng đợi gửi lại thành công!');
+                } else {
+                    alert(res.message || 'Đã đưa email vào hàng đợi gửi lại thành công!');
+                }
+                reloadEmailLogs();
+            } else {
+                throw new Error(res.message || 'Không thể gửi lại email.');
+            }
+        } catch (err) {
+            if (window.NoveraToast) {
+                window.NoveraToast.error(err.message || 'Lỗi khi gửi lại thư.');
+            } else {
+                alert(err.message || 'Lỗi khi gửi lại thư.');
+            }
+            if (btnElement) {
+                btnElement.disabled = false;
+                btnElement.innerHTML = originalHtml;
+            }
+        }
+    }
+
+    // Tự động load danh sách email khi trang đã tải xong
+    document.addEventListener('DOMContentLoaded', function() {
+        loadEmailLogs();
+    });
 </script>
 }

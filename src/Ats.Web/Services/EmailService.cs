@@ -4,6 +4,7 @@ using Ats.Web.Models.Entities;
 using Ats.Web.Services.Interfaces;
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.EntityFrameworkCore;
 using MimeKit;
 
 namespace Ats.Web.Services;
@@ -11,85 +12,77 @@ namespace Ats.Web.Services;
 public class EmailService : IEmailService
 {
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IEmailQueueChannel _queueChannel;
     private readonly ILogger<EmailService> _logger;
 
-    public EmailService(IServiceScopeFactory scopeFactory, ILogger<EmailService> logger)
+    public EmailService(
+        IServiceScopeFactory scopeFactory,
+        IEmailQueueChannel queueChannel,
+        ILogger<EmailService> logger)
     {
         _scopeFactory = scopeFactory;
+        _queueChannel = queueChannel;
         _logger = logger;
     }
 
     public async Task<bool> SendEmailAsync(SendEmailRequestDto request, CancellationToken cancellationToken = default)
     {
+        Guid? candidateId = request.CandidateId;
+
+        // Nếu chưa chỉ định CandidateId, thử đối chiếu qua RecipientEmail của ứng viên
+        if (!candidateId.HasValue && !string.IsNullOrWhiteSpace(request.ToEmail))
+        {
+            try
+            {
+                using var lookupScope = _scopeFactory.CreateScope();
+                var lookupDb = lookupScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var normEmail = request.ToEmail.Trim().ToLower();
+                candidateId = await lookupDb.Candidates
+                    .Where(c => c.Email.ToLower() == normEmail)
+                    .Select(c => (Guid?)c.Id)
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Không thể tra cứu CandidateId từ email {ToEmail}", request.ToEmail);
+            }
+        }
+
         var log = new EmailLog
         {
             Id = Guid.NewGuid(),
+            CandidateId = candidateId,
             RecipientEmail = request.ToEmail,
             Subject = request.Subject,
-            Status = "PENDING",
+            EmailType = string.IsNullOrWhiteSpace(request.EmailType) ? "Email hệ thống" : request.EmailType,
+            HtmlBody = request.Body,
+            Status = "QUEUED",
+            RetryCount = 0,
+            MaxRetries = 3,
+            TriggeredByUserId = request.TriggeredByUserId,
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         };
 
         try
         {
-            var smtpHost = Environment.GetEnvironmentVariable("SMTP_HOST") ?? "smtp.gmail.com";
-            var smtpPortStr = Environment.GetEnvironmentVariable("SMTP_PORT") ?? "587";
-            var smtpPort = int.TryParse(smtpPortStr, out var port) ? port : 587;
-            var smtpEmail = Environment.GetEnvironmentVariable("SMTP_EMAIL") ?? "";
-            var smtpPassword = Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? "";
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            await db.EmailLogs.AddAsync(log, cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
 
-            if (!string.IsNullOrWhiteSpace(smtpEmail) && !string.IsNullOrWhiteSpace(smtpPassword))
-            {
-                var email = new MimeMessage();
-                email.From.Add(new MailboxAddress("NoveraTech Careers & ATS", smtpEmail));
-                email.To.Add(MailboxAddress.Parse(request.ToEmail));
-                email.Subject = request.Subject;
+            // Đẩy ID vào hàng đợi để BackgroundService tiêu thụ ngầm
+            await _queueChannel.EnqueueAsync(log.Id, cancellationToken);
+            _logger.LogInformation("Đã ghi nhận EmailLog {EmailLogId} và đẩy vào hàng đợi (Người nhận: {ToEmail}, Tiêu đề: {Subject})",
+                log.Id, log.RecipientEmail, log.Subject);
 
-                var builder = new BodyBuilder { HtmlBody = request.Body };
-                email.Body = builder.ToMessageBody();
-
-                using var smtp = new SmtpClient();
-                // Timeout 5 giây để tránh chặn luồng web
-                smtp.Timeout = 5000;
-                await smtp.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls, cancellationToken);
-                await smtp.AuthenticateAsync(smtpEmail, smtpPassword, cancellationToken);
-                await smtp.SendAsync(email, cancellationToken);
-                await smtp.DisconnectAsync(true, cancellationToken);
-
-                log.Status = "SENT";
-                log.SentAt = DateTimeOffset.UtcNow;
-                _logger.LogInformation("Đã gửi email thành công tới {ToEmail} (Tiêu đề: {Subject})", request.ToEmail, request.Subject);
-            }
-            else
-            {
-                log.Status = "SKIPPED_NO_CREDENTIALS";
-                log.ErrorMessage = "Chưa cấu hình tài khoản SMTP gửi mail.";
-                _logger.LogWarning("Bỏ qua gửi email do chưa cấu hình SMTP: {Subject} -> {ToEmail}", request.Subject, request.ToEmail);
-            }
+            return true;
         }
         catch (Exception ex)
         {
-            log.Status = "FAILED";
-            log.ErrorMessage = ex.Message;
-            _logger.LogError(ex, "Lỗi khi gửi email tới {ToEmail}", request.ToEmail);
+            _logger.LogError(ex, "Lỗi khi lưu EmailLog hoặc đẩy vào hàng đợi cho {ToEmail}", request.ToEmail);
+            return false;
         }
-        finally
-        {
-            try
-            {
-                using var scope = _scopeFactory.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                await db.EmailLogs.AddAsync(log, cancellationToken);
-                await db.SaveChangesAsync(cancellationToken);
-            }
-            catch (Exception dbEx)
-            {
-                _logger.LogWarning(dbEx, "Không thể lưu nhật ký EmailLog vào CSDL");
-            }
-        }
-
-        return log.Status == "SENT";
     }
 
     public async Task<bool> SendLoginSuccessAlertAsync(
@@ -201,7 +194,7 @@ public class EmailService : IEmailService
             </div>
         </div>";
 
-        return await SendEmailAsync(new SendEmailRequestDto(email, subject, body), cancellationToken);
+        return await SendEmailAsync(new SendEmailRequestDto(email, subject, body, null, "Cảnh báo bảo mật đăng nhập"), cancellationToken);
     }
 
     public async Task<bool> SendApplicationReceivedAsync(
@@ -255,7 +248,7 @@ public class EmailService : IEmailService
             </div>
         </div>";
 
-        return await SendEmailAsync(new SendEmailRequestDto(candidateEmail, subject, body), cancellationToken);
+        return await SendEmailAsync(new SendEmailRequestDto(candidateEmail, subject, body, null, "Xác nhận tiếp nhận hồ sơ"), cancellationToken);
     }
 
     public async Task<bool> SendRecruiterWithdrawalAlertAsync(
@@ -298,7 +291,7 @@ public class EmailService : IEmailService
             </div>
         </div>";
 
-        return await SendEmailAsync(new SendEmailRequestDto(recruiterEmail, subject, body), cancellationToken);
+        return await SendEmailAsync(new SendEmailRequestDto(recruiterEmail, subject, body, null, "Cảnh báo ứng viên rút hồ sơ"), cancellationToken);
     }
 
     public async Task<bool> SendCandidateWithdrawalConfirmedAsync(
@@ -332,7 +325,7 @@ public class EmailService : IEmailService
             </div>
         </div>";
 
-        return await SendEmailAsync(new SendEmailRequestDto(candidateEmail, subject, body), cancellationToken);
+        return await SendEmailAsync(new SendEmailRequestDto(candidateEmail, subject, body, null, "Xác nhận đã rút hồ sơ"), cancellationToken);
     }
 
     public async Task<bool> SendScreeningPassedAsync(
@@ -368,7 +361,7 @@ public class EmailService : IEmailService
             </div>
         </div>";
 
-        return await SendEmailAsync(new SendEmailRequestDto(candidateEmail, subject, body), cancellationToken);
+        return await SendEmailAsync(new SendEmailRequestDto(candidateEmail, subject, body, null, "Thông báo đạt sơ loại hồ sơ"), cancellationToken);
     }
 
     public async Task<bool> SendInterviewInvitationAsync(
@@ -478,7 +471,7 @@ public class EmailService : IEmailService
             </div>
         </div>";
 
-        return await SendEmailAsync(new SendEmailRequestDto(candidateEmail, subject, body), cancellationToken);
+        return await SendEmailAsync(new SendEmailRequestDto(candidateEmail, subject, body, null, "Thư mời phỏng vấn"), cancellationToken);
     }
 
     public async Task<bool> SendOfferLetterNotificationAsync(
@@ -533,7 +526,7 @@ public class EmailService : IEmailService
             </div>
         </div>";
 
-        return await SendEmailAsync(new SendEmailRequestDto(candidateEmail, subject, body), cancellationToken);
+        return await SendEmailAsync(new SendEmailRequestDto(candidateEmail, subject, body, null, "Thư mời nhận việc (Offer Letter)"), cancellationToken);
     }
 
     public async Task<bool> SendRejectionLetterAsync(
@@ -575,7 +568,7 @@ public class EmailService : IEmailService
             </div>
         </div>";
 
-        return await SendEmailAsync(new SendEmailRequestDto(candidateEmail, subject, body), cancellationToken);
+        return await SendEmailAsync(new SendEmailRequestDto(candidateEmail, subject, body, null, "Thư cảm ơn & Từ chối tuyển dụng"), cancellationToken);
     }
 
     /// <summary>
@@ -648,7 +641,7 @@ public class EmailService : IEmailService
             </div>
         </div>";
 
-        return await SendEmailAsync(new SendEmailRequestDto(recruiterEmail, subject, body), cancellationToken);
+        return await SendEmailAsync(new SendEmailRequestDto(recruiterEmail, subject, body, null, "Cảnh báo quá hạn SLA"), cancellationToken);
     }
 
     public async Task<bool> SendInterviewRescheduledAsync(
@@ -748,8 +741,9 @@ public class EmailService : IEmailService
             </div>
         </div>";
 
-        return await SendEmailAsync(new SendEmailRequestDto(recipientEmail, subject, body), cancellationToken);
+        return await SendEmailAsync(new SendEmailRequestDto(recipientEmail, subject, body, null, "Thông báo dời lịch phỏng vấn"), cancellationToken);
     }
+
 
     public async Task<bool> SendInterviewCancelledAsync(
         string recipientEmail,
@@ -807,6 +801,88 @@ public class EmailService : IEmailService
             </div>
         </div>";
 
-        return await SendEmailAsync(new SendEmailRequestDto(recipientEmail, subject, body), cancellationToken);
+        return await SendEmailAsync(new SendEmailRequestDto(recipientEmail, subject, body, null, "Thông báo hủy lịch phỏng vấn"), cancellationToken);
     }
-}
+
+    public async Task<bool> ResendEmailAsync(Guid emailLogId, Guid currentUserId, CancellationToken cancellationToken = default)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var log = await db.EmailLogs.FirstOrDefaultAsync(e => e.Id == emailLogId, cancellationToken);
+        if (log == null)
+        {
+            _logger.LogWarning("Không tìm thấy EmailLog ID {EmailLogId} để gửi lại", emailLogId);
+            return false;
+        }
+
+        // AC2: Chỉ cho phép gửi lại thư thất bại, chặn gửi trùng hoặc gửi lại thư đang chờ/thành công
+        if (log.Status != "FAILED")
+        {
+            _logger.LogWarning("Từ chối gửi lại EmailLog {EmailLogId} vì trạng thái là {Status} (yêu cầu FAILED)", emailLogId, log.Status);
+            return false;
+        }
+
+        log.Status = "QUEUED";
+        log.RetryCount = 0;
+        log.ErrorMessage = null;
+        log.UpdatedAt = DateTimeOffset.UtcNow;
+        log.TriggeredByUserId = currentUserId;
+
+        // Ghi nhận AuditLog hành động gửi lại
+        try
+        {
+            var audit = new AuditLog
+            {
+                Id = Guid.NewGuid(),
+                UserId = currentUserId,
+                Action = "RESEND_EMAIL",
+                EntityName = "EmailLog",
+                EntityId = log.Id.ToString(),
+                NewValues = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    RecipientEmail = log.RecipientEmail,
+                    Subject = log.Subject,
+                    EmailType = log.EmailType,
+                    ResentBy = currentUserId
+                }),
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            await db.AuditLogs.AddAsync(audit, cancellationToken);
+        }
+        catch (Exception auditEx)
+        {
+            _logger.LogWarning(auditEx, "Không thể ghi AuditLog cho hành động gửi lại email {EmailLogId}", emailLogId);
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        // Đẩy lại vào hàng đợi xử lý ngầm
+        await _queueChannel.EnqueueAsync(log.Id, cancellationToken);
+        _logger.LogInformation("Người dùng {UserId} đã gửi lại thành công EmailLog {EmailLogId} tới {ToEmail}",
+            currentUserId, log.Id, log.RecipientEmail);
+
+        return true;
+    }
+
+    public async Task<List<EmailLog>> GetCandidateEmailLogsAsync(Guid candidateId, string? statusFilter = null, CancellationToken cancellationToken = default)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var candidate = await db.Candidates.AsNoTracking().FirstOrDefaultAsync(c => c.Id == candidateId, cancellationToken);
+        var candidateEmail = candidate?.Email?.Trim().ToLower();
+
+        var query = db.EmailLogs.AsNoTracking()
+            .Where(e => e.CandidateId == candidateId || (!string.IsNullOrEmpty(candidateEmail) && e.RecipientEmail.ToLower() == candidateEmail));
+
+        if (!string.IsNullOrWhiteSpace(statusFilter) && !statusFilter.Equals("ALL", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(e => e.Status == statusFilter);
+        }
+
+        return await query
+            .OrderByDescending(e => e.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+}

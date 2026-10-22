@@ -31,6 +31,7 @@ public class CandidatesController(
     ISecurityAuditService securityAuditService,
     ICandidateMultiRoundEvaluationService multiRoundEvaluationService,
     IOnboardingChecklistService onboardingChecklistService,
+    IEmailService emailService,
     ApplicationDbContext dbContext,
     ILogger<CandidatesController> logger) : Controller
 {
@@ -40,6 +41,7 @@ public class CandidatesController(
     private readonly ISecurityAuditService _securityAuditService = securityAuditService;
     private readonly ICandidateMultiRoundEvaluationService _multiRoundEvaluationService = multiRoundEvaluationService;
     private readonly IOnboardingChecklistService _onboardingChecklistService = onboardingChecklistService;
+    private readonly IEmailService _emailService = emailService;
     private readonly ApplicationDbContext _dbContext = dbContext;
     private readonly ILogger<CandidatesController> _logger = logger;
 
@@ -1272,5 +1274,211 @@ public class CandidatesController(
             return Json(new { success = false, message = "Có lỗi xảy ra khi cập nhật mục checklist." });
         }
     }
+
+    // ==========================================
+    // SP-8: NHẬT KÝ EMAIL ỨNG VIÊN & GỬI LẠI THƯ
+    // ==========================================
+
+    /// <summary>
+    /// GET: /ung-vien/{id}/email-logs hoặc /candidates/{id}/email-logs
+    /// Lấy danh sách nhật ký email đã gửi cho ứng viên kèm bộ lọc trạng thái (AC1).
+    /// </summary>
+    [HttpGet("{id:guid}/email-logs")]
+    [HttpGet("/ung-vien/{id:guid}/email-logs")]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager}")]
+    public async Task<IActionResult> GetEmailLogs(
+        Guid id,
+        [FromQuery] string? status = null,
+        CancellationToken cancellationToken = default)
+    {
+        var currentUserId = GetCurrentUserId();
+        var currentUserRole = GetCurrentUserRole();
+
+        var canAccess = await _candidateService.CanAccessCandidateAsync(id, currentUserId, currentUserRole, cancellationToken);
+        if (!canAccess)
+        {
+            return Forbid();
+        }
+
+        var candidate = await _dbContext.Candidates.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+        if (candidate == null)
+        {
+            return NotFound("Không tìm thấy thông tin ứng viên.");
+        }
+
+        var filter = string.IsNullOrWhiteSpace(status) ? "ALL" : status.ToUpperInvariant();
+        var logs = await _emailService.GetCandidateEmailLogsAsync(id, filter, cancellationToken);
+
+        var userIds = logs.Where(l => l.TriggeredByUserId.HasValue).Select(l => l.TriggeredByUserId!.Value).Distinct().ToList();
+        var userNames = await _dbContext.Users.AsNoTracking()
+            .Where(u => userIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.FullName, cancellationToken);
+
+        var viewModel = new CandidateEmailLogListViewModel
+        {
+            CandidateId = id,
+            CandidateName = $"{candidate.LastName} {candidate.FirstName}".Trim(),
+            CandidateEmail = candidate.Email,
+            CurrentFilter = filter,
+            Items = logs.Select(l => new CandidateEmailLogItemViewModel
+            {
+                Id = l.Id,
+                CandidateId = l.CandidateId,
+                RecipientEmail = l.RecipientEmail,
+                Subject = l.Subject,
+                EmailType = l.EmailType,
+                HtmlBody = l.HtmlBody,
+                Status = l.Status,
+                ErrorMessage = l.ErrorMessage,
+                RetryCount = l.RetryCount,
+                MaxRetries = l.MaxRetries,
+                CreatedAt = l.CreatedAt,
+                SentAt = l.SentAt,
+                TriggeredByUserName = l.TriggeredByUserId.HasValue && userNames.TryGetValue(l.TriggeredByUserId.Value, out var uName)
+                    ? uName
+                    : "Hệ thống tự động"
+            }).ToList()
+        };
+
+        if (Request.Headers.XRequestedWith == "XMLHttpRequest" || Request.Query.ContainsKey("partial"))
+        {
+            return PartialView("_CandidateEmailLogsPartial", viewModel);
+        }
+
+        return Json(new { success = true, data = viewModel });
+    }
+
+    /// <summary>
+    /// POST: /ung-vien/email-logs/{logId}/resend
+    /// Gửi lại email đã bị thất bại (AC2).
+    /// Chặn gửi trùng (idempotent), chỉ cho phép gửi khi trạng thái là FAILED.
+    /// </summary>
+    [HttpPost("email-logs/{logId:guid}/resend")]
+    [HttpPost("/ung-vien/email-logs/{logId:guid}/resend")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.Admin},{UserRoles.HRManager}")]
+    public async Task<IActionResult> ResendEmail(
+        Guid logId,
+        CancellationToken cancellationToken = default)
+    {
+        var currentUserId = GetCurrentUserId();
+        if (currentUserId == Guid.Empty)
+        {
+            return Json(new { success = false, message = "Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại." });
+        }
+
+        var log = await _dbContext.EmailLogs.AsNoTracking().FirstOrDefaultAsync(e => e.Id == logId, cancellationToken);
+        if (log == null)
+        {
+            return Json(new { success = false, message = "Không tìm thấy bản ghi email trong nhật ký." });
+        }
+
+        // Kiểm tra phân quyền truy cập hồ sơ ứng viên của email này
+        if (log.CandidateId.HasValue)
+        {
+            var currentUserRole = GetCurrentUserRole();
+            var canAccess = await _candidateService.CanAccessCandidateAsync(log.CandidateId.Value, currentUserId, currentUserRole, cancellationToken);
+            if (!canAccess)
+            {
+                return Json(new { success = false, message = "Bạn không có quyền thực hiện thao tác trên hồ sơ ứng viên này." });
+            }
+        }
+
+        // AC2: Kiểm tra trạng thái ở server-side, chỉ cho phép gửi lại khi FAILED
+        if (log.Status != "FAILED")
+        {
+            return Json(new
+            {
+                success = false,
+                message = log.Status switch
+                {
+                    "QUEUED" or "PENDING" => "Email đang trong hàng đợi xử lý gửi, vui lòng không gửi lại nhiều lần.",
+                    "SENT" => "Email này đã được gửi thành công trước đó, không thể gửi lại.",
+                    _ => "Chỉ cho phép gửi lại các email có trạng thái 'Gửi thất bại'."
+                }
+            });
+        }
+
+        try
+        {
+            var result = await _emailService.ResendEmailAsync(logId, currentUserId, cancellationToken);
+            if (result)
+            {
+                return Json(new
+                {
+                    success = true,
+                    message = "Đã đưa email vào hàng đợi gửi lại thành công! Hệ thống sẽ xử lý ngầm trong giây lát."
+                });
+            }
+
+            return Json(new { success = false, message = "Không thể đưa email vào hàng đợi. Vui lòng thử lại sau." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi gửi lại email ID {EmailLogId}", logId);
+            return Json(new { success = false, message = "Có lỗi xảy ra khi kích hoạt gửi lại email: " + ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// GET: /ung-vien/email-logs/{logId} hoặc /ung-vien/email-logs/{logId}/content
+    /// Xem trước nội dung chi tiết của email đã gửi cho ứng viên.
+    /// </summary>
+    [HttpGet("email-logs/{logId:guid}")]
+    [HttpGet("email-logs/{logId:guid}/content")]
+    [HttpGet("/ung-vien/email-logs/{logId:guid}")]
+    [HttpGet("/ung-vien/email-logs/{logId:guid}/content")]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager}")]
+    public async Task<IActionResult> GetEmailContent(Guid logId, CancellationToken cancellationToken = default)
+    {
+        var log = await _dbContext.EmailLogs.AsNoTracking().FirstOrDefaultAsync(e => e.Id == logId, cancellationToken);
+        if (log == null)
+        {
+            return Json(new { success = false, message = "Không tìm thấy nội dung email." });
+        }
+
+        if (log.CandidateId.HasValue)
+        {
+            var currentUserId = GetCurrentUserId();
+            var currentUserRole = GetCurrentUserRole();
+            var canAccess = await _candidateService.CanAccessCandidateAsync(log.CandidateId.Value, currentUserId, currentUserRole, cancellationToken);
+            if (!canAccess)
+            {
+                return Json(new { success = false, message = "Không có quyền xem nội dung thư này." });
+            }
+        }
+
+        string? triggeredUserName = "Hệ thống tự động";
+        if (log.TriggeredByUserId.HasValue)
+        {
+            var u = await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == log.TriggeredByUserId.Value, cancellationToken);
+            if (u != null)
+            {
+                triggeredUserName = u.FullName;
+            }
+        }
+
+        return Json(new
+        {
+            success = true,
+            data = new
+            {
+                id = log.Id,
+                recipientEmail = log.RecipientEmail,
+                subject = log.Subject,
+                emailType = log.EmailType,
+                status = log.Status,
+                htmlBody = log.HtmlBody,
+                errorMessage = log.ErrorMessage,
+                retryCount = log.RetryCount,
+                maxRetries = log.MaxRetries,
+                canResend = log.Status == "FAILED",
+                createdAt = log.CreatedAt,
+                sentAt = log.SentAt,
+                triggeredByUserName = triggeredUserName
+            }
+        });
+    }
 }
+
 

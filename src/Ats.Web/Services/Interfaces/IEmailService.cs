@@ -114,4 +114,8 @@ public interface IEmailService
         DateTimeOffset scheduledStartTime,
         string cancellationReason,
         CancellationToken cancellationToken = default);
-}
+
+    Task<bool> ResendEmailAsync(Guid emailLogId, Guid currentUserId, CancellationToken cancellationToken = default);
+
+    Task<List<Ats.Web.Models.Entities.EmailLog>> GetCandidateEmailLogsAsync(Guid candidateId, string? statusFilter = null, CancellationToken cancellationToken = default);
+}

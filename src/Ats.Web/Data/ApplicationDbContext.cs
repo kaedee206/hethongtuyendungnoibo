@@ -600,5 +600,26 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(i => i.CompletedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
+
+        // SP-8: Cấu hình nhật ký email ứng viên
+        modelBuilder.Entity<EmailLog>(entity =>
+        {
+            entity.ToTable("email_logs");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Candidate)
+                .WithMany()
+                .HasForeignKey(e => e.CandidateId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.TriggeredByUser)
+                .WithMany()
+                .HasForeignKey(e => e.TriggeredByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.CandidateId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.RecipientEmail);
+        });
     }
 }

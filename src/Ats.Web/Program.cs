@@ -64,6 +64,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Đăng ký Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
+// SP-8: Hàng đợi email bất đồng bộ & Background Service tiêu thụ
+builder.Services.AddSingleton<IEmailQueueChannel, EmailQueueChannel>();
+builder.Services.AddHostedService<EmailQueueBackgroundService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IJobService, JobService>();
 builder.Services.AddScoped<ICandidateService, CandidateService>();
@@ -805,6 +808,16 @@ using (var scope = app.Services.CreateScope())
             );
             CREATE INDEX IF NOT EXISTS ix_candidate_onboarding_checklist_items_chk_id ON candidate_onboarding_checklist_items(checklist_id);
             CREATE INDEX IF NOT EXISTS ix_candidate_onboarding_checklist_items_assignee ON candidate_onboarding_checklist_items(assigned_to_user_id);
+
+            -- SP-8: Bổ sung các cột cho nhật ký email và hàng đợi
+            ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS candidate_id UUID REFERENCES candidates(id) ON DELETE SET NULL;
+            ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS email_type TEXT;
+            ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS html_body TEXT;
+            ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS retry_count INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS max_retries INTEGER NOT NULL DEFAULT 3;
+            ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS triggered_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL;
+            CREATE INDEX IF NOT EXISTS ix_email_logs_candidate_id ON email_logs(candidate_id);
+            CREATE INDEX IF NOT EXISTS ix_email_logs_status ON email_logs(status);
         ");
     }
     catch (Exception ex)
