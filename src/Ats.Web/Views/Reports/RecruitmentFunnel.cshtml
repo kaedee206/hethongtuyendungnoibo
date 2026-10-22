@@ -1,0 +1,468 @@
+@model Ats.Web.Models.DTOs.RecruitmentFunnelReportDto
+
+@{
+    ViewData["Title"] = "Phễu tuyển dụng & Tỷ lệ chuyển đổi";
+    var c = Model.Criteria;
+}
+
+<div class="container-fluid py-3 px-3 px-lg-4" style="max-width: 1380px;">
+
+    <!-- ── Single-Tier Header Bar (RULE.md Compliant) ── -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3.5 pb-2 border-bottom" style="border-color: #E2E8F0 !important;">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-0.5 rounded-1" style="font-size: 0.72rem; font-family: 'JetBrains Mono', monospace;">
+                    SCRUM-352 · HR ANALYTICS
+                </span>
+                <span class="text-muted" style="font-size: 0.8rem;">Cập nhật lúc: @DateTime.Now.ToString("HH:mm dd/MM/yyyy")</span>
+            </div>
+            <h1 class="h4 fw-bold text-dark mb-0.5" style="letter-spacing: -0.02em;">
+                Báo Cáo Phễu Tuyển Dụng &amp; Tỷ Lệ Chuyển Đổi
+            </h1>
+            <p class="text-secondary small mb-0">
+                Phân tích số lượng ứng viên qua từng giai đoạn liên tiếp, phát hiện điểm nghẽn (bottleneck) và tối ưu hóa thời gian tuyển dụng.
+            </p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-2 px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1.5" onclick="window.print()" title="In báo cáo">
+                <i class="bi bi-printer"></i>
+                <span class="d-none d-sm-inline">In báo cáo</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-success rounded-2 px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1.5" onclick="exportFunnelCsv()" title="Xuất dữ liệu CSV">
+                <i class="bi bi-file-earmark-excel"></i>
+                <span>Xuất CSV</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Filter Bar Card ── -->
+    <div class="card border-0 shadow-xs mb-3.5 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+        <div class="card-body p-3">
+            <form method="get" action="/bao-cao/pheu-tuyen-dung" id="funnelFilterForm">
+                <div class="row g-2.5 align-items-end">
+                    <!-- Phòng ban -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="form-label small fw-semibold text-muted mb-1" style="font-size: 0.78rem;">Phòng ban trực thuộc</label>
+                        <select name="DepartmentId" class="form-select form-select-sm" onchange="this.form.submit()" style="border-radius: 8px; height: 38px;">
+                            <option value="">Tất cả phòng ban</option>
+                            @foreach (var d in Model.AvailableDepartments)
+                            {
+                                <option value="@d.Value" selected="@(d.Selected ? "selected" : null)">@d.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Vị trí tuyển dụng -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="form-label small fw-semibold text-muted mb-1" style="font-size: 0.78rem;">Vị trí tuyển dụng (Tin tuyển dụng)</label>
+                        <select name="JobPostingId" class="form-select form-select-sm" onchange="this.form.submit()" style="border-radius: 8px; height: 38px;">
+                            <option value="">Tất cả vị trí tuyển dụng</option>
+                            @foreach (var j in Model.AvailableJobPostings)
+                            {
+                                <option value="@j.Value" selected="@(j.Selected ? "selected" : null)">@j.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Khoảng thời gian -->
+                    <div class="col-12 col-sm-6 col-lg-2">
+                        <label class="form-label small fw-semibold text-muted mb-1" style="font-size: 0.78rem;">Khoảng thời gian nộp đơn</label>
+                        <select name="DatePreset" id="funnelDatePreset" class="form-select form-select-sm" onchange="onFunnelDatePresetChange(this.value)" style="border-radius: 8px; height: 38px;">
+                            <option value="all" selected="@(c.DatePreset == "all" ? "selected" : null)">Tất cả thời gian</option>
+                            <option value="month" selected="@(c.DatePreset == "month" ? "selected" : null)">Tháng này</option>
+                            <option value="quarter" selected="@(c.DatePreset == "quarter" ? "selected" : null)">Quý này</option>
+                            <option value="year" selected="@(c.DatePreset == "year" ? "selected" : null)">Năm nay</option>
+                            <option value="custom" selected="@(c.DatePreset == "custom" ? "selected" : null)">Tùy chọn ngày...</option>
+                        </select>
+                    </div>
+
+                    <!-- Từ ngày (custom) -->
+                    <div class="col-6 col-sm-3 col-lg-2" id="funnelFromDateCol" style="@(c.DatePreset == "custom" ? "" : "display: none;")">
+                        <label class="form-label small fw-semibold text-muted mb-1" style="font-size: 0.78rem;">Từ ngày</label>
+                        <input type="date" name="FromDate" class="form-control form-control-sm"
+                               value="@(c.FromDate?.ToString("yyyy-MM-dd"))"
+                               style="border-radius: 8px; height: 38px;" />
+                    </div>
+
+                    <!-- Đến ngày (custom) -->
+                    <div class="col-6 col-sm-3 col-lg-2" id="funnelToDateCol" style="@(c.DatePreset == "custom" ? "" : "display: none;")">
+                        <label class="form-label small fw-semibold text-muted mb-1" style="font-size: 0.78rem;">Đến ngày</label>
+                        <input type="date" name="ToDate" class="form-control form-control-sm"
+                               value="@(c.ToDate?.ToString("yyyy-MM-dd"))"
+                               style="border-radius: 8px; height: 38px;" />
+                    </div>
+
+                    <!-- Nút Lọc & Đặt lại -->
+                    <div class="col-12 col-lg-auto ms-auto d-flex gap-2">
+                        <button type="submit" class="btn btn-sm btn-primary fw-semibold px-3 py-2 rounded-2 d-flex align-items-center gap-1.5" style="height: 38px;">
+                            <i class="bi bi-funnel-fill"></i>
+                            <span>Áp dụng lọc</span>
+                        </button>
+                        <a href="/bao-cao/pheu-tuyen-dung" class="btn btn-sm btn-outline-secondary rounded-2 px-2.5 py-2 d-flex align-items-center" style="height: 38px;" title="Xóa tất cả điều kiện lọc">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ── KPI Summary Cards ── -->
+    <div class="row g-3 mb-3.5">
+        <!-- Card 1: Tổng hồ sơ -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-xs h-100 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <div class="card-body p-3.5 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-secondary small fw-medium mb-1">Tổng hồ sơ ứng tuyển</div>
+                        <div class="fs-3 fw-bold text-dark font-mono">@Model.TotalApplications</div>
+                        <div class="small text-muted mt-1" style="font-size: 0.75rem;">Đầu vào toàn phễu</div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-center text-primary bg-primary bg-opacity-10 rounded-3" style="width: 48px; height: 48px; font-size: 1.3rem;">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Tuyển dụng thành công -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-xs h-100 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <div class="card-body p-3.5 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-secondary small fw-medium mb-1">Tuyển dụng thành công (Hired)</div>
+                        <div class="fs-3 fw-bold text-success font-mono">@Model.TotalHired</div>
+                        <div class="small text-muted mt-1" style="font-size: 0.75rem;">Đã nhận việc &amp; ký Offer</div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-center text-success bg-success bg-opacity-10 rounded-3" style="width: 48px; height: 48px; font-size: 1.3rem;">
+                        <i class="bi bi-award-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Tỷ lệ chuyển đổi tổng thể -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-xs h-100 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <div class="card-body p-3.5 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-secondary small fw-medium mb-1">Tỷ lệ chuyển đổi tổng thể</div>
+                        <div class="fs-3 fw-bold text-primary font-mono">@Model.OverallConversionRate%</div>
+                        <div class="small text-muted mt-1" style="font-size: 0.75rem;">Từ nộp hồ sơ đến tuyển thành công</div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-center text-info bg-info bg-opacity-10 rounded-3" style="width: 48px; height: 48px; font-size: 1.3rem;">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Điểm nghẽn lớn nhất (Bottleneck) -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-xs h-100 bg-white" style="border: 1px solid @(Model.HighestDropOffRate > 50 ? "#FCA5A5" : "#E2E8F0") !important; border-radius: 12px;">
+                <div class="card-body p-3.5 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-danger small fw-semibold mb-1 d-flex align-items-center gap-1">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <span>Điểm nghẽn lớn nhất</span>
+                        </div>
+                        <div class="fs-3 fw-bold text-danger font-mono">@Model.HighestDropOffRate%</div>
+                        <div class="small text-dark fw-medium mt-1 text-truncate" style="font-size: 0.75rem; max-width: 170px;" title="@Model.HighestDropOffStageName">
+                            @Model.HighestDropOffStageName (Mất @Model.HighestDropOffCount người)
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-center text-danger bg-danger bg-opacity-10 rounded-3" style="width: 48px; height: 48px; font-size: 1.3rem;">
+                        <i class="bi bi-funnel"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Smart Bottleneck Advisory Box ── -->
+    <div class="card border-0 shadow-xs mb-4" style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border: 1px solid #FCD34D !important; border-radius: 12px;">
+        <div class="card-body p-3.5 p-lg-4">
+            <div class="d-flex align-items-start gap-3">
+                <div class="p-2.5 bg-amber-500 text-white rounded-3 shadow-2xs mt-0.5" style="background-color: #D97706;">
+                    <i class="bi bi-lightbulb-fill fs-5"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                        <h6 class="fw-bold text-dark mb-0" style="font-size: 1rem;">
+                            Phân Tích Điểm Nghẽn &amp; Đề Xuất Tối Ưu Quy Trình
+                        </h6>
+                        <span class="badge bg-warning text-dark border border-warning-subtle" style="font-size: 0.7rem;">
+                            Gợi ý tự động cho Trưởng phòng Nhân sự
+                        </span>
+                    </div>
+                    <p class="text-slate-800 small mb-2" style="line-height: 1.5; font-size: 0.88rem;">
+                        <strong>@Model.BottleneckInsight</strong>
+                    </p>
+                    <div class="p-2.5 bg-white bg-opacity-80 rounded-2 border border-amber-200 small text-slate-700" style="font-size: 0.83rem; line-height: 1.5;">
+                        <i class="bi bi-arrow-right-circle-fill text-amber-600 me-1.5"></i>
+                        <span>@Model.BottleneckRecommendation</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Interactive Visual Funnel Chart ── -->
+    <div class="card border-0 shadow-sm bg-white mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 14px; overflow: hidden;">
+        <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom" style="border-color: #F1F5F9 !important;">
+            <div class="d-flex align-items-center gap-2">
+                <span class="p-1.5 bg-primary bg-opacity-10 text-primary rounded-2">
+                    <i class="bi bi-bar-chart-steps"></i>
+                </span>
+                <span class="fw-bold text-dark" style="font-size: 0.95rem;">Biểu Đồ Thanh Phễu Tuyển Dụng Trực Quan</span>
+            </div>
+            <div class="text-muted small" style="font-size: 0.78rem;">
+                Tỷ lệ chiều rộng thanh phễu hiển thị theo quy mô hồ sơ từng vòng
+            </div>
+        </div>
+
+        <div class="card-body p-4 p-lg-5" style="background: #FAFBFD;">
+            <div class="funnel-container mx-auto" style="max-width: 900px;">
+                @for (int i = 0; i < Model.Stages.Count; i++)
+                {
+                    var stage = Model.Stages[i];
+                    var widthPercent = Model.TotalApplications > 0
+                        ? Math.Max(12, Math.Round((double)stage.CandidateCount / Model.TotalApplications * 100.0, 1))
+                        : 20;
+
+                    <div class="funnel-step mb-3">
+                        <!-- Header info above the bar -->
+                        <div class="d-flex justify-content-between align-items-center mb-1.5 px-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="d-flex align-items-center justify-content-center text-white rounded-circle" style="width: 24px; height: 24px; background: @stage.ColorCode; font-size: 0.75rem; font-weight: bold;">
+                                    @stage.StageOrder
+                                </span>
+                                <span class="fw-bold text-dark" style="font-size: 0.9rem;">@stage.StageName</span>
+                                @if (stage.IsBottleneck)
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1" style="font-size: 0.68rem;">
+                                        <i class="bi bi-exclamation-octagon-fill"></i>Điểm nghẽn
+                                    </span>
+                                }
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-white border text-dark shadow-2xs font-mono" style="font-size: 0.85rem;">
+                                    <strong>@stage.CandidateCount</strong> hồ sơ
+                                </span>
+                                <span class="badge bg-light text-secondary border font-mono" style="font-size: 0.75rem;" title="Tỷ lệ so với tổng ứng viên ban đầu">
+                                    @stage.OverallConversionRate% toàn phễu
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Funnel Bar -->
+                        <div class="funnel-bar-wrapper position-relative mx-auto" style="height: 48px; border-radius: 10px; background: #E2E8F0; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                            <div class="funnel-bar-fill position-absolute start-0 top-0 bottom-0"
+                                 style="width: @widthPercent%; background: @(stage.IsBottleneck ? "linear-gradient(90deg, #EF4444 0%, #DC2626 100%)" : $"linear-gradient(90deg, {stage.ColorCode} 0%, {stage.ColorCode}DD 100%)"); border-radius: 10px; transition: width 0.8s ease;">
+                            </div>
+                            <div class="position-relative text-white fw-bold small text-shadow d-flex align-items-center gap-1.5 z-1" style="text-shadow: 0 1px 2px rgba(0,0,0,0.4);">
+                                <i class="bi @stage.Icon"></i>
+                                <span>@stage.StageName: @stage.CandidateCount ứng viên</span>
+                            </div>
+                        </div>
+
+                        <!-- Stage-to-stage transition connector indicator (except after last stage) -->
+                        @if (i < Model.Stages.Count - 1)
+                        {
+                            var nextStage = Model.Stages[i + 1];
+                            <div class="d-flex align-items-center justify-content-center my-2">
+                                <div class="px-3 py-1 rounded-pill border shadow-2xs d-inline-flex align-items-center gap-2"
+                                     style="background: #FFFFFF; font-size: 0.76rem;">
+                                    <span class="text-secondary">
+                                        <i class="bi bi-arrow-down-short text-primary fs-6"></i>
+                                        Chuyển tiếp: <strong class="text-primary font-mono">@nextStage.StageConversionRate%</strong>
+                                    </span>
+                                    <span class="text-muted">•</span>
+                                    <span class="text-danger">
+                                        Rơi rụng: <strong class="font-mono">@nextStage.DropOffRate%</strong> (@nextStage.DropOffCount người)
+                                    </span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Detailed Stage Breakdown Table ── -->
+    <div class="card border-0 shadow-sm bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px; overflow: hidden;">
+        <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom" style="border-color: #F1F5F9 !important;">
+            <div class="d-flex align-items-center gap-2">
+                <span class="p-1.5 bg-success bg-opacity-10 text-success rounded-2">
+                    <i class="bi bi-table"></i>
+                </span>
+                <span class="fw-bold text-dark" style="font-size: 0.95rem;">Bảng Thống Kê Chi Tiết Từng Vòng Tuyển Dụng</span>
+            </div>
+            <div class="text-muted small">
+                Đơn vị tính: Ứng viên / Tỷ lệ phần trăm (%)
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table align-middle mb-0" id="funnelTable">
+                <thead style="background: #F8FAFC;">
+                    <tr style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748B;">
+                        <th style="padding: 1rem 1.25rem;">Giai đoạn</th>
+                        <th style="padding: 1rem 1.25rem; text-align: center;">Số lượng ứng viên</th>
+                        <th style="padding: 1rem 1.25rem; text-align: center;">Tỷ lệ chuyển tiếp vòng</th>
+                        <th style="padding: 1rem 1.25rem; text-align: center;">Tỷ lệ toàn phễu</th>
+                        <th style="padding: 1rem 1.25rem; text-align: center;">Số lượng rơi rụng</th>
+                        <th style="padding: 1rem 1.25rem; text-align: center;">Tỷ lệ rơi rụng</th>
+                        <th style="padding: 1rem 1.25rem;">Đánh giá &amp; Tình trạng</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y" style="border-top: 1px solid #F1F5F9;">
+                    @foreach (var stage in Model.Stages)
+                    {
+                        <tr style="background-color: @(stage.IsBottleneck ? "#FEF2F2" : "transparent");">
+                            <!-- Giai đoạn -->
+                            <td style="padding: 1rem 1.25rem;">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="d-flex align-items-center justify-content-center text-white rounded-2 shadow-2xs"
+                                         style="width: 32px; height: 32px; background: @stage.ColorCode; font-size: 0.85rem;">
+                                        <i class="bi @stage.Icon"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark" style="font-size: 0.88rem;">@stage.StageName</div>
+                                        <div class="text-muted small" style="font-size: 0.74rem;">@stage.Description</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Số lượng ứng viên -->
+                            <td style="padding: 1rem 1.25rem; text-align: center;">
+                                <span class="badge bg-light text-dark border px-2.5 py-1.5 font-mono" style="font-size: 0.85rem;">
+                                    @stage.CandidateCount
+                                </span>
+                            </td>
+
+                            <!-- Tỷ lệ chuyển tiếp vòng -->
+                            <td style="padding: 1rem 1.25rem; text-align: center;">
+                                @if (stage.StageOrder == 1)
+                                {
+                                    <span class="text-muted small">— (Gốc)</span>
+                                }
+                                else
+                                {
+                                    <span class="fw-bold font-mono text-primary" style="font-size: 0.88rem;">
+                                        @stage.StageConversionRate%
+                                    </span>
+                                }
+                            </td>
+
+                            <!-- Tỷ lệ toàn phễu -->
+                            <td style="padding: 1rem 1.25rem; text-align: center;">
+                                <span class="fw-bold font-mono text-dark" style="font-size: 0.88rem;">
+                                    @stage.OverallConversionRate%
+                                </span>
+                            </td>
+
+                            <!-- Số lượng rơi rụng -->
+                            <td style="padding: 1rem 1.25rem; text-align: center;">
+                                @if (stage.StageOrder == 1)
+                                {
+                                    <span class="text-muted small">0</span>
+                                }
+                                else
+                                {
+                                    <span class="fw-semibold font-mono @(stage.DropOffCount > 0 ? "text-danger" : "text-muted")" style="font-size: 0.88rem;">
+                                        -@stage.DropOffCount
+                                    </span>
+                                }
+                            </td>
+
+                            <!-- Tỷ lệ rơi rụng -->
+                            <td style="padding: 1rem 1.25rem; text-align: center;">
+                                @if (stage.StageOrder == 1)
+                                {
+                                    <span class="text-muted small">0%</span>
+                                }
+                                else
+                                {
+                                    <span class="fw-bold font-mono text-danger" style="font-size: 0.88rem;">
+                                        @stage.DropOffRate%
+                                    </span>
+                                }
+                            </td>
+
+                            <!-- Đánh giá -->
+                            <td style="padding: 1rem 1.25rem;">
+                                @if (stage.IsBottleneck)
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-2 px-2 py-1 d-inline-flex align-items-center gap-1" style="font-size: 0.72rem;">
+                                        <i class="bi bi-exclamation-triangle-fill"></i>Điểm nghẽn lớn nhất quy trình
+                                    </span>
+                                }
+                                else if (stage.StageOrder == 5)
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-2 px-2 py-1 d-inline-flex align-items-center gap-1" style="font-size: 0.72rem;">
+                                        <i class="bi bi-check-circle-fill"></i>Đích phễu tuyển dụng
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-secondary border rounded-2 px-2 py-1" style="font-size: 0.72rem;">
+                                        Bình thường
+                                    </span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer bg-white py-2.5 px-4 d-flex justify-content-between align-items-center border-top small text-muted" style="font-size: 0.78rem;">
+            <div>
+                <i class="bi bi-info-circle me-1"></i>Dữ liệu được tổng hợp trực tiếp từ hồ sơ ứng tuyển và lịch sử chuyển giai đoạn trong CSDL NoveraTech ATS.
+            </div>
+            <div>
+                Bộ lọc đang chạy: <strong>@(string.IsNullOrEmpty(c.DatePreset) || c.DatePreset == "all" ? "Tất cả thời gian" : c.DatePreset)</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function onFunnelDatePresetChange(val) {
+            const fromCol = document.getElementById('funnelFromDateCol');
+            const toCol = document.getElementById('funnelToDateCol');
+            if (val === 'custom') {
+                fromCol.style.display = 'block';
+                toCol.style.display = 'block';
+            } else {
+                fromCol.style.display = 'none';
+                toCol.style.display = 'none';
+                document.getElementById('funnelFilterForm').submit();
+            }
+        }
+
+        // Xuất bảng số liệu phễu sang file CSV
+        function exportFunnelCsv() {
+            const stages = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Stages));
+            let csv = '\uFEFF'; // BOM UTF-8
+            csv += 'Thu tu,Giai doan,So luong ung vien,Ty le chuyen tiep (%),Ty le toan pheu (%),So luong roi rung,Ty le roi rung (%),Ghi chu\n';
+
+            stages.forEach(s => {
+                const note = s.IsBottleneck ? 'Diem nghen lon nhat' : '';
+                csv += `"${s.StageOrder}","${s.StageName}","${s.CandidateCount}","${s.StageConversionRate}%","${s.OverallConversionRate}%","${s.DropOffCount}","${s.DropOffRate}%","${note}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `Pheu_Tuyen_Dung_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+}

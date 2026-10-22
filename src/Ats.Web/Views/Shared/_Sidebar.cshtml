@@ -178,6 +178,18 @@
                             <span class="sidebar-nav-link-text">Tác vụ nhanh</span>
                         </span>
                     </a>
+                    @if (isHrManager || isAdmin || isRecruiter || isHiringManager)
+                    {
+                        <a href="/bao-cao/pheu-tuyen-dung"
+                           class="sidebar-nav-link"
+                           data-path="/bao-cao/pheu-tuyen-dung"
+                           data-tooltip="Phễu tuyển dụng & Chuyển đổi (SCRUM-352)">
+                            <span class="sidebar-nav-link-content">
+                                <i class="bi bi-funnel"></i>
+                                <span class="sidebar-nav-link-text">Phễu tuyển dụng</span>
+                            </span>
+                        </a>
+                    }
                 </div>
 
                 <hr class="sidebar-section-divider" />
