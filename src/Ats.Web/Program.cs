@@ -46,6 +46,7 @@ builder.Services.AddScoped<ICompetencyFrameworkService, CompetencyFrameworkServi
 builder.Services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
 builder.Services.AddScoped<IRequisitionService, RequisitionService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<INotificationPreferenceService, NotificationPreferenceService>();
 
 
 // Cấu hình thời gian Session (Idle timeout)
@@ -288,6 +289,24 @@ using (var scope = app.Services.CreateScope())
                 is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
                 deleted_at TIMESTAMPTZ
             );
+
+            -- SCRUM-349: Bang cau hinh thong bao nhan su noi bo (Notification Preferences)
+            CREATE TABLE IF NOT EXISTS user_notification_preferences (
+                id UUID PRIMARY KEY,
+                user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                notification_type INTEGER NOT NULL,
+                in_app_enabled BOOLEAN NOT NULL DEFAULT true,
+                email_enabled BOOLEAN NOT NULL DEFAULT true,
+                is_mandatory BOOLEAN NOT NULL DEFAULT false,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT false,
+                deleted_at TIMESTAMPTZ,
+                CONSTRAINT uq_user_notification_pref UNIQUE (user_id, notification_type)
+            );
+            CREATE INDEX IF NOT EXISTS ix_user_notification_preferences_user_id ON user_notification_preferences(user_id);
         ");
     }
     catch (Exception ex)

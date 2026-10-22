@@ -38,6 +38,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<EmailLog> EmailLogs { get; set; }
     public DbSet<Notification> Notifications { get; set; }
+    public DbSet<UserNotificationPreference> UserNotificationPreferences { get; set; }
 
     public DbSet<CompetencyFramework> CompetencyFrameworks { get; set; }
     public DbSet<CompetencyCriterion> CompetencyCriteria { get; set; }
@@ -216,5 +217,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(cf => cf.AssignedPositions)
             .HasForeignKey(jp => jp.CompetencyFrameworkId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // SCRUM-349: Notification preferences
+        modelBuilder.Entity<UserNotificationPreference>(entity =>
+        {
+            entity.ToTable("user_notification_preferences");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.NotificationType }).IsUnique();
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }
