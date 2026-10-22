@@ -81,6 +81,11 @@ public interface IEmailService
         string? reason,
         CancellationToken cancellationToken = default);
 
+    string GenerateRejectionEmailHtml(
+        string candidateName,
+        string jobTitle,
+        string? reason);
+
     Task<bool> SendSlaOverdueAlertAsync(
         string recruiterEmail,
         string recruiterName,

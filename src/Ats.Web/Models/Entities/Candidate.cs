@@ -8,6 +8,8 @@ public class Candidate : BaseEntity
     public Guid? UserId { get; set; } // Liên kết đến User nếu ứng viên tạo account trên portal
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public string FullName => $"{FirstName} {LastName}".Trim();
     public string Email { get; set; } = string.Empty;
     public string? Phone { get; set; }
     public DateOnly? DateOfBirth { get; set; }

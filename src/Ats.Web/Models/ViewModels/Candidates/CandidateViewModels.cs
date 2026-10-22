@@ -241,6 +241,10 @@ public class CandidateListViewModel
     public string? CurrentTitle { get; set; }
     public string? CurrentCompany { get; set; }
     public int ApplicationCount { get; set; }
+    public Guid? LatestApplicationId { get; set; }
+    public string? LatestApplicationStatus { get; set; }
+    public bool HasSentRejectionEmail { get; set; }
+    public DateTimeOffset? RejectionEmailSentAt { get; set; }
     public string? LatestJobTitle { get; set; }
     public Guid? LatestJobPostingId { get; set; }
     public CandidateStage? LatestStage { get; set; }

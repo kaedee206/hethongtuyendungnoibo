@@ -1,20 +1,23 @@
 using System.Security.Claims;
 using Ats.Web.Common;
 using Ats.Web.Constants;
+using Ats.Web.Data;
 using Ats.Web.Models.DTOs;
+using Ats.Web.Models.Entities;
 using Ats.Web.Models.Enums;
 using Ats.Web.Models.ViewModels.Candidates;
 using Ats.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Ats.Web.Controllers;
 
 /// <summary>
 /// Controller điều phối nghiệp vụ ứng viên, quản lý hồ sơ hợp nhất (SCRUM-39), 
-/// giai đoạn tuyển dụng (SCRUM-42) & thêm ứng viên thủ công (SCRUM-47).
+/// giai đoạn tuyển dụng (SCRUM-42), gửi thư từ chối hàng loạt (SCRUM-345) & thêm ứng viên thủ công (SCRUM-47).
 /// Tuân thủ quy chuẩn C# 12 Primary Constructors, kebab-case routing và bảo mật Anti-Forgery Token.
 /// </summary>
 [Authorize]
@@ -25,12 +28,16 @@ public class CandidatesController(
     ICandidateService candidateService,
     IJobPostingService jobPostingService,
     ISecurityAuditService securityAuditService,
+    IEmailService emailService,
+    ApplicationDbContext dbContext,
     ILogger<CandidatesController> logger) : Controller
 {
     private readonly ICandidateStageService _candidateStageService = candidateStageService;
     private readonly ICandidateService _candidateService = candidateService;
     private readonly IJobPostingService _jobPostingService = jobPostingService;
     private readonly ISecurityAuditService _securityAuditService = securityAuditService;
+    private readonly IEmailService _emailService = emailService;
+    private readonly ApplicationDbContext _dbContext = dbContext;
     private readonly ILogger<CandidatesController> _logger = logger;
 
     private Guid GetCurrentUserId()
@@ -893,6 +900,244 @@ public class CandidatesController(
 
         ViewBag.JobPostings = items;
         ViewBag.SelectedJob = publishedJobs.FirstOrDefault(j => j.Id == selectedJobId);
+    }
+
+    // ==========================================
+    // SCRUM-345: GỬI THƯ CẢM ƠN & TỪ CHỐI HÀNG LOẠT
+    // ==========================================
+
+    /// <summary>
+    /// API xem trước nội dung thư từ chối với dữ liệu thật của từng ứng viên và kiểm tra trùng lặp (SCRUM-345).
+    /// </summary>
+    [HttpGet("preview-bulk-rejection")]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.Admin},{UserRoles.HRManager},{UserRoles.HiringManager}")]
+    public async Task<IActionResult> PreviewBulkRejection(
+        [FromQuery] List<Guid> applicationIds,
+        [FromQuery] string? reason = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (applicationIds == null || applicationIds.Count == 0)
+        {
+            return Json(new BulkRejectionPreviewResponseDto
+            {
+                Candidates = [],
+                TotalSelected = 0,
+                ValidToSendCount = 0,
+                BlockedDuplicateCount = 0
+            });
+        }
+
+        var apps = await _dbContext.Applications
+            .Include(a => a.Candidate)
+            .Include(a => a.JobPosting)
+            .Include(a => a.CurrentStage)
+            .Where(a => applicationIds.Contains(a.Id) && !a.IsDeleted)
+            .ToListAsync(cancellationToken);
+
+        var list = new List<BulkRejectionCandidatePreviewDto>();
+        int validCount = 0;
+        int duplicateCount = 0;
+
+        foreach (var app in apps)
+        {
+            var candName = app.Candidate.FullName;
+            var jobTitle = app.JobPosting?.Title ?? "Vị trí tuyển dụng";
+            var hasSent = app.HasSentRejectionEmail;
+            var sentAt = app.RejectionEmailSentAt;
+
+            if (hasSent)
+            {
+                duplicateCount++;
+            }
+            else
+            {
+                validCount++;
+            }
+
+            var previewHtml = _emailService.GenerateRejectionEmailHtml(candName, jobTitle, reason);
+            var previewSubj = $"[NoveraTech Careers] Thư cảm ơn & Kết quả ứng tuyển vị trí {jobTitle}";
+
+            list.Add(new BulkRejectionCandidatePreviewDto
+            {
+                ApplicationId = app.Id,
+                CandidateId = app.CandidateId,
+                FullName = candName,
+                Email = app.Candidate.Email,
+                Phone = app.Candidate.Phone,
+                JobTitle = jobTitle,
+                CurrentStageName = app.CurrentStage?.Name ?? app.Stage.GetDisplayName(),
+                Status = app.Status.ToString(),
+                HasSentRejectionEmail = hasSent,
+                RejectionEmailSentAt = sentAt,
+                SkipReason = hasSent && sentAt.HasValue
+                    ? $"Đã nhận thư từ chối lúc {sentAt.Value.ToOffset(TimeSpan.FromHours(7)):dd/MM/yyyy HH:mm}. Hệ thống tự động chặn gửi trùng để giữ thiện cảm với ứng viên."
+                    : (hasSent ? "Đã nhận thư từ chối trước đó. Hệ thống tự động chặn gửi trùng." : null),
+                PreviewSubject = previewSubj,
+                PreviewHtml = previewHtml
+            });
+        }
+
+        return Json(new BulkRejectionPreviewResponseDto
+        {
+            Candidates = list,
+            TotalSelected = apps.Count,
+            ValidToSendCount = validCount,
+            BlockedDuplicateCount = duplicateCount,
+            DefaultSubject = "[NoveraTech Careers] Thư cảm ơn & Kết quả ứng tuyển"
+        });
+    }
+
+    /// <summary>
+    /// Xử lý gửi thư cảm ơn & từ chối hàng loạt, chặn gửi trùng cho ứng viên đã nhận thư (SCRUM-345).
+    /// </summary>
+    [HttpPost("bulk-send-rejection")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.Admin},{UserRoles.HRManager}")]
+    public async Task<IActionResult> BulkSendRejection(
+        [FromBody] BulkSendRejectionRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        if (request?.ApplicationIds == null || request.ApplicationIds.Count == 0)
+        {
+            return Json(new BulkSendRejectionResponseDto
+            {
+                Success = false,
+                Message = "Vui lòng chọn ít nhất một ứng viên để gửi thư từ chối."
+            });
+        }
+
+        var apps = await _dbContext.Applications
+            .Include(a => a.Candidate)
+            .Include(a => a.JobPosting)
+            .Include(a => a.CurrentStage)
+            .Where(a => request.ApplicationIds.Contains(a.Id) && !a.IsDeleted)
+            .ToListAsync(cancellationToken);
+
+        if (apps.Count == 0)
+        {
+            return Json(new BulkSendRejectionResponseDto
+            {
+                Success = false,
+                Message = "Không tìm thấy hồ sơ ứng viên hợp lệ."
+            });
+        }
+
+        // Xác định nội dung lý do từ chối
+        string finalReason = request.RejectionReasonTitle?.Trim() ?? string.Empty;
+        if (request.RejectionReasonId.HasValue && request.RejectionReasonId.Value != Guid.Empty)
+        {
+            var catReason = await _dbContext.RecruitmentCatalogs
+                .FirstOrDefaultAsync(c => c.Id == request.RejectionReasonId.Value, cancellationToken);
+            if (catReason != null)
+            {
+                finalReason = catReason.Name;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(finalReason))
+        {
+            finalReason = "Hồ sơ chưa phù hợp với tiêu chuẩn yêu cầu của vị trí ở thời điểm hiện tại.";
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.CustomFeedback))
+        {
+            finalReason += $"\n\nLời nhắn thêm: {request.CustomFeedback.Trim()}";
+        }
+
+        var rejectStage = await _dbContext.PipelineStages
+            .FirstOrDefaultAsync(s => s.StageOrder == 7 || s.Name.Contains("Từ chối"), cancellationToken);
+
+        var currentUserId = GetCurrentUserId();
+        int sentCount = 0;
+        int skippedDuplicateCount = 0;
+        int failedCount = 0;
+        var errors = new List<string>();
+
+        foreach (var app in apps)
+        {
+            // YÊU CẦU: Hệ thống chặn gửi trùng cho ứng viên đã nhận thư từ chối
+            if (app.HasSentRejectionEmail)
+            {
+                skippedDuplicateCount++;
+                _logger.LogInformation("SCRUM-345: Bỏ qua gửi thư từ chối cho ứng viên {CandidateName} ({Email}) do đã nhận thư trước đó vào {SentAt}",
+                    app.Candidate.FullName, app.Candidate.Email, app.RejectionEmailSentAt);
+                continue;
+            }
+
+            try
+            {
+                var jobTitle = app.JobPosting?.Title ?? "Vị trí tuyển dụng";
+                var emailSuccess = await _emailService.SendRejectionLetterAsync(
+                    app.Candidate.Email,
+                    app.Candidate.FullName,
+                    jobTitle,
+                    finalReason,
+                    cancellationToken);
+
+                if (emailSuccess)
+                {
+                    app.HasSentRejectionEmail = true;
+                    app.RejectionEmailSentAt = DateTimeOffset.UtcNow;
+                    app.RejectionNote = finalReason;
+
+                    var prevStageId = app.CurrentStageId;
+                    if (app.Status != ApplicationStatus.REJECTED)
+                    {
+                        app.Status = ApplicationStatus.REJECTED;
+                        if (rejectStage != null)
+                        {
+                            app.CurrentStageId = rejectStage.Id;
+                        }
+                    }
+
+                    _dbContext.ApplicationStageHistories.Add(new ApplicationStageHistory
+                    {
+                        Id = Guid.NewGuid(),
+                        ApplicationId = app.Id,
+                        FromStageId = prevStageId,
+                        ToStageId = rejectStage?.Id ?? prevStageId,
+                        ChangedByUserId = currentUserId,
+                        Comment = $"Gửi thư cảm ơn & từ chối hàng loạt (SCRUM-345): {finalReason}",
+                        CreatedAt = DateTimeOffset.UtcNow
+                    });
+
+                    sentCount++;
+                }
+                else
+                {
+                    failedCount++;
+                    errors.Add($"Không thể gửi email đến {app.Candidate.Email}");
+                }
+            }
+            catch (Exception ex)
+            {
+                failedCount++;
+                _logger.LogError(ex, "Lỗi khi gửi thư từ chối cho ứng viên {AppId}", app.Id);
+                errors.Add($"Lỗi gửi thư cho {app.Candidate.FullName}: {ex.Message}");
+            }
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var summaryMsg = $"Đã gửi thành công {sentCount} thư cảm ơn & từ chối.";
+        if (skippedDuplicateCount > 0)
+        {
+            summaryMsg += $" Bỏ qua {skippedDuplicateCount} ứng viên do đã nhận thư từ chối trước đó (chống gửi trùng).";
+        }
+        if (failedCount > 0)
+        {
+            summaryMsg += $" Thất bại: {failedCount}.";
+        }
+
+        return Json(new BulkSendRejectionResponseDto
+        {
+            Success = sentCount > 0 || (sentCount == 0 && skippedDuplicateCount > 0),
+            SentCount = sentCount,
+            SkippedDuplicateCount = skippedDuplicateCount,
+            FailedCount = failedCount,
+            Message = summaryMsg,
+            Errors = errors
+        });
     }
 }
 

@@ -605,19 +605,16 @@ public class EmailService : IEmailService
         return await SendEmailAsync(new SendEmailRequestDto(candidateEmail, subject, body), cancellationToken);
     }
 
-    public async Task<bool> SendRejectionLetterAsync(
-        string candidateEmail,
+    public string GenerateRejectionEmailHtml(
         string candidateName,
         string jobTitle,
-        string? reason,
-        CancellationToken cancellationToken = default)
+        string? reason)
     {
-        var subject = $"[NoveraTech Careers] Thư cảm ơn & Kết quả ứng tuyển vị trí {jobTitle}";
         var reasonText = !string.IsNullOrWhiteSpace(reason)
             ? $"<div style=\"background: #F8FAFC; border-left: 3px solid #94A3B8; padding: 10px 14px; margin: 16px 0; font-size: 0.85rem; color: #475569;\"><strong>Ghi chú từ hội đồng:</strong> {reason}</div>"
             : "";
 
-        var body = $@"
+        return $@"
         <div style=""font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden;"">
             <div style=""background: #334155; padding: 24px; text-align: center;"">
                 <h2 style=""color: #FFFFFF; margin: 0; font-size: 1.2rem; font-weight: 700;"">THƯ CẢM ƠN ỨNG TUYỂN</h2>
@@ -643,6 +640,17 @@ public class EmailService : IEmailService
                 Phòng Tuyển dụng Tập đoàn Công nghệ NoveraTech
             </div>
         </div>";
+    }
+
+    public async Task<bool> SendRejectionLetterAsync(
+        string candidateEmail,
+        string candidateName,
+        string jobTitle,
+        string? reason,
+        CancellationToken cancellationToken = default)
+    {
+        var subject = $"[NoveraTech Careers] Thư cảm ơn & Kết quả ứng tuyển vị trí {jobTitle}";
+        var body = GenerateRejectionEmailHtml(candidateName, jobTitle, reason);
 
         return await SendEmailAsync(new SendEmailRequestDto(candidateEmail, subject, body), cancellationToken);
     }

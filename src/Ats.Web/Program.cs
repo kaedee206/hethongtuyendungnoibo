@@ -424,6 +424,10 @@ using (var scope = app.Services.CreateScope())
                 deleted_at TIMESTAMPTZ
             );
             CREATE INDEX IF NOT EXISTS ix_offer_approvals_offer_id ON offer_approvals (offer_id);
+
+            -- SCRUM-345: Thu cam on & Tu choi hang loat, chong gui trung
+            ALTER TABLE applications ADD COLUMN IF NOT EXISTS has_sent_rejection_email boolean NOT NULL DEFAULT false;
+            ALTER TABLE applications ADD COLUMN IF NOT EXISTS rejection_email_sent_at timestamp with time zone;
         ");
     }
     catch (Exception e)

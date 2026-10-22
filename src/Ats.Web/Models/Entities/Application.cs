@@ -51,6 +51,16 @@ public class Application : BaseEntity
     /// </summary>
     public DateTimeOffset? StageEnteredAt { get; set; }
 
+    /// <summary>
+    /// Cờ đánh dấu đã gửi thư cảm ơn/từ chối cho ứng viên để chống gửi trùng lặp (SCRUM-345).
+    /// </summary>
+    public bool HasSentRejectionEmail { get; set; } = false;
+
+    /// <summary>
+    /// Thời điểm gửi thư cảm ơn/từ chối cho ứng viên (SCRUM-345).
+    /// </summary>
+    public DateTimeOffset? RejectionEmailSentAt { get; set; }
+
     public JobPosting JobPosting { get; set; } = null!;
     public Candidate Candidate { get; set; } = null!;
     public Resume Resume { get; set; } = null!;
