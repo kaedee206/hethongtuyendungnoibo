@@ -50,7 +50,20 @@ public class CandidateDetailsViewModel
     // Ghi chú nội bộ (Recruitment Notes)
     public List<CandidateNoteViewModel> Notes { get; set; } = [];
 
-    public List<CandidateTagCatalogItemViewModel> AvailableTags { get; set; } = [];
+    // Danh mục nhãn gợi ý có sẵn
+    public List<string> SuggestedTags { get; set; } =
+    [
+        "Tiềm năng cao",
+        "Senior .NET",
+        "Fullstack",
+        "Tiếng Anh tốt",
+        "Fresher triển vọng",
+        "Văn hóa phù hợp",
+        "Kỳ vọng lương cao",
+        "Cần phỏng vấn lại",
+        "Chờ đợt tuyển sau",
+        "Ưu tiên xem xét"
+    ];
 }
 
 public class CandidateResumeViewModel
@@ -182,18 +195,10 @@ public class CandidateStageHistoryItemViewModel
 public class CandidateTagViewModel
 {
     public Guid Id { get; set; }
-    public Guid CatalogId { get; set; }
     public string TagName { get; set; } = string.Empty;
     public string ColorCode { get; set; } = "#059669";
     public string? CreatedByUserName { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
-}
-
-public class CandidateTagCatalogItemViewModel
-{
-    public Guid Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string ColorCode { get; set; } = "#059669";
 }
 
 public class CandidateNoteViewModel
@@ -291,13 +296,13 @@ public class CandidateSearchIndexViewModel
 public class CandidateTagInputModel
 {
     public Guid CandidateId { get; set; }
-    public Guid CatalogId { get; set; }
+    public string TagName { get; set; } = string.Empty;
+    public string? ColorCode { get; set; }
 }
 
 public class CandidateNoteInputModel
 {
     public Guid CandidateId { get; set; }
-    [System.ComponentModel.DataAnnotations.StringLength(4000)]
     public string Content { get; set; } = string.Empty;
     public string NoteType { get; set; } = "GENERAL";
 }

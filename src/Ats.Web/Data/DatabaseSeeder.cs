@@ -1120,13 +1120,10 @@ public static class DatabaseSeeder
             // Seed Nhãn (Tags) cho ứng viên
             if (!await context.CandidateTags.AnyAsync(t => t.CandidateId == candTuanUnified.Id))
             {
-                var seniorTag = await GetOrCreateCandidateTagCatalogAsync(context, "Senior .NET", "#2563EB");
-                var potentialTag = await GetOrCreateCandidateTagCatalogAsync(context, "Tiềm năng cao", "#059669");
-                var englishTag = await GetOrCreateCandidateTagCatalogAsync(context, "Tiếng Anh tốt", "#D97706");
                 await context.CandidateTags.AddRangeAsync(
-                    new CandidateTag { Id = Guid.NewGuid(), CandidateId = candTuanUnified.Id, CatalogId = seniorTag.Id, CreatedByUserId = hrRecruiter.Id, CreatedAt = DateTimeOffset.UtcNow.AddDays(-7) },
-                    new CandidateTag { Id = Guid.NewGuid(), CandidateId = candTuanUnified.Id, CatalogId = potentialTag.Id, CreatedByUserId = hrRecruiter.Id, CreatedAt = DateTimeOffset.UtcNow.AddDays(-6) },
-                    new CandidateTag { Id = Guid.NewGuid(), CandidateId = candTuanUnified.Id, CatalogId = englishTag.Id, CreatedByUserId = hrRecruiter.Id, CreatedAt = DateTimeOffset.UtcNow.AddDays(-4) }
+                    new CandidateTag { Id = Guid.NewGuid(), CandidateId = candTuanUnified.Id, TagName = "Senior .NET", ColorCode = "#2563EB", CreatedByUserId = hrRecruiter.Id, CreatedAt = DateTimeOffset.UtcNow.AddDays(-7) },
+                    new CandidateTag { Id = Guid.NewGuid(), CandidateId = candTuanUnified.Id, TagName = "Tiềm năng cao", ColorCode = "#059669", CreatedByUserId = hrRecruiter.Id, CreatedAt = DateTimeOffset.UtcNow.AddDays(-6) },
+                    new CandidateTag { Id = Guid.NewGuid(), CandidateId = candTuanUnified.Id, TagName = "Tiếng Anh tốt", ColorCode = "#D97706", CreatedByUserId = hrRecruiter.Id, CreatedAt = DateTimeOffset.UtcNow.AddDays(-4) }
                 );
             }
 
@@ -1169,11 +1166,9 @@ public static class DatabaseSeeder
         {
             if (!await context.CandidateTags.AnyAsync(t => t.CandidateId == candDucUnified.Id))
             {
-                var aiTag = await GetOrCreateCandidateTagCatalogAsync(context, "AI Engineer", "#7C3AED");
-                var pythonTag = await GetOrCreateCandidateTagCatalogAsync(context, "Python/PyTorch", "#0284C7");
                 await context.CandidateTags.AddRangeAsync(
-                    new CandidateTag { Id = Guid.NewGuid(), CandidateId = candDucUnified.Id, CatalogId = aiTag.Id, CreatedByUserId = hrRecruiter.Id, CreatedAt = DateTimeOffset.UtcNow.AddDays(-5) },
-                    new CandidateTag { Id = Guid.NewGuid(), CandidateId = candDucUnified.Id, CatalogId = pythonTag.Id, CreatedByUserId = hrRecruiter.Id, CreatedAt = DateTimeOffset.UtcNow.AddDays(-5) }
+                    new CandidateTag { Id = Guid.NewGuid(), CandidateId = candDucUnified.Id, TagName = "AI Engineer", ColorCode = "#7C3AED", CreatedByUserId = hrRecruiter.Id, CreatedAt = DateTimeOffset.UtcNow.AddDays(-5) },
+                    new CandidateTag { Id = Guid.NewGuid(), CandidateId = candDucUnified.Id, TagName = "Python/PyTorch", ColorCode = "#0284C7", CreatedByUserId = hrRecruiter.Id, CreatedAt = DateTimeOffset.UtcNow.AddDays(-5) }
                 );
             }
             if (!await context.CandidateNotes.AnyAsync(n => n.CandidateId == candDucUnified.Id))
@@ -1188,7 +1183,6 @@ public static class DatabaseSeeder
                     CreatedAt = DateTimeOffset.UtcNow.AddDays(-4)
                 });
             }
-
         }
 
         // 9. Seed Kho Ứng viên Tiềm năng (Scrum 45 - Talent Pool)
@@ -1278,42 +1272,10 @@ public static class DatabaseSeeder
                         UpdatedAt = DateTimeOffset.UtcNow.AddDays(-14)
                     });
                 }
-
             }
         }
 
         await context.SaveChangesAsync();
-    }
-
-    private static async Task<RecruitmentCatalog> GetOrCreateCandidateTagCatalogAsync(
-        ApplicationDbContext context,
-        string name,
-        string colorCode)
-    {
-        var normalizedName = string.Join(' ', name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries));
-        var existing = await context.RecruitmentCatalogs.FirstOrDefaultAsync(c =>
-            c.CatalogType == "CANDIDATE_TAG" && c.Name.ToLower() == normalizedName.ToLower());
-        if (existing != null)
-        {
-            return existing;
-        }
-
-        var hash = System.Security.Cryptography.SHA256.HashData(
-            System.Text.Encoding.UTF8.GetBytes(normalizedName.ToUpperInvariant()));
-        var catalog = new RecruitmentCatalog
-        {
-            Id = Guid.NewGuid(),
-            CatalogType = "CANDIDATE_TAG",
-            Code = $"TAG_{Convert.ToHexString(hash)}",
-            Name = normalizedName,
-            ColorCode = colorCode,
-            IsActive = true,
-            CreatedAt = DateTimeOffset.UtcNow,
-            UpdatedAt = DateTimeOffset.UtcNow
-        };
-        await context.RecruitmentCatalogs.AddAsync(catalog);
-        await context.SaveChangesAsync();
-        return catalog;
     }
 
     private static async Task SeedCandidateEvaluationComparisonDataAsync(
@@ -1490,3 +1452,4 @@ public static class DatabaseSeeder
         }
     }
 }
+
