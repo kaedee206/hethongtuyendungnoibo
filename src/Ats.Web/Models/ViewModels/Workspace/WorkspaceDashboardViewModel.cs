@@ -59,6 +59,10 @@ public class WorkspaceDashboardViewModel
 
     // SCRUM-328: Bộ lọc vị trí tuyển dụng phục vụ xuất Excel rút gọn
     public List<JobFilterOptionDto> AvailableJobsForFilter { get; set; } = new();
+
+    // SCRUM-351: Tiến độ tuyển dụng các vị trí sở hữu của Trưởng bộ phận (Hiring Manager)
+    public List<Ats.Web.Models.ViewModels.Requisitions.PositionProgressSummaryDto> MyOwnedPositionsProgress { get; set; } = new();
+    public Ats.Web.Models.ViewModels.Requisitions.PositionRecruitmentProgressViewModel? MyPrimaryPositionProgress { get; set; }
 }
 
 public class JobPostingFilterOptionDto

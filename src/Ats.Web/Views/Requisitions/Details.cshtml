@@ -68,6 +68,14 @@
                 <i class="bi bi-arrow-left"></i>
                 <span>Quay lại</span>
             </a>
+            @if (Model.Status == RequisitionStatus.APPROVED || Model.Status == RequisitionStatus.PAUSED || Model.Status == RequisitionStatus.CLOSED)
+            {
+                <a href="@Url.Action("PositionProgress", "Requisitions", new { id = Model.Id })" 
+                   class="btn btn-outline-primary px-3 py-2 fw-medium d-flex align-items-center gap-1 shadow-sm" style="border-radius: 8px; background: #FFFFFF;">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    <span>Xem tiến độ tuyển dụng</span>
+                </a>
+            }
             @if (Model.Status == RequisitionStatus.CHANGES_REQUESTED || Model.Status == RequisitionStatus.DRAFT)
             {
                 <a href="@Url.Action("Edit", "Requisitions", new { id = Model.Id })" class="btn btn-warning px-3 py-2 fw-medium d-flex align-items-center gap-1 shadow-sm text-dark" style="border-radius: 8px;">
