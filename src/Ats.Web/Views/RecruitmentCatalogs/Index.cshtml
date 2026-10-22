@@ -8,7 +8,7 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
         <div>
             <h1 class="h3 fw-bold text-dark mb-1">Danh mục tuyển dụng chuẩn hóa</h1>
-            <p class="text-muted small mb-0">Quản lý các danh mục hệ thống: nguồn ứng viên, lý do từ chối, địa điểm làm việc và hình thức công việc.</p>
+            <p class="text-muted small mb-0">Quản lý danh mục tuyển dụng, bao gồm nhãn phân loại hồ sơ ứng viên.</p>
         </div>
         <div>
             <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" id="btnOpenCreateCatalogModal" style="border-radius: 8px;">
@@ -36,6 +36,9 @@
                 </button>
                 <button type="button" class="btn btn-outline-secondary px-3 py-2 catalog-tab-btn" data-type="WORK_TYPE" style="border-radius: 8px;">
                     <i class="bi bi-briefcase-fill me-1"></i> Hình thức làm việc (<span id="countWorkType">@Model.Count(m => m.CatalogType == "WORK_TYPE")</span>)
+                </button>
+                <button type="button" class="btn btn-outline-secondary px-3 py-2 catalog-tab-btn" data-type="CANDIDATE_TAG" style="border-radius: 8px;">
+                    <i class="bi bi-tags-fill me-1"></i> Nhãn hồ sơ (<span id="countCandidateTag">@Model.Count(m => m.CatalogType == "CANDIDATE_TAG")</span>)
                 </button>
             </div>
         </div>
@@ -66,6 +69,7 @@
                             "REJECTION_REASON" => "Lý do từ chối",
                             "LOCATION" => "Địa điểm",
                             "WORK_TYPE" => "Hình thức việc làm",
+                            "CANDIDATE_TAG" => "Nhãn hồ sơ ứng viên",
                             _ => item.CatalogType
                         };
                         var typeBadgeClass = item.CatalogType switch
@@ -74,6 +78,7 @@
                             "REJECTION_REASON" => "bg-danger-subtle text-danger border border-danger-subtle",
                             "LOCATION" => "bg-success-subtle text-success border border-success-subtle",
                             "WORK_TYPE" => "bg-warning-subtle text-warning-emphasis border border-warning-subtle",
+                            "CANDIDATE_TAG" => "bg-success-subtle text-success border border-success-subtle",
                             _ => "bg-secondary-subtle text-secondary"
                         };
 
@@ -85,6 +90,10 @@
                                 <code class="fw-semibold text-dark" style="font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;">@item.Code</code>
                             </td>
                             <td>
+                                @if (!string.IsNullOrWhiteSpace(item.ColorCode))
+                                {
+                                    <span class="d-inline-block rounded-circle me-1" style="width:0.7rem;height:0.7rem;background-color:@item.ColorCode" aria-hidden="true"></span>
+                                }
                                 <span class="fw-bold text-dark item-name">@item.Name</span>
                             </td>
                             <td>
@@ -113,6 +122,7 @@
                                             data-code="@item.Code" 
                                             data-name="@item.Name" 
                                             data-desc="@item.Description" 
+                                            data-color="@item.ColorCode"
                                             data-order="@item.DisplayOrder" 
                                             data-active="@item.IsActive.ToString().ToLower()" 
                                             data-system="false"
@@ -173,6 +183,7 @@
                             <option value="REJECTION_REASON">Lý do từ chối (REJECTION_REASON)</option>
                             <option value="LOCATION">Địa điểm làm việc (LOCATION)</option>
                             <option value="WORK_TYPE">Hình thức việc làm (WORK_TYPE)</option>
+                            <option value="CANDIDATE_TAG">Nhãn hồ sơ ứng viên (CANDIDATE_TAG)</option>
                         </select>
                     </div>
 
@@ -190,6 +201,11 @@
                     <div class="mb-3">
                         <label class="form-label fw-semibold text-dark">Mô tả chi tiết</label>
                         <textarea id="modalCatalogDesc" class="form-control" rows="2" placeholder="Giải thích chi tiết hoặc ghi chú..." style="border-radius: 8px;"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-dark" for="modalCatalogColor">Màu nhãn (tùy chọn)</label>
+                        <input type="color" id="modalCatalogColor" class="form-control form-control-color" value="#059669" />
                     </div>
 
                     <div class="row g-3">
@@ -231,6 +247,7 @@
             const codeInput = document.getElementById('modalCatalogCode');
             const nameInput = document.getElementById('modalCatalogName');
             const descInput = document.getElementById('modalCatalogDesc');
+            const colorInput = document.getElementById('modalCatalogColor');
             const orderInput = document.getElementById('modalCatalogOrder');
             const activeInput = document.getElementById('modalCatalogIsActive');
             const btnSave = document.getElementById('btnSaveCatalog');
@@ -351,6 +368,7 @@
                     const code = editBtn.getAttribute('data-code');
                     const name = editBtn.getAttribute('data-name');
                     const desc = editBtn.getAttribute('data-desc');
+                    const color = editBtn.getAttribute('data-color');
                     const order = editBtn.getAttribute('data-order');
                     const isActive = editBtn.getAttribute('data-active') === 'true';
                     const isSystem = editBtn.getAttribute('data-system') === 'true';
@@ -362,6 +380,7 @@
                     codeInput.disabled = false;
                     nameInput.value = name;
                     descInput.value = desc || '';
+                    colorInput.value = color || '#059669';
                     orderInput.value = order || '0';
                     activeInput.checked = isActive;
 
@@ -405,6 +424,7 @@
                     code: codeInput.value.trim(),
                     name: nameInput.value.trim(),
                     description: descInput.value.trim(),
+                    colorCode: typeSelect.value === 'CANDIDATE_TAG' ? colorInput.value : null,
                     displayOrder: parseInt(orderInput.value, 10) || 0,
                     isActive: activeInput.checked
                 };
@@ -458,6 +478,12 @@
                         const err = await response.json();
                         throw new Error(err.message || 'Lỗi khi xóa mục danh mục.');
                     }
+                    const result = await response.json();
+                    if (result.deactivated) {
+                        if (window.NoveraToast) window.NoveraToast.show(result.message, 'success');
+                        setTimeout(() => window.location.reload(), 700);
+                        return;
+                    }
 
                     const row = document.getElementById(`row-${id}`);
                     if (row) {
@@ -473,7 +499,8 @@
                         const typeCountId = type === 'SOURCE' ? 'countSource' :
                                             type === 'REJECTION_REASON' ? 'countReason' :
                                             type === 'LOCATION' ? 'countLocation' :
-                                            type === 'WORK_TYPE' ? 'countWorkType' : null;
+                                            type === 'WORK_TYPE' ? 'countWorkType' :
+                                            type === 'CANDIDATE_TAG' ? 'countCandidateTag' : null;
                         if (typeCountId) {
                             const typeEl = document.getElementById(typeCountId);
                             if (typeEl) {
@@ -485,7 +512,7 @@
                         applyCatalogPagination();
                     }
 
-                    if (window.NoveraToast) window.NoveraToast.show('Đã xóa mục danh mục thành công!', 'success');
+                    if (window.NoveraToast) window.NoveraToast.show(result.message || 'Đã xóa mục danh mục thành công!', 'success');
                 } catch (err) {
                     if (window.NoveraToast) window.NoveraToast.show(err.message, 'error');
                     else alert(err.message);

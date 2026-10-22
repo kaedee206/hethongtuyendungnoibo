@@ -4,6 +4,7 @@ using Ats.Web.Models.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 using Ats.Web.Services.Interfaces;
 
@@ -67,6 +68,11 @@ public class RecruitmentCatalogsController : Controller
         {
             return Forbid();
         }
+        if (type.Equals("CANDIDATE_TAG", StringComparison.OrdinalIgnoreCase) &&
+            (User.Identity?.IsAuthenticated != true || User.IsInRole(UserRoles.Candidate)))
+        {
+            return Forbid();
+        }
 
         var items = await _catalogService.GetByTypeAsync(type, true);
         return Ok(items.Select(i => new
@@ -75,7 +81,8 @@ public class RecruitmentCatalogsController : Controller
             code = i.Code,
             name = i.Name,
             description = i.Description,
-            displayOrder = i.DisplayOrder
+            displayOrder = i.DisplayOrder,
+            colorCode = i.ColorCode
         }));
     }
 
@@ -132,9 +139,23 @@ public class RecruitmentCatalogsController : Controller
             return BadRequest(new { message = "Loại danh mục, mã và tên danh mục là bắt buộc." });
         }
 
+        var catalogType = dto.CatalogType.Trim().ToUpperInvariant();
+        var cleanName = NormalizeName(dto.Name);
+        if (catalogType == "CANDIDATE_TAG" &&
+            await _dbContext.RecruitmentCatalogs.AnyAsync(c =>
+                c.CatalogType == catalogType && c.Name.ToLower() == cleanName.ToLower()))
+        {
+            return Conflict(new { message = "Tên nhãn này đã tồn tại trong danh mục." });
+        }
+
+        if (!IsValidColorCode(dto.ColorCode))
+        {
+            return BadRequest(new { message = "Mã màu phải ở định dạng hexadecimal, ví dụ #059669." });
+        }
+
         var cleanCode = dto.Code.Trim().ToUpperInvariant();
         var exists = await _dbContext.RecruitmentCatalogs
-            .AnyAsync(c => c.CatalogType == dto.CatalogType && c.Code == cleanCode);
+            .AnyAsync(c => c.CatalogType == catalogType && c.Code == cleanCode);
 
         if (exists)
         {
@@ -144,10 +165,11 @@ public class RecruitmentCatalogsController : Controller
         var entity = new RecruitmentCatalog
         {
             Id = Guid.NewGuid(),
-            CatalogType = dto.CatalogType.Trim().ToUpperInvariant(),
+            CatalogType = catalogType,
             Code = cleanCode,
-            Name = dto.Name.Trim(),
+            Name = cleanName,
             Description = dto.Description?.Trim(),
+            ColorCode = dto.ColorCode?.Trim(),
             DisplayOrder = dto.DisplayOrder,
             IsActive = dto.IsActive,
             IsSystem = false,
@@ -177,6 +199,19 @@ public class RecruitmentCatalogsController : Controller
             return NotFound(new { message = "Không tìm thấy danh mục yêu cầu." });
         }
 
+        var cleanName = NormalizeName(dto.Name);
+        if (item.CatalogType == "CANDIDATE_TAG" &&
+            await _dbContext.RecruitmentCatalogs.AnyAsync(c =>
+                c.Id != id && c.CatalogType == item.CatalogType && c.Name.ToLower() == cleanName.ToLower()))
+        {
+            return Conflict(new { message = "Tên nhãn này đã tồn tại trong danh mục." });
+        }
+
+        if (!IsValidColorCode(dto.ColorCode))
+        {
+            return BadRequest(new { message = "Mã màu phải ở định dạng hexadecimal, ví dụ #059669." });
+        }
+
         // Allow updating code
         if (!string.IsNullOrWhiteSpace(dto.Code))
         {
@@ -190,8 +225,9 @@ public class RecruitmentCatalogsController : Controller
             item.Code = cleanCode;
         }
 
-        item.Name = dto.Name.Trim();
+        item.Name = cleanName;
         item.Description = dto.Description?.Trim();
+        item.ColorCode = dto.ColorCode?.Trim();
         item.DisplayOrder = dto.DisplayOrder;
         item.IsActive = dto.IsActive;
         item.IsSystem = false;
@@ -213,12 +249,28 @@ public class RecruitmentCatalogsController : Controller
         }
 
         var catType = item.CatalogType;
+        if (catType == "CANDIDATE_TAG" &&
+            await _dbContext.CandidateTags.AnyAsync(t => t.CatalogId == item.Id))
+        {
+            item.IsActive = false;
+            item.UpdatedAt = DateTimeOffset.UtcNow;
+            await _dbContext.SaveChangesAsync();
+            _catalogService.InvalidateCache(catType);
+            return Ok(new { deactivated = true, message = "Nhãn đã được gắn vào hồ sơ nên không thể xóa. Đã ngừng sử dụng nhãn." });
+        }
+
         _dbContext.RecruitmentCatalogs.Remove(item);
         await _dbContext.SaveChangesAsync();
         _catalogService.InvalidateCache(catType);
 
         return Ok(new { message = "Đã xóa mục danh mục thành công." });
     }
+
+    private static string NormalizeName(string name) =>
+        string.Join(' ', name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries));
+
+    private static bool IsValidColorCode(string? colorCode) =>
+        string.IsNullOrWhiteSpace(colorCode) || Regex.IsMatch(colorCode, "^#[0-9a-fA-F]{6}$");
 
     [HttpPost("api/items/{id:guid}/toggle-status")]
     [ValidateAntiForgeryToken]
@@ -288,6 +340,7 @@ public class CatalogItemDto
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public string? ColorCode { get; set; }
     public int DisplayOrder { get; set; } = 0;
     public bool IsActive { get; set; } = true;
 }

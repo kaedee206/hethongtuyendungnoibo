@@ -100,10 +100,17 @@ public class CandidateService(
         string currentUserRole,
         CancellationToken cancellationToken = default)
     {
+        if (currentUserRole == UserRoles.Candidate)
+        {
+            return null;
+        }
+
         var candidate = await _dbContext.Candidates
             .Include(c => c.Resumes)
             .Include(c => c.Tags.Where(t => !t.IsDeleted))
                 .ThenInclude(t => t.CreatedByUser)
+            .Include(c => c.Tags.Where(t => !t.IsDeleted))
+                .ThenInclude(t => t.Catalog)
             .Include(c => c.Notes.Where(n => !n.IsDeleted))
                 .ThenInclude(n => n.AuthorUser)
             .Include(c => c.ReferrerUser)
@@ -295,12 +302,13 @@ public class CandidateService(
 
         // Map Tags
         var tagsVm = candidate.Tags
-            .OrderBy(t => t.TagName)
+            .OrderBy(t => t.Catalog.Name)
             .Select(t => new CandidateTagViewModel
             {
                 Id = t.Id,
-                TagName = t.TagName,
-                ColorCode = t.ColorCode ?? "#059669",
+                CatalogId = t.CatalogId,
+                TagName = t.Catalog.Name,
+                ColorCode = GetSafeCandidateTagColor(t.Catalog.ColorCode),
                 CreatedByUserName = t.CreatedByUser?.FullName,
                 CreatedAt = t.CreatedAt
             }).ToList();
@@ -361,7 +369,19 @@ public class CandidateService(
             Resumes = resumesVm,
             ApplicationHistories = applicationHistoriesVm,
             Tags = tagsVm,
-            Notes = notesVm
+            Notes = notesVm,
+            AvailableTags = await _dbContext.RecruitmentCatalogs
+                .AsNoTracking()
+                .Where(c => c.CatalogType == "CANDIDATE_TAG" && c.IsActive && !c.IsDeleted)
+                .OrderBy(c => c.DisplayOrder)
+                .ThenBy(c => c.Name)
+                .Select(c => new CandidateTagCatalogItemViewModel
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    ColorCode = c.ColorCode ?? "#059669"
+                })
+                .ToListAsync(cancellationToken)
         };
     }
 
@@ -372,6 +392,7 @@ public class CandidateService(
         var query = _dbContext.Candidates
             .Include(c => c.User)
             .Include(c => c.Tags.Where(t => !t.IsDeleted))
+                .ThenInclude(t => t.Catalog)
             .Include(c => c.Applications.Where(a => !a.IsDeleted))
                 .ThenInclude(a => a.JobPosting)
             .Include(c => c.Applications.Where(a => !a.IsDeleted))
@@ -414,8 +435,9 @@ public class CandidateService(
                 Tags = c.Tags.Select(t => new CandidateTagViewModel
                 {
                     Id = t.Id,
-                    TagName = t.TagName,
-                    ColorCode = t.ColorCode ?? "#059669"
+                    CatalogId = t.CatalogId,
+                    TagName = t.Catalog.Name,
+                    ColorCode = GetSafeCandidateTagColor(t.Catalog.ColorCode)
                 }).ToList()
             };
         }).ToList();
@@ -425,43 +447,37 @@ public class CandidateService(
 
     public async Task<CandidateTagViewModel> AddTagAsync(
         Guid candidateId,
-        string tagName,
-        string? colorCode,
+        Guid catalogId,
         Guid currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var cleanTag = tagName.Trim();
-        if (string.IsNullOrWhiteSpace(cleanTag))
+        var catalog = await _dbContext.RecruitmentCatalogs
+            .FirstOrDefaultAsync(c => c.Id == catalogId && c.CatalogType == "CANDIDATE_TAG" && c.IsActive && !c.IsDeleted, cancellationToken);
+        if (catalog == null)
         {
-            throw new ArgumentException("Tên nhãn không được để trống.", nameof(tagName));
+            throw new ArgumentException("Nhãn không tồn tại hoặc đã ngừng sử dụng.", nameof(catalogId));
         }
 
-        // Kiểm tra xem đã có nhãn này chưa
         var existing = await _dbContext.CandidateTags
-            .FirstOrDefaultAsync(t => t.CandidateId == candidateId && t.TagName.ToLower() == cleanTag.ToLower() && !t.IsDeleted, cancellationToken);
+            .FirstOrDefaultAsync(t => t.CandidateId == candidateId && t.CatalogId == catalogId && !t.IsDeleted, cancellationToken);
 
         if (existing != null)
         {
             return new CandidateTagViewModel
             {
                 Id = existing.Id,
-                TagName = existing.TagName,
-                ColorCode = existing.ColorCode ?? "#059669",
+                CatalogId = existing.CatalogId,
+                TagName = catalog.Name,
+                ColorCode = GetSafeCandidateTagColor(catalog.ColorCode),
                 CreatedAt = existing.CreatedAt
             };
         }
-
-        var defaultColors = new[] { "#059669", "#2563EB", "#7C3AED", "#D97706", "#DC2626", "#0D9488" };
-        var randomColor = string.IsNullOrWhiteSpace(colorCode)
-            ? defaultColors[Math.Abs(cleanTag.GetHashCode()) % defaultColors.Length]
-            : colorCode.Trim();
 
         var tag = new CandidateTag
         {
             Id = Guid.NewGuid(),
             CandidateId = candidateId,
-            TagName = cleanTag,
-            ColorCode = randomColor,
+            CatalogId = catalogId,
             CreatedByUserId = currentUserId != Guid.Empty ? currentUserId : null,
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
@@ -475,19 +491,91 @@ public class CandidateService(
         return new CandidateTagViewModel
         {
             Id = tag.Id,
-            TagName = tag.TagName,
-            ColorCode = tag.ColorCode,
+            CatalogId = tag.CatalogId,
+            TagName = catalog.Name,
+            ColorCode = GetSafeCandidateTagColor(catalog.ColorCode),
             CreatedByUserName = user?.FullName,
             CreatedAt = tag.CreatedAt
         };
     }
 
+    public async Task<bool> UpdateApplicationRatingAsync(
+        Guid applicationId,
+        int? rating,
+        Guid currentUserId,
+        string currentUserRole,
+        CancellationToken cancellationToken = default)
+    {
+        if (rating is < 1 or > 5)
+        {
+            throw new ArgumentOutOfRangeException(nameof(rating), "Đánh giá phải nằm trong khoảng từ 1 đến 5 sao.");
+        }
+
+        var application = await _dbContext.Applications
+            .Where(a => a.Id == applicationId && !a.IsDeleted)
+            .Select(a => new { a.Id, a.CandidateId })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (application == null || !await CanAccessCandidateAsync(application.CandidateId, currentUserId, currentUserRole, cancellationToken))
+        {
+            return false;
+        }
+
+        var entity = await _dbContext.Applications.FirstAsync(a => a.Id == application.Id, cancellationToken);
+        entity.Rating = rating;
+        entity.UpdatedAt = DateTimeOffset.UtcNow;
+        entity.UpdatedById = currentUserId;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    private async Task<RecruitmentCatalog> GetOrCreateCandidateTagCatalogAsync(
+        string name,
+        string colorCode,
+        CancellationToken cancellationToken)
+    {
+        var normalizedName = string.Join(' ', name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        var existing = await _dbContext.RecruitmentCatalogs
+            .FirstOrDefaultAsync(c =>
+                c.CatalogType == "CANDIDATE_TAG" &&
+                c.Name.ToLower() == normalizedName.ToLower(),
+                cancellationToken);
+        if (existing != null)
+        {
+            return existing;
+        }
+
+        var hash = System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(normalizedName.ToUpperInvariant()));
+        var catalog = new RecruitmentCatalog
+        {
+            Id = Guid.NewGuid(),
+            CatalogType = "CANDIDATE_TAG",
+            Code = $"TAG_{Convert.ToHexString(hash)}",
+            Name = normalizedName,
+            ColorCode = colorCode,
+            IsActive = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+        _dbContext.RecruitmentCatalogs.Add(catalog);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return catalog;
+    }
+
+    private static string GetSafeCandidateTagColor(string? colorCode) =>
+        !string.IsNullOrWhiteSpace(colorCode) && Regex.IsMatch(colorCode, "^#[0-9a-fA-F]{6}$")
+            ? colorCode
+            : "#059669";
+
     public async Task<bool> RemoveTagAsync(
         Guid tagId,
+        Guid candidateId,
         Guid currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var tag = await _dbContext.CandidateTags.FirstOrDefaultAsync(t => t.Id == tagId && !t.IsDeleted, cancellationToken);
+        var tag = await _dbContext.CandidateTags.FirstOrDefaultAsync(
+            t => t.Id == tagId && t.CandidateId == candidateId && !t.IsDeleted,
+            cancellationToken);
         if (tag == null) return false;
 
         tag.IsDeleted = true;
@@ -510,14 +598,31 @@ public class CandidateService(
         {
             throw new ArgumentException("Nội dung ghi chú không được để trống.", nameof(content));
         }
+        if (cleanContent.Length > 4000)
+        {
+            throw new ArgumentException("Ghi chú không được dài quá 4.000 ký tự.", nameof(content));
+        }
+        if (currentUserId == Guid.Empty)
+        {
+            throw new UnauthorizedAccessException("Không xác định được người dùng đang đăng nhập.");
+        }
+
+        var normalizedNoteType = string.IsNullOrWhiteSpace(noteType)
+            ? "GENERAL"
+            : noteType.Trim().ToUpperInvariant();
+        var allowedNoteTypes = new[] { "GENERAL", "INTERVIEW", "SALARY", "EVALUATION", "RECRUITER_CALL", "FLAG" };
+        if (!allowedNoteTypes.Contains(normalizedNoteType, StringComparer.Ordinal))
+        {
+            throw new ArgumentException("Loại ghi chú không hợp lệ.", nameof(noteType));
+        }
 
         var note = new CandidateNote
         {
             Id = Guid.NewGuid(),
             CandidateId = candidateId,
-            AuthorUserId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstAsync(cancellationToken)),
+            AuthorUserId = currentUserId,
             Content = cleanContent,
-            NoteType = string.IsNullOrWhiteSpace(noteType) ? "GENERAL" : noteType.Trim().ToUpperInvariant(),
+            NoteType = normalizedNoteType,
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         };
@@ -542,10 +647,13 @@ public class CandidateService(
 
     public async Task<bool> DeleteNoteAsync(
         Guid noteId,
+        Guid candidateId,
         Guid currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var note = await _dbContext.CandidateNotes.FirstOrDefaultAsync(n => n.Id == noteId && !n.IsDeleted, cancellationToken);
+        var note = await _dbContext.CandidateNotes.FirstOrDefaultAsync(
+            n => n.Id == noteId && n.CandidateId == candidateId && !n.IsDeleted,
+            cancellationToken);
         if (note == null) return false;
 
         // Chỉ tác giả ghi chú hoặc Admin mới được xóa
@@ -622,10 +730,10 @@ public class CandidateService(
             })
             .ToListAsync(cancellationToken);
 
-        vm.AvailableTags = await _dbContext.CandidateTags
+        vm.AvailableTags = await _dbContext.RecruitmentCatalogs
             .AsNoTracking()
-            .Where(t => !t.IsDeleted)
-            .Select(t => t.TagName)
+            .Where(t => t.CatalogType == "CANDIDATE_TAG" && t.IsActive && !t.IsDeleted)
+            .Select(t => t.Name)
             .Distinct()
             .OrderBy(t => t)
             .ToListAsync(cancellationToken);
@@ -709,6 +817,7 @@ public class CandidateService(
         var query = _dbContext.Candidates
             .Include(c => c.User)
             .Include(c => c.Tags.Where(t => !t.IsDeleted))
+                .ThenInclude(t => t.Catalog)
             .Include(c => c.Applications.Where(a => !a.IsDeleted))
                 .ThenInclude(a => a.JobPosting)
             .Include(c => c.Applications.Where(a => !a.IsDeleted))
@@ -768,7 +877,7 @@ public class CandidateService(
         if (!string.IsNullOrWhiteSpace(criteria.Tag))
         {
             var tagClean = criteria.Tag.Trim().ToLower();
-            query = query.Where(c => c.Tags.Any(t => !t.IsDeleted && t.TagName.ToLower() == tagClean));
+            query = query.Where(c => c.Tags.Any(t => !t.IsDeleted && t.Catalog.Name.ToLower() == tagClean));
         }
 
         // 3.7. Lọc theo thời gian nộp hồ sơ
@@ -1466,16 +1575,16 @@ public class CandidateService(
                     var tagClean = sk.Trim();
                     if (tagClean.Length > 0 && tagClean.Length <= 30)
                     {
+                        var catalog = await GetOrCreateCandidateTagCatalogAsync(tagClean, "#059669", cancellationToken);
                         var hasTag = await _dbContext.CandidateTags
-                            .AnyAsync(t => t.CandidateId == candidate.Id && t.TagName.ToLower() == tagClean.ToLower(), cancellationToken);
+                            .AnyAsync(t => t.CandidateId == candidate.Id && t.CatalogId == catalog.Id, cancellationToken);
                         if (!hasTag)
                         {
                             await _dbContext.CandidateTags.AddAsync(new CandidateTag
                             {
                                 Id = Guid.NewGuid(),
                                 CandidateId = candidate.Id,
-                                TagName = tagClean,
-                                ColorCode = "#059669",
+                                CatalogId = catalog.Id,
                                 CreatedByUserId = currentUserId != Guid.Empty ? currentUserId : (await _dbContext.Users.Select(u => u.Id).FirstAsync(cancellationToken)),
                                 CreatedAt = DateTimeOffset.UtcNow
                             }, cancellationToken);
@@ -1961,4 +2070,3 @@ public class CandidateService(
         return digits;
     }
 }
-

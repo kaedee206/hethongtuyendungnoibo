@@ -33,6 +33,7 @@ public class TalentPoolService(
                 .ThenInclude(c => c.Resumes)
             .Include(tp => tp.Candidate)
                 .ThenInclude(c => c.Tags.Where(t => !t.IsDeleted))
+                    .ThenInclude(t => t.Catalog)
             .Include(tp => tp.AddedByUser)
             .Include(tp => tp.SourceApplication)
                 .ThenInclude(a => a!.JobPosting)
@@ -65,7 +66,7 @@ public class TalentPoolService(
             var sk = skill.Trim().ToLower();
             query = query.Where(tp =>
                 (tp.Skills != null && tp.Skills.ToLower().Contains(sk)) ||
-                tp.Candidate.Tags.Any(t => t.TagName.ToLower().Contains(sk)));
+                tp.Candidate.Tags.Any(t => t.Catalog.Name.ToLower().Contains(sk)));
         }
 
         // 4. Lọc theo Trạng thái (Status)
@@ -187,6 +188,7 @@ public class TalentPoolService(
                 .ThenInclude(c => c.Resumes)
             .Include(tp => tp.Candidate)
                 .ThenInclude(c => c.Tags.Where(t => !t.IsDeleted))
+                    .ThenInclude(t => t.Catalog)
             .Include(tp => tp.AddedByUser)
             .Include(tp => tp.SourceApplication)
                 .ThenInclude(a => a!.JobPosting)
@@ -417,6 +419,7 @@ public class TalentPoolService(
 
         var candidate = await _dbContext.Candidates
             .Include(c => c.Tags)
+                .ThenInclude(t => t.Catalog)
             .FirstOrDefaultAsync(c => c.Id == model.CandidateId && !c.IsDeleted, cancellationToken);
 
         if (candidate == null)

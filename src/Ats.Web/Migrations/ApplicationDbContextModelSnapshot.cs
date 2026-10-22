@@ -796,7 +796,8 @@ namespace Ats.Web.Migrations
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
                         .HasColumnName("content");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -927,9 +928,9 @@ namespace Ats.Web.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("candidate_id");
 
-                    b.Property<string>("ColorCode")
-                        .HasColumnType("text")
-                        .HasColumnName("color_code");
+                    b.Property<Guid>("CatalogId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("catalog_id");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -951,11 +952,6 @@ namespace Ats.Web.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_deleted");
 
-                    b.Property<string>("TagName")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("tag_name");
-
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -967,11 +963,16 @@ namespace Ats.Web.Migrations
                     b.HasKey("Id")
                         .HasName("pk_candidate_tags");
 
-                    b.HasIndex("CandidateId")
-                        .HasDatabaseName("ix_candidate_tags_candidate_id");
+                    b.HasIndex("CatalogId")
+                        .HasDatabaseName("ix_candidate_tags_catalog_id");
 
                     b.HasIndex("CreatedByUserId")
                         .HasDatabaseName("ix_candidate_tags_created_by_user_id");
+
+                    b.HasIndex("CandidateId", "CatalogId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_candidate_tags_candidate_id_catalog_id")
+                        .HasFilter("\"is_deleted\" = false");
 
                     b.ToTable("candidate_tags", (string)null);
                 });
@@ -2495,6 +2496,10 @@ namespace Ats.Web.Migrations
                         .HasColumnType("text")
                         .HasColumnName("code");
 
+                    b.Property<string>("ColorCode")
+                        .HasColumnType("text")
+                        .HasColumnName("color_code");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -3668,6 +3673,13 @@ namespace Ats.Web.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_candidate_tags_candidates_candidate_id");
 
+                    b.HasOne("Ats.Web.Models.Entities.RecruitmentCatalog", "Catalog")
+                        .WithMany()
+                        .HasForeignKey("CatalogId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_candidate_tags_recruitment_catalogs_catalog_id");
+
                     b.HasOne("Ats.Web.Models.Entities.User", "CreatedByUser")
                         .WithMany()
                         .HasForeignKey("CreatedByUserId")
@@ -3675,6 +3687,8 @@ namespace Ats.Web.Migrations
                         .HasConstraintName("fk_candidate_tags_users_created_by_user_id");
 
                     b.Navigation("Candidate");
+
+                    b.Navigation("Catalog");
 
                     b.Navigation("CreatedByUser");
                 });
