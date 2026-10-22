@@ -173,6 +173,11 @@ public class CandidatesController(
     [HttpGet("Details/{id:guid}")]
     public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
     {
+        if (User.IsInRole(UserRoles.Candidate))
+        {
+            return Forbid();
+        }
+
         var currentUserId = GetCurrentUserId();
         var currentUserRole = GetCurrentUserRole();
 
@@ -200,13 +205,17 @@ public class CandidatesController(
     [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager}")]
     public async Task<IActionResult> AddTag([FromForm] CandidateTagInputModel model, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(model.TagName))
+        if (User.IsInRole(UserRoles.Candidate))
+        {
+            return Forbid();
+        }
+        if (model.CatalogId == Guid.Empty)
         {
             if (Request.Headers.XRequestedWith == "XMLHttpRequest")
             {
-                return Json(new { success = false, message = "Vui lòng nhập tên nhãn." });
+                return Json(new { success = false, message = "Vui lòng chọn nhãn trong danh mục." });
             }
-            TempData["ErrorMessage"] = "Tên nhãn không được để trống.";
+            TempData["ErrorMessage"] = "Vui lòng chọn nhãn trong danh mục.";
             return RedirectToAction(nameof(Details), new { id = model.CandidateId });
         }
 
@@ -222,7 +231,7 @@ public class CandidatesController(
                 return Forbid();
             }
 
-            var tag = await _candidateService.AddTagAsync(model.CandidateId, model.TagName, model.ColorCode, currentUserId, cancellationToken);
+            var tag = await _candidateService.AddTagAsync(model.CandidateId, model.CatalogId, currentUserId, cancellationToken);
 
             if (Request.Headers.XRequestedWith == "XMLHttpRequest")
             {
@@ -237,11 +246,47 @@ public class CandidatesController(
             _logger.LogError(ex, "Lỗi khi gắn nhãn cho ứng viên {CandidateId}", model.CandidateId);
             if (Request.Headers.XRequestedWith == "XMLHttpRequest")
             {
-                return Json(new { success = false, message = "Lỗi khi lưu nhãn: " + ex.Message });
+                return Json(new { success = false, message = ex is ArgumentException ? ex.Message : "Không thể lưu nhãn. Vui lòng thử lại." });
             }
             TempData["ErrorMessage"] = "Có lỗi xảy ra khi gắn nhãn.";
             return RedirectToAction(nameof(Details), new { id = model.CandidateId });
         }
+    }
+
+    [HttpPost("applications/{applicationId:guid}/rating")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager}")]
+    public async Task<IActionResult> UpdateApplicationRating(
+        Guid applicationId,
+        [FromForm] int? rating,
+        CancellationToken cancellationToken)
+    {
+        if (User.IsInRole(UserRoles.Candidate))
+        {
+            return Forbid();
+        }
+        if (!ModelState.IsValid || rating is < 1 or > 5)
+        {
+            return BadRequest(new { success = false, message = "Đánh giá phải nằm trong khoảng từ 1 đến 5 sao." });
+        }
+
+        var updated = await _candidateService.UpdateApplicationRatingAsync(
+            applicationId,
+            rating,
+            GetCurrentUserId(),
+            GetCurrentUserRole(),
+            cancellationToken);
+        if (!updated)
+        {
+            return Forbid();
+        }
+
+        return Json(new
+        {
+            success = true,
+            rating,
+            message = rating.HasValue ? "Đã lưu đánh giá." : "Đã xóa đánh giá."
+        });
     }
 
     // POST: /ung-vien/RemoveTag hoặc /Candidates/RemoveTag
@@ -251,6 +296,11 @@ public class CandidatesController(
     [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager}")]
     public async Task<IActionResult> RemoveTag([FromForm] Guid tagId, [FromForm] Guid candidateId, CancellationToken cancellationToken)
     {
+        if (User.IsInRole(UserRoles.Candidate))
+        {
+            return Forbid();
+        }
+
         try
         {
             var currentUserId = GetCurrentUserId();
@@ -262,7 +312,7 @@ public class CandidatesController(
                 return Forbid();
             }
 
-            var result = await _candidateService.RemoveTagAsync(tagId, currentUserId, cancellationToken);
+            var result = await _candidateService.RemoveTagAsync(tagId, candidateId, currentUserId, cancellationToken);
 
             if (Request.Headers.XRequestedWith == "XMLHttpRequest")
             {
@@ -291,13 +341,18 @@ public class CandidatesController(
     [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager}")]
     public async Task<IActionResult> AddNote([FromForm] CandidateNoteInputModel model, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(model.Content))
+        if (User.IsInRole(UserRoles.Candidate))
+        {
+            return Forbid();
+        }
+
+        if (string.IsNullOrWhiteSpace(model.Content) || model.Content.Trim().Length > 4000)
         {
             if (Request.Headers.XRequestedWith == "XMLHttpRequest")
             {
-                return Json(new { success = false, message = "Vui lòng nhập nội dung ghi chú." });
+                return Json(new { success = false, message = string.IsNullOrWhiteSpace(model.Content) ? "Vui lòng nhập nội dung ghi chú." : "Ghi chú không được dài quá 4.000 ký tự." });
             }
-            TempData["ErrorMessage"] = "Nội dung ghi chú không được để trống.";
+            TempData["ErrorMessage"] = string.IsNullOrWhiteSpace(model.Content) ? "Nội dung ghi chú không được để trống." : "Ghi chú không được dài quá 4.000 ký tự.";
             return RedirectToAction(nameof(Details), new { id = model.CandidateId });
         }
 
@@ -327,7 +382,7 @@ public class CandidatesController(
             _logger.LogError(ex, "Lỗi khi thêm ghi chú cho ứng viên {CandidateId}", model.CandidateId);
             if (Request.Headers.XRequestedWith == "XMLHttpRequest")
             {
-                return Json(new { success = false, message = "Lỗi khi lưu ghi chú: " + ex.Message });
+                return Json(new { success = false, message = ex is ArgumentException ? ex.Message : "Không thể lưu ghi chú. Vui lòng thử lại." });
             }
             TempData["ErrorMessage"] = "Có lỗi xảy ra khi thêm ghi chú.";
             return RedirectToAction(nameof(Details), new { id = model.CandidateId });
@@ -341,6 +396,11 @@ public class CandidatesController(
     [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager}")]
     public async Task<IActionResult> DeleteNote([FromForm] Guid noteId, [FromForm] Guid candidateId, CancellationToken cancellationToken)
     {
+        if (User.IsInRole(UserRoles.Candidate))
+        {
+            return Forbid();
+        }
+
         try
         {
             var currentUserId = GetCurrentUserId();
@@ -352,7 +412,7 @@ public class CandidatesController(
                 return Forbid();
             }
 
-            var result = await _candidateService.DeleteNoteAsync(noteId, currentUserId, cancellationToken);
+            var result = await _candidateService.DeleteNoteAsync(noteId, candidateId, currentUserId, cancellationToken);
 
             if (Request.Headers.XRequestedWith == "XMLHttpRequest")
             {
@@ -895,4 +955,3 @@ public class CandidatesController(
         ViewBag.SelectedJob = publishedJobs.FirstOrDefault(j => j.Id == selectedJobId);
     }
 }
-

@@ -7,6 +7,7 @@ public class RecruitmentCatalog : BaseEntity
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public string? ColorCode { get; set; }
     public int DisplayOrder { get; set; } = 0;
     public bool IsActive { get; set; } = true;
     public bool IsSystem { get; set; } = false; // Protected system catalog items
