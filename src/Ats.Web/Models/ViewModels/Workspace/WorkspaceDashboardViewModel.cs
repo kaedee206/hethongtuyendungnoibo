@@ -219,6 +219,14 @@ public class PendingOfferDto
     public string SalaryDisplay { get; set; } = string.Empty;
     public OfferStatus Status { get; set; }
     public string CreatedDateDisplay { get; set; } = string.Empty;
+
+    // SCRUM-341: Phân cấp phê duyệt theo hạn mức lương
+    public bool IsOutsideBand { get; set; }
+    public string StandardBandDisplay { get; set; } = "Chưa thiết lập";
+    public int CurrentLevel { get; set; } = 1;
+    public string CurrentLevelDisplay { get; set; } = "Cấp 1 (Trưởng phòng NS)";
+    public bool CanCurrentUserApprove { get; set; } = true;
+    public string? RecruiterNotes { get; set; }
 }
 
 public class PipelineFunnelStageDto

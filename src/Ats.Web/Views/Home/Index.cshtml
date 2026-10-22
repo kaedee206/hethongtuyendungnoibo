@@ -1945,26 +1945,53 @@
                                     @foreach (var offer in Model.PendingOffers)
                                     {
                                         <div class="col-12 col-md-6 col-xl-4">
-                                            <div class="p-3.5 h-100 d-flex flex-column justify-content-between" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-left: 4px solid #D97706; border-radius: 10px;">
+                                            <div class="p-3.5 h-100 d-flex flex-column justify-content-between" style="background: #FFFFFF; border: 1px solid #E2E8F0; border-left: 4px solid @(offer.IsOutsideBand ? "#F59E0B" : "#0D9488") !important; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                                                 <div>
-                                                    <div class="d-flex justify-content-between align-items-start mb-1.5">
+                                                    <div class="d-flex justify-content-between align-items-start mb-1.5 gap-2">
                                                         <span class="fw-bold text-dark" style="font-size: 0.95rem;">@offer.CandidateName</span>
-                                                        <span class="fw-bold text-success font-mono" style="font-size:0.85rem;">
+                                                        <span class="fw-bold font-mono" style="font-size: 0.95rem; font-family: 'JetBrains Mono', monospace; color: @(offer.IsOutsideBand ? "#D97706" : "#0D9488");">
                                                             @offer.SalaryDisplay
                                                         </span>
                                                     </div>
-                                                    <div class="text-muted mb-1" style="font-size: 0.8rem;">
+                                                    <div class="text-muted mb-1" style="font-size: 0.82rem;">
                                                         Vị trí: <b class="text-dark">@offer.JobTitle</b>
                                                     </div>
-                                                    <div class="text-muted small" style="font-size: 0.72rem;">
-                                                        Ngày khởi tạo: @offer.CreatedDateDisplay
+
+                                                    <!-- Dải lương chuẩn & Trạng thái hạn mức (SCRUM-341) -->
+                                                    <div class="p-2 my-2 rounded-2" style="background: #F8FAFC; border: 1px solid #E2E8F0; font-size: 0.76rem;">
+                                                        <div class="text-muted mb-1">
+                                                            Dải lương chuẩn: <span class="fw-semibold text-dark font-mono" style="font-family: 'JetBrains Mono', monospace;">@offer.StandardBandDisplay</span>
+                                                        </div>
+                                                        <div class="d-flex align-items-center justify-content-between mt-1">
+                                                            @if (offer.IsOutsideBand)
+                                                            {
+                                                                <span class="badge border" style="background:#FEF3C7; color:#78350F; border-color:#FCD34D !important; border-radius:6px; font-size:0.7rem;">
+                                                                    <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>Vượt dải chuẩn (2 cấp)
+                                                                </span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge border" style="background:#D1FAE5; color:#065F46; border-color:#A7F3D0 !important; border-radius:6px; font-size:0.7rem;">
+                                                                    <i class="bi bi-shield-check text-emerald-600 me-1"></i>Trong dải chuẩn (1 cấp)
+                                                                </span>
+                                                            }
+                                                            <span class="text-muted font-monospace" style="font-size: 0.7rem;">@offer.CreatedDateDisplay</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="text-muted small mt-1" style="font-size: 0.75rem;">
+                                                        <i class="bi bi-hourglass-split me-1 text-secondary"></i>Đang chờ: <span class="fw-semibold text-slate-800">@offer.CurrentLevelDisplay</span>
                                                     </div>
                                                 </div>
+
                                                 <div class="mt-3 pt-2" style="border-top: 1px solid #E2E8F0;">
-                                                    <button type="button" class="btn btn-sm btn-success w-100 fw-semibold py-1.5" style="border-radius: 8px; font-size: 0.8rem;"
-                                                            onclick="approveSelectedOffer('@offer.OfferId', '@offer.CandidateName', '@offer.JobTitle', '@offer.SalaryDisplay')">
-                                                        <i class="bi bi-check2-all me-1"></i> Phê Duyệt Thư Mời (Offer)
-                                                    </button>
+                                                    <div class="d-flex gap-1.5">
+                                                        <button type="button" class="btn btn-sm w-100 fw-semibold py-1.5 @(offer.CanCurrentUserApprove ? "btn-primary" : "btn-light border")" 
+                                                                style="border-radius: 8px; font-size: 0.82rem; @(offer.CanCurrentUserApprove ? "background: #0F172A; border-color: #0F172A;" : "")"
+                                                                onclick="openOfferApprovalModal('@offer.OfferId')">
+                                                            <i class="bi bi-shield-check me-1.5"></i>@(offer.CanCurrentUserApprove ? "Xem xét & Phê duyệt" : "Xem chi tiết đề xuất")
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -2946,55 +2973,191 @@
 
 <!-- Modals Dời & Hủy Lịch Phỏng Vấn được tải tập trung tại _Layout.cshtml -->
 
-<!-- Modal 8: Khởi tạo đề xuất Offer -->
+<!-- Modal Phê duyệt Offer theo hạn mức lương (SCRUM-341) -->
+@await Html.PartialAsync("_OfferApprovalModalPartial")
+
+<!-- Modal 8: Khởi tạo đề xuất Offer (SCRUM-340) -->
 <div class="modal fade" id="createOfferModal" tabindex="-1" aria-labelledby="createOfferModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
             <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title fw-bold text-dark" id="createOfferModalLabel" style="font-size: 1.05rem;">
-                    <i class="bi bi-envelope-paper text-warning me-2"></i>Đề xuất Thư mời Nhận việc (Offer)
+                    <i class="bi bi-envelope-paper-heart text-emerald-600 me-2"></i>Soạn Thảo Đề Xuất Offer (Mời Nhận Việc)
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body py-3">
-                <div class="p-2.5 mb-3" style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px;">
-                    <div class="fw-bold text-dark" id="offerCandidateName" style="font-size: 0.9rem;">-</div>
-                    <div class="text-muted small" id="offerJobTitle">-</div>
+                <!-- Info banner ứng viên -->
+                <div class="p-3 mb-3 d-flex justify-content-between align-items-center" style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px;">
+                    <div>
+                        <div class="fw-bold text-dark fs-6" id="offerCandidateName">-</div>
+                        <div class="text-muted small" id="offerCandidateMeta">-</div>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-light text-dark border px-2 py-1" id="offerCurrentStatusBadge" style="border-radius: 6px; font-size: 0.75rem;">Mới tạo</span>
+                    </div>
                 </div>
-                <form id="createOfferForm" onsubmit="handleCreateOfferSubmit(event)">
+
+                <!-- Cảnh báo nếu ứng viên đã có Offer hiệu lực khác (SCRUM-340) -->
+                <div id="offerActiveOfferAlert" class="alert alert-warning py-2.5 px-3 small mb-3 d-none" style="background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; border-radius: 8px;">
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 text-warning flex-shrink-0 mt-0.5"></i>
+                        <div>
+                            <div class="fw-bold" id="offerActiveOfferTitle">Ứng viên đã có Offer đang hiệu lực!</div>
+                            <div class="small mt-1" id="offerActiveOfferDesc">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="createOfferForm" onsubmit="event.preventDefault();">
                     <input type="hidden" id="offerApplicationId" />
+                    <input type="hidden" id="offerId" />
+
+                    <!-- Chức danh & Dải chuẩn -->
                     <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold text-dark">Lương cơ bản (Gross/tháng - VNĐ)</label>
-                            <input type="number" class="form-control" id="offerBaseSalary" placeholder="VD: 35000000" required min="1000000" style="border-radius:8px;" />
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold text-dark">Chức danh công việc <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <select class="form-select" id="offerJobPositionSelect" style="border-radius: 8px 0 0 8px; font-size: 0.85rem;" onchange="handleJobPositionSelectChange()">
+                                    <option value="">-- Theo vị trí tuyển dụng mặc định --</option>
+                                </select>
+                                <input type="text" class="form-control" id="offerJobTitle" placeholder="Tên chức danh" required style="border-radius: 0 8px 8px 0; font-size: 0.85rem;" />
+                            </div>
                         </div>
-                        <div class="col-6">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold text-dark">Địa điểm làm việc</label>
+                            <input type="text" class="form-control" id="offerWorkLocation" placeholder="Tòa nhà Novera Tower, Cầu Giấy..." style="border-radius:8px; font-size: 0.85rem;" />
+                        </div>
+                    </div>
+
+                    <!-- Dải lương chuẩn hiển thị -->
+                    <div class="p-2 mb-3 d-flex justify-content-between align-items-center rounded" style="background: #F1F5F9; border: 1px solid #E2E8F0; font-size: 0.82rem;">
+                        <span class="text-secondary"><i class="bi bi-shield-check text-emerald-600 me-1"></i>Dải lương chuẩn của chức danh:</span>
+                        <strong class="font-monospace text-dark" id="offerSalaryBandDisplay" style="font-family: 'JetBrains Mono', monospace;">Đang nạp...</strong>
+                    </div>
+
+                    <!-- Lương cơ bản & Phụ cấp -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Lương cơ bản Gross / tháng (VNĐ) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted small" style="border-radius: 8px 0 0 8px;">₫</span>
+                                <input type="number" class="form-control font-monospace" id="offerBaseSalary" placeholder="VD: 35000000" required min="1000000" max="1000000000" style="border-radius: 0 8px 8px 0; font-family: 'JetBrains Mono', monospace;" oninput="handleOfferSalaryChange()" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
                             <label class="form-label small fw-semibold text-dark">Phụ cấp & Thưởng dự án (VNĐ)</label>
-                            <input type="number" class="form-control" id="offerAllowances" value="0" min="0" style="border-radius:8px;" />
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted small" style="border-radius: 8px 0 0 8px;">₫</span>
+                                <input type="number" class="form-control font-monospace" id="offerAllowances" value="0" min="0" style="border-radius: 0 8px 8px 0; font-family: 'JetBrains Mono', monospace;" oninput="handleOfferSalaryChange()" />
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Tổng thu nhập realtime -->
+                    <div class="p-2.5 mb-3 rounded d-flex justify-content-between align-items-center" style="background: #ECFDF5; border: 1px solid #A7F3D0; font-size: 0.85rem;">
+                        <span class="text-emerald-900 fw-semibold"><i class="bi bi-cash-stack me-1"></i>Tổng gói thu nhập dự kiến:</span>
+                        <span class="fw-bold fs-6 text-emerald-700 font-monospace" id="offerTotalPackageDisplay" style="font-family: 'JetBrains Mono', monospace;">0 VNĐ</span>
+                    </div>
+
+                    <!-- Cảnh báo & Giải trình mức lương ngoài dải chuẩn (SCRUM-340) -->
+                    <div id="offerOutsideBandBox" class="p-3 mb-3 rounded d-none" style="background: #FFFBEB; border: 1px solid #FCD34D;">
+                        <div class="d-flex align-items-center text-warning-emphasis fw-bold small mb-2">
+                            <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+                            <span id="offerOutsideBandMsg">Mức lương đề xuất nằm ngoài dải chuẩn của chức danh.</span>
+                        </div>
+                        <label class="form-label small fw-semibold text-danger">Lý do giải trình mức lương ngoài dải chuẩn <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="offerSalaryJustification" rows="2" placeholder="Bắt buộc nhập lý do: Ứng viên có năng lực vượt trội, kinh nghiệm chuyên sâu đặc thù, pass bài test xuất sắc..." style="border-radius:8px; font-size:0.85rem; border-color: #FCD34D;"></textarea>
+                        <div class="text-muted small mt-1" style="font-size:0.75rem;"><i class="bi bi-info-circle me-1"></i>Giải trình này sẽ được gửi đến cấp có thẩm quyền khi phê duyệt đề xuất Offer.</div>
+                    </div>
+
+                    <!-- Ngày nhận việc & Hạn phản hồi -->
                     <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold text-dark">Ngày gia nhập (Onboard)</label>
-                            <input type="date" class="form-control" id="offerJoinDate" required style="border-radius:8px;" />
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Ngày dự kiến nhận việc (Onboarding) <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="offerJoinDate" required style="border-radius:8px; font-size:0.85rem;" onchange="validateOfferDates()" />
                         </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold text-dark">Hạn phản hồi Offer</label>
-                            <input type="date" class="form-control" id="offerExpirationDate" required style="border-radius:8px;" />
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Thời hạn phản hồi Offer <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="offerExpirationDate" required style="border-radius:8px; font-size:0.85rem;" onchange="validateOfferDates()" />
+                            <div class="text-danger small mt-1 d-none" id="offerDateError">Hạn phản hồi phải trước hoặc bằng ngày nhận việc.</div>
                         </div>
                     </div>
+
+                    <!-- Thử việc & Loại hợp đồng -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Thời gian thử việc (Tháng)</label>
+                            <input type="number" class="form-control" id="offerProbationMonths" value="2" min="0" max="12" style="border-radius:8px; font-size:0.85rem;" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Loại hợp đồng</label>
+                            <select class="form-select" id="offerContractType" style="border-radius:8px; font-size:0.85rem;">
+                                <option value="Chính thức (Toàn thời gian)" selected>Chính thức (Toàn thời gian)</option>
+                                <option value="Hợp đồng xác định thời hạn">Hợp đồng xác định thời hạn (1 - 3 năm)</option>
+                                <option value="Thực tập sinh / Đào tạo">Thực tập sinh / Đào tạo</option>
+                                <option value="Chuyên gia tư vấn / Bán thời gian">Chuyên gia tư vấn / Bán thời gian</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Ghi chú điều kiện / Phúc lợi riêng -->
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-dark">Ghi chú điều kiện / Phúc lợi riêng</label>
-                        <textarea class="form-control" id="offerNotes" rows="2" placeholder="Thời gian thử việc 2 tháng 85% lương, thưởng KPI theo quý..." style="border-radius:8px; font-size:0.85rem;"></textarea>
+                        <textarea class="form-control" id="offerNotes" rows="2" placeholder="Thời gian thử việc hưởng 85% lương cơ bản, thưởng KPI theo quý, trang bị MacBook Pro M3/M4..." style="border-radius:8px; font-size:0.85rem;"></textarea>
                     </div>
-                    <div class="d-flex justify-content-end gap-2 mt-4 pt-2" style="border-top:1px solid #E2E8F0;">
-                        <button type="button" class="btn btn-light px-4" style="border-radius:8px; font-size:0.85rem;" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn btn-warning px-4 fw-semibold text-dark" style="border-radius:8px; font-size:0.85rem;" id="btnSubmitOffer">
-                            <span class="spinner-border spinner-border-sm me-1 d-none" id="spinnerOffer"></span>
-                            Lưu & Chuyển sang hàng chờ duyệt
-                        </button>
+
+                    <!-- Footer actions: Hủy, Xem trước, Lưu nháp, Gửi duyệt -->
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3" style="border-top:1px solid #E2E8F0;">
+                        <button type="button" class="btn btn-light px-3" style="border-radius:8px; font-size:0.85rem;" data-bs-dismiss="modal">Hủy bỏ</button>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-secondary px-3" style="border-radius:8px; font-size:0.85rem;" onclick="handlePreviewOfferClick()">
+                                <i class="bi bi-eye me-1"></i>Xem trước thư Offer
+                            </button>
+                            <button type="button" class="btn btn-secondary px-3" style="border-radius:8px; font-size:0.85rem;" id="btnDraftOffer" onclick="submitOfferForm(true)">
+                                <span class="spinner-border spinner-border-sm me-1 d-none" id="spinnerDraftOffer"></span>
+                                <i class="bi bi-save me-1"></i>Lưu nháp
+                            </button>
+                            <button type="button" class="btn btn-success px-4 fw-semibold text-white" style="border-radius:8px; font-size:0.85rem; background:#059669; border-color:#059669;" id="btnSubmitOffer" onclick="submitOfferForm(false)">
+                                <span class="spinner-border spinner-border-sm me-1 d-none" id="spinnerSubmitOffer"></span>
+                                <i class="bi bi-send-check me-1"></i>Gửi duyệt Offer
+                            </button>
+                        </div>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 8.1: Xem trước Thư mời nhận việc (SCRUM-340 Preview) -->
+<div class="modal fade" id="offerPreviewModal" tabindex="-1" aria-labelledby="offerPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; background: #F8FAFC;">
+            <div class="modal-header border-0 pb-2 px-4 pt-4">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1.5" style="border-radius:6px;">
+                        <i class="bi bi-file-earmark-check text-emerald-600 me-1"></i>Bản xem trước
+                    </span>
+                    <h5 class="modal-title fw-bold text-dark mb-0" id="offerPreviewModalLabel" style="font-size: 1.05rem;">
+                        Xem Trước Thư Mời Nhận Việc (Offer Letter)
+                    </h5>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm px-3" style="border-radius:8px;" onclick="window.print()">
+                        <i class="bi bi-printer me-1"></i>In / Lưu PDF
+                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body p-3 p-md-4" id="offerPreviewContent">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-emerald-600" role="status"></div>
+                    <div class="text-muted small mt-2">Đang tải bản xem trước thư mời...</div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 px-4 pb-4">
+                <button type="button" class="btn btn-secondary px-4" style="border-radius:8px; font-size:0.85rem;" data-bs-dismiss="modal">Đóng</button>
             </div>
         </div>
     </div>
@@ -3102,6 +3265,7 @@
 
 @section Scripts {
     <script src="~/js/interview-conflict.js"></script>
+    <script src="~/js/offer-approval.js"></script>
     <script>
         function getCsrfToken() {
             var input = document.querySelector('input[name="__RequestVerificationToken"]');
@@ -5707,12 +5871,31 @@
             }
         }
 
-        // 8.4. Đề xuất Thư mời Offer
-        function openCreateOfferModal(applicationId, candidateName, jobTitle) {
-            document.getElementById('offerApplicationId').value = applicationId;
-            document.getElementById('offerCandidateName').textContent = candidateName || 'Ứng viên';
-            document.getElementById('offerJobTitle').textContent = jobTitle || 'Vị trí';
+        // 8.4. Đề xuất Thư mời Offer (SCRUM-340)
+        var currentOfferInitData = null;
+        var currentStandardMin = null;
+        var currentStandardMax = null;
 
+        async function openCreateOfferModal(applicationId, candidateName, jobTitle) {
+            document.getElementById('offerApplicationId').value = applicationId;
+            document.getElementById('offerId').value = '';
+            document.getElementById('offerCandidateName').textContent = candidateName || 'Ứng viên';
+            document.getElementById('offerCandidateMeta').textContent = jobTitle ? ('Vị trí: ' + jobTitle) : 'Đang nạp thông tin...';
+            document.getElementById('offerCurrentStatusBadge').textContent = 'Đang tải...';
+
+            var alertBox = document.getElementById('offerActiveOfferAlert');
+            if (alertBox) alertBox.classList.add('d-none');
+            var outsideBox = document.getElementById('offerOutsideBandBox');
+            if (outsideBox) outsideBox.classList.add('d-none');
+            var dateErr = document.getElementById('offerDateError');
+            if (dateErr) dateErr.classList.add('d-none');
+
+            var btnSubmit = document.getElementById('btnSubmitOffer');
+            var btnDraft = document.getElementById('btnDraftOffer');
+            btnSubmit.disabled = false;
+            btnDraft.disabled = false;
+
+            // Default dates
             var now = new Date();
             var join = new Date();
             join.setDate(now.getDate() + 14);
@@ -5721,29 +5904,270 @@
 
             document.getElementById('offerJoinDate').value = join.toISOString().split('T')[0];
             document.getElementById('offerExpirationDate').value = exp.toISOString().split('T')[0];
+            document.getElementById('offerBaseSalary').value = '';
+            document.getElementById('offerAllowances').value = '0';
+            document.getElementById('offerTotalPackageDisplay').textContent = '0 VNĐ';
+            document.getElementById('offerSalaryJustification').value = '';
+            document.getElementById('offerNotes').value = '';
+            document.getElementById('offerProbationMonths').value = '2';
+            document.getElementById('offerContractType').value = 'Chính thức (Toàn thời gian)';
 
             var modal = new bootstrap.Modal(document.getElementById('createOfferModal'));
             modal.show();
+
+            // Fetch form initialization data from server
+            try {
+                var res = await fetch(`/Workspace/GetOfferFormData?applicationId=${applicationId}`);
+                var json = await res.json();
+                if (json.success && json.data) {
+                    var data = json.data;
+                    currentOfferInitData = data;
+                    currentStandardMin = data.standardMinSalary;
+                    currentStandardMax = data.standardMaxSalary;
+
+                    document.getElementById('offerCandidateName').textContent = data.candidateName || candidateName;
+                    document.getElementById('offerCandidateMeta').textContent = `${data.candidateEmail} ${data.candidatePhone ? ('· ' + data.candidatePhone) : ''} · ${data.departmentName}`;
+                    document.getElementById('offerJobTitle').value = data.existingOfferId ? (data.defaultJobTitle || '') : (data.defaultJobTitle || jobTitle || '');
+                    document.getElementById('offerWorkLocation').value = data.workLocation || 'Tòa nhà Novera Tower, Cầu Giấy, Hà Nội';
+                    document.getElementById('offerSalaryBandDisplay').textContent = data.standardSalaryRangeDisplay || 'Chưa cấu hình';
+
+                    // Populate positions select
+                    var posSel = document.getElementById('offerJobPositionSelect');
+                    posSel.innerHTML = '<option value="">-- Theo chức danh mặc định (' + (data.defaultJobTitle || 'Vị trí') + ') --</option>';
+                    if (data.availablePositions && data.availablePositions.length > 0) {
+                        data.availablePositions.forEach(p => {
+                            var opt = document.createElement('option');
+                            opt.value = p.id;
+                            opt.textContent = `${p.title} (${p.salaryRangeDisplay})`;
+                            opt.dataset.min = p.minSalary != null ? p.minSalary : '';
+                            opt.dataset.max = p.maxSalary != null ? p.maxSalary : '';
+                            opt.dataset.title = p.title;
+                            if (data.defaultJobPositionId && p.id === data.defaultJobPositionId) {
+                                opt.selected = true;
+                            }
+                            posSel.appendChild(opt);
+                        });
+                    }
+
+                    // Active offer constraint check (SCRUM-340)
+                    if (data.hasOtherActiveOffer && data.otherActiveOfferWarning) {
+                        var warnBox = document.getElementById('offerActiveOfferAlert');
+                        document.getElementById('offerActiveOfferTitle').textContent = 'Ứng viên đã có đề xuất Offer đang hiệu lực!';
+                        document.getElementById('offerActiveOfferDesc').textContent = data.otherActiveOfferWarning;
+                        warnBox.classList.remove('d-none');
+                        btnSubmit.disabled = true;
+                        btnDraft.disabled = true;
+                    }
+
+                    // Existing offer data if editing
+                    if (data.existingOfferId) {
+                        document.getElementById('offerId').value = data.existingOfferId;
+                        document.getElementById('offerCurrentStatusBadge').textContent = data.existingOfferStatusDisplay || 'Đang xử lý';
+                        if (data.existingBaseSalary) document.getElementById('offerBaseSalary').value = data.existingBaseSalary;
+                        if (data.existingBonusAllowance != null) document.getElementById('offerAllowances').value = data.existingBonusAllowance;
+                        if (data.existingProposedJoinDate) document.getElementById('offerJoinDate').value = data.existingProposedJoinDate;
+                        if (data.existingExpirationDate) document.getElementById('offerExpirationDate').value = data.existingExpirationDate;
+                        if (data.existingProbationMonths != null) document.getElementById('offerProbationMonths').value = data.existingProbationMonths;
+                        if (data.existingContractType) document.getElementById('offerContractType').value = data.existingContractType;
+                        if (data.existingSalaryJustification) document.getElementById('offerSalaryJustification').value = data.existingSalaryJustification;
+                        if (data.existingNotes) document.getElementById('offerNotes').value = data.existingNotes;
+
+                        handleOfferSalaryChange();
+                    } else {
+                        document.getElementById('offerCurrentStatusBadge').textContent = 'Soạn mới';
+                    }
+                }
+            } catch (err) {
+                console.error('Lỗi nạp dữ liệu khởi tạo Offer:', err);
+                showToast('Không thể nạp cấu hình dải lương: ' + err.message, false);
+            }
         }
 
-        async function handleCreateOfferSubmit(e) {
-            e.preventDefault();
-            var btn = document.getElementById('btnSubmitOffer');
-            var spinner = document.getElementById('spinnerOffer');
+        function handleJobPositionSelectChange() {
+            var sel = document.getElementById('offerJobPositionSelect');
+            var selectedOpt = sel.options[sel.selectedIndex];
+            if (selectedOpt && selectedOpt.value) {
+                document.getElementById('offerJobTitle').value = selectedOpt.dataset.title || '';
+                currentStandardMin = selectedOpt.dataset.min ? parseFloat(selectedOpt.dataset.min) : null;
+                currentStandardMax = selectedOpt.dataset.max ? parseFloat(selectedOpt.dataset.max) : null;
+                var minStr = currentStandardMin ? currentStandardMin.toLocaleString('vi-VN') : '---';
+                var maxStr = currentStandardMax ? currentStandardMax.toLocaleString('vi-VN') : '---';
+                document.getElementById('offerSalaryBandDisplay').textContent = `${minStr} – ${maxStr} VNĐ`;
+            } else if (currentOfferInitData) {
+                currentStandardMin = currentOfferInitData.standardMinSalary;
+                currentStandardMax = currentOfferInitData.standardMaxSalary;
+                document.getElementById('offerSalaryBandDisplay').textContent = currentOfferInitData.standardSalaryRangeDisplay || 'Chưa cấu hình';
+                document.getElementById('offerJobTitle').value = currentOfferInitData.defaultJobTitle || '';
+            }
+            handleOfferSalaryChange();
+        }
+
+        function handleOfferSalaryChange() {
+            var base = parseFloat(document.getElementById('offerBaseSalary').value) || 0;
+            var allow = parseFloat(document.getElementById('offerAllowances').value) || 0;
+            var total = base + allow;
+
+            document.getElementById('offerTotalPackageDisplay').textContent = total.toLocaleString('vi-VN') + ' VNĐ';
+
+            // Check salary band (SCRUM-340)
+            var outsideBox = document.getElementById('offerOutsideBandBox');
+            var outsideMsg = document.getElementById('offerOutsideBandMsg');
+            var justField = document.getElementById('offerSalaryJustification');
+
+            if (base > 0 && (currentStandardMin != null || currentStandardMax != null)) {
+                var isBelow = currentStandardMin != null && base < currentStandardMin;
+                var isAbove = currentStandardMax != null && base > currentStandardMax;
+
+                if (isBelow || isAbove) {
+                    outsideBox.classList.remove('d-none');
+                    justField.required = true;
+                    var minText = currentStandardMin ? currentStandardMin.toLocaleString('vi-VN') : '---';
+                    var maxText = currentStandardMax ? currentStandardMax.toLocaleString('vi-VN') : '---';
+                    outsideMsg.textContent = isAbove
+                        ? `Mức lương đề xuất (${base.toLocaleString('vi-VN')} VNĐ) VƯỢT dải chuẩn tối đa (${maxText} VNĐ). Bắt buộc nhập giải trình!`
+                        : `Mức lương đề xuất (${base.toLocaleString('vi-VN')} VNĐ) THẤP HƠN dải chuẩn tối thiểu (${minText} VNĐ). Bắt buộc nhập giải trình!`;
+                } else {
+                    outsideBox.classList.add('d-none');
+                    justField.required = false;
+                }
+            } else {
+                outsideBox.classList.add('d-none');
+                justField.required = false;
+            }
+        }
+
+        function validateOfferDates() {
+            var join = document.getElementById('offerJoinDate').value;
+            var exp = document.getElementById('offerExpirationDate').value;
+            var err = document.getElementById('offerDateError');
+            if (join && exp && exp > join) {
+                err.classList.remove('d-none');
+                return false;
+            }
+            err.classList.add('d-none');
+            return true;
+        }
+
+        function getOfferFormDataPayload(isDraft) {
+            var posSel = document.getElementById('offerJobPositionSelect');
+            var selectedPosId = posSel.value ? posSel.value : null;
+
+            return {
+                applicationId: document.getElementById('offerApplicationId').value,
+                offerId: document.getElementById('offerId').value || null,
+                jobPositionId: selectedPosId,
+                jobTitle: document.getElementById('offerJobTitle').value.trim(),
+                workLocation: document.getElementById('offerWorkLocation').value.trim(),
+                baseSalary: parseFloat(document.getElementById('offerBaseSalary').value) || 0,
+                bonusAllowance: parseFloat(document.getElementById('offerAllowances').value) || 0,
+                proposedJoinDate: document.getElementById('offerJoinDate').value,
+                expirationDate: document.getElementById('offerExpirationDate').value,
+                probationPeriodMonths: parseInt(document.getElementById('offerProbationMonths').value, 10) || 2,
+                contractType: document.getElementById('offerContractType').value,
+                salaryJustification: document.getElementById('offerSalaryJustification').value.trim(),
+                notes: document.getElementById('offerNotes').value.trim(),
+                isDraft: isDraft
+            };
+        }
+
+        async function handlePreviewOfferClick() {
+            var payload = getOfferFormDataPayload(true);
+            if (payload.baseSalary <= 0) {
+                showToast('Vui lòng nhập mức lương cơ bản trước khi xem trước thư offer.', false);
+                return;
+            }
+            if (!validateOfferDates()) {
+                showToast('Thời hạn phản hồi Offer phải trước hoặc cùng ngày nhận việc.', false);
+                return;
+            }
+
+            var previewModalEl = document.getElementById('offerPreviewModal');
+            var previewModal = new bootstrap.Modal(previewModalEl);
+            document.getElementById('offerPreviewContent').innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-emerald-600" role="status"></div>
+                    <div class="text-muted small mt-2">Đang tạo bản xem trước thư mời nhận việc...</div>
+                </div>`;
+            previewModal.show();
+
+            try {
+                var res = await fetch('/Workspace/PreviewOffer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getCsrfToken()
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    var html = await res.text();
+                    document.getElementById('offerPreviewContent').innerHTML = html;
+                } else {
+                    var errText = await res.text();
+                    document.getElementById('offerPreviewContent').innerHTML = `
+                        <div class="alert alert-danger p-4 text-center">
+                            <i class="bi bi-x-circle fs-3 d-block mb-2"></i>
+                            Không thể tạo bản xem trước thư mời: ${errText}
+                        </div>`;
+                }
+            } catch (err) {
+                document.getElementById('offerPreviewContent').innerHTML = `
+                    <div class="alert alert-danger p-4 text-center">
+                        <i class="bi bi-wifi-off fs-3 d-block mb-2"></i>
+                        Lỗi kết nối máy chủ: ${err.message}
+                    </div>`;
+            }
+        }
+
+        async function submitOfferForm(isDraft) {
+            var payload = getOfferFormDataPayload(isDraft);
+
+            if (!payload.applicationId) {
+                showToast('Thiếu định danh hồ sơ ứng tuyển.', false);
+                return;
+            }
+            if (!payload.jobTitle) {
+                showToast('Vui lòng nhập chức danh công việc.', false);
+                document.getElementById('offerJobTitle').focus();
+                return;
+            }
+            if (payload.baseSalary <= 0) {
+                showToast('Vui lòng nhập mức lương cơ bản hợp lệ (lớn hơn 0).', false);
+                document.getElementById('offerBaseSalary').focus();
+                return;
+            }
+            if (!payload.proposedJoinDate) {
+                showToast('Vui lòng chọn ngày dự kiến nhận việc.', false);
+                return;
+            }
+            if (!payload.expirationDate) {
+                showToast('Vui lòng chọn thời hạn phản hồi Offer.', false);
+                return;
+            }
+            if (!validateOfferDates()) {
+                showToast('Thời hạn phản hồi Offer phải trước hoặc bằng ngày nhận việc.', false);
+                return;
+            }
+
+            // Check required justification if outside band (SCRUM-340)
+            var isBelow = currentStandardMin != null && payload.baseSalary < currentStandardMin;
+            var isAbove = currentStandardMax != null && payload.baseSalary > currentStandardMax;
+            if ((isBelow || isAbove) && !payload.salaryJustification) {
+                showToast('Mức lương nằm ngoài dải chuẩn. Bắt buộc nhập lý do giải trình!', false);
+                var justField = document.getElementById('offerSalaryJustification');
+                document.getElementById('offerOutsideBandBox').classList.remove('d-none');
+                justField.focus();
+                return;
+            }
+
+            var btn = isDraft ? document.getElementById('btnDraftOffer') : document.getElementById('btnSubmitOffer');
+            var spinner = isDraft ? document.getElementById('spinnerDraftOffer') : document.getElementById('spinnerSubmitOffer');
             btn.disabled = true;
             spinner.classList.remove('d-none');
 
-            var payload = {
-                applicationId: document.getElementById('offerApplicationId').value,
-                baseSalary: parseFloat(document.getElementById('offerBaseSalary').value) || 0,
-                allowances: parseFloat(document.getElementById('offerAllowances').value) || 0,
-                joinDate: document.getElementById('offerJoinDate').value,
-                expirationDate: document.getElementById('offerExpirationDate').value,
-                notes: document.getElementById('offerNotes').value
-            };
-
             try {
-                var res = await fetch('/Workspace/CreateOffer', {
+                var res = await fetch('/Workspace/SaveOffer', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -5757,10 +6181,10 @@
                     showToast(data.message, true);
                     setTimeout(() => window.location.reload(), 1200);
                 } else {
-                    showToast(data.message || 'Lỗi khởi tạo đề xuất Offer', false);
+                    showToast(data.message || 'Lỗi khi xử lý đề xuất Offer.', false);
                 }
             } catch (err) {
-                showToast('Lỗi kết nối: ' + err.message, false);
+                showToast('Lỗi kết nối máy chủ: ' + err.message, false);
             } finally {
                 btn.disabled = false;
                 spinner.classList.add('d-none');

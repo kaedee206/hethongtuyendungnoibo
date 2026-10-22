@@ -554,6 +554,9 @@ public class HomeController : Controller
                     .ThenInclude(a => a.Candidate)
                 .Include(o => o.Application)
                     .ThenInclude(a => a.JobPosting)
+                        .ThenInclude(jp => jp!.Requisition!)
+                            .ThenInclude(r => r!.JobPosition!)
+                .Include(o => o.Approvals)
                 .Where(o => o.Status == OfferStatus.PENDING_APPROVAL || o.Status == OfferStatus.DRAFT)
                 .AsQueryable();
 
@@ -570,6 +573,40 @@ public class HomeController : Controller
             {
                 var cand = o.Application?.Candidate;
                 var candName = cand != null ? $"{cand.FirstName} {cand.LastName}".Trim() : "Ứng viên";
+
+                var req = o.Application?.JobPosting?.Requisition;
+                var pos = req?.JobPosition;
+                var minBand = pos?.MinSalary ?? req?.MinSalary;
+                var maxBand = pos?.MaxSalary ?? req?.MaxSalary;
+                var bandDisplay = (minBand.HasValue || maxBand.HasValue)
+                    ? $"{minBand?.ToString("N0") ?? "0"} - {maxBand?.ToString("N0") ?? "Thoả thuận"} đ"
+                    : "Chưa thiết lập";
+
+                bool isOutside = o.IsOutsideBand || o.IsAboveBudget || (maxBand.HasValue && o.BaseSalary > maxBand.Value);
+
+                var pendingStep = o.Approvals.Where(a => a.Status == ApprovalStatus.PENDING).OrderBy(a => a.Level).FirstOrDefault();
+                int currentLevel = pendingStep?.Level ?? 1;
+                string currentLevelDisplay = currentLevel switch
+                {
+                    1 => "Cấp 1 (Trưởng phòng NS)",
+                    2 => "Cấp 2 (Ban Giám Đốc)",
+                    _ => $"Cấp {currentLevel}"
+                };
+
+                bool canApprove = false;
+                if (User?.IsInRole(UserRoles.Admin) == true)
+                {
+                    canApprove = true;
+                }
+                else if (currentLevel == 1 && User?.IsInRole(UserRoles.HRManager) == true)
+                {
+                    canApprove = true;
+                }
+                else if (currentLevel == 2 && User?.IsInRole(UserRoles.Approver) == true)
+                {
+                    canApprove = true;
+                }
+
                 return new PendingOfferDto
                 {
                     OfferId = o.Id,
@@ -579,9 +616,15 @@ public class HomeController : Controller
                     JobTitle = o.Application?.JobPosting?.Title ?? "Vị trí tuyển dụng",
                     BaseSalary = o.BaseSalary,
                     TotalPackage = o.TotalPackage,
-                    SalaryDisplay = $"{o.BaseSalary:N0} VNĐ",
+                    SalaryDisplay = $"{o.BaseSalary:N0} đ",
                     Status = o.Status,
-                    CreatedDateDisplay = o.CreatedAt.ToString("dd/MM/yyyy")
+                    CreatedDateDisplay = o.CreatedAt.ToString("dd/MM/yyyy"),
+                    IsOutsideBand = isOutside,
+                    StandardBandDisplay = bandDisplay,
+                    CurrentLevel = currentLevel,
+                    CurrentLevelDisplay = currentLevelDisplay,
+                    CanCurrentUserApprove = canApprove,
+                    RecruiterNotes = o.Notes
                 };
             }).ToList();
 
