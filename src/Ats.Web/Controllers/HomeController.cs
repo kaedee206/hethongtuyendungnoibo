@@ -298,17 +298,25 @@ public class HomeController : Controller
                                     (User.IsInRole(UserRoles.Interviewer) || User.IsInRole(UserRoles.HiringManager));
             model.IsInterviewer = isInterviewerRole || isInterviewerOnly;
 
-            // Đếm số lượng buổi phỏng vấn mà người dùng hiện tại là Panelist
+            // Chỉ tính buổi phỏng vấn sắp tới mà người dùng hiện tại được mời tham gia.
+            // Không hiển thị các buổi đã kết thúc trong danh sách "Lịch của tôi".
             if (userId != Guid.Empty)
             {
                 model.MyUpcomingInterviewsCount = await _dbContext.Interviews
-                    .CountAsync(i => i.Panelists.Any(p => p.InterviewerId == userId) && i.Status != InterviewStatus.CANCELLED);
+                    .CountAsync(i => i.Panelists.Any(p => p.InterviewerId == userId)
+                        && i.Status != InterviewStatus.COMPLETED
+                        && i.Status != InterviewStatus.CANCELLED
+                        && (!i.StartTime.HasValue || i.StartTime.Value >= DateTimeOffset.UtcNow));
             }
 
             var effectiveScope = (isInterviewerOnly || interviewScope == "my") ? "my" : "all";
             model.InterviewScope = effectiveScope;
 
-            var interviewBaseQuery = _dbContext.Interviews.AsQueryable();
+            var interviewBaseQuery = _dbContext.Interviews
+                .Where(i => i.Status != InterviewStatus.COMPLETED
+                    && i.Status != InterviewStatus.CANCELLED
+                    && (!i.StartTime.HasValue || i.StartTime.Value >= DateTimeOffset.UtcNow))
+                .AsQueryable();
             if (effectiveScope == "my" && userId != Guid.Empty)
             {
                 interviewBaseQuery = interviewBaseQuery.Where(i => i.Panelists.Any(p => p.InterviewerId == userId));
