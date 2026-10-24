@@ -45,6 +45,72 @@ public static class DatabaseSeeder
         }
         await context.SaveChangesAsync();
 
+        if (!await context.EmailTemplates.AnyAsync())
+        {
+            await context.EmailTemplates.AddRangeAsync(
+                new EmailTemplate
+                {
+                    Id = Guid.NewGuid(),
+                    TemplateType = EmailTemplateType.ApplicationReceived,
+                    Name = "Xác nhận đã nhận hồ sơ",
+                    Subject = "[NoveraTech Careers] Xác nhận đã nhận hồ sơ ứng tuyển: {{JobTitle}}",
+                    Body = "<p>Xin chào {{CandidateName}},</p><p>Cảm ơn bạn đã ứng tuyển vị trí {{JobTitle}}. Hồ sơ của bạn đã được tiếp nhận thành công.</p>",
+                    IsEnabled = true,
+                    IsHtml = true,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                },
+                new EmailTemplate
+                {
+                    Id = Guid.NewGuid(),
+                    TemplateType = EmailTemplateType.InterviewInvitation,
+                    Name = "Mời phỏng vấn",
+                    Subject = "Thư mời phỏng vấn vị trí {{JobTitle}}",
+                    Body = "<p>Xin chào {{CandidateName}},</p><p>Chúng tôi trân trọng mời bạn tham gia phỏng vấn vị trí {{JobTitle}} vào lúc {{InterviewTime}}.</p>",
+                    IsEnabled = true,
+                    IsHtml = true,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                },
+                new EmailTemplate
+                {
+                    Id = Guid.NewGuid(),
+                    TemplateType = EmailTemplateType.InterviewThankYou,
+                    Name = "Cảm ơn sau phỏng vấn",
+                    Subject = "Cảm ơn bạn đã tham gia phỏng vấn vị trí {{JobTitle}}",
+                    Body = "<p>Xin chào {{CandidateName}},</p><p>Cảm ơn bạn đã dành thời gian trao đổi cùng đội ngũ tuyển dụng cho vị trí {{JobTitle}}.</p>",
+                    IsEnabled = true,
+                    IsHtml = true,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                },
+                new EmailTemplate
+                {
+                    Id = Guid.NewGuid(),
+                    TemplateType = EmailTemplateType.Rejection,
+                    Name = "Từ chối",
+                    Subject = "Kết quả hồ sơ vị trí {{JobTitle}}",
+                    Body = "<p>Xin chào {{CandidateName}},</p><p>Chúng tôi cảm ơn bạn đã quan tâm và gửi hồ sơ cho vị trí {{JobTitle}}. Sau khi xem xét, chúng tôi quyết định không tiếp tục quá trình với hồ sơ của bạn.</p>",
+                    IsEnabled = true,
+                    IsHtml = true,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                },
+                new EmailTemplate
+                {
+                    Id = Guid.NewGuid(),
+                    TemplateType = EmailTemplateType.JobOffer,
+                    Name = "Thư offer",
+                    Subject = "Chúc mừng! Thư mời nhận việc cho vị trí {{JobTitle}}",
+                    Body = "<p>Xin chào {{CandidateName}},</p><p>Chúng tôi vui mừng thông báo bạn đã nhận được lời mời làm việc cho vị trí {{JobTitle}} với ngày bắt đầu dự kiến {{OfferStartDate}}.</p>",
+                    IsEnabled = true,
+                    IsHtml = true,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                });
+            await context.SaveChangesAsync();
+        }
+
         // 2. Seed Departments
         if (!await context.Departments.AnyAsync())
         {
