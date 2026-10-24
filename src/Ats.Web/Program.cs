@@ -657,6 +657,22 @@ using (var scope = app.Services.CreateScope())
                 deleted_at TIMESTAMPTZ
             );
 
+            CREATE TABLE IF NOT EXISTS email_templates (
+                id UUID PRIMARY KEY,
+                template_type INTEGER NOT NULL UNIQUE,
+                name TEXT NOT NULL DEFAULT '',
+                subject TEXT NOT NULL DEFAULT '',
+                body TEXT NOT NULL DEFAULT '',
+                is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+                is_html BOOLEAN NOT NULL DEFAULT TRUE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by_id UUID,
+                updated_by_id UUID,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                deleted_at TIMESTAMPTZ
+            );
+
             -- Scrum #40: Cột gộp hồ sơ trên bảng candidates
             ALTER TABLE candidates ADD COLUMN IF NOT EXISTS is_merged BOOLEAN NOT NULL DEFAULT FALSE;
             ALTER TABLE candidates ADD COLUMN IF NOT EXISTS merged_into_candidate_id UUID;
