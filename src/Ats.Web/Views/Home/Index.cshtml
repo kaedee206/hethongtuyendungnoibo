@@ -6,6 +6,11 @@
     ViewData["Title"] = Model.IsAuthenticated ? "Không gian làm việc" : "Hệ thống Tuyển dụng NoveraTech";
     var activeFeature = (ViewBag.ActiveFeature as string ?? "tong-quan").ToLowerInvariant().Trim();
     if (string.IsNullOrWhiteSpace(activeFeature)) activeFeature = "tong-quan";
+    var canViewRecruitmentDashboard = User.IsInRole(UserRoles.Admin)
+        || User.IsInRole(UserRoles.HRManager)
+        || User.IsInRole("Quản trị viên")
+        || User.IsInRole("Quản trị viên hệ thống")
+        || User.IsInRole("Trưởng phòng nhân sự");
 }
 
 @Html.AntiForgeryToken()
@@ -709,6 +714,12 @@
                 <!-- 1. TÍNH NĂNG TỔNG QUAN (TONG-QUAN): KPI + EXECUTIVE OVERVIEW -->
                 <!-- ============================================================== -->
                 <div class="staff-feature-panel @(activeFeature == "tong-quan" ? "" : "d-none")" data-feature-panel="tong-quan">
+                    @if (canViewRecruitmentDashboard)
+                    {
+                        <partial name="_HrmRecruitmentDashboard" />
+                    }
+                    else
+                    {
                     <!-- Hàng 4 Thẻ KPI Tương Tác Hiện Đại -->
                     <div id="feature-section-staff-tong-quan" class="row g-3 mb-4 scroll-margin-nav">
                         <!-- KPI 1: Vị trí đang mở -->
@@ -797,6 +808,7 @@
                             </div>
                         </div>
                     </div>
+                    }
 
                     <!-- BỐ CỤC EXECUTIVE OVERVIEW (Full-Width: Phễu Tuyển Dụng Tuyến Tính & Bảng Hồ Sơ Ứng Tuyển) -->
                     <div class="row g-4 mb-4">
@@ -3102,6 +3114,10 @@
 
 @section Scripts {
     <script src="~/js/interview-conflict.js"></script>
+    @if (canViewRecruitmentDashboard)
+    {
+        <script src="~/js/hrm-dashboard.js" asp-append-version="true"></script>
+    }
     <script>
         function getCsrfToken() {
             var input = document.querySelector('input[name="__RequestVerificationToken"]');
@@ -6186,4 +6202,3 @@
         });
     </script>
 }
-
