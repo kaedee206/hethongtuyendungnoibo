@@ -40,9 +40,22 @@ if (builder.Environment.IsProduction() && Directory.Exists("/app"))
 {
     keysFolder = "/app/dataprotection-keys";
 }
-if (!Directory.Exists(keysFolder))
+
+try
 {
-    Directory.CreateDirectory(keysFolder);
+    if (!Directory.Exists(keysFolder))
+    {
+        Directory.CreateDirectory(keysFolder);
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"[WARN] Could not create {keysFolder}: {ex.Message}. Falling back to temp directory.");
+    keysFolder = Path.Combine(Path.GetTempPath(), "ats-dataprotection-keys");
+    if (!Directory.Exists(keysFolder))
+    {
+        Directory.CreateDirectory(keysFolder);
+    }
 }
 
 builder.Services.AddDataProtection()

@@ -8,12 +8,12 @@ Thư mục này chứa toàn bộ cấu hình Docker để khởi chạy hệ th
 
 ```
 dev/
-├── docker-compose.yml       # Cấu hình khởi chạy 2 container (Web + Nginx)
+├── docker-compose.yml       # Cấu hình khởi chạy 3 container (PostgreSQL + Web + Nginx)
 ├── nginx/                   # Cấu hình Nginx port 80 & 8080 cục bộ
 │   ├── Dockerfile
 │   ├── nginx.conf
 │   └── conf.d/default.conf
-├── .env                     # Biến môi trường Development (kết nối Supabase Dev / Test DB)
+├── .env                     # Biến môi trường Development (mặc định kết nối PostgreSQL Docker nội bộ)
 ├── .env.example             # File mẫu
 ├── run.sh                   # Script 1-chạm: ./run.sh
 └── README.md                # Tài liệu này
@@ -39,9 +39,11 @@ docker compose up -d --build
 
 ## 3. Cổng Truy Cập
 - **Cổng Web chính thức:** `http://localhost:80` (qua Nginx)
-- **Cổng Debug ứng dụng:** `http://localhost:8080` (truy cập thẳng ASP.NET Core)
+- **Cổng Debug ứng dụng:** `http://localhost:8085` (truy cập thẳng ASP.NET Core)
+- **Cổng PostgreSQL độc lập:** `localhost:5432` (kết nối trực tiếp từ host qua DBeaver / DataGrip / Test runner)
 
 ## 4. Quản Trị Container
+- **Xem logs PostgreSQL:** `docker compose logs -f postgres`
 - **Xem logs Web:** `docker compose logs -f web`
 - **Xem logs Nginx:** `docker compose logs -f nginx`
 - **Dừng hệ thống:** `docker compose down`

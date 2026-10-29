@@ -229,22 +229,26 @@ public static class DatabaseSeeder
 
         var seedUsers = new List<(string Email, string FullName, string Password, RoleCode Role, string? DeptCode, string? PosCode)>
         {
-            // [1] Quản trị viên hệ thống (Admin) / CEO - Lường Minh Hiếu
+            // [1] Quản trị viên hệ thống (Admin) / CEO
             ("admin@noveratech.vn", "Lường Minh Hiếu", "123456@@", RoleCode.ADMIN, "BOD", null),
+            ("admin@noveratech.digital", "Quản Trị Viên Hệ Thống", "123456@@", RoleCode.ADMIN, "BOD", null),
             ("nam.dang@noveratech.digital", "Lường Minh Hiếu", "123456@@", RoleCode.ADMIN, "BOD", null),
             ("hieu.luong@noveratech.digital", "Lường Minh Hiếu", "123456@@", RoleCode.ADMIN, "BOD", null),
-            ("luong.hieu@noveratech.digital", "Lường Minh Hiếu", "123456@@", RoleCode.ADMIN, "BOD", null),
+            ("luong.hieu@noveratech.digital", "Lường Minh Hiếu", "123456@@", RoleCode.ADMIN, "IT", null),
+            ("minh.hieu@noveratech.digital", "Lường Minh Hiếu", "123456@@", RoleCode.ADMIN, "IT", null),
             ("security@noveratech.digital", "Lường Minh Hiếu", "123456@@", RoleCode.ADMIN, "BOD", null),
             ("duc.anh@noveratech.digital", "Nguyễn Đức Anh", "123456@@", RoleCode.ADMIN, "IT", null),
-            ("duc.hieu@noveratech.digital", "Nguyễn Đức Hiếu", "123456@@", RoleCode.RECRUITER, "HR", null),
+            ("quyen@noveratech.digital", "Quyền đẹp traii", "123456@@", RoleCode.ADMIN, null, null),
 
             // [2] Người phê duyệt cấp cao (Approver / Ban Giám Đốc) - Trần Đức Minh
             ("bod@noveratech.vn", "Trần Đức Minh", "123456@@", RoleCode.APPROVER, "BOD", null),
             ("minh.tran@noveratech.digital", "Trần Đức Minh", "123456@@", RoleCode.APPROVER, "BOD", null),
 
-            // [3] Trưởng phòng Nhân sự (HR Manager) - Nguyễn Mai Phương
+            // [3] Trưởng phòng Nhân sự (HR Manager) - Nguyễn Mai Phương & Hàng ngũ HR
+            ("hiring@noveratech.digital", "Lường Minh Hiếu", "123456@@", RoleCode.HR_MANAGER, "HR", "HR-MANAGER"),
             ("hr@noveratech.vn", "Nguyễn Mai Phương", "123456@@", RoleCode.HR_MANAGER, "HR", "HR-MANAGER"),
             ("phuong.nguyen@noveratech.digital", "Nguyễn Mai Phương", "123456@@", RoleCode.HR_MANAGER, "HR", "HR-MANAGER"),
+            ("tuyendung@noveratech.digital", "Test", "123456@@", RoleCode.HR_MANAGER, "HR", null),
 
             // [4] Quản lý chuyên môn IT (Hiring Manager - IT) - Vũ Thành Long
             ("it@noveratech.vn", "Vũ Thành Long", "123456@@", RoleCode.HIRING_MANAGER, "IT", "SWE-SENIOR"),
@@ -254,19 +258,18 @@ public static class DatabaseSeeder
             ("sales@noveratech.vn", "Hoàng Gia Bảo", "123456@@", RoleCode.HIRING_MANAGER, "SALES", null),
             ("bao.hoang@noveratech.digital", "Hoàng Gia Bảo", "123456@@", RoleCode.HIRING_MANAGER, "SALES", null),
 
-            // [6] Chuyên viên tuyển dụng 1 (Recruiter 1) - Lê Thùy Dung
+            // [6] Chuyên viên tuyển dụng (Recruiter)
             ("recruiter.thuydung@gmail.com", "Lê Thùy Dung", "123456@@", RoleCode.RECRUITER, "HR", "REC-SENIOR"),
             ("dung.le@noveratech.digital", "Lê Thùy Dung", "123456@@", RoleCode.RECRUITER, "HR", "REC-SENIOR"),
-
-            // [7] Chuyên viên tuyển dụng 2 (Recruiter 2) - Phạm Quốc Anh
+            ("duc.hieu@noveratech.digital", "Nguyễn Đức Hiếu", "123456@@", RoleCode.RECRUITER, "HR", null),
             ("recruiter.quocanh@gmail.com", "Phạm Quốc Anh", "123456@@", RoleCode.RECRUITER, "HR", "REC-SENIOR"),
             ("anh.pham@noveratech.digital", "Phạm Quốc Anh", "123456@@", RoleCode.RECRUITER, "HR", "REC-SENIOR"),
 
-            // [8] Người phỏng vấn kỹ thuật (Interviewer) - Ngô Quang Huy
+            // [7] Người phỏng vấn kỹ thuật (Interviewer) - Ngô Quang Huy
             ("interviewer.quanghuy@gmail.com", "Ngô Quang Huy", "123456@@", RoleCode.INTERVIEWER, "IT", "SWE-SENIOR"),
             ("huy.ngo@noveratech.digital", "Ngô Quang Huy", "123456@@", RoleCode.INTERVIEWER, "IT", "SWE-SENIOR"),
 
-            // [9] Ứng viên nội bộ (Candidate) - Bùi Minh Tuấn
+            // [8] Ứng viên nội bộ (Candidate) - Bùi Minh Tuấn
             ("candidate.minhtuan@gmail.com", "Bùi Minh Tuấn", "123456@@", RoleCode.CANDIDATE, "IT", "QA-MID"),
             ("tuan.bui@noveratech.digital", "Bùi Minh Tuấn", "123456@@", RoleCode.CANDIDATE, "IT", "QA-MID")
         };
@@ -284,7 +287,7 @@ public static class DatabaseSeeder
                     Id = Guid.NewGuid(),
                     Email = item.Email,
                     FullName = item.FullName,
-                    PasswordHash = item.Password,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(item.Password),
                     Status = "ACTIVE",
                     UserType = item.Role == RoleCode.CANDIDATE ? UserType.EXTERNAL_CANDIDATE : UserType.INTERNAL,
                     Role = canonicalRole,
@@ -344,6 +347,20 @@ public static class DatabaseSeeder
                 }
                 user.LockedUntil = null;
                 user.FailedLoginAttempts = 0;
+                bool isPwValid = false;
+                try
+                {
+                    isPwValid = BCrypt.Net.BCrypt.Verify(item.Password, user.PasswordHash);
+                }
+                catch
+                {
+                    isPwValid = (user.PasswordHash == item.Password);
+                }
+                if (!isPwValid)
+                {
+                    user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(item.Password);
+                    user.UpdatedAt = DateTimeOffset.UtcNow;
+                }
 
                 // Đồng bộ quan hệ UserRole
                 if (assignedRoleId.HasValue)
@@ -447,6 +464,20 @@ public static class DatabaseSeeder
                 if (!existingRoleIds.Contains(adminRoleId))
                 {
                     context.UserRoles.Add(new UserRole { UserId = securityUser.Id, RoleId = adminRoleId });
+                }
+            }
+        }
+
+        var adminSsoUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "admin@noveratech.digital");
+        if (adminSsoUser != null)
+        {
+            var targetRoles = new[] { RoleCode.ADMIN, RoleCode.HR_MANAGER };
+            var existingRoleIds = await context.UserRoles.Where(ur => ur.UserId == adminSsoUser.Id).Select(ur => ur.RoleId).ToListAsync();
+            foreach (var rCode in targetRoles)
+            {
+                if (rolesMap.TryGetValue(rCode, out var rId) && !existingRoleIds.Contains(rId))
+                {
+                    context.UserRoles.Add(new UserRole { UserId = adminSsoUser.Id, RoleId = rId });
                 }
             }
         }

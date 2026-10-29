@@ -1,18 +1,52 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ats-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ats_db_dev}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres_dev_pass}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - ats_dev_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-ats_db_dev}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ats-dev-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   web:
     build:
       context: ..
       dockerfile: Dockerfile
     container_name: ats-web-dev
     ports:
-      - "${APP_PORT:-8080}:8080"
+      - "${APP_PORT:-8085}:8080"
     env_file:
       - .env
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME:-ats_db_dev}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres_dev_pass}
     volumes:
       - ats_dev_uploads:/app/wwwroot/uploads
+      - ats_dev_dataprotection_keys:/app/dataprotection-keys
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - ats-dev-network
@@ -51,3 +85,7 @@ networks:
 volumes:
   ats_dev_uploads:
     name: ats_dev_uploads_data
+  ats_dev_postgres_data:
+    name: ats_dev_postgres_data
+  ats_dev_dataprotection_keys:
+    name: ats_dev_dataprotection_keys
