@@ -106,6 +106,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
 // Đăng ký Services
+builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
@@ -141,6 +142,7 @@ builder.Services.AddScoped<ICandidateMultiRoundEvaluationService, CandidateMulti
 builder.Services.AddScoped<IOfferService, OfferService>();
 builder.Services.AddScoped<IOfferApprovalService, OfferApprovalService>();
 builder.Services.AddScoped<IPositionProgressService, PositionProgressService>();
+builder.Services.AddScoped<IHrmRecruitmentDashboardService, HrmRecruitmentDashboardService>();
 builder.Services.AddSingleton<IJobExpirationService, JobExpirationService>();
 builder.Services.AddHostedService<JobExpirationBackgroundService>();
 
