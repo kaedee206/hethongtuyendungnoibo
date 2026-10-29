@@ -535,5 +535,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(e => e.Weight).HasPrecision(18, 4);
             entity.HasIndex(e => e.EvaluationFormId);
         });
+
+        // JobOffer mapping & relationships (SCRUM-340)
+        modelBuilder.Entity<JobOffer>(entity =>
+        {
+            entity.HasOne(o => o.JobPosition)
+                .WithMany()
+                .HasForeignKey(o => o.JobPositionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(o => o.ApplicationId);
+            entity.HasIndex(o => o.Status);
+        });
     }
 }
