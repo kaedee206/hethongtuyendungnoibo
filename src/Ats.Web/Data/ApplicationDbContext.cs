@@ -42,6 +42,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<OfferApproval> OfferApprovals { get; set; }
 
     public DbSet<EmailLog> EmailLogs { get; set; }
+    public DbSet<EmailTemplate> EmailTemplates { get; set; }
     public DbSet<Notification> Notifications { get; set; }
 
     public DbSet<CompetencyFramework> CompetencyFrameworks { get; set; }

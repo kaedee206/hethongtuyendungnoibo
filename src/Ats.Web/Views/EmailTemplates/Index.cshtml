@@ -1,0 +1,255 @@
+@model Ats.Web.Models.ViewModels.EmailTemplates.EmailTemplateManagementViewModel
+@{
+    ViewData["Title"] = "Cấu hình mẫu email tự động";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">Cấu hình mẫu email tự động</h1>
+            <p class="text-muted mb-0">Quản lý năm loại email theo giai đoạn tuyển dụng cho HRManager.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary" id="previewAllTemplatesBtn">
+                <i class="bi bi-eye me-1"></i> Xem trước nhanh
+            </button>
+            <button type="submit" form="emailTemplateForm" class="btn btn-primary">
+                <i class="bi bi-floppy me-1"></i> Lưu cấu hình
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] is not null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] is not null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+        <div class="col-xl-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0 pb-0">
+                    <h5 class="mb-0 fw-bold text-dark">Dữ liệu xem trước</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Ứng viên</label>
+                        <select id="previewCandidateId" class="form-select">
+                            <option value="">-- Chọn ứng viên --</option>
+                            @foreach (var candidate in Model.Candidates)
+                            {
+                                <option value="@candidate.Id">@candidate.DisplayName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Vị trí tuyển dụng</label>
+                        <select id="previewJobId" class="form-select">
+                            <option value="">-- Chọn vị trí --</option>
+                            @foreach (var job in Model.Jobs)
+                            {
+                                <option value="@job.Id">@job.DisplayName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold">Buổi phỏng vấn</label>
+                        <select id="previewInterviewId" class="form-select">
+                            <option value="">-- Chọn lịch phỏng vấn --</option>
+                            @foreach (var interview in Model.Interviews)
+                            {
+                                <option value="@interview.Id">@interview.DisplayName</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 pb-0">
+                    <h5 class="mb-0 fw-bold text-dark">Biến hỗ trợ & quy tắc</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle">{{CandidateName}}</span>
+                        <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle">{{JobTitle}}</span>
+                        <span class="badge rounded-pill bg-warning-subtle text-warning border border-warning-subtle">{{InterviewTime}}</span>
+                        <span class="badge rounded-pill bg-info-subtle text-info border border-info-subtle">{{InterviewRound}}</span>
+                        <span class="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary-subtle">{{OfferStartDate}}</span>
+                    </div>
+                    <ul class="mb-0 small text-muted">
+                        <li>Biến bắt buộc được đánh dấu theo từng loại email.</li>
+                        <li>Không hiển thị placeholder không có dữ liệu trong email gửi đi.</li>
+                        <li>Chuỗi HTML và các biến được xử lý an toàn trước khi lưu.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form id="emailTemplateForm" asp-action="Save" asp-controller="EmailTemplates" method="post">
+        @Html.AntiForgeryToken()
+        @for (var i = 0; i < Model.Templates.Count; i++)
+        {
+            var item = Model.Templates[i];
+            <div class="card shadow-sm border-0 mt-4 template-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h4 class="h5 fw-bold text-dark mb-1">@item.DisplayName</h4>
+                            <span class="text-muted small">Loại: @item.TemplateType</span>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" asp-for="Templates[i].IsEnabled" />
+                            <label class="form-check-label small text-muted" asp-for="Templates[i].IsEnabled">Bật tự động</label>
+                        </div>
+                    </div>
+
+                    <input type="hidden" asp-for="Templates[i].TemplateType" />
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-lg-8">
+                            <label asp-for="Templates[i].Subject" class="form-label fw-semibold">Tiêu đề email</label>
+                            <input asp-for="Templates[i].Subject" class="form-control" placeholder="Ví dụ: Thư mời phỏng vấn vị trí {{JobTitle}}" />
+                        </div>
+                        <div class="col-lg-4">
+                            <label class="form-label fw-semibold">Định dạng</label>
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" asp-for="Templates[i].IsHtml" />
+                                <label class="form-check-label" asp-for="Templates[i].IsHtml">Dùng HTML</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Templates[i].Body" class="form-label fw-semibold">Nội dung email</label>
+                        <textarea asp-for="Templates[i].Body" class="form-control" rows="10" placeholder="Xin chào {{CandidateName}}, ..."></textarea>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        @foreach (var variable in item.SupportedVariables)
+                        {
+                            <button type="button" class="btn btn-sm btn-light border variable-copy-btn" data-variable="@variable" title="Copy biến @variable">
+                                @variable
+                            </button>
+                        }
+                    </div>
+
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                        <div class="small">
+                            <span class="fw-semibold text-dark">Biến bắt buộc:</span>
+                            @if (item.RequiredVariables.Count == 0)
+                            {
+                                <span class="text-muted">Không có</span>
+                            }
+                            else
+                            {
+                                foreach (var variable in item.RequiredVariables)
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1">@variable</span>
+                                }
+                            }
+                        </div>
+                        <button type="button" class="btn btn-outline-primary preview-template-btn" data-template-type="@item.TemplateType">
+                            <i class="bi bi-eye me-1"></i> Xem trước
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </form>
+</div>
+
+<div class="modal fade" id="emailPreviewModal" tabindex="-1" aria-labelledby="emailPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="emailPreviewModalLabel">Xem trước email</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="emailPreviewBody" class="preview-shell"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const previewCandidateId = document.getElementById('previewCandidateId');
+        const previewJobId = document.getElementById('previewJobId');
+        const previewInterviewId = document.getElementById('previewInterviewId');
+
+        function showPreview(html, title) {
+            const previewBody = document.getElementById('emailPreviewBody');
+            document.getElementById('emailPreviewModalLabel').textContent = title || 'Xem trước email';
+            previewBody.innerHTML = html;
+            const modal = new bootstrap.Modal(document.getElementById('emailPreviewModal'));
+            modal.show();
+        }
+
+        document.querySelectorAll('.variable-copy-btn').forEach(button => {
+            button.addEventListener('click', async function () {
+                const variable = this.dataset.variable;
+                await navigator.clipboard.writeText(variable);
+                const original = this.textContent;
+                this.textContent = 'Đã sao chép';
+                setTimeout(() => this.textContent = original, 1200);
+            });
+        });
+
+        document.querySelectorAll('.preview-template-btn').forEach(button => {
+            button.addEventListener('click', async function () {
+                const templateType = this.dataset.templateType;
+                const card = this.closest('.template-card');
+                const subjectInput = card.querySelector('input[name$=".Subject"]');
+                const bodyInput = card.querySelector('textarea[name$=".Body"]');
+
+                const formData = new FormData();
+                formData.append('TemplateType', templateType);
+                formData.append('CandidateId', previewCandidateId.value || '');
+                formData.append('JobId', previewJobId.value || '');
+                formData.append('InterviewId', previewInterviewId.value || '');
+                formData.append('Subject', subjectInput.value || '');
+                formData.append('Body', bodyInput.value || '');
+
+                try {
+                    const response = await fetch('/email-templates/preview', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    if (!result.success) {
+                        showPreview('<div class="alert alert-danger">' + (result.error || 'Không thể xem trước mẫu email.') + '</div>', 'Lỗi mẫu email');
+                        return;
+                    }
+
+                    showPreview('<div class="mb-3"><strong>Tiêu đề:</strong><div class="mt-2">' + result.subject + '</div></div>' + result.html, 'Xem trước: ' + result.subject);
+                } catch (error) {
+                    showPreview('<div class="alert alert-danger">Đã xảy ra lỗi khi xem trước. Vui lòng kiểm tra dữ liệu đầu vào.</div>', 'Lỗi xem trước');
+                }
+            });
+        });
+
+        document.getElementById('previewAllTemplatesBtn').addEventListener('click', function () {
+            const firstTemplate = document.querySelector('.preview-template-btn');
+            if (firstTemplate) {
+                firstTemplate.click();
+            }
+        });
+    </script>
+}
