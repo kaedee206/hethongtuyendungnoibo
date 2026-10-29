@@ -1,0 +1,738 @@
+@model Ats.Web.Models.ViewModels.Candidates.CandidateMultiRoundEvaluationSummaryViewModel
+@using Ats.Web.Models.Enums
+@using System.Globalization
+@{
+    ViewData["Title"] = $"Tổng hợp đánh giá nhiều vòng - {Model.CandidateName}";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid px-3 px-md-4 py-4" style="max-width: 1440px;">
+    <!-- Breadcrumb điều hướng -->
+    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <a asp-controller="Candidates" asp-action="Details" asp-route-id="@Model.CandidateId" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5" style="border-radius: 8px;">
+                <i class="bi bi-arrow-left"></i> Hồ sơ ứng viên
+            </a>
+            <span class="text-muted">/</span>
+            <span class="text-muted small fw-medium">Tổng hợp đánh giá nhiều vòng &amp; Ra quyết định tuyển (SP - 7)</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-white text-dark border px-2.5 py-1.5 shadow-2xs font-monospace" style="border-radius: 6px; font-size: 0.75rem;">
+                <i class="bi bi-shield-check text-success me-1"></i> Quyết định dựa trên toàn bộ dữ liệu thay vì chỉ ấn tượng vòng cuối
+            </span>
+        </div>
+    </div>
+
+    <!-- Thông báo kết quả thao tác -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 d-flex align-items-center gap-2" role="alert" style="border-radius: 10px;">
+            <i class="bi bi-check-circle-fill fs-5 text-success"></i>
+            <div>@TempData["SuccessMessage"]</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 d-flex align-items-center gap-2" role="alert" style="border-radius: 10px;">
+            <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
+            <div>@TempData["ErrorMessage"]</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- ========================================================================= -->
+    <!-- 1. HEADER: TỔNG QUAN ỨNG VIÊN & TIẾN TRÌNH TUYỂN DỤNG                    -->
+    <!-- ========================================================================= -->
+    <div class="card border-0 shadow-sm mb-4 overflow-hidden" style="border-radius: 12px; background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #F8FAFC;">
+        <div class="card-body p-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle text-white fw-bold shadow-sm"
+                         style="width: 64px; height: 64px; background: linear-gradient(135deg, #3B82F6, #1D4ED8); font-size: 1.5rem; flex-shrink: 0;">
+                        @(string.IsNullOrWhiteSpace(Model.CandidateName) ? "?" : Model.CandidateName.Substring(0, 1).ToUpper())
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <h1 class="fw-bold text-white mb-0" style="font-size: 1.5rem; letter-spacing: -0.01em;">
+                                @Model.CandidateName
+                            </h1>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace px-2 py-0.5" style="font-size: 0.72rem;">
+                                @Model.CurrentStageName
+                            </span>
+                            @if (Model.ApplicationStatus == ApplicationStatus.HIRED)
+                            {
+                                <span class="badge bg-success text-white px-2 py-0.5 font-monospace">Đã tuyển dụng</span>
+                            }
+                            else if (Model.ApplicationStatus == ApplicationStatus.REJECTED)
+                            {
+                                <span class="badge bg-danger text-white px-2 py-0.5 font-monospace">Đã loại hồ sơ</span>
+                            }
+                        </div>
+                        <div class="d-flex flex-wrap align-items-center gap-3 text-white-50 small font-monospace">
+                            <span><i class="bi bi-briefcase text-info me-1"></i>@Model.JobTitle (@Model.JobCode)</span>
+                            <span>•</span>
+                            <span><i class="bi bi-building text-warning me-1"></i>@Model.DepartmentName</span>
+                            <span>•</span>
+                            <span><i class="bi bi-envelope text-white-50 me-1"></i>@Model.CandidateEmail</span>
+                            @if (!string.IsNullOrWhiteSpace(Model.CandidatePhone))
+                            {
+                                <span>•</span>
+                                <span><i class="bi bi-telephone text-white-50 me-1"></i>@Model.CandidatePhone</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <button type="button" class="btn btn-outline-light btn-sm d-inline-flex align-items-center gap-1.5" style="border-radius: 8px;" onclick="window.print()">
+                        <i class="bi bi-printer"></i> In bảng tổng hợp
+                    </button>
+                    <a href="#decisionSection" class="btn btn-success btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold" style="border-radius: 8px;">
+                        <i class="bi bi-check2-circle"></i> Ra quyết định tuyển
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 2. KPI CARDS: ĐIỂM TRUNG BÌNH TOÀN DIỆN & TỔNG KẾT KẾT LUẬN               -->
+    <!-- ========================================================================= -->
+    <div class="row g-3 mb-4">
+        <!-- Điểm trung bình toàn diện -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm bg-white p-3.5 h-100" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase font-monospace" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+                        Điểm TB toàn diện
+                    </span>
+                    <div class="p-2 rounded-2 bg-primary-subtle text-primary">
+                        <i class="bi bi-star-fill"></i>
+                    </div>
+                </div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <span class="fs-2 fw-bold text-dark font-monospace">@Model.OverallAverageScore.ToString("0.00", CultureInfo.InvariantCulture)</span>
+                    <span class="text-muted small font-monospace">/ 5.0</span>
+                </div>
+                <div class="text-muted small mt-1 font-monospace" style="font-size: 0.75rem;">
+                    Tổng hợp từ <strong>@Model.TotalSubmittedEvaluationsCount</strong> phiếu của <strong>@Model.TotalCompletedRoundsCount/@Model.TotalRoundsCount</strong> vòng phỏng vấn
+                </div>
+            </div>
+        </div>
+
+        <!-- Kết luận: Nên tuyển / Rất nên tuyển -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm bg-white p-3.5 h-100" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase font-monospace" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+                        Ý kiến nên tuyển
+                    </span>
+                    <div class="p-2 rounded-2 bg-success-subtle text-success">
+                        <i class="bi bi-hand-thumbs-up-fill"></i>
+                    </div>
+                </div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <span class="fs-2 fw-bold text-success font-monospace">@(Model.StrongHireCount + Model.HireCount)</span>
+                    <span class="text-muted small font-monospace">phiếu</span>
+                </div>
+                <div class="text-muted small mt-1" style="font-size: 0.75rem;">
+                    Rất nên tuyển: <strong class="text-success">@Model.StrongHireCount</strong> | Nên tuyển: <strong class="text-primary">@Model.HireCount</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kết luận: Cân nhắc -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm bg-white p-3.5 h-100" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase font-monospace" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+                        Ý kiến cân nhắc
+                    </span>
+                    <div class="p-2 rounded-2 bg-warning-subtle text-warning">
+                        <i class="bi bi-question-circle-fill"></i>
+                    </div>
+                </div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <span class="fs-2 fw-bold text-warning font-monospace">@Model.ConsiderCount</span>
+                    <span class="text-muted small font-monospace">phiếu</span>
+                </div>
+                <div class="text-muted small mt-1" style="font-size: 0.75rem;">
+                    Hội đồng đề xuất cần xem xét kỹ các năng lực còn thiếu
+                </div>
+            </div>
+        </div>
+
+        <!-- Kết luận: Không nên tuyển -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm bg-white p-3.5 h-100" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase font-monospace" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+                        Không nên tuyển
+                    </span>
+                    <div class="p-2 rounded-2 bg-danger-subtle text-danger">
+                        <i class="bi bi-hand-thumbs-down-fill"></i>
+                    </div>
+                </div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <span class="fs-2 fw-bold text-danger font-monospace">@Model.StrongNoHireCount</span>
+                    <span class="text-muted small font-monospace">phiếu</span>
+                </div>
+                <div class="text-muted small mt-1" style="font-size: 0.75rem;">
+                    Tỷ lệ phản đối tuyển dụng trong hội đồng
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 3. PHẦN 1: ĐIỂM TRUNG BÌNH THEO TIÊU CHÍ (CRITERIA AVERAGES)              -->
+    <!-- ========================================================================= -->
+    <div class="card border-0 shadow-sm bg-white mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 14px;">
+        <div class="card-header bg-white border-bottom p-3.5 d-flex align-items-center justify-content-between" style="border-color: #F1F5F9 !important;">
+            <div>
+                <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-bar-chart-steps text-primary"></i>
+                    <span>Điểm Trung Bình Theo Từng Tiêu Chí Qua Các Vòng</span>
+                </h5>
+                <div class="text-muted small mt-0.5">
+                    Tổng hợp khách quan trên toàn bộ các phiếu chấm chính thức của mọi giám khảo phỏng vấn
+                </div>
+            </div>
+            <span class="badge bg-light text-dark border px-2.5 py-1 font-monospace" style="font-size: 0.75rem;">
+                Thang điểm 1 - 5
+            </span>
+        </div>
+        <div class="card-body p-4">
+            @if (Model.CriteriaAverages.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 font-monospace">
+                        <thead class="bg-light">
+                            <tr>
+                                <th style="width: 25%;">Tiêu chí đánh giá</th>
+                                <th style="width: 15%;">Nhóm năng lực</th>
+                                <th style="width: 10%;" class="text-center">Trọng số</th>
+                                <th style="width: 12%;" class="text-center">Số lượt chấm</th>
+                                <th style="width: 13%;" class="text-center">Điểm trung bình</th>
+                                <th style="width: 25%;">Mức độ đáp ứng</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in Model.CriteriaAverages)
+                            {
+                                var pct = (int)Math.Round((c.AverageScore / 5.0) * 100);
+                                <tr>
+                                    <td class="fw-bold text-dark">@c.CriteriaName</td>
+                                    <td>
+                                        <span class="badge bg-light text-secondary border font-monospace" style="font-size: 0.72rem;">
+                                            @c.CriteriaType
+                                        </span>
+                                    </td>
+                                    <td class="text-center">@(c.Weight.ToString("0.0", CultureInfo.InvariantCulture))</td>
+                                    <td class="text-center">@c.EvaluationCount lượt</td>
+                                    <td class="text-center">
+                                        <span class="fs-6 @c.ScoreRatingClass">
+                                            @c.AverageScore.ToString("0.00", CultureInfo.InvariantCulture)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 8px; border-radius: 4px; background-color: #E2E8F0;">
+                                                <div class="progress-bar @c.ProgressBarColor" role="progressbar" style="width: @pct%;" aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <span class="small text-muted" style="min-width: 35px;">@pct%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-clipboard2-x fs-2 text-secondary mb-2"></i>
+                    <p class="mb-0">Chưa có tiêu chí nào được chấm điểm qua các vòng phỏng vấn.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 4. PHẦN 2: CHI TIẾT TOÀN BỘ PHIẾU ĐÁNH GIÁ CỦA MỌI VÒNG                  -->
+    <!-- ========================================================================= -->
+    <div class="card border-0 shadow-sm bg-white mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 14px;">
+        <div class="card-header bg-white border-bottom p-3.5 d-flex align-items-center justify-content-between" style="border-color: #F1F5F9 !important;">
+            <div>
+                <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-collection-fill text-success"></i>
+                    <span>Chi Tiết Phiếu Đánh Giá Toàn Bộ Các Vòng Phỏng Vấn</span>
+                </h5>
+                <div class="text-muted small mt-0.5">
+                    Minh bạch toàn diện: Xem nhận xét, ưu điểm, nhược điểm và kết luận từ từng giám khảo trong hội đồng
+                </div>
+            </div>
+            <span class="badge bg-success-subtle text-success border border-success-subtle font-monospace px-2.5 py-1">
+                @Model.TotalRoundsCount Vòng phỏng vấn
+            </span>
+        </div>
+        <div class="card-body p-4">
+            @if (Model.Rounds.Any())
+            {
+                <div class="accordion d-flex flex-column gap-3" id="multiRoundAccordion">
+                    @for (int rIdx = 0; rIdx < Model.Rounds.Count; rIdx++)
+                    {
+                        var round = Model.Rounds[rIdx];
+                        var collapseId = $"collapse_round_{round.InterviewId:N}";
+                        var isLatest = (rIdx == Model.Rounds.Count - 1);
+
+                        <div class="accordion-item border rounded-3 shadow-none overflow-hidden" style="border-color: #E2E8F0 !important;">
+                            <h2 class="accordion-header" id="heading_@collapseId">
+                                <button class="accordion-button @(isLatest ? "" : "collapsed") p-3.5" type="button"
+                                        data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="@(isLatest ? "true" : "false")"
+                                        style="background: @(isLatest ? "#F8FAFC" : "#FFFFFF");">
+                                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center w-100 pe-3 gap-2">
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <span class="badge bg-dark text-white font-monospace px-2.5 py-1" style="font-size: 0.75rem;">
+                                                Vòng @round.RoundNumber
+                                            </span>
+                                            <strong class="text-dark fs-6">@round.Title</strong>
+                                            <span class="badge rounded-2 @(round.Status == InterviewStatus.COMPLETED ? "bg-success" : "bg-primary")" style="font-size: 0.7rem;">
+                                                @round.StatusDisplay
+                                            </span>
+                                            <span class="text-muted small font-monospace">(@round.InterviewTypeDisplay)</span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-3 font-monospace small">
+                                            <span class="text-muted"><i class="bi bi-clock me-1"></i>@round.FormattedTime</span>
+                                            @if (round.RoundAverageScore.HasValue)
+                                            {
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                                    Điểm TB Vòng: <strong>@round.RoundAverageScore.Value.ToString("0.00", CultureInfo.InvariantCulture)</strong>/5.0
+                                                </span>
+                                            }
+                                        </div>
+                                    </div>
+                                </button>
+                            </h2>
+
+                            <div id="@collapseId" class="accordion-collapse collapse @(isLatest ? "show" : "")" aria-labelledby="heading_@collapseId">
+                                <div class="accordion-body p-4" style="background: #FAFAFA; border-top: 1px solid #E2E8F0;">
+                                    <!-- Hội đồng phỏng vấn -->
+                                    <div class="p-2.5 mb-3 rounded-2 bg-white border d-flex align-items-center justify-content-between flex-wrap gap-2" style="font-size: 0.8rem;">
+                                        <div>
+                                            <span class="text-muted"><i class="bi bi-people-fill text-primary me-1"></i>Hội đồng phỏng vấn:</span>
+                                            <strong class="text-dark ms-1">@(round.Panelists.Any() ? string.Join(", ", round.Panelists) : "Chưa ấn định")</strong>
+                                        </div>
+                                        <div>
+                                            <span class="text-muted"><i class="bi bi-geo-alt-fill text-danger me-1"></i>Địa điểm / Liên kết:</span>
+                                            <span class="text-dark ms-1">@(string.IsNullOrWhiteSpace(round.LocationOrLink) ? "Trực tuyến" : round.LocationOrLink)</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Danh sách các phiếu đánh giá của từng giám khảo -->
+                                    @if (round.EvaluationSheets.Any())
+                                    {
+                                        <div class="row g-3">
+                                            @foreach (var sheet in round.EvaluationSheets)
+                                            {
+                                                <div class="col-12 col-lg-6">
+                                                    <div class="card border-0 shadow-sm bg-white h-100" style="border: 1px solid #E2E8F0 !important; border-radius: 10px;">
+                                                        <div class="card-header bg-white border-bottom p-3 d-flex align-items-center justify-content-between" style="border-color: #F1F5F9 !important;">
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light text-primary fw-bold" style="width: 36px; height: 36px;">
+                                                                    @(string.IsNullOrWhiteSpace(sheet.InterviewerName) ? "G" : sheet.InterviewerName.Substring(0, 1).ToUpper())
+                                                                </div>
+                                                                <div>
+                                                                    <h6 class="fw-bold text-dark mb-0" style="font-size: 0.9rem;">@sheet.InterviewerName</h6>
+                                                                    <small class="text-muted font-monospace" style="font-size: 0.72rem;">@sheet.InterviewerEmail</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="text-end">
+                                                                <span class="badge @sheet.RecommendationBadgeClass font-monospace px-2 py-1" style="font-size: 0.72rem;">
+                                                                    @sheet.RecommendationDisplay
+                                                                </span>
+                                                                @if (sheet.OverallScore.HasValue)
+                                                                {
+                                                                    <div class="fw-bold text-dark font-monospace small mt-0.5">
+                                                                        Điểm: <span class="text-primary fs-6">@sheet.OverallScore.Value.ToString("0.0", CultureInfo.InvariantCulture)</span>/5.0
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="card-body p-3 font-monospace small">
+                                                            <!-- Ưu điểm -->
+                                                            @if (!string.IsNullOrWhiteSpace(sheet.Strengths))
+                                                            {
+                                                                <div class="mb-2">
+                                                                    <strong class="text-success d-flex align-items-center gap-1">
+                                                                        <i class="bi bi-plus-circle-fill"></i> Ưu điểm nổi bật:
+                                                                    </strong>
+                                                                    <p class="text-dark mb-0 ps-3 mt-0.5" style="white-space: pre-line;">@sheet.Strengths</p>
+                                                                </div>
+                                                            }
+
+                                                            <!-- Nhược điểm -->
+                                                            @if (!string.IsNullOrWhiteSpace(sheet.Weaknesses))
+                                                            {
+                                                                <div class="mb-2">
+                                                                    <strong class="text-danger d-flex align-items-center gap-1">
+                                                                        <i class="bi bi-dash-circle-fill"></i> Điểm cần cải thiện:
+                                                                    </strong>
+                                                                    <p class="text-dark mb-0 ps-3 mt-0.5" style="white-space: pre-line;">@sheet.Weaknesses</p>
+                                                                </div>
+                                                            }
+
+                                                            <!-- Nhận xét chi tiết -->
+                                                            @if (!string.IsNullOrWhiteSpace(sheet.DetailedFeedback))
+                                                            {
+                                                                <div class="mb-2">
+                                                                    <strong class="text-secondary d-flex align-items-center gap-1">
+                                                                        <i class="bi bi-chat-quote-fill"></i> Nhận xét chi tiết:
+                                                                    </strong>
+                                                                    <p class="text-muted mb-0 ps-3 mt-0.5 fst-italic" style="white-space: pre-line;">"@sheet.DetailedFeedback"</p>
+                                                                </div>
+                                                            }
+
+                                                            <!-- Điểm từng tiêu chí (nếu có) -->
+                                                            @if (sheet.CriteriaScores.Any())
+                                                            {
+                                                                <div class="mt-2 pt-2 border-top">
+                                                                    <span class="text-muted fw-bold d-block mb-1" style="font-size: 0.7rem; text-transform: uppercase;">
+                                                                        Điểm từng tiêu chí:
+                                                                    </span>
+                                                                    <div class="d-flex flex-wrap gap-1.5">
+                                                                        @foreach (var sc in sheet.CriteriaScores)
+                                                                        {
+                                                                            <span class="badge bg-light text-dark border px-2 py-1 font-monospace" style="font-size: 0.7rem;">
+                                                                                @sc.CriteriaName: <strong>@sc.Score</strong>/5
+                                                                            </span>
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        </div>
+
+                                                        <div class="card-footer bg-light border-top p-2.5 px-3 d-flex justify-content-between align-items-center" style="font-size: 0.72rem; color: #64748B;">
+                                                            <span>Trạng thái: <strong>@(sheet.IsSubmitted ? "Đã nộp chính thức" : "Bản nháp")</strong></span>
+                                                            <span>Nộp lúc: <strong>@sheet.FormattedSubmittedAt</strong></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center py-3 text-muted bg-white border rounded-2" style="font-size: 0.8rem;">
+                                            <i class="bi bi-clock-history me-1 text-secondary"></i>Chưa có giám khảo nào nộp phiếu đánh giá cho vòng phỏng vấn này.
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-calendar-x fs-2 text-secondary mb-2"></i>
+                    <p class="mb-0">Hồ sơ này chưa có vòng phỏng vấn nào được ghi nhận.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 5. PHẦN 3: FORM RA QUYẾT ĐỊNH TUYỂN & NHẬT KÝ ĐÃ LƯU (SP - 7)              -->
+    <!-- ========================================================================= -->
+    <div class="row g-4" id="decisionSection">
+        <!-- Form Quyết định dành cho Trưởng bộ phận -->
+        <div class="col-12 col-xl-7">
+            <div class="card border-0 shadow-sm bg-white h-100" style="border: 1px solid #E2E8F0 !important; border-radius: 14px;">
+                <div class="card-header bg-white border-bottom p-3.5" style="border-color: #F1F5F9 !important;">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                <i class="bi bi-check-circle text-primary"></i>
+                                <span>Ra Quyết Định Tuyển Dụng</span>
+                            </h5>
+                            <div class="text-muted small mt-0.5">
+                                Quyết định sẽ cập nhật trạng thái ứng viên và ghi vào nhật ký kiểm toán hệ thống
+                            </div>
+                        </div>
+                        <span class="badge bg-primary text-white font-monospace px-2.5 py-1">
+                            Vai trò: @Model.CurrentUserRole
+                        </span>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    @if (Model.CanMakeDecision)
+                    {
+                        <form id="hiringDecisionForm" asp-controller="Candidates" asp-action="MakeHiringDecision" method="post" onsubmit="handleDecisionSubmit(event)">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="ApplicationId" value="@Model.ApplicationId" />
+
+                            <!-- Chọn loại quyết định -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold text-dark d-block mb-2">
+                                    1. Chọn kết luận quyết định: <span class="text-danger">*</span>
+                                </label>
+                                <div class="row g-3">
+                                    <div class="col-12 col-sm-6">
+                                        <label class="card p-3 border rounded-3 h-100 cursor-pointer decision-card active-offer" style="cursor: pointer; transition: all 0.2s;" for="decisionOffer">
+                                            <div class="d-flex align-items-center gap-2.5">
+                                                <input class="form-check-input mt-0 fs-5" type="radio" name="Decision" id="decisionOffer" value="OFFER" checked onchange="toggleDecisionInputs()" />
+                                                <div>
+                                                    <div class="fw-bold text-success d-flex align-items-center gap-1">
+                                                        <i class="bi bi-check2-circle"></i> Chuyển sang đề xuất Offer
+                                                    </div>
+                                                    <small class="text-muted d-block mt-0.5" style="font-size: 0.75rem;">
+                                                        Phê duyệt ứng viên đạt yêu cầu chuyên môn và chuyển sang tạo Thư mời nhận việc.
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                    <div class="col-12 col-sm-6">
+                                        <label class="card p-3 border rounded-3 h-100 cursor-pointer decision-card" style="cursor: pointer; transition: all 0.2s;" for="decisionReject">
+                                            <div class="d-flex align-items-center gap-2.5">
+                                                <input class="form-check-input mt-0 fs-5" type="radio" name="Decision" id="decisionReject" value="REJECTED" onchange="toggleDecisionInputs()" />
+                                                <div>
+                                                    <div class="fw-bold text-danger d-flex align-items-center gap-1">
+                                                        <i class="bi bi-x-circle"></i> Loại hồ sơ ứng viên
+                                                    </div>
+                                                    <small class="text-muted d-block mt-0.5" style="font-size: 0.75rem;">
+                                                        Từ chối ứng viên sau khi cân nhắc dữ liệu các vòng kèm lý do chuẩn hóa.
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Nhóm trường khi chọn Loại hồ sơ -->
+                            <div id="rejectionReasonContainer" class="mb-4 d-none p-3 rounded-3" style="background: #FEF2F2; border: 1px solid #FECACA;">
+                                <label for="decisionRejectionReasonSelect" class="form-label fw-bold text-danger mb-1">
+                                    <i class="bi bi-exclamation-octagon-fill me-1"></i>2. Lý do từ chối hồ sơ (Bắt buộc): <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="decisionRejectionReasonSelect" name="RejectionReasonId">
+                                    <option value="">-- Đang nạp danh mục lý do loại... --</option>
+                                </select>
+                                <small class="text-muted mt-1 d-block" style="font-size: 0.75rem;">
+                                    Lý do loại được dùng cho thống kê báo cáo tuyển dụng và đo lường tỷ lệ rơi rụng (drop-off rate).
+                                </small>
+                            </div>
+
+                            <!-- Nhận xét, giải trình quyết định -->
+                            <div class="mb-4">
+                                <label for="decisionNoteInput" class="form-label fw-bold text-dark mb-1">
+                                    Nhận xét hoặc giải trình quyết định:
+                                </label>
+                                <textarea class="form-control" id="decisionNoteInput" name="Note" rows="3" placeholder="Nhập tóm tắt lý do quyết định tuyển/loại dựa trên toàn bộ dữ liệu các vòng..."></textarea>
+                                <small class="text-muted" style="font-size: 0.75rem;">
+                                    Ghi chú này sẽ được lưu cố định vào nhật ký tuyển dụng kèm tài khoản của bạn.
+                                </small>
+                            </div>
+
+                            <!-- Người thực hiện & Nút submit -->
+                            <div class="pt-3 border-top d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                <div class="text-muted small font-monospace">
+                                    <i class="bi bi-person-check text-primary me-1"></i>Người quyết định: <strong>@Model.CurrentUserName</strong>
+                                </div>
+                                <button type="submit" id="btnSubmitDecision" class="btn btn-primary px-4 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-sm" style="border-radius: 8px;">
+                                    <i class="bi bi-floppy2-fill"></i> Xác nhận &amp; Lưu Quyết Định
+                                </button>
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-lock-fill fs-2 text-secondary mb-2"></i>
+                            <h6 class="fw-bold text-dark">Chỉ Trưởng bộ phận phụ trách vị trí mới có quyền quyết định tuyển</h6>
+                            <p class="small mb-0">Hồ sơ này do Trưởng bộ phận hoặc Quản lý tuyển dụng của vị trí phê duyệt.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột Phải: Nhật ký quyết định tuyển dụng kèm người quyết định -->
+        <div class="col-12 col-xl-5">
+            <div class="card border-0 shadow-sm bg-white h-100" style="border: 1px solid #E2E8F0 !important; border-radius: 14px;">
+                <div class="card-header bg-white border-bottom p-3.5 d-flex align-items-center justify-content-between" style="border-color: #F1F5F9 !important;">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-journal-text text-secondary"></i>
+                            <span>Nhật Ký Quyết Định Tuyển Dụng</span>
+                        </h5>
+                        <div class="text-muted small mt-0.5">
+                            Ghi vết kiểm toán (Audit Trail) kèm người quyết định và thời gian thực hiện
+                        </div>
+                    </div>
+                    <span class="badge bg-light text-dark border px-2 py-1 font-monospace" style="font-size: 0.72rem;">
+                        @Model.DecisionLogs.Count bản ghi
+                    </span>
+                </div>
+
+                <div class="card-body p-3.5">
+                    @if (Model.DecisionLogs.Any())
+                    {
+                        <div class="d-flex flex-column gap-2.5" id="decisionLogsContainer">
+                            @foreach (var log in Model.DecisionLogs)
+                            {
+                                <div class="p-3 bg-light border rounded-3 font-monospace" style="border-color: #E2E8F0 !important;">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="badge @log.BadgeClass px-2 py-0.5" style="font-size: 0.72rem;">
+                                            @log.ActionDisplay
+                                        </span>
+                                        <small class="text-muted" style="font-size: 0.72rem;">
+                                            <i class="bi bi-clock me-1"></i>@log.FormattedDecidedAt
+                                        </small>
+                                    </div>
+
+                                    @if (!string.IsNullOrWhiteSpace(log.Reason))
+                                    {
+                                        <div class="small text-danger fw-semibold mt-1">
+                                            Lý do: @log.Reason
+                                        </div>
+                                    }
+
+                                    @if (!string.IsNullOrWhiteSpace(log.Note))
+                                    {
+                                        <div class="small text-dark mt-1 fst-italic">
+                                            "@log.Note"
+                                        </div>
+                                    }
+
+                                    <div class="mt-2 pt-2 border-top d-flex align-items-center justify-content-between small text-muted" style="font-size: 0.72rem;">
+                                        <span>Người quyết định:</span>
+                                        <strong class="text-dark">@log.DecidedByUserName (@log.DecidedByUserRole)</strong>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-clock-history fs-2 text-secondary mb-2"></i>
+                            <p class="mb-0">Chưa có quyết định tuyển dụng nào được lưu cho hồ sơ này.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            loadDecisionRejectionReasons();
+        });
+
+        function toggleDecisionInputs() {
+            const isReject = document.getElementById('decisionReject')?.checked;
+            const container = document.getElementById('rejectionReasonContainer');
+            const selectEl = document.getElementById('decisionRejectionReasonSelect');
+
+            if (isReject) {
+                container?.classList.remove('d-none');
+                if (selectEl) selectEl.required = true;
+            } else {
+                container?.classList.add('d-none');
+                if (selectEl) {
+                    selectEl.required = false;
+                    selectEl.value = '';
+                }
+            }
+        }
+
+        async function loadDecisionRejectionReasons() {
+            const selectEl = document.getElementById('decisionRejectionReasonSelect');
+            if (!selectEl) return;
+
+            try {
+                const res = await fetch('/candidates/rejection-reasons', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && Array.isArray(data.data)) {
+                        selectEl.innerHTML = '<option value="">-- Chọn lý do loại hồ sơ từ danh mục --</option>';
+                        data.data.forEach(r => {
+                            const opt = document.createElement('option');
+                            opt.value = r.id;
+                            opt.textContent = `${r.code} - ${r.name}`;
+                            selectEl.appendChild(opt);
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error('Lỗi khi nạp danh mục lý do loại:', err);
+                selectEl.innerHTML = '<option value="">-- Không thể nạp danh mục lý do loại --</option>';
+            }
+        }
+
+        async function handleDecisionSubmit(event) {
+            event.preventDefault();
+            const form = event.target;
+            const isReject = document.getElementById('decisionReject')?.checked;
+            const selectEl = document.getElementById('decisionRejectionReasonSelect');
+
+            if (isReject && (!selectEl || !selectEl.value)) {
+                alert('Vui lòng chọn một lý do loại hợp lệ từ danh mục!');
+                selectEl?.focus();
+                return;
+            }
+
+            const confirmMsg = isReject
+                ? 'Bạn có chắc chắn muốn LOẠI hồ sơ ứng viên này sau khi tổng hợp các vòng phỏng vấn không?'
+                : 'Bạn có chắc chắn muốn CHUYỂN ứng viên sang giai đoạn ĐỀ XUẤT OFFER không?';
+
+            if (!confirm(confirmMsg)) return;
+
+            const submitBtn = document.getElementById('btnSubmitDecision');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang xử lý...';
+            }
+
+            try {
+                const formData = new FormData(form);
+                const res = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    alert(result.message);
+                    window.location.reload();
+                } else {
+                    alert(result.message || 'Lỗi khi lưu quyết định.');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-floppy2-fill"></i> Xác nhận &amp; Lưu Quyết Định';
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Có lỗi xảy ra trong quá trình gửi yêu cầu.');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="bi bi-floppy2-fill"></i> Xác nhận &amp; Lưu Quyết Định';
+                }
+            }
+        }
+    </script>
+}

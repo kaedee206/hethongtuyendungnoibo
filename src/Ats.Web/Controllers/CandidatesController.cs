@@ -25,12 +25,14 @@ public class CandidatesController(
     ICandidateService candidateService,
     IJobPostingService jobPostingService,
     ISecurityAuditService securityAuditService,
+    ICandidateMultiRoundEvaluationService multiRoundEvaluationService,
     ILogger<CandidatesController> logger) : Controller
 {
     private readonly ICandidateStageService _candidateStageService = candidateStageService;
     private readonly ICandidateService _candidateService = candidateService;
     private readonly IJobPostingService _jobPostingService = jobPostingService;
     private readonly ISecurityAuditService _securityAuditService = securityAuditService;
+    private readonly ICandidateMultiRoundEvaluationService _multiRoundEvaluationService = multiRoundEvaluationService;
     private readonly ILogger<CandidatesController> _logger = logger;
 
     private Guid GetCurrentUserId()
@@ -877,6 +879,139 @@ public class CandidatesController(
 
         await PopulateJobPostingsDropdownAsync(input.JobPostingId, cancellationToken);
         return View(input);
+    }
+
+    // =========================================================================
+    // SP - 7: TỔNG HỢP KẾT QUẢ NHIỀU VÒNG & RA QUYẾT ĐỊNH TUYỂN (HIRING MANAGER)
+    // =========================================================================
+
+    /// <summary>
+    /// GET: /ung-vien/tong-hop-danh-gia/{applicationId} hoặc /candidates/multi-round-evaluation/{applicationId}
+    /// Màn hình gộp toàn bộ phiếu đánh giá của mọi vòng cho một ứng viên, hiển thị điểm trung bình theo tiêu chí và các kết luận.
+    /// </summary>
+    [HttpGet("tong-hop-danh-gia/{applicationId:guid}")]
+    [HttpGet("multi-round-evaluation/{applicationId:guid}")]
+    [Authorize(Roles = $"{UserRoles.HiringManager},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.Recruiter},Quản lý tuyển dụng,Trưởng bộ phận,Trưởng phòng nhân sự,Chuyên viên tuyển dụng,Quản trị viên")]
+    public async Task<IActionResult> MultiRoundEvaluation(
+        Guid applicationId,
+        CancellationToken cancellationToken = default)
+    {
+        if (applicationId == Guid.Empty)
+        {
+            TempData["ErrorMessage"] = "Mã hồ sơ ứng tuyển không hợp lệ.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        try
+        {
+            var currentUserId = GetCurrentUserId();
+            var currentUserRole = GetCurrentUserRole();
+
+            var viewModel = await _multiRoundEvaluationService.GetMultiRoundSummaryAsync(
+                applicationId,
+                currentUserId,
+                currentUserRole,
+                cancellationToken);
+
+            return View("MultiRoundEvaluation", viewModel);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Không tìm thấy hồ sơ ứng tuyển {AppId} khi xem tổng hợp đánh giá", applicationId);
+            TempData["ErrorMessage"] = ex.Message;
+            return RedirectToAction(nameof(Index));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi xảy ra khi tải màn hình tổng hợp đánh giá nhiều vòng cho hồ sơ {AppId}", applicationId);
+            TempData["ErrorMessage"] = "Đã xảy ra lỗi khi tải dữ liệu tổng hợp đánh giá. Vui lòng thử lại sau.";
+            return RedirectToAction(nameof(Index));
+        }
+    }
+
+    /// <summary>
+    /// POST: /ung-vien/ra-quyet-dinh-tuyen hoặc /candidates/make-hiring-decision
+    /// Trưởng bộ phận thực hiện lưu quyết định tuyển (Chuyển sang đề xuất Offer hoặc Loại kèm lý do) kèm ghi nhật ký.
+    /// </summary>
+    [HttpPost("ra-quyet-dinh-tuyen")]
+    [HttpPost("make-hiring-decision")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = $"{UserRoles.HiringManager},{UserRoles.HRManager},{UserRoles.Admin},{UserRoles.Recruiter},Quản lý tuyển dụng,Trưởng bộ phận,Trưởng phòng nhân sự,Chuyên viên tuyển dụng,Quản trị viên")]
+    public async Task<IActionResult> MakeHiringDecision(
+        [FromForm] CandidateHiringDecisionInputModel input,
+        CancellationToken cancellationToken = default)
+    {
+        var isAjax = Request.Headers.XRequestedWith == "XMLHttpRequest";
+        var currentUserId = GetCurrentUserId();
+        var currentUserRole = GetCurrentUserRole();
+
+        if (currentUserId == Guid.Empty)
+        {
+            if (isAjax) return Json(new { success = false, message = "Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại." });
+            return RedirectToAction("Login", "Auth");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .ToList();
+            var firstErr = errors.FirstOrDefault() ?? "Dữ liệu quyết định chưa hợp lệ.";
+
+            if (isAjax) return Json(new { success = false, message = firstErr, errors });
+            TempData["ErrorMessage"] = firstErr;
+            return RedirectToAction(nameof(MultiRoundEvaluation), new { applicationId = input.ApplicationId });
+        }
+
+        try
+        {
+            var logDto = await _multiRoundEvaluationService.MakeHiringDecisionAsync(
+                input,
+                currentUserId,
+                currentUserRole,
+                cancellationToken);
+
+            var successMsg = input.Decision == CandidateStage.OFFER
+                ? "Đã lưu quyết định thành công! Ứng viên đã được chuyển sang giai đoạn Đề xuất tuyển dụng (Offer)."
+                : $"Đã lưu quyết định Loại hồ sơ thành công. Lý do: {logDto.Reason ?? "Không đạt tiêu chuẩn"}.";
+
+            if (isAjax)
+            {
+                return Json(new
+                {
+                    success = true,
+                    message = successMsg,
+                    data = logDto,
+                    redirectUrl = Url.Action(nameof(MultiRoundEvaluation), "Candidates", new { applicationId = input.ApplicationId })
+                });
+            }
+
+            TempData["SuccessMessage"] = successMsg;
+            return RedirectToAction(nameof(MultiRoundEvaluation), new { applicationId = input.ApplicationId });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Từ chối quyền ra quyết định tuyển cho user {UserId}", currentUserId);
+            if (isAjax) return Json(new { success = false, message = ex.Message });
+            TempData["ErrorMessage"] = ex.Message;
+            return RedirectToAction(nameof(MultiRoundEvaluation), new { applicationId = input.ApplicationId });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Lỗi nghiệp vụ khi ra quyết định tuyển: {Msg}", ex.Message);
+            if (isAjax) return Json(new { success = false, message = ex.Message });
+            TempData["ErrorMessage"] = ex.Message;
+            return RedirectToAction(nameof(MultiRoundEvaluation), new { applicationId = input.ApplicationId });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi hệ thống khi ra quyết định tuyển cho hồ sơ {AppId}", input.ApplicationId);
+            var errMsg = "Có lỗi xảy ra trong quá trình lưu quyết định tuyển dụng. Vui lòng liên hệ quản trị viên.";
+            if (isAjax) return Json(new { success = false, message = errMsg });
+            TempData["ErrorMessage"] = errMsg;
+            return RedirectToAction(nameof(MultiRoundEvaluation), new { applicationId = input.ApplicationId });
+        }
     }
 
     private async Task PopulateJobPostingsDropdownAsync(Guid selectedJobId, CancellationToken cancellationToken)
