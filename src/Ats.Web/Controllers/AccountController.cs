@@ -155,6 +155,19 @@ public class AccountController(
         HttpContext.Session.SetString("UserRole", userInfo.Role);
         HttpContext.Session.SetString("FullName", userInfo.FullName);
         
+        string? userAvatar = null;
+        if (_dbContext != null)
+        {
+            userAvatar = await _dbContext.Users.AsNoTracking()
+                .Where(u => u.Id == userInfo.Id)
+                .Select(u => u.AvatarUrl)
+                .FirstOrDefaultAsync();
+            if (!string.IsNullOrEmpty(userAvatar))
+            {
+                HttpContext.Session.SetString("AvatarUrl", userAvatar);
+            }
+        }
+        
         var idleTimeoutMinutes = int.TryParse(Environment.GetEnvironmentVariable("SESSION_IDLE_TIMEOUT_MINUTES"), out var parsedTimeout) ? parsedTimeout : 30;
         var maxSessionHours = int.TryParse(Environment.GetEnvironmentVariable("SESSION_MAX_LIFETIME_HOURS"), out var parsedMax) ? parsedMax : 8;
         HttpContext.Session.SetString("AbsoluteExpiration", DateTimeOffset.UtcNow.AddHours(maxSessionHours).ToString("o"));
@@ -166,6 +179,10 @@ public class AccountController(
             new Claim(ClaimTypes.Email, userInfo.Email),
             new Claim(ClaimTypes.Name, userInfo.FullName)
         };
+        if (!string.IsNullOrEmpty(userAvatar))
+        {
+            claims.Add(new Claim("AvatarUrl", userAvatar));
+        }
 
         PopulateRoleClaims(claims, userInfo.Roles, userInfo.Role);
 
@@ -454,6 +471,19 @@ public class AccountController(
         HttpContext.Session.SetString("UserRole", userInfo.Role);
         HttpContext.Session.SetString("FullName", userInfo.FullName);
 
+        string? userAvatar = null;
+        if (_dbContext != null)
+        {
+            userAvatar = await _dbContext.Users.AsNoTracking()
+                .Where(u => u.Id == userInfo.Id)
+                .Select(u => u.AvatarUrl)
+                .FirstOrDefaultAsync();
+            if (!string.IsNullOrEmpty(userAvatar))
+            {
+                HttpContext.Session.SetString("AvatarUrl", userAvatar);
+            }
+        }
+
         var idleTimeoutMinutes = int.TryParse(Environment.GetEnvironmentVariable("SESSION_IDLE_TIMEOUT_MINUTES"), out var parsedTimeout) ? parsedTimeout : 30;
         var maxSessionHours = int.TryParse(Environment.GetEnvironmentVariable("SESSION_MAX_LIFETIME_HOURS"), out var parsedMax) ? parsedMax : 8;
         HttpContext.Session.SetString("AbsoluteExpiration", DateTimeOffset.UtcNow.AddHours(maxSessionHours).ToString("o"));
@@ -465,6 +495,10 @@ public class AccountController(
             new Claim(ClaimTypes.Email, userInfo.Email),
             new Claim(ClaimTypes.Name, userInfo.FullName)
         };
+        if (!string.IsNullOrEmpty(userAvatar))
+        {
+            claims.Add(new Claim("AvatarUrl", userAvatar));
+        }
 
         PopulateRoleClaims(claims, userInfo.Roles, userInfo.Role);
 
@@ -583,6 +617,19 @@ public class AccountController(
         HttpContext.Session.SetString("UserRole", userInfo.Role);
         HttpContext.Session.SetString("FullName", userInfo.FullName);
 
+        string? userAvatar = null;
+        if (_dbContext != null)
+        {
+            userAvatar = await _dbContext.Users.AsNoTracking()
+                .Where(u => u.Id == userInfo.Id)
+                .Select(u => u.AvatarUrl)
+                .FirstOrDefaultAsync();
+            if (!string.IsNullOrEmpty(userAvatar))
+            {
+                HttpContext.Session.SetString("AvatarUrl", userAvatar);
+            }
+        }
+
         var idleTimeoutMinutes = int.TryParse(Environment.GetEnvironmentVariable("SESSION_IDLE_TIMEOUT_MINUTES"), out var parsedTimeout) ? parsedTimeout : 30;
         var maxSessionHours = int.TryParse(Environment.GetEnvironmentVariable("SESSION_MAX_LIFETIME_HOURS"), out var parsedMax) ? parsedMax : 8;
         HttpContext.Session.SetString("AbsoluteExpiration", DateTimeOffset.UtcNow.AddHours(maxSessionHours).ToString("o"));
@@ -593,6 +640,10 @@ public class AccountController(
             new Claim(ClaimTypes.Email, userInfo.Email),
             new Claim(ClaimTypes.Name, userInfo.FullName)
         };
+        if (!string.IsNullOrEmpty(userAvatar))
+        {
+            claims.Add(new Claim("AvatarUrl", userAvatar));
+        }
 
         PopulateRoleClaims(claims, userInfo.Roles, userInfo.Role);
 

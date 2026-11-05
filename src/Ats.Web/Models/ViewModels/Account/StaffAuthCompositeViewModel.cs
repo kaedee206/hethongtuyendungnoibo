@@ -32,7 +32,7 @@ public class StaffLoginInputModel
 {
     [Required(ErrorMessage = "Vui lòng nhập email công ty.")]
     [EmailAddress(ErrorMessage = "Địa chỉ email không đúng định dạng.")]
-    [RegularExpression(@"^[a-zA-Z0-9._%+-]+@noveratech\.digital$", ErrorMessage = "Vui lòng sử dụng email tổ chức có đuôi @noveratech.digital.")]
+    [RegularExpression(@"^[a-zA-Z0-9._%+-]+@noveratech\.(digital|vn)$", ErrorMessage = "Vui lòng sử dụng email tổ chức có đuôi @noveratech.digital hoặc @noveratech.vn.")]
     [Display(Name = "Email công ty")]
     public string Email { get; set; } = string.Empty;
 
@@ -51,7 +51,7 @@ public class StaffForgotPasswordInputModel
 {
     [Required(ErrorMessage = "Vui lòng nhập email công ty.")]
     [EmailAddress(ErrorMessage = "Địa chỉ email không đúng định dạng.")]
-    [RegularExpression(@"^[a-zA-Z0-9._%+-]+@noveratech\.digital$", ErrorMessage = "Vui lòng sử dụng email tổ chức có đuôi @noveratech.digital.")]
+    [RegularExpression(@"^[a-zA-Z0-9._%+-]+@noveratech\.(digital|vn)$", ErrorMessage = "Vui lòng sử dụng email tổ chức có đuôi @noveratech.digital hoặc @noveratech.vn.")]
     [Display(Name = "Email công ty")]
     public string Email { get; set; } = string.Empty;
 
