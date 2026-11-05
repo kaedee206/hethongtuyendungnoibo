@@ -8,24 +8,24 @@
    NOVERATECH CAREERS — CỔNG TRA CỨU HỒ SƠ ỨNG VIÊN
    Tuân thủ 100% RULE.md & Coding_Convention.md
    - Canvas: #F8FAFC (Slate-50)
-   - Accent: #059669 (Emerald-600)
+   - Accent: #047857 (Emerald-700)
    - Border radius: Button/Input 8px, Card 12px, Badge 6px
    - Bảo mật: Ẩn 100% ghi chú nội bộ và tên người phỏng vấn
    ══════════════════════════════════════════════════════════ *@
 
-<div class="tracking-container py-4 py-md-5">
+<div class="tracking-container py-3 py-md-4">
     <div class="container" style="max-width: 860px;">
 
         <!-- Header Section (Clean Single-Tier) -->
-        <div class="text-center mb-4 mb-md-5">
-            <div class="d-inline-flex align-items-center gap-2 px-3 py-1 mb-3" 
-                 style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 6px; color: #059669; font-size: 0.8rem; font-weight: 600;">
+        <div class="text-center mb-3 mb-md-4">
+            <div class="d-inline-flex align-items-center gap-2 px-3 py-1 mb-2" 
+                 style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 6px; color: #047857; font-size: 0.8rem; font-weight: 600;">
                 <i class="bi bi-shield-check"></i> Cổng Tra Cứu Tự Phục Vụ Ứng Viên
             </div>
-            <h1 class="fw-bold mb-2" style="color: #0F172A; font-size: 1.75rem; letter-spacing: -0.02em;">
+            <h1 class="fw-bold mb-2" style="color: #0F172A; font-size: 1.6rem; letter-spacing: -0.02em;">
                 Theo Dõi Tiến Độ Hồ Sơ Tuyển Dụng
             </h1>
-            <p class="text-muted mx-auto mb-0" style="max-width: 580px; font-size: 0.95rem; line-height: 1.5;">
+            <p class="text-muted mx-auto mb-0" style="max-width: 580px; font-size: 0.92rem; line-height: 1.5;">
                 Nhập mã tra cứu nhận được khi nộp hồ sơ cùng địa chỉ email của bạn để kiểm tra trạng thái xét duyệt nhanh chóng và chính xác.
             </p>
         </div>
@@ -83,7 +83,7 @@
                             <span>Bảo mật 2 yếu tố, mã hóa dữ liệu theo Nghị định 13/2023/NĐ-CP</span>
                         </div>
                         <button type="submit" class="btn text-white fw-semibold px-4 py-2" id="btnSubmitTracking"
-                                style="background: #059669; border-radius: 8px; font-size: 0.9rem; border: none; box-shadow: 0 1px 2px rgba(5, 150, 105, 0.2);">
+                                style="background: #047857; border-radius: 8px; font-size: 0.9rem; border: none; box-shadow: 0 1px 2px rgba(4, 120, 87, 0.2);">
                             <i class="bi bi-search me-1.5"></i> Tra cứu trạng thái
                         </button>
                     </div>
@@ -225,9 +225,9 @@
                                     var isUpcoming = step.State == "upcoming";
 
                                     var stepIcon = isCompleted ? "bi-check-lg" : (isActive ? "bi-record-fill" : "bi-circle");
-                                    var circleBg = isCompleted ? "#059669" : (isActive ? "#059669" : "#F1F5F9");
+                                    var circleBg = isCompleted ? "#047857" : (isActive ? "#047857" : "#F1F5F9");
                                     var circleColor = isCompleted || isActive ? "#FFFFFF" : "#94A3B8";
-                                    var circleBorder = isCompleted || isActive ? "#059669" : "#CBD5E1";
+                                    var circleBorder = isCompleted || isActive ? "#047857" : "#CBD5E1";
                                     var titleColor = isCompleted || isActive ? "#0F172A" : "#94A3B8";
 
                                     <div class="stepper-step flex-fill d-flex flex-md-column align-items-center text-md-center position-relative">
@@ -259,7 +259,7 @@
                         </div>
 
                         <!-- Status Description Box -->
-                        <div class="p-3.5 mt-4" style="background: #F8FAFC; border-left: 4px solid #059669; border-radius: 0 8px 8px 0;">
+                        <div class="p-3.5 mt-4" style="background: #F8FAFC; border-left: 4px solid #047857; border-radius: 0 8px 8px 0;">
                             <div class="d-flex align-items-start gap-2.5">
                                 <i class="bi bi-info-circle-fill text-success flex-shrink-0 mt-0.5" style="font-size: 1.1rem;"></i>
                                 <div class="small" style="color: #334155; line-height: 1.6;">
@@ -277,9 +277,20 @@
                         <span class="text-muted small">
                             <i class="bi bi-question-circle me-1"></i> Có câu hỏi về tiến độ? Liên hệ: <a href="mailto:careers@noveratech.vn" class="text-success text-decoration-none fw-semibold">careers@noveratech.vn</a>
                         </span>
-                        <a asp-controller="Jobs" asp-action="Index" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px;">
-                            <i class="bi bi-briefcase me-1"></i> Xem các vị trí khác
-                        </a>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            @if (Model.Result.CanWithdraw)
+                            {
+                                <a href="/Applications/Withdraw?token=@Model.Result.WithdrawToken" 
+                                   class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1.5" 
+                                   style="border-radius: 8px; font-weight: 500;"
+                                   title="Rút hồ sơ nếu bạn đã nhận việc nơi khác hoặc thay đổi định hướng">
+                                    <i class="bi bi-x-circle"></i> Rút hồ sơ ứng tuyển
+                                </a>
+                            }
+                            <a asp-controller="Jobs" asp-action="Index" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px;">
+                                <i class="bi bi-briefcase me-1"></i> Xem các vị trí khác
+                            </a>
+                        </div>
                     </div>
                 </div>
             }

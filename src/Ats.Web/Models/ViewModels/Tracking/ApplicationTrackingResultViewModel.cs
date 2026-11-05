@@ -58,6 +58,10 @@ public class ApplicationTrackingResultViewModel
 
     public string StatusDescription { get; set; } = string.Empty;
 
+    // Hỗ trợ rút hồ sơ ứng tuyển chủ động (SCRUM-291)
+    public string? WithdrawToken { get; set; }
+    public bool CanWithdraw => Status != PublicApplicationStatus.Concluded && !string.IsNullOrWhiteSpace(WithdrawToken);
+
     // Visual Stepper 4 bước
     public List<TrackingStageStepViewModel> StepperSteps { get; set; } = [];
 }

@@ -111,6 +111,11 @@ public class ProfilesController(
             return BadRequest(new { isSuccess = false, message });
         }
 
+        if (!string.IsNullOrEmpty(avatarUrl))
+        {
+            HttpContext.Session.SetString("AvatarUrl", avatarUrl);
+        }
+
         return Ok(new { isSuccess = true, message, avatarUrl });
     }
 }

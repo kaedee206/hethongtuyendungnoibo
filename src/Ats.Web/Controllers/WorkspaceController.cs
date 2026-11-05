@@ -420,8 +420,8 @@ public class WorkspaceController : Controller
             var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             _ = Guid.TryParse(currentUserIdStr, out var currentUserId);
             var userEmail = User.FindFirstValue(ClaimTypes.Email);
-            var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "";
-            bool isStaff = userRole == UserRoles.Admin || userRole == UserRoles.HRManager || userRole == UserRoles.Recruiter || userRole == UserRoles.Interviewer;
+            var userRole = UserRoles.GetPrimaryRole(User);
+            bool isStaff = UserRoles.IsStaff(User);
 
             Interview? interview = null;
             if (interviewId.HasValue && interviewId.Value != Guid.Empty)
@@ -501,8 +501,8 @@ public class WorkspaceController : Controller
             var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             _ = Guid.TryParse(currentUserIdStr, out var currentUserId);
             var userEmail = User.FindFirstValue(ClaimTypes.Email);
-            var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "";
-            bool isStaff = userRole == UserRoles.Admin || userRole == UserRoles.HRManager || userRole == UserRoles.Recruiter || userRole == UserRoles.Interviewer;
+            var userRole = UserRoles.GetPrimaryRole(User);
+            bool isStaff = UserRoles.IsStaff(User);
 
             // BOLA / IDOR Protection: Xác thực quyền sở hữu nếu không phải nhân sự nội bộ
             if (!isStaff && interview.Application?.Candidate != null)
@@ -554,7 +554,7 @@ public class WorkspaceController : Controller
 
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         _ = Guid.TryParse(userIdStr, out var currentUserId);
-        var role = User.FindFirstValue(ClaimTypes.Role) ?? "";
+        var role = UserRoles.GetPrimaryRole(User);
 
         try
         {
@@ -597,7 +597,7 @@ public class WorkspaceController : Controller
 
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         _ = Guid.TryParse(userIdStr, out var currentUserId);
-        var role = User.FindFirstValue(ClaimTypes.Role) ?? "";
+        var role = UserRoles.GetPrimaryRole(User);
 
         var actionNormalized = model.Decision?.Trim().ToUpperInvariant() ?? "";
         if (actionNormalized != "APPROVE" && actionNormalized != "REJECT" && actionNormalized != "CHANGES_REQUESTED")
@@ -711,7 +711,7 @@ public class WorkspaceController : Controller
 
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             _ = Guid.TryParse(userIdStr, out var currentUserId);
-            var role = User.FindFirstValue(ClaimTypes.Role) ?? "";
+            var role = UserRoles.GetPrimaryRole(User);
 
             if (_offerApprovalService != null)
             {

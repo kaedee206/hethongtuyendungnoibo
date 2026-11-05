@@ -107,6 +107,7 @@ public class ApplicationTrackingService(
             LastUpdatedAt = application.UpdatedAt,
             Status = publicStatus,
             StatusDescription = statusDescription,
+            WithdrawToken = application.WithdrawToken,
             StepperSteps = stepperSteps
         };
     }

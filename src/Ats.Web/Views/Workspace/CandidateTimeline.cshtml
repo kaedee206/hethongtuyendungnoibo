@@ -75,10 +75,10 @@
         color: #1E293B;
     }
     .filter-chip.active {
-        background: #059669;
-        border-color: #059669;
+        background: #047857;
+        border-color: #047857;
         color: #FFFFFF;
-        box-shadow: 0 1px 2px rgba(5, 150, 105, 0.2);
+        box-shadow: 0 1px 2px rgba(4, 120, 87, 0.2);
     }
 </style>
 
@@ -94,7 +94,7 @@
                 </ol>
             </nav>
             <h1 class="h3 fw-bold text-dark mb-1" style="letter-spacing: -0.02em;">
-                <i class="bi bi-clock-history me-2 text-success" style="color: #059669 !important;"></i>Nhật ký toàn bộ tương tác với ứng viên
+                <i class="bi bi-clock-history me-2 text-success" style="color: #047857 !important;"></i>Nhật ký toàn bộ tương tác với ứng viên
             </h1>
             <p class="text-muted small mb-0">
                 Nắm rõ ai đã liên hệ, đã trao đổi gì, gửi email nào, lịch hẹn và đánh giá trước khi bạn nhấc máy gọi ứng viên.
@@ -105,7 +105,7 @@
                 <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách
             </a>
             <button type="button" class="btn btn-primary btn-sm fw-semibold d-inline-flex align-items-center" 
-                    style="border-radius: 8px; background-color: #059669; border-color: #059669;"
+                    style="border-radius: 8px; background-color: #047857; border-color: #047857;"
                     data-bs-toggle="modal" data-bs-target="#addInteractionModal">
                 <i class="bi bi-telephone-plus me-1.5"></i>Ghi nhận cuộc gọi / Trao đổi
             </button>
@@ -119,8 +119,8 @@
         <div class="card-body p-4">
             <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
-                         style="width: 56px; height: 56px; font-size: 1.4rem; background: linear-gradient(135deg, #059669 0%, #047857 100%);">
+                    <div class="d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
+                         style="width: 56px; height: 56px; font-size: 1.4rem; background: #047857; border-radius: 12px;">
                         @Model.CandidateAvatarLetter
                     </div>
                     <div>
@@ -215,8 +215,8 @@
         <div class="col-6 col-md-4 col-xl-2">
             <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: #FFFFFF; border: 1px solid #E2E8F0;">
                 <div class="card-body p-3">
-                    <div class="text-muted small fw-medium mb-1"><i class="bi bi-arrow-right-circle text-success me-1" style="color: #059669;"></i>Chuyển giai đoạn</div>
-                    <div class="h4 fw-bold font-mono mb-0" style="color: #059669;">@Model.StageChangesCount</div>
+                    <div class="text-muted small fw-medium mb-1"><i class="bi bi-arrow-right-circle text-success me-1" style="color: #047857;"></i>Chuyển giai đoạn</div>
+                    <div class="h4 fw-bold font-mono mb-0" style="color: #047857;">@Model.StageChangesCount</div>
                 </div>
             </div>
         </div>
@@ -323,7 +323,7 @@
                     <h4 class="h5 fw-bold text-dark">Chưa có nhật ký tương tác phù hợp</h4>
                     <p class="text-muted small mb-3">Ứng viên chưa có sự kiện nào hoặc không khớp với bộ lọc hiện tại.</p>
                     <button type="button" class="btn btn-primary btn-sm fw-semibold" 
-                            style="border-radius: 8px; background-color: #059669; border-color: #059669;"
+                            style="border-radius: 8px; background-color: #047857; border-color: #047857;"
                             data-bs-toggle="modal" data-bs-target="#addInteractionModal">
                         <i class="bi bi-telephone-plus me-1"></i>Ghi nhận cuộc gọi đầu tiên
                     </button>
@@ -337,7 +337,7 @@
                         var borderAccentColor = ev.EventType switch
                         {
                             "CALL_NOTE" => "#0D9488",
-                            "STAGE_CHANGE" => "#059669",
+                            "STAGE_CHANGE" => "#047857",
                             "INTERVIEW_SCHEDULED" => "#0284C7",
                             "INTERVIEW_EVALUATION" => "#D97706",
                             "EMAIL_SENT" => "#7C3AED",
@@ -426,7 +426,7 @@
             <div class="modal-header border-bottom py-3 px-4">
                 <div class="d-flex align-items-center gap-2">
                     <div class="rounded-circle d-flex align-items-center justify-content-center text-white" 
-                         style="width: 32px; height: 32px; background: #059669;">
+                         style="width: 32px; height: 32px; background: #047857;">
                         <i class="bi bi-telephone-plus"></i>
                     </div>
                     <h5 class="modal-title fw-bold text-dark mb-0" id="addInteractionModalLabel">Ghi nhận cuộc gọi / Trao đổi</h5>
@@ -488,7 +488,7 @@
                 </div>
                 <div class="modal-footer border-top py-2.5 px-4 bg-light" style="border-radius: 0 0 12px 12px;">
                     <button type="button" class="btn btn-outline-secondary btn-sm fw-semibold" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy bỏ</button>
-                    <button type="submit" id="btnSaveInteraction" class="btn btn-primary btn-sm fw-semibold" style="border-radius: 8px; background-color: #059669; border-color: #059669;">
+                    <button type="submit" id="btnSaveInteraction" class="btn btn-primary btn-sm fw-semibold" style="border-radius: 8px; background-color: #047857; border-color: #047857;">
                         <i class="bi bi-check2-circle me-1"></i>Lưu nhật ký tương tác
                     </button>
                 </div>

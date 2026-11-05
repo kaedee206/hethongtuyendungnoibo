@@ -11,14 +11,14 @@
         <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
             <div class="modal-header border-0 pb-0">
                 <div class="d-flex align-items-center gap-2">
-                    <div class="p-2 rounded-2" style="background:#ECFDF5; color:#059669;">
+                    <div class="p-2 rounded-2" style="background:#ECFDF5; color:#047857;">
                         <i class="bi bi-calendar-plus-fill fs-5"></i>
                     </div>
                     <div>
                         <h5 class="modal-title fw-bold text-dark mb-0" id="scheduleInterviewModalLabel" style="font-size: 1.05rem;">
                             Đặt Lịch Phỏng Vấn Ứng Viên
                         </h5>
-                        <small class="text-muted" style="font-size: 0.78rem;">Đồng bộ lịch hội đồng, phòng họp và kiểm tra xung đột thời gian thực (SCRUM-53)</small>
+                        <small class="text-muted" style="font-size: 0.78rem;">Đồng bộ lịch hội đồng, phòng họp và kiểm tra xung đột thời gian thực</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -166,13 +166,13 @@
                         <span asp-validation-for="Note" class="text-danger small"></span>
                     </div>
 
-                    <!-- Khung cảnh báo xung đột trực quan & Mở khóa Ghi đè (SCRUM-53) -->
+                    <!-- Khung cảnh báo xung đột trực quan & Mở khóa Ghi đè -->
                     <partial name="_InterviewConflictAlertPartial" />
                 </div>
 
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-sm btn-light rounded-2 px-3" data-bs-dismiss="modal">Hủy bỏ</button>
-                    <button type="submit" id="btnSchedModalSubmit" class="btn btn-sm btn-primary rounded-2 px-4 fw-semibold text-white" style="background:#059669; border-color:#059669;">
+                    <button type="submit" id="btnSchedModalSubmit" class="btn btn-sm btn-primary rounded-2 px-4 fw-semibold text-white" style="background:#047857; border-color:#047857;">
                         <span class="spinner-border spinner-border-sm me-1 d-none" id="schedModalSpinner"></span>
                         <i class="bi bi-calendar-check me-1"></i>Xác nhận &amp; Đặt lịch phỏng vấn
                     </button>

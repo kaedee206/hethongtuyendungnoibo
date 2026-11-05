@@ -7,7 +7,7 @@
 <style>
     /* ═══════════════════════════════════════════════════════════════════
        INTERVIEW SCHEDULING WIZARD STYLES (Tuân thủ RULE.md)
-       Màu chủ đạo: Slate & Emerald (#059669), Bo góc 12px card, 8px button
+       Màu chủ đạo: Slate & Emerald (#047857), Bo góc 12px card, 8px button
        ═══════════════════════════════════════════════════════════════════ */
     .wizard-page-container {
         max-width: 1560px;
@@ -80,10 +80,10 @@
     }
 
     .wizard-step-item.active .wizard-step-circle {
-        background: #059669;
+        background: #047857;
         color: #FFFFFF;
-        border-color: #059669;
-        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+        border-color: #047857;
+        box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.15);
     }
 
     .wizard-step-item.active {
@@ -92,7 +92,7 @@
 
     .wizard-step-item.completed .wizard-step-circle {
         background: #ECFDF5;
-        color: #059669;
+        color: #047857;
         border-color: #10B981;
     }
 
@@ -150,9 +150,9 @@
     }
 
     .cand-select-card.selected {
-        border-color: #059669;
+        border-color: #047857;
         background: #F0FDF4;
-        box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2);
+        box-shadow: 0 0 0 2px rgba(4, 120, 87, 0.2);
     }
 
     .candidate-avatar-badge {
@@ -216,14 +216,14 @@
     }
 
     .preset-room-badge:hover {
-        border-color: #059669;
+        border-color: #047857;
         background: #F8FAFC;
     }
 
     .preset-room-badge.active {
-        border-color: #059669;
+        border-color: #047857;
         background: #ECFDF5;
-        box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2);
+        box-shadow: 0 0 0 2px rgba(4, 120, 87, 0.2);
     }
 
     .preset-room-badge[data-platform="TEAMS"].active {
@@ -251,14 +251,14 @@
     }
 
     .duration-pill-btn:hover {
-        border-color: #059669;
-        color: #059669;
+        border-color: #047857;
+        color: #047857;
     }
 
     .duration-pill-btn.active {
-        background: #059669;
+        background: #047857;
         color: #FFFFFF;
-        border-color: #059669;
+        border-color: #047857;
     }
 
     /* Panelist Checkbox Item */
@@ -350,7 +350,7 @@
         width: 12px;
         height: 12px;
         border-radius: 50%;
-        background: #059669;
+        background: #047857;
         display: inline-block;
         margin-right: 8px;
     }
@@ -403,7 +403,7 @@
                 <a href="/dashboard/ung-vien" class="btn btn-sm btn-outline-secondary rounded-2 py-1 px-2.5" title="Quay lại Pipeline">
                     <i class="bi bi-arrow-left me-1"></i>Trở về Pipeline
                 </a>
-                <span class="badge rounded-2 px-2.5 py-1 text-white" style="background: #059669; font-size: 0.75rem; font-weight: 600;">
+                <span class="badge rounded-2 px-2.5 py-1 text-white" style="background: #047857; font-size: 0.75rem; font-weight: 600;">
                     <i class="bi bi-calendar-check-fill me-1"></i>QUY TRÌNH WIZARD 4 BƯỚC
                 </span>
             </div>
@@ -656,7 +656,7 @@
                                         {
                                             @foreach (var h in Model.SelectedCandidate.InterviewHistory)
                                             {
-                                                <div class="p-3 mb-2 rounded-2 border bg-white" style="border-left: 4px solid #059669 !important;">
+                                                <div class="p-3 mb-2 rounded-2 border bg-white" style="border-left: 4px solid #047857 !important;">
                                                     <div class="d-flex justify-content-between align-items-center mb-1">
                                                         <span class="fw-bold text-dark" style="font-size: 0.88rem;">@h.Title</span>
                                                         <span class="badge bg-light text-dark border">@h.StatusDisplay</span>
@@ -1055,7 +1055,7 @@
                                             </tr>
                                             <tr>
                                                 <td style="padding: 5px 0; color: #64748B;">Thời gian:</td>
-                                                <td style="padding: 5px 0; color: #059669; font-weight: 700;" id="previewTableTime">Chưa chọn ngày giờ</td>
+                                                <td style="padding: 5px 0; color: #047857; font-weight: 700;" id="previewTableTime">Chưa chọn ngày giờ</td>
                                             </tr>
                                             <tr>
                                                 <td style="padding: 5px 0; color: #64748B;">Hình thức / Phòng:</td>
@@ -1080,7 +1080,7 @@
 
                                     <!-- Interactive Buttons -->
                                     <div style="text-align: center; margin: 24px 0 16px 0;">
-                                        <a href="javascript:void(0)" style="display: inline-block; background: #059669; color: #FFFFFF; text-decoration: none; padding: 10px 22px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; margin-right: 8px;">
+                                        <a href="javascript:void(0)" style="display: inline-block; background: #047857; color: #FFFFFF; text-decoration: none; padding: 10px 22px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; margin-right: 8px;">
                                             ✓ Xác nhận tham dự
                                         </a>
                                         <a href="javascript:void(0)" style="display: inline-block; background: #F8FAFC; color: #D97706; text-decoration: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; border: 1px solid #FCD34D;">
@@ -1185,7 +1185,7 @@
                     </div>
 
                     <!-- Cam kết xác nhận -->
-                    <div class="p-3 rounded-2 border bg-light mb-4" style="border-left: 4px solid #059669 !important;">
+                    <div class="p-3 rounded-2 border bg-light mb-4" style="border-left: 4px solid #047857 !important;">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="confirmAccuracyCheckbox" required checked />
                             <label class="form-check-label text-dark fw-semibold small" for="confirmAccuracyCheckbox">
@@ -1197,7 +1197,7 @@
                     <!-- Nút Chốt Lịch Lớn Nổi Bật -->
                     <div class="text-center py-2">
                         <button type="submit" id="btnFinalSubmitSchedule" class="btn btn-lg text-white fw-bold px-4 py-2.5 shadow-sm" 
-                                style="background: #059669; border-color: #059669; border-radius: 8px; font-size: 1.05rem;">
+                                style="background: #047857; border-color: #047857; border-radius: 8px; font-size: 1.05rem;">
                             <i class="bi bi-send-check-fill me-2"></i>XÁC NHẬN & PHÁT LỆNH LÊN LỊCH PHỎNG VẤN
                         </button>
                         <div class="text-muted small mt-2" style="font-size: 0.78rem;">
@@ -1214,7 +1214,7 @@
     <div id="scheduleSuccessModal" class="d-none position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50" style="z-index: 1050; display: flex; align-items: center; justify-content: center;">
         <div class="card border-0 shadow-lg" style="max-width: 520px; width: 90%; border-radius: 14px; overflow: hidden;">
             <div class="p-4 text-center" style="background: #ECFDF5; border-bottom: 1px solid #A7F3D0;">
-                <div class="d-inline-flex align-items-center justify-content-center text-white mb-3" style="width: 64px; height: 64px; border-radius: 50%; background: #059669; font-size: 2rem;">
+                <div class="d-inline-flex align-items-center justify-content-center text-white mb-3" style="width: 64px; height: 64px; border-radius: 50%; background: #047857; font-size: 2rem;">
                     <i class="bi bi-check-lg"></i>
                 </div>
                 <h4 class="fw-bold text-dark mb-1">Lên Lịch Phỏng Vấn Thành Công!</h4>
@@ -1240,7 +1240,7 @@
                     </div>
                 </div>
                 <div class="d-flex flex-column gap-2">
-                    <a id="btnGoToPipeline" href="/dashboard/ung-vien" class="btn text-white fw-semibold rounded-2 py-2" style="background:#059669;">
+                    <a id="btnGoToPipeline" href="/dashboard/ung-vien" class="btn text-white fw-semibold rounded-2 py-2" style="background:#047857;">
                         <i class="bi bi-kanban me-1.5"></i>Xem trên Pipeline Tuyển Dụng
                     </a>
                     <button type="button" class="btn btn-outline-secondary rounded-2 py-2" onclick="resetWizardForNewSchedule()">
@@ -1265,7 +1265,7 @@
         <button type="button" class="btn btn-outline-secondary rounded-2 px-3 py-1.5 d-none" id="btnPrevStep" onclick="goPreviousStep()">
             <i class="bi bi-arrow-left me-1"></i>Quay lại bước trước
         </button>
-        <button type="button" class="btn text-white fw-semibold rounded-2 px-4 py-1.5 shadow-sm" id="btnNextStep" style="background: #059669; border-color: #059669;" onclick="goNextStep()">
+        <button type="button" class="btn text-white fw-semibold rounded-2 px-4 py-1.5 shadow-sm" id="btnNextStep" style="background: #047857; border-color: #047857;" onclick="goNextStep()">
             Tiếp tục sang bước tiếp theo <i class="bi bi-arrow-right ms-1"></i>
         </button>
     </div>
@@ -1554,7 +1554,7 @@
         let html = '';
         historyList.forEach(h => {
             html += `
-                <div class="p-3 mb-2 rounded-2 border bg-white" style="border-left: 4px solid #059669 !important;">
+                <div class="p-3 mb-2 rounded-2 border bg-white" style="border-left: 4px solid #047857 !important;">
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <span class="fw-bold text-dark" style="font-size: 0.88rem;">${h.title}</span>
                         <span class="badge bg-light text-dark border">${h.statusDisplay}</span>
@@ -2035,7 +2035,7 @@
         } else {
             box.style.background = '#ECFDF5';
             box.style.color = '#065F46';
-            box.style.borderLeft = '4px solid #059669';
+            box.style.borderLeft = '4px solid #047857';
             icon.className = 'bi bi-check-circle-fill me-2 fs-5 text-success';
         }
 

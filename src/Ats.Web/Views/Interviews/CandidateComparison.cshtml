@@ -5,78 +5,9 @@
     Layout = "_Layout";
 }
 
-<div class="container-fluid px-3 px-md-4 py-4" style="max-width: 1480px;">
-    <!-- Breadcrumb điều hướng -->
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <a href="/dashboard/lich-phong-van" class="text-decoration-none text-muted small d-inline-flex align-items-center gap-1.5 hover-text-primary">
-            <i class="bi bi-arrow-left"></i> Quay lại Lịch phỏng vấn
-        </a>
-        <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-white text-dark border px-2.5 py-1 shadow-2xs font-mono" style="border-radius: 6px; font-size: 0.75rem;">
-                <i class="bi bi-shield-check text-success me-1"></i> Kiểm chứng dữ liệu độc lập · Nguyên tắc: So sánh trước, kết luận sau
-            </span>
-        </div>
-    </div>
-
+<div class="container-fluid px-3 px-md-4 py-3" style="max-width: 1480px;">
     <!-- ========================================================================= -->
-    <!-- HEADER: So sánh ứng viên - {JobTitle}                                    -->
-    <!-- Vòng: Final Interview | Số ứng viên: 4 | Đã có đánh giá: 4/4              -->
-    <!-- ========================================================================= -->
-    <div class="card border-0 shadow-sm mb-4 overflow-hidden" style="border-radius: 12px; background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #F8FAFC;">
-        <div class="card-body p-4">
-            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
-                <div>
-                    <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
-                        <span class="badge bg-success-subtle text-success border border-success-subtle font-mono text-uppercase px-2.5 py-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">
-                            <i class="bi bi-clipboard2-data me-1"></i> Bảng đối chiếu năng lực
-                        </span>
-                        <span class="text-white-50 small">·</span>
-                        <span class="text-white-50 small">Vị trí: <b>@Model.SelectedJobCode</b></span>
-                        <span class="text-white-50 small">·</span>
-                        <span class="text-white-50 small">Phòng ban: <b>@Model.DepartmentName</b></span>
-                    </div>
-
-                    <h1 class="fw-bold text-white mb-2" style="font-size: 1.5rem; letter-spacing: -0.01em;">
-                        So sánh ứng viên - @Model.SelectedJobTitle
-                    </h1>
-
-                    <!-- Thông số Header theo wireframe -->
-                    <div class="d-flex flex-wrap align-items-center gap-2 gap-md-4 text-white-50 small pt-1 font-mono">
-                        <div class="d-flex align-items-center gap-1.5">
-                            <i class="bi bi-diagram-3-fill text-info"></i>
-                            <span>Vòng:</span>
-                            <strong class="text-white">@(string.IsNullOrWhiteSpace(Model.RoundName) ? "Final Interview" : Model.RoundName)</strong>
-                        </div>
-                        <span class="text-white-50 d-none d-sm-inline">|</span>
-                        <div class="d-flex align-items-center gap-1.5">
-                            <i class="bi bi-people-fill text-primary"></i>
-                            <span>Số ứng viên:</span>
-                            <strong class="text-white">@(Model.TotalCandidatesInJob > 0 ? Model.TotalCandidatesInJob : Model.Candidates.Count)</strong>
-                        </div>
-                        <span class="text-white-50 d-none d-sm-inline">|</span>
-                        <div class="d-flex align-items-center gap-1.5">
-                            <i class="bi bi-check-circle-fill text-success"></i>
-                            <span>Đã có đánh giá:</span>
-                            <span class="badge bg-success text-white font-mono px-2 py-0.5">@Model.EvaluationRatioDisplay</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Các nút hành động thao tác -->
-                <div class="d-flex gap-2 flex-wrap flex-shrink-0">
-                    <button type="button" class="btn btn-outline-light btn-sm d-inline-flex align-items-center gap-1.5" style="border-radius: 8px; padding: 0.5rem 0.85rem;" onclick="window.print()" title="In bảng so sánh hoặc xuất PDF">
-                        <i class="bi bi-printer-fill"></i> In dữ liệu
-                    </button>
-                    <a href="/interviews/so-sanh-ung-vien?jobId=@Model.SelectedJobPostingId" class="btn btn-light btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm" style="border-radius: 8px; padding: 0.5rem 0.85rem;" title="Làm mới bảng đối chiếu">
-                        <i class="bi bi-arrow-clockwise"></i> Làm mới
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ========================================================================= -->
-    <!-- KHU VỰC 5 - BỘ LỌC (Filter Bar)                                           -->
+    <!-- BỘ LỌC (Filter Bar)                                                        -->
     <!-- [Vị trí] [Vòng đánh giá] [Chỉ hiện ứng viên đạt ngưỡng] [Sắp xếp]         -->
     <!-- ========================================================================= -->
     <div class="card border-0 shadow-sm p-3 mb-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
@@ -182,7 +113,7 @@
                     </div>
                 </div>
 
-                <!-- Chú thích màu sắc theo UX Rule -->
+                <!-- Chú thích màu sắc theo UX Rule & In dữ liệu -->
                 <div class="d-flex align-items-center gap-2 flex-wrap font-mono small" style="font-size: 0.75rem;">
                     <span class="text-muted fw-bold">Quy ước ma trận:</span>
                     <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
@@ -191,6 +122,9 @@
                     <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
                         <i class="bi bi-arrow-down-circle-fill me-1"></i> Điểm thấp nhất hàng
                     </span>
+                    <button type="button" class="btn btn-outline-secondary btn-sm ms-md-2 d-inline-flex align-items-center gap-1" style="border-radius: 6px; font-size: 0.75rem; padding: 0.25rem 0.6rem;" onclick="window.print()" title="In bảng so sánh hoặc xuất PDF">
+                        <i class="bi bi-printer"></i> In dữ liệu
+                    </button>
                 </div>
             </div>
 
@@ -419,7 +353,7 @@
                             @foreach (var rank in Model.Rankings)
                             {
                                 var isLeader = rank.IsLeader;
-                                var barColor = isLeader ? "#059669" : (rank.Rank == 2 ? "#0284C7" : (rank.Rank == 3 ? "#D97706" : "#64748B"));
+                                var barColor = isLeader ? "#047857" : (rank.Rank == 2 ? "#0284C7" : (rank.Rank == 3 ? "#D97706" : "#64748B"));
                                 var bgItem = isLeader ? "background: #F0FDF4; border: 1.5px solid #A7F3D0;" : "background: #F8FAFC; border: 1px solid #E2E8F0;";
 
                                 <div class="p-3 rounded-3" style="@bgItem">

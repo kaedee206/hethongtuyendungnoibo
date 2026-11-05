@@ -1,35 +1,35 @@
 @* ══════════════════════════════════════════════════════════
    NOVERATECH ATS — MODAL ĐẶT LỊCH PHỎNG VẤN TẬP TRUNG HÀNG LOẠT (SCRUM-52)
-   Quy chuẩn thiết kế: RULE.md | Bootstrap 5 | 8px Radius | Cấm rounded-pill | JetBrains Mono
+   Quy chuẩn thiết kế: RULE.md | Bootstrap 5 | 8px Radius | Cấm rounded-md | JetBrains Mono
    ══════════════════════════════════════════════════════════ *@
 
 <div class="modal fade" id="batchScheduleInterviewModal" tabindex="-1" aria-labelledby="batchScheduleModalTitle" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden; background: #FFFFFF;">
             
-            <!-- ── Modal Header ── -->
-            <div class="modal-header py-3 px-4" style="background: #0F172A; border-bottom: 1px solid #1E293B;">
+            <!-- ── Modal Header (Enterprise Clean Design) ── -->
+            <div class="modal-header py-3 px-4 bg-white" style="border-bottom: 1px solid #E2E8F0;">
                 <div class="d-flex align-items-center gap-3">
                     <div class="d-flex align-items-center justify-content-center text-white flex-shrink-0" 
-                         style="width: 40px; height: 40px; background: linear-gradient(135deg, #059669 0%, #047857 100%); border-radius: 8px;">
+                         style="width: 36px; height: 36px; background: #047857; border-radius: 8px;">
                         <i class="bi bi-calendar-range fs-5"></i>
                     </div>
                     <div>
-                        <h5 class="modal-title fw-bold text-white mb-0" id="batchScheduleModalTitle" style="letter-spacing: -0.02em;">
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="batchScheduleModalTitle" style="letter-spacing: -0.02em;">
                             Đặt Lịch Phỏng Vấn Tập Trung Hàng Loạt
                         </h5>
-                        <p class="text-secondary small mb-0 mt-0.5" style="color: #94A3B8 !important; font-size: 0.8rem;">
-                            Tự động chia khe thời gian liên tiếp cho nhiều ứng viên trong cùng một buổi phỏng vấn (Scrum - Số 52)
+                        <p class="text-muted small mb-0 mt-0.5" style="font-size: 0.8rem;">
+                            Tự động chia khe thời gian liên tiếp cho nhiều ứng viên trong cùng một buổi phỏng vấn
                         </p>
                     </div>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
 
             <!-- ── Wizard Stepper Bar ── -->
             <div class="px-4 py-2.5 d-flex align-items-center justify-content-between" style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0;">
                 <div class="d-flex align-items-center gap-2" id="batchWizardIndicator">
-                    <span id="badgeStep1" class="badge px-3 py-2 fw-semibold text-white" style="background: #059669; border-radius: 8px; font-size: 0.82rem;">
+                    <span id="badgeStep1" class="badge px-3 py-2 fw-semibold text-white" style="background: #047857; border-radius: 8px; font-size: 0.82rem;">
                         <i class="bi bi-1-circle-fill me-1"></i>1. Chọn ứng viên & Cấu hình ca
                     </span>
                     <i class="bi bi-chevron-right text-muted small"></i>

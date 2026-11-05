@@ -16,7 +16,7 @@
                 </ol>
             </nav>
             <h1 class="h3 fw-bold text-dark mb-1" style="letter-spacing: -0.02em;">
-                <i class="bi bi-layout-split text-emerald me-2" style="color: #059669;"></i>So sánh cạnh nhau trước khi gộp
+                <i class="bi bi-layout-split text-emerald me-2" style="color: #047857;"></i>So sánh cạnh nhau trước khi gộp
             </h1>
             <p class="text-muted small mb-0">
                 Đối chiếu chi tiết lý lịch, đợt ứng tuyển và lịch phỏng vấn giữa hai hồ sơ để quyết định phương án gộp tối ưu.
@@ -68,7 +68,7 @@
         <div class="row g-4 mb-4">
             <!-- CỘT 1: HỒ SƠ A (MẶC ĐỊNH LÀ PRIMARY) -->
             <div class="col-lg-6" id="cardCandidate1">
-                <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: #FFFFFF; border: 2px solid #059669 !important;">
+                <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: #FFFFFF; border: 2px solid #047857 !important;">
                     <div class="card-header bg-emerald-subtle py-3 px-3.5 border-bottom d-flex justify-content-between align-items-center" style="border-top-left-radius: 10px; border-top-right-radius: 10px;">
                         <div class="d-flex align-items-center gap-2">
                             <input class="form-check-input mt-0" type="radio" name="choosePrimaryRadio" id="radioChoose1" checked onchange="setPrimary(1)" style="cursor: pointer;">
@@ -355,7 +355,7 @@
                 <a href="/dashboard/trung-lap" class="btn btn-outline-secondary btn-sm fw-semibold" style="border-radius: 8px;">
                     Hủy bỏ
                 </a>
-                <button type="submit" id="btnSubmitMerge" class="btn btn-primary btn-sm fw-bold px-4" style="border-radius: 8px; background: #059669; border-color: #059669; padding: 0.45rem 1.25rem;">
+                <button type="submit" id="btnSubmitMerge" class="btn btn-primary btn-sm fw-bold px-4" style="border-radius: 8px; background: #047857; border-color: #047857; padding: 0.45rem 1.25rem;">
                     <i class="bi bi-check2-circle me-1.5"></i>Xác nhận Gộp 2 Hồ sơ
                 </button>
             </div>
@@ -396,10 +396,10 @@
         const c1 = document.getElementById('cardCandidate1').firstElementChild;
         const c2 = document.getElementById('cardCandidate2').firstElementChild;
         if (primaryIndex === 1) {
-            c1.style.border = '2px solid #059669';
+            c1.style.border = '2px solid #047857';
             c2.style.border = '1px solid #E2E8F0';
         } else {
-            c2.style.border = '2px solid #059669';
+            c2.style.border = '2px solid #047857';
             c1.style.border = '1px solid #E2E8F0';
         }
     }
