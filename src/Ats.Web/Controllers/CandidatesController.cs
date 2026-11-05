@@ -43,7 +43,10 @@ public class CandidatesController(
 
     private string GetCurrentUserRole()
     {
-        return User.FindFirstValue(ClaimTypes.Role) ?? UserRoles.Candidate;
+        var roles = UserRoles.GetRoles(User);
+        if (roles.Contains(UserRoles.Admin)) return UserRoles.Admin;
+        if (roles.Contains(UserRoles.HRManager)) return UserRoles.HRManager;
+        return string.Join(",", roles);
     }
 
     // ==========================================
@@ -197,7 +200,6 @@ public class CandidatesController(
 
     // POST: /ung-vien/AddTag hoặc /Candidates/AddTag
     [HttpPost("AddTag")]
-    [HttpPost("/ung-vien/AddTag")]
     [ValidateAntiForgeryToken]
     [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager}")]
     public async Task<IActionResult> AddTag([FromForm] CandidateTagInputModel model, CancellationToken cancellationToken)
@@ -248,7 +250,6 @@ public class CandidatesController(
 
     // POST: /ung-vien/RemoveTag hoặc /Candidates/RemoveTag
     [HttpPost("RemoveTag")]
-    [HttpPost("/ung-vien/RemoveTag")]
     [ValidateAntiForgeryToken]
     [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager}")]
     public async Task<IActionResult> RemoveTag([FromForm] Guid tagId, [FromForm] Guid candidateId, CancellationToken cancellationToken)
@@ -288,7 +289,6 @@ public class CandidatesController(
 
     // POST: /ung-vien/AddNote hoặc /Candidates/AddNote
     [HttpPost("AddNote")]
-    [HttpPost("/ung-vien/AddNote")]
     [ValidateAntiForgeryToken]
     [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager}")]
     public async Task<IActionResult> AddNote([FromForm] CandidateNoteInputModel model, CancellationToken cancellationToken)
@@ -338,7 +338,6 @@ public class CandidatesController(
 
     // POST: /ung-vien/DeleteNote hoặc /Candidates/DeleteNote
     [HttpPost("DeleteNote")]
-    [HttpPost("/ung-vien/DeleteNote")]
     [ValidateAntiForgeryToken]
     [Authorize(Roles = $"{UserRoles.Recruiter},{UserRoles.HiringManager},{UserRoles.Admin},{UserRoles.HRManager}")]
     public async Task<IActionResult> DeleteNote([FromForm] Guid noteId, [FromForm] Guid candidateId, CancellationToken cancellationToken)
@@ -430,8 +429,8 @@ public class CandidatesController(
     <meta charset=""utf-8""/>
     <title>Bản xem trước CV - NoveraTech ATS</title>
     <style>
-        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #0F172A; color: #1E293B; display: flex; justify-content: center; padding: 20px; }}
-        .cv-paper {{ background: #ffffff; width: 100%; max-width: 800px; min-height: 900px; padding: 48px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #F8FAFC; color: #1E293B; display: flex; justify-content: center; padding: 24px 20px 40px; margin: 0; }}
+        .cv-paper {{ background: #ffffff; width: 100%; max-width: 840px; padding: 44px 48px; border-radius: 8px; border: 1px solid #E2E8F0; box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05); }}
         .header {{ border-bottom: 2px solid #059669; padding-bottom: 20px; margin-bottom: 24px; }}
         .name {{ font-size: 26px; font-weight: 700; color: #0F172A; margin: 0; }}
         .title {{ font-size: 16px; color: #059669; font-weight: 600; margin-top: 4px; }}

@@ -62,11 +62,15 @@ public class CandidateMultiRoundEvaluationService(
         // Hiring Manager của vị trí, HR Manager, Recruiter phụ trách hoặc Admin
         var isHiringManager = req != null && req.HiringManagerId == currentUserId;
         var isAssignedRecruiter = req != null && req.AssignedRecruiterId == currentUserId;
-        var normalizedRole = UserRoles.NormalizeRole(currentUserRole);
+        var normalizedRoles = currentUserRole.Split(new[] { ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(UserRoles.NormalizeRole)
+            .ToHashSet();
+        if (normalizedRoles.Count == 0) normalizedRoles.Add(UserRoles.NormalizeRole(currentUserRole));
+
         var canMakeDecision = isHiringManager || isAssignedRecruiter ||
-                              normalizedRole == UserRoles.HiringManager ||
-                              normalizedRole == UserRoles.HRManager ||
-                              normalizedRole == UserRoles.Admin;
+                              normalizedRoles.Contains(UserRoles.HiringManager) ||
+                              normalizedRoles.Contains(UserRoles.HRManager) ||
+                              normalizedRoles.Contains(UserRoles.Admin);
 
         var currentUser = await _dbContext.Users.FindAsync(new object[] { currentUserId }, cancellationToken);
 
@@ -278,12 +282,15 @@ public class CandidateMultiRoundEvaluationService(
         var req = application.JobPosting?.Requisition;
         var isHiringManager = req != null && req.HiringManagerId == currentUserId;
         var isAssignedRecruiter = req != null && req.AssignedRecruiterId == currentUserId;
-        var normalizedRole = UserRoles.NormalizeRole(currentUserRole);
+        var normalizedRoles = currentUserRole.Split(new[] { ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(UserRoles.NormalizeRole)
+            .ToHashSet();
+        if (normalizedRoles.Count == 0) normalizedRoles.Add(UserRoles.NormalizeRole(currentUserRole));
 
         var canMakeDecision = isHiringManager || isAssignedRecruiter ||
-                              normalizedRole == UserRoles.HiringManager ||
-                              normalizedRole == UserRoles.HRManager ||
-                              normalizedRole == UserRoles.Admin;
+                              normalizedRoles.Contains(UserRoles.HiringManager) ||
+                              normalizedRoles.Contains(UserRoles.HRManager) ||
+                              normalizedRoles.Contains(UserRoles.Admin);
 
         if (!canMakeDecision)
         {
@@ -297,7 +304,7 @@ public class CandidateMultiRoundEvaluationService(
             ToStage = input.Decision,
             RejectionReasonId = input.Decision == CandidateStage.REJECTED ? input.RejectionReasonId : null,
             Note = input.Note,
-            SkipInterviewConfirmedByHrManager = normalizedRole == UserRoles.HRManager
+            SkipInterviewConfirmedByHrManager = normalizedRoles.Contains(UserRoles.HRManager)
         };
 
         // Thực hiện chuyển giai đoạn an toàn

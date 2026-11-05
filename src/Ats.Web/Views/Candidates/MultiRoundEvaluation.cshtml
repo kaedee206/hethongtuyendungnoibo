@@ -44,51 +44,51 @@
     <!-- ========================================================================= -->
     <!-- 1. HEADER: TỔNG QUAN ỨNG VIÊN & TIẾN TRÌNH TUYỂN DỤNG                    -->
     <!-- ========================================================================= -->
-    <div class="card border-0 shadow-sm mb-4 overflow-hidden" style="border-radius: 12px; background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #F8FAFC;">
+    <div class="card border shadow-sm mb-4 bg-white" style="border-radius: 12px; border-color: #E2E8F0 !important;">
         <div class="card-body p-4">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle text-white fw-bold shadow-sm"
-                         style="width: 64px; height: 64px; background: linear-gradient(135deg, #3B82F6, #1D4ED8); font-size: 1.5rem; flex-shrink: 0;">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-3 fw-bold shadow-sm"
+                         style="width: 56px; height: 56px; background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 1.4rem; flex-shrink: 0;">
                         @(string.IsNullOrWhiteSpace(Model.CandidateName) ? "?" : Model.CandidateName.Substring(0, 1).ToUpper())
                     </div>
                     <div>
                         <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                            <h1 class="fw-bold text-white mb-0" style="font-size: 1.5rem; letter-spacing: -0.01em;">
+                            <h1 class="fw-bold text-dark mb-0" style="font-size: 1.4rem; letter-spacing: -0.01em;">
                                 @Model.CandidateName
                             </h1>
-                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace px-2 py-0.5" style="font-size: 0.72rem;">
+                            <span class="badge bg-light text-secondary border px-2 py-0.5" style="font-size: 0.75rem;">
                                 @Model.CurrentStageName
                             </span>
                             @if (Model.ApplicationStatus == ApplicationStatus.HIRED)
                             {
-                                <span class="badge bg-success text-white px-2 py-0.5 font-monospace">Đã tuyển dụng</span>
+                                <span class="badge bg-success text-white px-2 py-0.5">Đã tuyển dụng</span>
                             }
                             else if (Model.ApplicationStatus == ApplicationStatus.REJECTED)
                             {
-                                <span class="badge bg-danger text-white px-2 py-0.5 font-monospace">Đã loại hồ sơ</span>
+                                <span class="badge bg-danger text-white px-2 py-0.5">Đã loại hồ sơ</span>
                             }
                         </div>
-                        <div class="d-flex flex-wrap align-items-center gap-3 text-white-50 small font-monospace">
-                            <span><i class="bi bi-briefcase text-info me-1"></i>@Model.JobTitle (@Model.JobCode)</span>
+                        <div class="d-flex flex-wrap align-items-center gap-3 text-muted small">
+                            <span><i class="bi bi-briefcase text-secondary me-1"></i>@Model.JobTitle (@Model.JobCode)</span>
                             <span>•</span>
-                            <span><i class="bi bi-building text-warning me-1"></i>@Model.DepartmentName</span>
+                            <span><i class="bi bi-building text-secondary me-1"></i>@Model.DepartmentName</span>
                             <span>•</span>
-                            <span><i class="bi bi-envelope text-white-50 me-1"></i>@Model.CandidateEmail</span>
+                            <span><i class="bi bi-envelope text-secondary me-1"></i>@Model.CandidateEmail</span>
                             @if (!string.IsNullOrWhiteSpace(Model.CandidatePhone))
                             {
                                 <span>•</span>
-                                <span><i class="bi bi-telephone text-white-50 me-1"></i>@Model.CandidatePhone</span>
+                                <span><i class="bi bi-telephone text-secondary me-1"></i>@Model.CandidatePhone</span>
                             }
                         </div>
                     </div>
                 </div>
 
                 <div class="d-flex flex-wrap align-items-center gap-2">
-                    <button type="button" class="btn btn-outline-light btn-sm d-inline-flex align-items-center gap-1.5" style="border-radius: 8px;" onclick="window.print()">
+                    <button type="button" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1.5" style="border-radius: 8px;" onclick="window.print()">
                         <i class="bi bi-printer"></i> In bảng tổng hợp
                     </button>
-                    <a href="#decisionSection" class="btn btn-success btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold" style="border-radius: 8px;">
+                    <a href="#decisionSection" class="btn btn-sm text-white d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold" style="border-radius: 8px; background-color: #047857;">
                         <i class="bi bi-check2-circle"></i> Ra quyết định tuyển
                     </a>
                 </div>

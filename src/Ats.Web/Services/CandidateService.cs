@@ -41,7 +41,12 @@ public class CandidateService(
         CancellationToken cancellationToken = default)
     {
         // 1. Quản trị viên hệ thống (Admin) hoặc Trưởng phòng Nhân sự (HRManager) có quyền xem toàn bộ hồ sơ
-        if (currentUserRole == UserRoles.Admin || currentUserRole == UserRoles.HRManager)
+        var normalizedRoles = currentUserRole.Split(new[] { ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(UserRoles.NormalizeRole)
+            .ToHashSet();
+        if (normalizedRoles.Count == 0) normalizedRoles.Add(UserRoles.NormalizeRole(currentUserRole));
+
+        if (normalizedRoles.Contains(UserRoles.Admin) || normalizedRoles.Contains(UserRoles.HRManager))
         {
             return true;
         }
@@ -72,6 +77,9 @@ public class CandidateService(
             .Where(a => (!a.IsDeleted) && (a.CandidateId == candidateId || a.Candidate.Email.ToLower() == candidate.Email.ToLower()))
             .ToListAsync(cancellationToken);
 
+        var appIds = allRelatedApplications.Select(a => a.Id).ToList();
+
+        // 4.1. Kiểm tra Recruiter phụ trách hoặc Hiring Manager của vị trí đã ứng tuyển
         foreach (var app in allRelatedApplications)
         {
             var req = app.JobPosting?.Requisition;
@@ -85,6 +93,49 @@ public class CandidateService(
 
                 // Kiểm tra Hiring Manager của vị trí
                 if (req.HiringManagerId == currentUserId)
+                {
+                    return true;
+                }
+            }
+        }
+
+        // 4.2. Mở rộng quyền (Phương án 1): Người tham gia phỏng vấn (Interviewer / Panelist / Evaluator)
+        if (appIds.Count > 0)
+        {
+            var isPanelist = await _dbContext.InterviewPanelists
+                .AnyAsync(p => (!p.IsDeleted) 
+                            && p.InterviewerId == currentUserId 
+                            && appIds.Contains(p.Interview.ApplicationId), cancellationToken);
+            if (isPanelist)
+            {
+                return true;
+            }
+
+            var isEvaluator = await _dbContext.InterviewEvaluations
+                .AnyAsync(e => (!e.IsDeleted) 
+                            && e.InterviewerId == currentUserId 
+                            && appIds.Contains(e.Interview.ApplicationId), cancellationToken);
+            if (isEvaluator)
+            {
+                return true;
+            }
+
+            // 4.3. Mở rộng quyền (Phương án 1): Người phê duyệt Offer (Offer Approver)
+            var isOfferApprover = await _dbContext.OfferApprovals
+                .AnyAsync(oa => (!oa.IsDeleted) 
+                             && oa.ApproverId == currentUserId 
+                             && appIds.Contains(oa.Offer.ApplicationId), cancellationToken);
+            if (isOfferApprover)
+            {
+                return true;
+            }
+
+            // Nếu người dùng có vai trò Approver (Ban Giám Đốc) và ứng viên đang có đề xuất Offer
+            if (normalizedRoles.Contains(UserRoles.Approver))
+            {
+                var hasOffer = await _dbContext.JobOffers
+                    .AnyAsync(o => (!o.IsDeleted) && appIds.Contains(o.ApplicationId), cancellationToken);
+                if (hasOffer)
                 {
                     return true;
                 }
@@ -127,8 +178,12 @@ public class CandidateService(
                 ResourcePath = $"/ung-vien/{candidateId}",
                 Action = "VIEW_UNIFIED_PROFILE_DENIED",
                 IsSuccess = false,
-                Details = $"Từ chối truy cập hồ sơ hợp nhất ứng viên {candidate.Email}. Chỉ Recruiter phụ trách hoặc Hiring Manager của vị trí mới có quyền xem."
+                Details = $"Từ chối truy cập hồ sơ hợp nhất ứng viên {candidate.Email}. Chỉ Recruiter phụ trách, Hiring Manager, Người phỏng vấn hoặc Người phê duyệt của ứng viên mới có quyền xem."
             });
+
+            var rolesList = currentUserRole.Split(new[] { ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(UserRoles.NormalizeRole)
+                .ToList();
 
             return new CandidateDetailsViewModel
             {
@@ -137,8 +192,8 @@ public class CandidateService(
                 LastName = candidate.LastName,
                 Email = candidate.Email,
                 HasAccess = false,
-                AccessDeniedReason = "Truy cập bị từ chối: Hồ sơ ứng viên hợp nhất chỉ dành cho Chuyên viên tuyển dụng phụ trách hoặc Quản lý chuyên môn (Hiring Manager) của vị trí ứng viên đã ứng tuyển.",
-                CurrentUserRole = currentUserRole
+                AccessDeniedReason = "Truy cập bị từ chối: Hồ sơ ứng viên hợp nhất chỉ dành cho Chuyên viên tuyển dụng phụ trách, Quản lý chuyên môn (Hiring Manager), Người phỏng vấn hoặc Người phê duyệt Offer của ứng viên đã ứng tuyển.",
+                CurrentUserRole = UserRoles.GetPrimaryRole(rolesList)
             };
         }
 
@@ -320,9 +375,16 @@ public class CandidateService(
                 CanDelete = (currentUserRole == UserRoles.Admin || n.AuthorUserId == currentUserId)
             }).ToList();
 
+        var normalizedRoles = currentUserRole.Split(new[] { ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(UserRoles.NormalizeRole)
+            .ToHashSet();
+        if (normalizedRoles.Count == 0) normalizedRoles.Add(UserRoles.NormalizeRole(currentUserRole));
+
+        bool isAdminOrHR = normalizedRoles.Contains(UserRoles.Admin) || normalizedRoles.Contains(UserRoles.HRManager);
         // Kiểm tra xem user hiện tại có phải Recruiter phụ trách hay Hiring Manager của vị trí nào không
         bool isAssignedRecruiter = allCandidateApplications.Any(a => a.JobPosting?.Requisition?.AssignedRecruiterId == currentUserId);
         bool isHiringManager = allCandidateApplications.Any(a => a.JobPosting?.Requisition?.HiringManagerId == currentUserId);
+        bool canEdit = isAdminOrHR || isAssignedRecruiter || isHiringManager;
 
         _securityAuditService.LogSecurityEvent(new SecurityAuditEvent
         {
@@ -358,6 +420,9 @@ public class CandidateService(
             IsAssignedRecruiter = isAssignedRecruiter,
             IsHiringManager = isHiringManager,
             CurrentUserRole = currentUserRole,
+            CanEdit = canEdit,
+            CanAddTag = canEdit,
+            CanAddNote = canEdit,
             Resumes = resumesVm,
             ApplicationHistories = applicationHistoriesVm,
             Tags = tagsVm,

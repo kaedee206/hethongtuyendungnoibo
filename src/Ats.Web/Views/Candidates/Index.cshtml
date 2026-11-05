@@ -73,7 +73,7 @@
 
     .segment-tab-btn.active .segment-tab-badge {
         background: #ECFDF5;
-        color: #059669;
+        color: #047857;
     }
 
     /* Omnibox Search Bar */
@@ -88,8 +88,8 @@
     }
 
     .candidate-omnibox:focus-within {
-        border-color: #059669;
-        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+        border-color: #047857;
+        box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.12);
     }
 
     .candidate-omnibox input {
@@ -139,8 +139,8 @@
     }
 
     .filter-dropdown-select:focus {
-        border-color: #059669;
-        box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.12);
+        border-color: #047857;
+        box-shadow: 0 0 0 2px rgba(4, 120, 87, 0.12);
     }
 
     /* Candidate Table Styling */
@@ -255,7 +255,7 @@
         <div class="d-flex align-items-center gap-2 flex-wrap">
             @if (User.IsInRole(UserRoles.Recruiter) || User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager))
             {
-                <a asp-controller="Candidates" asp-action="CreateManual" class="btn btn-sm btn-success rounded-2 shadow-xs d-flex align-items-center gap-1.5 fw-semibold px-3 py-2" style="background: #059669; border-color: #059669; font-size: 0.86rem;">
+                <a asp-controller="Candidates" asp-action="CreateManual" class="btn btn-sm btn-success rounded-2 shadow-xs d-flex align-items-center gap-1.5 fw-semibold px-3 py-2" style="background: #047857; border-color: #047857; font-size: 0.86rem;">
                     <i class="bi bi-person-plus-fill"></i>
                     <span>Thêm ứng viên</span>
                 </a>
@@ -393,7 +393,7 @@
                     </div>
 
                     <div class="col-12 col-md-5 col-lg-4 d-flex gap-2">
-                        <button type="submit" class="btn btn-success fw-semibold rounded-2 px-3.5 py-2 flex-grow-1 d-flex align-items-center justify-content-center gap-1.5" style="background-color: #059669; border-color: #059669; font-size: 0.88rem; height: 42px;">
+                        <button type="submit" class="btn btn-success fw-semibold rounded-2 px-3.5 py-2 flex-grow-1 d-flex align-items-center justify-content-center gap-1.5" style="background-color: #047857; border-color: #047857; font-size: 0.88rem; height: 42px;">
                             <i class="bi bi-search"></i>
                             <span>Tìm kiếm</span>
                         </button>
@@ -402,7 +402,7 @@
                             <span class="d-none d-sm-inline">Bộ lọc</span>
                             @if (c.HasActiveFilters)
                             {
-                                <span class="badge rounded-pill bg-success" style="font-size: 0.65rem;">•</span>
+                                <span class="badge rounded-md bg-success" style="font-size: 0.65rem;">•</span>
                             }
                         </button>
                     </div>
@@ -663,7 +663,7 @@
                     }
                     @if (User.IsInRole(UserRoles.Recruiter) || User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager))
                     {
-                        <a asp-controller="Candidates" asp-action="CreateManual" class="btn btn-sm btn-success rounded-2 px-3 py-2 fw-semibold" style="background: #059669; border-color: #059669;">
+                        <a asp-controller="Candidates" asp-action="CreateManual" class="btn btn-sm btn-success rounded-2 px-3 py-2 fw-semibold" style="background: #047857; border-color: #047857;">
                             <i class="bi bi-person-plus-fill me-1"></i>Thêm ứng viên mới
                         </a>
                     }
@@ -821,7 +821,7 @@
                                     <div class="mb-0.5">
                                         @if (cand.ApplicationCount > 1)
                                         {
-                                            <span class="badge rounded-2 px-1.5 py-0.5 fw-semibold" style="background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; font-size: 0.72rem;">
+                                            <span class="badge rounded-2 px-1.5 py-0.5 fw-semibold" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 0.72rem;">
                                                 <i class="bi bi-layers-fill me-0.5"></i>@cand.ApplicationCount vị trí
                                             </span>
                                         }
@@ -839,7 +839,7 @@
                                 <td class="text-end">
                                     <a href="/ung-vien/@cand.Id"
                                        class="btn btn-sm btn-outline-success fw-semibold rounded-2 px-2.5 py-1.5 d-inline-flex align-items-center gap-1"
-                                       style="font-size: 0.8rem; border-color: #A7F3D0; color: #059669;"
+                                       style="font-size: 0.8rem; border-color: #A7F3D0; color: #047857;"
                                        title="Mở hồ sơ hợp nhất và lịch sử ứng tuyển">
                                         <span>Xem hồ sơ</span>
                                         <i class="bi bi-arrow-right"></i>
@@ -907,7 +907,7 @@
         <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
             <div class="modal-header bg-white py-3 px-4" style="border-bottom: 1px solid #E2E8F0;">
                 <div class="d-flex align-items-center gap-2">
-                    <span class="d-inline-flex align-items-center justify-content-center text-white" style="width: 28px; height: 28px; border-radius: 6px; background: #059669; font-size: 0.85rem;">
+                    <span class="d-inline-flex align-items-center justify-content-center text-white" style="width: 28px; height: 28px; border-radius: 6px; background: #047857; font-size: 0.85rem;">
                         <i class="bi bi-bookmark-plus-fill"></i>
                     </span>
                     <h6 class="modal-title fw-bold text-dark mb-0" id="saveFilterModalLabel">Lưu Bộ Lọc Tìm Kiếm Hay Dùng</h6>
@@ -1120,7 +1120,7 @@
             }
         }
 
-        let pendingFilterToDelete = null;
+        var pendingFilterToDelete = null;
 
         // Mở modal xác nhận xóa thay vì confirm()
         function confirmDeleteSavedFilter(filterId, filterName) {

@@ -36,6 +36,9 @@ public class CandidateDetailsViewModel
     public string CurrentUserName { get; set; } = string.Empty;
     public string CurrentUserRole { get; set; } = string.Empty;
     public bool CanManageDossier { get; set; } = true;
+    public bool CanEdit { get; set; } = true;
+    public bool CanAddTag { get; set; } = true;
+    public bool CanAddNote { get; set; } = true;
 
     // Danh sách CV đính kèm & Xem trước
     public List<CandidateResumeViewModel> Resumes { get; set; } = [];
