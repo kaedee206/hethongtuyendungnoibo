@@ -36,13 +36,14 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
                 (u.Department != null && u.Department.ToLower().Contains(term)));
         }
 
-        // 2. Lọc theo vai trò
+        // 2. Lọc theo vai trò (Chuẩn hóa Canonical và khớp toàn bộ Aliases / Tiếng Việt)
         if (!string.IsNullOrWhiteSpace(role))
         {
-            var normalizedRole = UserRoles.NormalizeRole(role);
+            var canonicalRole = UserRoles.NormalizeRole(role);
+            var aliases = UserRoles.GetAllRoleAliases(canonicalRole);
             query = query.Where(u =>
-                u.UserRoles.Any(ur => ur.Role.Name == role || ur.Role.Name == normalizedRole) ||
-                u.Role == role || u.Role == normalizedRole);
+                u.UserRoles.Any(ur => aliases.Contains(ur.Role.Name)) ||
+                aliases.Contains(u.Role));
         }
 
         // 3. Lọc theo trạng thái
@@ -64,9 +65,11 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
                 Email = u.Email,
                 FullName = u.FullName,
                 Department = u.Department,
+                Role = u.Role,
                 Roles = u.UserRoles.Select(ur => ur.Role.Name).ToList(),
                 Status = u.Status,
                 CreatedAt = u.CreatedAt,
+                LastActivityAt = u.LastActivityAt,
                 LockReason = u.LockReason,
                 LockedAt = u.LockedAt
             })
@@ -77,8 +80,41 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
         {
             if (u.Roles.Count == 0)
             {
-                u.Roles.Add(UserRoles.Candidate);
+                if (!string.IsNullOrWhiteSpace(u.Role))
+                {
+                    u.Roles.Add(UserRoles.GetDisplayName(u.Role));
+                }
+                else
+                {
+                    u.Roles.Add(UserRoles.NameCandidate);
+                }
             }
+        }
+
+        // 4. Thống kê phân loại theo vai trò ở backend (Role classification counts)
+        var allUserRoles = await _dbContext.UserRoles
+            .AsNoTracking()
+            .Select(ur => new { ur.UserId, RoleName = ur.Role.Name })
+            .ToListAsync(cancellationToken);
+
+        var allUsersData = await _dbContext.Users
+            .AsNoTracking()
+            .Select(u => new { u.Id, u.Role })
+            .ToListAsync(cancellationToken);
+
+        var roleCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "All", allUsersData.Count }
+        };
+
+        foreach (var r in UserRoles.AllRoles)
+        {
+            var aliases = UserRoles.GetAllRoleAliases(r);
+            var count = allUsersData.Count(u =>
+                allUserRoles.Any(ur => ur.UserId == u.Id && aliases.Contains(ur.RoleName, StringComparer.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(u.Role) && aliases.Contains(u.Role, StringComparer.OrdinalIgnoreCase)));
+
+            roleCounts[r] = count;
         }
 
         return new UserListViewModel
@@ -89,7 +125,8 @@ public class UserService(ApplicationDbContext dbContext, IEmailService emailServ
             Status = status,
             CurrentPage = page,
             PageSize = pageSize,
-            TotalRecords = totalRecords
+            TotalRecords = totalRecords,
+            RoleCounts = roleCounts
         };
     }
 

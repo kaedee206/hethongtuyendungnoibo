@@ -180,15 +180,15 @@
     }
     .btn-action-edit:hover {
         background: #F8FAFC;
-        border-color: #059669;
-        color: #059669;
-        box-shadow: 0 1px 3px rgba(5, 150, 105, 0.1);
+        border-color: #047857;
+        color: #047857;
+        box-shadow: 0 1px 3px rgba(4, 120, 87, 0.1);
     }
 
     /* Primary CTA Button */
     .btn-novera-primary {
-        background: #059669;
-        border: 1px solid #059669;
+        background: #047857;
+        border: 1px solid #047857;
         color: #FFFFFF;
         font-weight: 600;
         font-size: 0.875rem;
@@ -197,14 +197,14 @@
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        box-shadow: 0 1px 2px rgba(5, 150, 105, 0.15);
+        box-shadow: 0 1px 2px rgba(4, 120, 87, 0.15);
         transition: all 0.15s ease;
     }
     .btn-novera-primary:hover {
         background: #047857;
         border-color: #047857;
         color: #FFFFFF;
-        box-shadow: 0 4px 10px rgba(5, 150, 105, 0.25);
+        box-shadow: 0 4px 10px rgba(4, 120, 87, 0.25);
         transform: translateY(-1px);
     }
 </style>
@@ -312,12 +312,12 @@
                 <div class="d-flex align-items-start justify-content-between mb-2">
                     <div>
                         <span class="text-secondary small fw-semibold text-uppercase" style="letter-spacing: 0.04em;">Chỉ tiêu còn lại khả dụng</span>
-                        <div class="kpi-metric-value mt-1 @(Model.TotalRemainingHeadcount > 0 ? "text-emerald-700" : "text-rose-600")" style="color: @(Model.TotalRemainingHeadcount > 0 ? "#059669" : "#DC2626");">
+                        <div class="kpi-metric-value mt-1 @(Model.TotalRemainingHeadcount > 0 ? "text-emerald-700" : "text-rose-600")" style="color: @(Model.TotalRemainingHeadcount > 0 ? "#047857" : "#DC2626");">
                             @(Model.TotalRemainingHeadcount >= 0 ? "+" + Model.TotalRemainingHeadcount : Model.TotalRemainingHeadcount.ToString()) 
                             <span class="kpi-metric-unit">vị trí</span>
                         </div>
                     </div>
-                    <div class="kpi-metric-icon" style="background: @(Model.TotalRemainingHeadcount > 0 ? "#ECFDF5" : "#FEF2F2"); color: @(Model.TotalRemainingHeadcount > 0 ? "#059669" : "#DC2626");">
+                    <div class="kpi-metric-icon" style="background: @(Model.TotalRemainingHeadcount > 0 ? "#ECFDF5" : "#FEF2F2"); color: @(Model.TotalRemainingHeadcount > 0 ? "#047857" : "#DC2626");">
                         <i class="bi @(Model.TotalRemainingHeadcount > 0 ? "bi-person-plus" : "bi-exclamation-octagon")"></i>
                     </div>
                 </div>
@@ -505,7 +505,7 @@
                                     }
                                     else
                                     {
-                                        <span class="badge border px-2.5 py-1.5 mono-num fw-bold d-inline-flex align-items-center gap-1" style="background: #ECFDF5; color: #059669; border-color: #A7F3D0; font-size: 0.8125rem;">
+                                        <span class="badge border px-2.5 py-1.5 mono-num fw-bold d-inline-flex align-items-center gap-1" style="background: #ECFDF5; color: #047857; border-color: #A7F3D0; font-size: 0.8125rem;">
                                             <i class="bi bi-check-circle-fill"></i> Còn +@item.RemainingHeadcount
                                         </span>
                                     }
@@ -555,14 +555,14 @@
                                     {
                                         if (item.IsActive)
                                         {
-                                            <span class="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill" style="background: #ECFDF5; color: #065F46; font-size: 0.75rem; font-weight: 500;">
+                                            <span class="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-md" style="background: #ECFDF5; color: #065F46; font-size: 0.75rem; font-weight: 500;">
                                                 <span class="rounded-circle" style="width: 6px; height: 6px; background: #10B981;"></span>
                                                 Áp dụng
                                             </span>
                                         }
                                         else
                                         {
-                                            <span class="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill" style="background: #F1F5F9; color: #64748B; font-size: 0.75rem; font-weight: 500;">
+                                            <span class="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-md" style="background: #F1F5F9; color: #64748B; font-size: 0.75rem; font-weight: 500;">
                                                 <span class="rounded-circle" style="width: 6px; height: 6px; background: #94A3B8;"></span>
                                                 Tạm dừng
                                             </span>
@@ -626,7 +626,7 @@
             <!-- Modal Header: Sạch sẽ, tinh tế với icon xanh ngọc -->
             <div class="modal-header bg-white py-3 px-4 border-bottom border-slate-100 d-flex align-items-center">
                 <div class="d-flex align-items-center gap-2.5">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: #ECFDF5; color: #059669;">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: #ECFDF5; color: #047857;">
                         <i class="bi bi-sliders2-vertical fs-6"></i>
                     </div>
                     <div>

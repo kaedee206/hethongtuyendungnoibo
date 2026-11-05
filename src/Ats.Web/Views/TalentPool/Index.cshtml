@@ -12,7 +12,7 @@
         --color-border: #E2E8F0;
         --color-text-main: #0F172A;
         --color-text-muted: #64748B;
-        --color-accent: #059669;
+        --color-accent: #047857;
         --color-accent-subtle: #ECFDF5;
         --radius-button: 8px;
         --radius-card: 12px;
@@ -138,33 +138,33 @@
         </div>
     </div>
 
-    <!-- ── Header Banner (Scrum 45) ── -->
-    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); border-radius: 12px; color: white;">
+    <!-- ── Header Banner (Enterprise Clean Design) ── -->
+    <div class="card border shadow-sm mb-4 bg-white" style="border-radius: 12px; border-color: #E2E8F0 !important;">
         <div class="card-body p-4">
             <div class="row align-items-center g-3">
                 <div class="col-12 col-lg-8">
                     <div class="d-flex align-items-center gap-2 mb-2">
-                        <span class="badge rounded-2 px-2.5 py-1 text-xs fw-semibold" style="background: rgba(245, 158, 11, 0.2); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.4);">
-                            <i class="bi bi-award-fill me-1"></i>Scrum - Số 45
+                        <span class="badge rounded-2 px-2.5 py-1 text-xs fw-semibold" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0;">
+                            <i class="bi bi-people-fill me-1"></i>Kho Lưu Trữ Nhân Tài
                         </span>
-                        <span class="badge rounded-2 bg-secondary text-white text-xs px-2 py-1">Trưởng phòng Nhân sự & Tuyển dụng</span>
+                        <span class="badge rounded-2 bg-light text-secondary border text-xs px-2 py-1">Nguồn tuyển dụng nội bộ</span>
                     </div>
-                    <h2 class="h4 fw-bold text-white mb-2" style="letter-spacing: -0.3px;">
+                    <h2 class="h4 fw-bold text-dark mb-2" style="letter-spacing: -0.3px;">
                         Kho Ứng Viên Tiềm Năng (Talent Pool)
                     </h2>
-                    <p class="text-white-50 mb-0 small" style="max-width: 680px; line-height: 1.6;">
+                    <p class="text-muted mb-0 small" style="max-width: 680px; line-height: 1.6;">
                         Tập hợp những ứng viên chất lượng cao từng lọt vào vòng phỏng vấn chuyên môn hoặc vòng Offer cuối cùng.
                         Tìm kiếm theo chức danh quan tâm & kỹ năng để tái tiếp cận nhanh chóng, tiết kiệm chi phí tìm kiếm ứng viên mới từ đầu.
                     </p>
                 </div>
                 <div class="col-12 col-lg-4 text-lg-end">
-                    <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1);">
+                    <div class="p-3 rounded-3" style="background: #F8FAFC; border: 1px solid #E2E8F0;">
                         <div class="d-flex align-items-center justify-content-between mb-1">
-                            <span class="text-white-50 small">Khả năng tái dụng</span>
-                            <span class="text-success fw-bold small"><i class="bi bi-check2-circle me-1"></i>Sẵn sàng 100%</span>
+                            <span class="text-muted small">Khả năng tái dụng</span>
+                            <span class="text-success fw-bold small"><i class="bi bi-check2-circle me-1"></i>Sẵn sàng kết nối</span>
                         </div>
-                        <div class="text-start text-xs text-white-50">
-                            Hệ thống tự động chấm điểm và gợi ý khi phòng ban đăng ký mở vị trí tuyển dụng mới.
+                        <div class="text-start text-xs text-muted">
+                            Hệ thống tự động đối sánh kỹ năng và gợi ý khi phòng ban đăng ký mở vị trí tuyển dụng mới.
                         </div>
                     </div>
                 </div>
@@ -197,7 +197,7 @@
                         <div class="text-muted small fw-medium mb-1">Sẵn sàng tiếp cận</div>
                         <div class="h3 fw-bold text-success mb-0 font-monospace">@Model.AvailableCount</div>
                     </div>
-                    <div class="p-2.5 rounded-2" style="background:#ECFDF5; color:#059669;">
+                    <div class="p-2.5 rounded-2" style="background:#ECFDF5; color:#047857;">
                         <i class="bi bi-person-check fs-4"></i>
                     </div>
                 </div>
@@ -346,8 +346,8 @@
                         <div>
                             <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
                                 <div class="d-flex align-items-center gap-2.5">
-                                    <div class="d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
-                                         style="width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #1E293B 0%, #334155 100%); font-size: 1.1rem;">
+                                    <div class="d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
+                                         style="width: 44px; height: 44px; border-radius: 10px; background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 1.1rem;">
                                         @c.CandidateInitials
                                     </div>
                                     <div>
@@ -474,14 +474,14 @@
         <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
             <div class="modal-header border-0 pb-0">
                 <div class="d-flex align-items-center gap-2">
-                    <div class="p-2 rounded-2" style="background:#ECFDF5; color:#059669;">
+                    <div class="p-2 rounded-2" style="background:#ECFDF5; color:#047857;">
                         <i class="bi bi-plus-circle fs-5"></i>
                     </div>
                     <div>
                         <h5 class="modal-title fw-bold text-dark mb-0" id="addNewPoolModalLabel" style="font-size: 1.05rem;">
                             Thêm Ứng Viên Vào Kho Tiềm Năng
                         </h5>
-                        <small class="text-muted" style="font-size: 0.78rem;">Scrum 45: Lưu giữ ứng viên giỏi từng trượt vòng cuối</small>
+                        <small class="text-muted" style="font-size: 0.78rem;">Lưu giữ ứng viên giỏi từng trượt vòng cuối để tái tuyển dụng</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -561,7 +561,7 @@
         <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
             <div class="modal-header border-0 pb-0">
                 <div class="d-flex align-items-center gap-2">
-                    <div class="p-2 rounded-2" style="background:#ECFDF5; color:#059669;">
+                    <div class="p-2 rounded-2" style="background:#ECFDF5; color:#047857;">
                         <i class="bi bi-send-check fs-5"></i>
                     </div>
                     <div>

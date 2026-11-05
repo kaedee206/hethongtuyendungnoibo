@@ -27,6 +27,11 @@ public class UserListViewModel
     public int TotalPages => (int)Math.Ceiling(TotalRecords / (double)PageSize);
     public bool HasPreviousPage => CurrentPage > 1;
     public bool HasNextPage => CurrentPage < TotalPages;
+
+    /// <summary>
+    /// Thống kê phân loại số lượng người dùng theo từng vai trò chuẩn (All, Admin, HRManager, Recruiter, HiringManager, Interviewer, Approver, Candidate).
+    /// </summary>
+    public Dictionary<string, int> RoleCounts { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }
 
 public class UserItemViewModel
@@ -35,6 +40,7 @@ public class UserItemViewModel
     public string Email { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
     public string? Department { get; set; }
+    public string? Role { get; set; }
     public List<string> Roles { get; set; } = new();
     public string Status { get; set; } = "ACTIVE";
     public DateTimeOffset CreatedAt { get; set; }

@@ -16,7 +16,7 @@
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
                 <div class="p-2 bg-white rounded-3 shadow-xs border d-inline-flex align-items-center justify-content-center text-primary" style="border-radius: 8px !important; width: 42px; height: 42px;">
-                    <i class="bi bi-plus-circle-fill fs-5" style="color: #059669;"></i>
+                    <i class="bi bi-plus-circle-fill fs-5" style="color: #047857;"></i>
                 </div>
                 <h1 class="h3 fw-bold text-dark mb-0">Tạo mới Khung năng lực chuẩn</h1>
             </div>
@@ -128,7 +128,7 @@
                     <span class="text-muted small">Tổng trọng số các tiêu chí bắt buộc phải bằng <strong>100%</strong></span>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <span class="badge font-monospace px-3 py-2 fw-bold" id="totalWeightBadge" style="border-radius: 8px; font-size: 0.9rem; background-color: #ECFDF5; color: #059669; border: 1px solid #A7F3D0;">
+                    <span class="badge font-monospace px-3 py-2 fw-bold" id="totalWeightBadge" style="border-radius: 8px; font-size: 0.9rem; background-color: #ECFDF5; color: #047857; border: 1px solid #A7F3D0;">
                         Tổng: 100%
                     </span>
                     <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" id="addCriterionBtn" style="border-radius: 8px;">
@@ -213,7 +213,7 @@
 
         <div class="d-flex justify-content-end align-items-center gap-2 mb-5">
             <a asp-action="Index" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 8px;">Hủy bỏ</a>
-            <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2 px-4 py-2 fw-semibold shadow-xs" id="submitBtn" style="border-radius: 8px; background-color: #059669; border-color: #059669;">
+            <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2 px-4 py-2 fw-semibold shadow-xs" id="submitBtn" style="border-radius: 8px; background-color: #047857; border-color: #047857;">
                 <i class="bi bi-check-lg"></i>
                 <span>Lưu & Kích hoạt Khung năng lực</span>
             </button>
@@ -241,7 +241,7 @@
                 totalWeightBadge.textContent = `Tổng: ${total}%`;
                 if (total === 100) {
                     totalWeightBadge.style.backgroundColor = '#ECFDF5';
-                    totalWeightBadge.style.color = '#059669';
+                    totalWeightBadge.style.color = '#047857';
                     totalWeightBadge.style.borderColor = '#A7F3D0';
                 } else {
                     totalWeightBadge.style.backgroundColor = '#FEF2F2';

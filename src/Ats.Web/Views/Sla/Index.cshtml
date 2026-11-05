@@ -47,7 +47,7 @@
             </button>
             <button type="button" class="btn btn-success btn-sm px-3.5 d-inline-flex align-items-center gap-1.5 shadow-sm" 
                     id="btnSaveAll" onclick="saveAllSlaConfigs()" 
-                    style="background: #059669; border-color: #059669; border-radius: 8px; font-weight: 600;">
+                    style="background: #047857; border-color: #047857; border-radius: 8px; font-weight: 600;">
                 <i class="bi bi-check2-circle"></i> Lưu cấu hình
             </button>
         </div>
@@ -75,7 +75,7 @@
             <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
                 <div class="card-body p-3 d-flex align-items-center gap-3">
                     <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
-                         style="width: 44px; height: 44px; background: #ECFDF5; color: #059669; font-size: 1.25rem;">
+                         style="width: 44px; height: 44px; background: #ECFDF5; color: #047857; font-size: 1.25rem;">
                         <i class="bi bi-stopwatch"></i>
                     </div>
                     <div>
@@ -107,7 +107,7 @@
             <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border: 1px solid #E2E8F0 !important;">
                 <div class="card-body p-3 d-flex align-items-center gap-3">
                     <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
-                         style="width: 44px; height: 44px; background: @(totalOverdueCandidates > 0 ? "#FEF2F2" : "#ECFDF5"); color: @(totalOverdueCandidates > 0 ? "#DC2626" : "#059669"); font-size: 1.25rem;">
+                         style="width: 44px; height: 44px; background: @(totalOverdueCandidates > 0 ? "#FEF2F2" : "#ECFDF5"); color: @(totalOverdueCandidates > 0 ? "#DC2626" : "#047857"); font-size: 1.25rem;">
                         <i class="bi @(totalOverdueCandidates > 0 ? "bi-exclamation-octagon" : "bi-check-circle")"></i>
                     </div>
                     <div>
@@ -208,7 +208,7 @@
                                 <td>
                                     <div class="d-flex align-items-center gap-2.5">
                                         <span class="d-inline-block rounded-circle flex-shrink-0" 
-                                              style="width: 10px; height: 10px; background: @(stage.ColorCode ?? "#059669"); box-shadow: 0 0 0 2px rgba(0,0,0,0.04);"></span>
+                                              style="width: 10px; height: 10px; background: @(stage.ColorCode ?? "#047857"); box-shadow: 0 0 0 2px rgba(0,0,0,0.04);"></span>
                                         <span class="fw-semibold text-slate-900" style="font-size: 0.92rem; color: #0F172A;">@stage.Name</span>
                                         @if (stage.StageOrder == 1)
                                         {
@@ -330,7 +330,7 @@
             <div class="d-flex gap-2 w-100 w-sm-auto justify-content-end">
                 <button type="button" class="btn btn-success fw-semibold px-4 d-inline-flex align-items-center gap-1.5 shadow-sm" 
                         onclick="saveAllSlaConfigs()" 
-                        style="background: #059669; border-color: #059669; border-radius: 8px; font-size: 0.85rem;">
+                        style="background: #047857; border-color: #047857; border-radius: 8px; font-size: 0.85rem;">
                     <i class="bi bi-check2-circle"></i> Lưu cấu hình
                 </button>
             </div>
@@ -345,7 +345,7 @@
             <div class="modal-header py-3 px-4 bg-white border-bottom d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
                     <div class="rounded-circle d-flex align-items-center justify-content-center" 
-                         style="width: 36px; height: 36px; background: #ECFDF5; color: #059669;">
+                         style="width: 36px; height: 36px; background: #ECFDF5; color: #047857;">
                         <i class="bi bi-lightning-charge-fill"></i>
                     </div>
                     <div>
@@ -396,7 +396,7 @@
             if (isSuccess) {
                 toastEl.style.backgroundColor = '#ECFDF5';
                 toastEl.style.color = '#065F46';
-                toastEl.style.borderLeft = '4px solid #059669';
+                toastEl.style.borderLeft = '4px solid #047857';
                 icon.className = 'bi bi-check-circle-fill text-emerald-600 fs-5';
             } else {
                 toastEl.style.backgroundColor = '#FEF2F2';
@@ -571,7 +571,7 @@
                         itemsHtml = `
                             <div class="text-center py-4 text-emerald-600">
                                 <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
-                                     style="width: 54px; height: 54px; background: #ECFDF5; color: #059669; font-size: 1.6rem;">
+                                     style="width: 54px; height: 54px; background: #ECFDF5; color: #047857; font-size: 1.6rem;">
                                     <i class="bi bi-shield-check"></i>
                                 </div>
                                 <div class="fw-bold fs-6 text-slate-900">Tuyệt vời! Không có hồ sơ nào quá hạn SLA.</div>

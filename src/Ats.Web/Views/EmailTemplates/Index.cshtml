@@ -10,10 +10,10 @@
             <p class="text-muted mb-0">Quản lý năm loại email theo giai đoạn tuyển dụng cho HRManager.</p>
         </div>
         <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-primary" id="previewAllTemplatesBtn">
+            <button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" id="previewAllTemplatesBtn" style="border-radius: 8px;">
                 <i class="bi bi-eye me-1"></i> Xem trước nhanh
             </button>
-            <button type="submit" form="emailTemplateForm" class="btn btn-primary">
+            <button type="submit" form="emailTemplateForm" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" style="background: #047857; border-color: #047857; border-radius: 8px;">
                 <i class="bi bi-floppy me-1"></i> Lưu cấu hình
             </button>
         </div>
@@ -37,14 +37,14 @@
 
     <div class="row g-4">
         <div class="col-xl-4">
-            <div class="card shadow-sm border-0 h-100">
+            <div class="card shadow-sm border-0 h-100" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                 <div class="card-header bg-white border-0 pb-0">
                     <h5 class="mb-0 fw-bold text-dark">Dữ liệu xem trước</h5>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Ứng viên</label>
-                        <select id="previewCandidateId" class="form-select">
+                        <select id="previewCandidateId" class="form-select" style="border-radius: 8px;">
                             <option value="">-- Chọn ứng viên --</option>
                             @foreach (var candidate in Model.Candidates)
                             {
@@ -55,7 +55,7 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Vị trí tuyển dụng</label>
-                        <select id="previewJobId" class="form-select">
+                        <select id="previewJobId" class="form-select" style="border-radius: 8px;">
                             <option value="">-- Chọn vị trí --</option>
                             @foreach (var job in Model.Jobs)
                             {
@@ -66,7 +66,7 @@
 
                     <div class="mb-0">
                         <label class="form-label fw-semibold">Buổi phỏng vấn</label>
-                        <select id="previewInterviewId" class="form-select">
+                        <select id="previewInterviewId" class="form-select" style="border-radius: 8px;">
                             <option value="">-- Chọn lịch phỏng vấn --</option>
                             @foreach (var interview in Model.Interviews)
                             {
@@ -79,17 +79,17 @@
         </div>
 
         <div class="col-xl-8">
-            <div class="card shadow-sm border-0">
+            <div class="card shadow-sm border-0" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                 <div class="card-header bg-white border-0 pb-0">
                     <h5 class="mb-0 fw-bold text-dark">Biến hỗ trợ & quy tắc</h5>
                 </div>
                 <div class="card-body">
                     <div class="d-flex flex-wrap gap-2 mb-3">
-                        <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle">{{CandidateName}}</span>
-                        <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle">{{JobTitle}}</span>
-                        <span class="badge rounded-pill bg-warning-subtle text-warning border border-warning-subtle">{{InterviewTime}}</span>
-                        <span class="badge rounded-pill bg-info-subtle text-info border border-info-subtle">{{InterviewRound}}</span>
-                        <span class="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary-subtle">{{OfferStartDate}}</span>
+                        <span class="badge rounded-2 bg-primary-subtle text-primary border border-primary-subtle">{{CandidateName}}</span>
+                        <span class="badge rounded-2 bg-success-subtle text-success border border-success-subtle">{{JobTitle}}</span>
+                        <span class="badge rounded-2 bg-warning-subtle text-warning border border-warning-subtle">{{InterviewTime}}</span>
+                        <span class="badge rounded-2 bg-info-subtle text-info border border-info-subtle">{{InterviewRound}}</span>
+                        <span class="badge rounded-2 bg-secondary-subtle text-secondary border border-secondary-subtle">{{OfferStartDate}}</span>
                     </div>
                     <ul class="mb-0 small text-muted">
                         <li>Biến bắt buộc được đánh dấu theo từng loại email.</li>
@@ -106,7 +106,7 @@
         @for (var i = 0; i < Model.Templates.Count; i++)
         {
             var item = Model.Templates[i];
-            <div class="card shadow-sm border-0 mt-4 template-card">
+            <div class="card shadow-sm border-0 mt-4 template-card" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
@@ -124,7 +124,7 @@
                     <div class="row g-3 mb-3">
                         <div class="col-lg-8">
                             <label asp-for="Templates[i].Subject" class="form-label fw-semibold">Tiêu đề email</label>
-                            <input asp-for="Templates[i].Subject" class="form-control" placeholder="Ví dụ: Thư mời phỏng vấn vị trí {{JobTitle}}" />
+                            <input asp-for="Templates[i].Subject" class="form-control" style="border-radius: 8px;" placeholder="Ví dụ: Thư mời phỏng vấn vị trí {{JobTitle}}" />
                         </div>
                         <div class="col-lg-4">
                             <label class="form-label fw-semibold">Định dạng</label>
@@ -137,13 +137,13 @@
 
                     <div class="mb-3">
                         <label asp-for="Templates[i].Body" class="form-label fw-semibold">Nội dung email</label>
-                        <textarea asp-for="Templates[i].Body" class="form-control" rows="10" placeholder="Xin chào {{CandidateName}}, ..."></textarea>
+                        <textarea asp-for="Templates[i].Body" class="form-control" style="border-radius: 8px;" rows="10" placeholder="Xin chào {{CandidateName}}, ..."></textarea>
                     </div>
 
                     <div class="d-flex flex-wrap gap-2 mb-3">
                         @foreach (var variable in item.SupportedVariables)
                         {
-                            <button type="button" class="btn btn-sm btn-light border variable-copy-btn" data-variable="@variable" title="Copy biến @variable">
+                            <button type="button" class="btn btn-sm btn-light border variable-copy-btn" style="border-radius: 6px;" data-variable="@variable" title="Copy biến @variable">
                                 @variable
                             </button>
                         }
@@ -164,7 +164,7 @@
                                 }
                             }
                         </div>
-                        <button type="button" class="btn btn-outline-primary preview-template-btn" data-template-type="@item.TemplateType">
+                        <button type="button" class="btn btn-outline-secondary preview-template-btn" style="border-radius: 8px;" data-template-type="@item.TemplateType">
                             <i class="bi bi-eye me-1"></i> Xem trước
                         </button>
                     </div>
