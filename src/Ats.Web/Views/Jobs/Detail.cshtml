@@ -37,6 +37,10 @@
 
     // CanEdit = Recruiter, HR Manager, Admin hoặc tác giả
     var canEditJob = isRecruiterOrHr || isAdmin || isAuthor;
+
+    var isPreviewRequested = string.Equals(Context.Request.Query["preview"], "true", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(Context.Request.Query["preview"], "1", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(Context.Request.Query["mode"], "preview", StringComparison.OrdinalIgnoreCase);
 }
 
 @* ══════════════════════════════════════════════════════════
@@ -51,8 +55,8 @@
         --color-border: #E2E8F0;
         --color-text-main: #0F172A;
         --color-text-muted: #64748B;
-        --color-accent: #059669;
-        --color-accent-hover: #047857;
+        --color-accent: #047857;
+        --color-accent-hover: #065F46;
         --color-accent-subtle: #ECFDF5;
         --radius-button: 8px;
         --radius-card: 12px;
@@ -84,15 +88,15 @@
         background: #FFFFFF;
         border: 1px solid var(--color-border);
         border-radius: var(--radius-card);
-        padding: 2.25rem;
+        padding: 1.5rem 1.75rem;
         box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
-        margin-bottom: 2rem;
+        margin-bottom: 1.25rem;
     }
 
     .job-h1 {
-        font-size: clamp(1.8rem, 3.2vw, 2.35rem);
+        font-size: clamp(1.45rem, 2.4vw, 1.95rem);
         font-weight: 800;
-        letter-spacing: -0.03em;
+        letter-spacing: -0.025em;
         color: var(--color-text-main);
         line-height: 1.25;
     }
@@ -202,12 +206,12 @@
     }
     .related-job-item:hover {
         background: #FFFFFF;
-        border-color: #059669;
+        border-color: #047857;
         box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
         transform: translateY(-2px);
     }
     .related-job-item:hover .related-job-title {
-        color: #059669 !important;
+        color: #047857 !important;
     }
 
     .info-row {
@@ -243,12 +247,12 @@
         gap: 0.5rem;
         text-decoration: none;
         transition: all .2s ease;
-        box-shadow: 0 2px 6px rgba(5, 150, 105, 0.2);
+        box-shadow: 0 2px 6px rgba(4, 120, 87, 0.2);
     }
     .btn-apply-main:hover {
         background: var(--color-accent-hover);
         color: #FFFFFF;
-        box-shadow: 0 4px 14px rgba(5, 150, 105, 0.3);
+        box-shadow: 0 4px 14px rgba(4, 120, 87, 0.3);
     }
 
     .btn-save-job {
@@ -326,17 +330,17 @@
     @if (canEditJob)
     {
         <!-- ── BANNER THÔNG BÁO CHẾ ĐỘ XEM TRƯỚC ỨNG VIÊN (LIVE PREVIEW) ── -->
-        <div id="candidatePreviewAlert" class="alert d-none align-items-center justify-content-between p-3 mb-4 shadow-sm" style="background: linear-gradient(135deg, #0F172A, #1E293B); color: #F8FAFC; border-radius: 12px; border: 1px solid #334155;">
+        <div id="candidatePreviewAlert" class="alert @(isPreviewRequested ? "d-flex" : "d-none") align-items-center justify-content-between p-3 mb-4 shadow-sm" style="background: #F8FAFC; color: #0F172A; border-radius: 12px; border: 1px solid #CBD5E1;">
             <div class="d-flex align-items-center gap-2.5">
-                <span class="badge bg-primary px-2.5 py-1 text-uppercase font-monospace" style="letter-spacing: 0.05em;">
+                <span class="badge px-2.5 py-1 text-uppercase text-white" style="background-color: #047857; letter-spacing: 0.05em; border-radius: 6px;">
                     <i class="bi bi-eye-fill me-1"></i> Live Preview
                 </span>
                 <div>
-                    <strong class="d-block" style="font-size: 0.92rem;">Chế độ Xem trước Ứng viên (Candidate View)</strong>
-                    <span class="small" style="color: #94A3B8;">Đây là giao diện thực tế mà ứng viên nhìn thấy khi truy cập bài đăng (bao gồm các nút ứng tuyển và form nộp hồ sơ CV).</span>
+                    <strong class="d-block" style="font-size: 0.92rem;">Chế độ Xem trước dạng Ứng viên (Candidate View)</strong>
+                    <span class="small text-muted">Bạn đang trải nghiệm bài đăng với tư cách là Ứng viên muốn ứng tuyển vào công ty. Toàn bộ công cụ quản lý đã được ẩn đi.</span>
                 </div>
             </div>
-            <button type="button" class="btn btn-sm btn-light fw-bold px-3 py-1.5" onclick="toggleCandidatePreview(false)" style="border-radius: 8px;">
+            <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold px-3 py-1.5" onclick="toggleCandidatePreview(false)" style="border-radius: 8px;">
                 <i class="bi bi-x-circle me-1"></i> Thoát xem trước
             </button>
         </div>
@@ -362,7 +366,7 @@
                 </div>
                 @if (isRecruiterOrHr)
                 {
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 recruiter-admin-action @(isPreviewRequested ? "d-none" : "")">
                         <a href="/Jobs/quan-ly" class="btn btn-sm btn-outline-dark" style="border-radius: 6px;">
                             <i class="bi bi-sliders me-1"></i> Quản lý tin
                         </a>
@@ -389,7 +393,7 @@
                 </div>
                 @if (isRecruiterOrHr)
                 {
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 recruiter-admin-action @(isPreviewRequested ? "d-none" : "")">
                         <a href="/Jobs/quan-ly" class="btn btn-sm btn-outline-dark" style="border-radius: 6px;">
                             <i class="bi bi-sliders me-1"></i> Quản lý tin
                         </a>
@@ -464,11 +468,12 @@
                 </div>
             </div>
 
-            <!-- Header Actions (Thu gọn và tối giản chống rối mắt) -->
+            <!-- Header Actions -->
             <div class="col-12 col-lg-4 text-lg-end">
                 @if (canEditJob)
                 {
-                    <div class="d-flex flex-column align-items-lg-end gap-2">
+                    <!-- ── CỤM QUẢN TRỊ DÀNH CHO NHÀ TUYỂN DỤNG (ẨN HOÀN TOÀN KHI Ở CHẾ ĐỘ XEM TRƯỚC ỨNG VIÊN) ── -->
+                    <div class="flex-column align-items-lg-end gap-2 @(isPreviewRequested ? "d-none" : "d-flex")" id="recruiterHeaderActions">
                         <!-- Badge trạng thái trực quan -->
                         <div class="mb-1">
                             @if (job.IsClosed)
@@ -486,13 +491,13 @@
                             else
                             {
                                 <span class="job-badge-status" style="background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; border-radius: 8px; font-size: 0.8rem; padding: 0.35rem 0.65rem;">
-                                    <span class="d-inline-block rounded-circle me-1" style="width: 7px; height: 7px; background-color: #059669;"></span>
+                                    <span class="d-inline-block rounded-circle me-1" style="width: 7px; height: 7px; background-color: #047857;"></span>
                                     Đang đăng tuyển (Công khai)
                                 </span>
                             }
                         </div>
 
-                        <!-- Cụm Icon Button Toolbar tối giản (Có hover chữ mô tả tên nút bấm) -->
+                        <!-- Cụm Icon Button Toolbar tối giản -->
                         <div class="recruiter-toolbar-wrap">
                             <!-- 1. Chỉnh sửa tin trực tiếp -->
                             <button type="button" class="btn-action-icon-detail text-warning" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('editJobPostingModal')).show()" data-bs-toggle="tooltip" data-bs-placement="top" title="Chỉnh sửa bài đăng">
@@ -500,7 +505,7 @@
                             </button>
 
                             <!-- 2. Live Preview (Xem trước dạng ứng viên) -->
-                            <button type="button" class="btn-action-icon-detail text-primary" id="btnToggleCandidatePreview" onclick="toggleCandidatePreview()" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Xem trước dạng Ứng viên (Live Preview)">
+                            <button type="button" class="btn-action-icon-detail text-primary" id="btnToggleCandidatePreview" onclick="toggleCandidatePreview(true)" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Xem trước dạng Ứng viên (Live Preview)">
                                 <i class="bi bi-eye"></i>
                             </button>
 
@@ -568,24 +573,33 @@
                         <a href="/Jobs/quan-ly" class="small text-muted text-decoration-none mt-1 d-inline-flex align-items-center gap-1" style="font-size: 0.78rem;">
                             <i class="bi bi-arrow-left"></i> Về Bảng điều khiển Quản lý tin đăng
                         </a>
+                    </div>
 
-                        <!-- Cụm nút mô phỏng ứng viên (Chỉ hiện khi bật Live Preview) -->
-                        <div id="previewCandidateButtons" class="d-none mt-2 pt-2 border-top w-100 text-start">
-                            <div class="small text-muted mb-1.5" style="font-size: 0.75rem;">
-                                <i class="bi bi-eye text-primary"></i> Giao diện nút bấm ứng viên:
-                            </div>
-                            <a href="#apply-section" class="btn-apply-main w-100 mb-2 py-2" style="font-size: 0.9rem;">
+                    <!-- ── GIAO DIỆN CÔNG KHAI DÀNH CHO ỨNG VIÊN (HIỂN THỊ KHI BẬT LIVE PREVIEW) ── -->
+                    <div class="flex-column gap-2 justify-content-lg-end align-items-lg-end @(isPreviewRequested ? "d-flex" : "d-none")" id="previewHeaderActions">
+                        @if (job.IsClosed || job.IsExpired)
+                        {
+                            <button type="button" class="btn btn-secondary w-100 py-2.5 d-flex align-items-center justify-content-center gap-2" disabled style="border-radius: var(--radius-button); font-weight: 600;">
+                                <i class="bi bi-x-circle-fill"></i> Đã đóng nhận hồ sơ
+                            </button>
+                        }
+                        else
+                        {
+                            <a href="#apply-section" class="btn-apply-main w-100 w-sm-auto">
                                 <i class="bi bi-send-fill"></i> Ứng tuyển vị trí này
                             </a>
-                            <div class="d-flex gap-2">
-                                <button type="button" class="btn-save-job flex-grow-1 py-1.5" style="font-size: 0.85rem;" onclick="navigator.clipboard.writeText(window.location.href); alert('Đã sao chép liên kết!');">
-                                    <i class="bi bi-share"></i> Chia sẻ
-                                </button>
-                                <a asp-controller="Jobs" asp-action="Index" class="btn-save-job flex-grow-1 py-1.5" style="font-size: 0.85rem;" title="Xem tất cả vị trí">
-                                    <i class="bi bi-grid"></i> Tất cả việc làm
-                                </a>
-                            </div>
+                        }
+                        <div class="d-flex gap-2 w-100 justify-content-lg-end">
+                            <button type="button" class="btn-save-job flex-grow-1 flex-lg-grow-0" onclick="navigator.clipboard.writeText(window.location.href); if (window.NoveraToast) window.NoveraToast.show('Đã sao chép liên kết bài đăng!', 'success'); else alert('Đã sao chép liên kết bài đăng!');">
+                                <i class="bi bi-share"></i> Chia sẻ
+                            </button>
+                            <a asp-controller="Jobs" asp-action="Index" class="btn-save-job flex-grow-1 flex-lg-grow-0" title="Xem tất cả vị trí">
+                                <i class="bi bi-grid"></i> Tất cả việc làm
+                            </a>
                         </div>
+                        <span class="text-muted small" style="font-size: 0.75rem;">
+                            <i class="bi bi-shield-check text-success me-1"></i> Cam kết phản hồi ứng viên trong 48h
+                        </span>
                     </div>
                 }
                 else
@@ -657,7 +671,7 @@
                     </h2>
                     @if (canEditJob)
                     {
-                        <span class="badge bg-light text-secondary border font-monospace" style="font-size: 0.72rem; border-radius: 4px;">Recruiter / HR / Admin</span>
+                        <span class="badge bg-light text-secondary border font-monospace recruiter-admin-badge @(isPreviewRequested ? "d-none" : "")" style="font-size: 0.72rem; border-radius: 4px;">Recruiter / HR / Admin</span>
                     }
                 </div>
                 <div style="line-height: 1.75; color: #334155; font-size: 0.95rem; white-space: pre-line;">
@@ -776,7 +790,7 @@
             @if (canEditJob)
             {
                 <!-- Khi đang xem với tư cách có quyền sửa đổi: Mặc định ẩn form nộp CV để không rối mắt -->
-                <div id="recruiterApplyPlaceholder" class="detail-card text-center py-5 shadow-sm" style="border: 2px dashed #CBD5E1; background: #F8FAFC; border-radius: var(--radius-card); scroll-margin-top: 2rem;">
+                <div id="recruiterApplyPlaceholder" class="detail-card text-center py-5 shadow-sm @(isPreviewRequested ? "d-none" : "")" style="border: 2px dashed #CBD5E1; background: #F8FAFC; border-radius: var(--radius-card); scroll-margin-top: 2rem;">
                     <div class="d-inline-flex p-3 bg-white text-primary rounded-circle mb-3 shadow-sm border">
                         <i class="bi bi-shield-lock-fill fs-2 text-success"></i>
                     </div>
@@ -797,7 +811,7 @@
                     </div>
                 </div>
 
-                <div id="actualApplyFormContainer" class="d-none">
+                <div id="actualApplyFormContainer" class="@(isPreviewRequested ? "" : "d-none")">
                     @if (job.IsClosed || job.IsExpired)
                     {
                         <div id="apply-section" class="detail-card text-center py-5 shadow-sm" style="border: 2px dashed #CBD5E1; background: #F8FAFC; border-radius: var(--radius-card); scroll-margin-top: 2rem;">
@@ -832,7 +846,7 @@
                                 <a asp-controller="Jobs" asp-action="Index" class="btn btn-primary px-4 py-2" style="border-radius: var(--radius-button); font-weight: 600;">
                                     <i class="bi bi-grid-fill me-1"></i> Khám phá các vị trí khác
                                 </a>
-                                <button type="button" class="btn btn-success px-4 py-2" data-bs-toggle="modal" data-bs-target="#detailRepublishModal" style="border-radius: var(--radius-button); font-weight: 600;">
+                                <button type="button" class="btn btn-success px-4 py-2 recruiter-admin-action @(isPreviewRequested ? "d-none" : "")" data-bs-toggle="modal" data-bs-target="#detailRepublishModal" style="border-radius: var(--radius-button); font-weight: 600;">
                                     <i class="bi bi-arrow-repeat me-1"></i> Đăng lại vị trí này
                                 </button>
                             </div>
@@ -1070,7 +1084,7 @@
 
                 @if (canEditJob)
                 {
-                    <div class="mt-4 pt-3 border-top" id="recruiterSidebarBox">
+                    <div class="mt-4 pt-3 border-top @(isPreviewRequested ? "d-none" : "")" id="recruiterSidebarBox">
                         <div class="p-2.5 rounded-3 bg-light border text-muted small mb-2 text-center" style="font-size: 0.78rem;">
                             <i class="bi bi-shield-lock-fill text-success me-1"></i> Quyền quản lý: <strong>@(User.IsInRole(UserRoles.Admin) ? "Quản trị viên" : "Recruiter")</strong>
                         </div>
@@ -1078,10 +1092,19 @@
                             <i class="bi bi-pencil-square"></i> Chỉnh sửa tin tuyển dụng
                         </button>
                     </div>
-                    <div class="mt-4 pt-3 border-top d-none" id="previewSidebarBox">
-                        <a href="#apply-section" class="btn-apply-main w-100">
-                            <i class="bi bi-send-fill"></i> Nộp đơn ngay
-                        </a>
+                    <div class="mt-4 pt-3 border-top @(isPreviewRequested ? "" : "d-none")" id="previewSidebarBox">
+                        @if (job.IsClosed || job.IsExpired)
+                        {
+                            <button type="button" class="btn btn-secondary w-100 py-2.5 d-flex align-items-center justify-content-center gap-2" disabled style="border-radius: var(--radius-button); font-weight: 600;">
+                                <i class="bi bi-x-circle-fill"></i> Đã đóng nhận hồ sơ
+                            </button>
+                        }
+                        else
+                        {
+                            <a href="#apply-section" class="btn-apply-main w-100">
+                                <i class="bi bi-send-fill"></i> Nộp đơn ngay
+                            </a>
+                        }
                     </div>
                 }
                 else
@@ -1132,7 +1155,7 @@
                     </div>
 
                     <div class="perk-item">
-                        <div class="perk-icon-wrapper" style="background: #ECFDF5; color: #059669;">
+                        <div class="perk-icon-wrapper" style="background: #ECFDF5; color: #047857;">
                             <i class="bi bi-mortarboard"></i>
                         </div>
                         <div class="flex-grow-1">
@@ -1497,7 +1520,8 @@
 
         window.toggleCandidatePreview = function(forceState) {
             var alertBox = document.getElementById('candidatePreviewAlert');
-            var previewButtons = document.getElementById('previewCandidateButtons');
+            var recruiterHeaderActions = document.getElementById('recruiterHeaderActions');
+            var previewHeaderActions = document.getElementById('previewHeaderActions');
             var recruiterBox = document.getElementById('recruiterSidebarBox');
             var previewBox = document.getElementById('previewSidebarBox');
             var recruiterApplyPlaceholder = document.getElementById('recruiterApplyPlaceholder');
@@ -1506,38 +1530,90 @@
 
             if (!alertBox) return;
 
+            // Xóa tooltip đang mở nếu có trên nút preview
+            if (btnToggle && typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                try {
+                    var tip = bootstrap.Tooltip.getInstance(btnToggle);
+                    if (tip) tip.hide();
+                } catch (e) { }
+            }
+
             var isCurrentlyPreview = !alertBox.classList.contains('d-none');
             var newState = (typeof forceState === 'boolean') ? forceState : !isCurrentlyPreview;
 
+            var adminActions = document.querySelectorAll('.recruiter-admin-action');
+            var adminBadges = document.querySelectorAll('.recruiter-admin-badge');
+
             if (newState) {
+                // BẬT XEM TRƯỚC: MỌI THỨ HIỂN THỊ 100% NHƯ ỨNG VIÊN
                 alertBox.classList.remove('d-none');
                 alertBox.classList.add('d-flex');
-                if (previewButtons) previewButtons.classList.remove('d-none');
+
+                if (recruiterHeaderActions) {
+                    recruiterHeaderActions.classList.add('d-none');
+                    recruiterHeaderActions.classList.remove('d-flex');
+                }
+                if (previewHeaderActions) {
+                    previewHeaderActions.classList.remove('d-none');
+                    previewHeaderActions.classList.add('d-flex');
+                }
                 if (recruiterBox) recruiterBox.classList.add('d-none');
                 if (previewBox) previewBox.classList.remove('d-none');
                 if (recruiterApplyPlaceholder) recruiterApplyPlaceholder.classList.add('d-none');
                 if (actualApplyFormContainer) actualApplyFormContainer.classList.remove('d-none');
-                if (btnToggle) {
-                    btnToggle.classList.remove('text-primary');
-                    btnToggle.classList.add('btn-primary', 'text-white');
-                }
-                if (window.NoveraToast) window.NoveraToast.show('Đang bật Chế độ Xem trước Ứng viên (Live Preview)', 'info');
+
+                adminActions.forEach(function(el) { el.classList.add('d-none'); });
+                adminBadges.forEach(function(el) { el.classList.add('d-none'); });
+
+                try {
+                    var url = new URL(window.location.href);
+                    url.searchParams.set('preview', 'true');
+                    window.history.replaceState({}, '', url.toString());
+                } catch (e) { }
+
+                if (window.NoveraToast) window.NoveraToast.show('Đang xem dưới góc nhìn của Ứng viên.', 'info');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
+                // THOÁT XEM TRƯỚC: QUAY VỀ CHẾ ĐỘ QUẢN LÝ
                 alertBox.classList.add('d-none');
                 alertBox.classList.remove('d-flex');
-                if (previewButtons) previewButtons.classList.add('d-none');
+
+                if (recruiterHeaderActions) {
+                    recruiterHeaderActions.classList.remove('d-none');
+                    recruiterHeaderActions.classList.add('d-flex');
+                }
+                if (previewHeaderActions) {
+                    previewHeaderActions.classList.add('d-none');
+                    previewHeaderActions.classList.remove('d-flex');
+                }
                 if (recruiterBox) recruiterBox.classList.remove('d-none');
                 if (previewBox) previewBox.classList.add('d-none');
                 if (recruiterApplyPlaceholder) recruiterApplyPlaceholder.classList.remove('d-none');
                 if (actualApplyFormContainer) actualApplyFormContainer.classList.add('d-none');
-                if (btnToggle) {
-                    btnToggle.classList.remove('btn-primary', 'text-white');
-                    btnToggle.classList.add('text-primary');
-                }
+
+                adminActions.forEach(function(el) { el.classList.remove('d-none'); });
+                adminBadges.forEach(function(el) { el.classList.remove('d-none'); });
+
+                try {
+                    var url = new URL(window.location.href);
+                    url.searchParams.delete('preview');
+                    url.searchParams.delete('mode');
+                    window.history.replaceState({}, '', url.toString());
+                } catch (e) { }
+
                 if (window.NoveraToast) window.NoveraToast.show('Đã quay lại Chế độ Quản lý Nhà tuyển dụng', 'success');
             }
         };
+
+        // Tự động kích hoạt preview nếu có tham số preview trên URL
+        document.addEventListener('DOMContentLoaded', function() {
+            var urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('preview') === 'true' || urlParams.get('preview') === '1' || urlParams.get('mode') === 'preview') {
+                if (typeof window.toggleCandidatePreview === 'function') {
+                    window.toggleCandidatePreview(true);
+                }
+            }
+        });
     </script>
 }
 

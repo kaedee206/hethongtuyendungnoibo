@@ -56,6 +56,7 @@ public class JobsController : Controller
     [HttpGet("Index")]
     [HttpGet("/tin-tuyen-dung")]
     [HttpGet("/co-hoi-viec-lam")]
+    [HttpGet("/viec-lam")]
     public async Task<IActionResult> Index(
         [FromQuery] string? search,
         [FromQuery] string? department,
@@ -65,11 +66,11 @@ public class JobsController : Controller
         [FromQuery] int pageSize = 9)
     {
         var model = await _jobService.GetJobListAsync(search, department, location, employmentType, page, pageSize);
-        var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "";
         model.IsRecruiterOrStaff = User.Identity?.IsAuthenticated == true && (
-            userRole.Equals(UserRoles.Admin, StringComparison.OrdinalIgnoreCase) ||
-            userRole.Equals(UserRoles.HRManager, StringComparison.OrdinalIgnoreCase) ||
-            userRole.Equals(UserRoles.Recruiter, StringComparison.OrdinalIgnoreCase));
+            User.IsInRole(UserRoles.Admin) ||
+            User.IsInRole(UserRoles.HRManager) ||
+            User.IsInRole(UserRoles.Recruiter) ||
+            User.IsInRole(UserRoles.HiringManager));
         return View(model);
     }
 
@@ -202,11 +203,11 @@ public class JobsController : Controller
         ViewBag.Locations = await _catalogService.GetSelectListByTypeAsync("LOCATION", model.Job?.WorkLocation);
         ViewBag.EmploymentTypes = await _catalogService.GetSelectListByTypeAsync("WORK_TYPE", model.Job?.EmploymentType);
 
-        var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "";
         ViewBag.CanManageJob = User.Identity?.IsAuthenticated == true && (
-            userRole.Equals(UserRoles.Admin, StringComparison.OrdinalIgnoreCase) ||
-            userRole.Equals(UserRoles.HRManager, StringComparison.OrdinalIgnoreCase) ||
-            userRole.Equals(UserRoles.Recruiter, StringComparison.OrdinalIgnoreCase));
+            User.IsInRole(UserRoles.Admin) ||
+            User.IsInRole(UserRoles.HRManager) ||
+            User.IsInRole(UserRoles.Recruiter) ||
+            User.IsInRole(UserRoles.HiringManager));
 
         return View(model);
     }

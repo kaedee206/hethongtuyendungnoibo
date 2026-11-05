@@ -41,11 +41,11 @@
         border-color: #CBD5E1 !important;
     }
     .req-tab-link.active {
-        background: #059669 !important;
+        background: #047857 !important;
         color: #FFFFFF !important;
-        border-color: #059669 !important;
+        border-color: #047857 !important;
         font-weight: 600 !important;
-        box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
+        box-shadow: 0 2px 6px rgba(4, 120, 87, 0.25);
     }
     .req-tab-badge {
         font-size: 0.72rem;
@@ -69,8 +69,8 @@
 
     /* Nút thương hiệu NoveraTech */
     .btn-novera-primary {
-        background-color: #059669 !important;
-        border-color: #059669 !important;
+        background-color: #047857 !important;
+        border-color: #047857 !important;
         color: #FFFFFF !important;
         transition: all 0.15s ease;
     }
@@ -78,7 +78,7 @@
         background-color: #047857 !important;
         border-color: #047857 !important;
         color: #FFFFFF !important;
-        box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+        box-shadow: 0 4px 12px rgba(4, 120, 87, 0.25);
     }
 
     /* Filter inputs styling */
@@ -88,14 +88,14 @@
         font-size: 0.85rem !important;
     }
     .req-filter-control:focus {
-        border-color: #059669 !important;
-        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15) !important;
+        border-color: #047857 !important;
+        box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.15) !important;
     }
 
     /* Pagination active item */
     .pagination .page-item.active .page-link {
-        background-color: #059669 !important;
-        border-color: #059669 !important;
+        background-color: #047857 !important;
+        border-color: #047857 !important;
         color: #FFFFFF !important;
         font-weight: 600;
     }
@@ -105,7 +105,7 @@
         font-size: 0.82rem;
     }
     .pagination .page-link:hover {
-        color: #059669;
+        color: #047857;
         background-color: #F8FAFC;
         border-color: #CBD5E1;
     }
@@ -124,7 +124,7 @@
         letter-spacing: 0.04em;
     }
     .req-code-link {
-        color: #059669;
+        color: #047857;
         font-family: 'JetBrains Mono', monospace;
         font-weight: 700;
         text-decoration: none;
@@ -171,7 +171,7 @@
         <!-- Header: Tabs and Search -->
         <div class="card-header bg-white border-bottom p-3" style="border-color: #F1F5F9 !important;">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                <!-- Navigation Tabs (Sạch đẹp, đồng bộ màu Emerald #059669) -->
+                <!-- Navigation Tabs (Sạch đẹp, đồng bộ màu Emerald #047857) -->
                 <ul class="nav nav-pills flex-nowrap overflow-auto req-tabs-nav" id="requisitionTabs" role="tablist">
                     <li class="nav-item">
                         <a href="@Url.Action("Index", "Requisitions", new { tab = "my-requisitions", search, departmentId = ViewBag.DepartmentId, recruiterId = ViewBag.RecruiterId, fromDate = ViewBag.FromDate, toDate = ViewBag.ToDate, pageSize = Model.PageSize })"
@@ -458,7 +458,7 @@
                                                         </span>
                                                     }
                                                 </div>
-                                                <div class="fw-medium small" style="color: #059669; font-size: 0.74rem;">
+                                                <div class="fw-medium small" style="color: #047857; font-size: 0.74rem;">
                                                     <i class="bi bi-arrow-right-short"></i>Đang ở bàn: @item.CurrentApproverName
                                                 </div>
                                             </div>
@@ -511,7 +511,7 @@
                                                         data-requisition-id="@item.Id"
                                                         data-requisition-code="@item.Code"
                                                         data-default-action="APPROVE"
-                                                        style="background: #059669; border-color: #059669; border-radius: 6px;"
+                                                        style="background: #047857; border-color: #047857; border-radius: 6px;"
                                                         title="Ra quyết định phê duyệt">
                                                     <i class="bi bi-check2-circle"></i>
                                                     <span>Duyệt</span>

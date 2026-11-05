@@ -5,147 +5,71 @@
 }
 
 <div class="container-fluid px-3 px-md-4 py-4" style="background-color: #F8FAFC; min-height: 100vh;">
-    <!-- Top Breadcrumb & Actions Bar -->
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-        <div>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-1 text-muted small">
-                    <li class="breadcrumb-item"><a href="/dashboard/tong-quan" class="text-decoration-none text-secondary">Bàn làm việc</a></li>
-                    <li class="breadcrumb-item"><a href="/yeu-cau-tuyen-dung" class="text-decoration-none text-secondary">Yêu cầu tuyển dụng</a></li>
-                    <li class="breadcrumb-item active text-dark fw-medium" aria-current="page">Tiến độ vị trí</li>
-                </ol>
-            </nav>
-            <div class="d-flex align-items-center gap-3">
-                <h4 class="fw-bold text-dark mb-0">Tiến Độ Tuyển Dụng Vị Trí</h4>
-                <span class="badge @Model.UrgencyBadgeClass px-3 py-2" style="border-radius: 6px; font-size: 0.82rem; font-weight: 600;">
+    <!-- ========================================================================= -->
+    <!-- COMPACT TOOLBAR: Vị trí, Tiến độ Headcount & Thao tác chuyển vị trí       -->
+    <!-- Tiết kiệm không gian màn hình, tối ưu góc nhìn cho nội dung tiến độ      -->
+    <!-- ========================================================================= -->
+    <div class="card border-0 shadow-sm p-3 mb-3 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <!-- Thông tin vị trí & tiến độ nhanh -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace px-2 py-1" style="border-radius: 6px; font-size: 0.78rem;">
+                    @Model.RequisitionCode
+                </span>
+                <span class="fw-bold text-dark" style="font-size: 1.05rem;">@Model.PositionTitle</span>
+                <span class="text-muted small d-none d-md-inline">·</span>
+                <span class="text-muted small d-none d-md-inline">@Model.DepartmentName (@Model.WorkLocation)</span>
+                <span class="badge @Model.UrgencyBadgeClass px-2 py-1 ms-1" style="border-radius: 6px; font-size: 0.75rem;">
                     <i class="bi bi-clock-history me-1"></i>@Model.DaysRemainingDisplay
                 </span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle font-monospace px-2 py-1" style="border-radius: 6px; font-size: 0.75rem;">
+                    <i class="bi bi-person-check me-1"></i>Headcount: @Model.HiredCount/@Model.Quantity (@Model.HeadcountFulfillmentPercentage%)
+                </span>
             </div>
-        </div>
 
-        <div class="d-flex align-items-center gap-2">
-            <!-- Dropdown Chuyển nhanh giữa các vị trí sở hữu -->
-            @if (Model.OwnedPositions.Count > 1)
-            {
-                <div class="dropdown">
-                    <button class="btn btn-white border shadow-sm px-3 py-2 d-flex align-items-center gap-2 dropdown-toggle text-dark fw-medium"
-                            type="button" id="positionSelectDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 8px; background: #FFFFFF;">
-                        <i class="bi bi-briefcase text-primary"></i>
-                        <span>Đổi vị trí: <strong>@Model.PositionTitle</strong></span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 p-2" aria-labelledby="positionSelectDropdown" style="border-radius: 10px; min-width: 320px; font-size: 0.875rem;">
-                        <li><h6 class="dropdown-header text-uppercase text-muted small" style="font-size: 0.75rem;">Vị trí tuyển dụng của bạn (@Model.OwnedPositions.Count)</h6></li>
-                        @foreach (var pos in Model.OwnedPositions)
-                        {
-                            <li>
-                                <a class="dropdown-item d-flex justify-content-between align-items-center py-2 px-3 rounded @(pos.IsSelected ? "active" : "")" 
-                                   href="@Url.Action("PositionProgress", "Requisitions", new { id = pos.RequisitionId })"
-                                   style="border-radius: 6px;">
-                                    <div>
-                                        <div class="fw-semibold">@pos.Title</div>
-                                        <small class="text-muted font-monospace">@pos.Code • @pos.HiredCount/@pos.Quantity người</small>
-                                    </div>
-                                    <span class="badge @pos.UrgencyBadgeClass font-monospace" style="border-radius: 6px; font-size: 0.72rem;">
-                                        @pos.TargetHireDateDisplay
-                                    </span>
-                                </a>
-                            </li>
-                        }
-                    </ul>
-                </div>
-            }
-
-            <a href="@Url.Action("Details", "Requisitions", new { id = Model.SelectedRequisitionId })" 
-               class="btn btn-outline-secondary px-3 py-2 fw-medium d-flex align-items-center gap-1 shadow-sm" style="border-radius: 8px; background: #FFFFFF;">
-                <i class="bi bi-file-earmark-text"></i>
-                <span>Xem Yêu Cầu Gốc</span>
-            </a>
-            <a href="/yeu-cau-tuyen-dung" 
-               class="btn btn-outline-secondary px-3 py-2 fw-medium d-flex align-items-center gap-1 shadow-sm" style="border-radius: 8px; background: #FFFFFF;">
-                <i class="bi bi-arrow-left"></i>
-                <span>Quay lại</span>
-            </a>
-        </div>
-    </div>
-
-    <!-- ── THẺ TIÊU ĐIỂM: THỜI HẠN & CHỈ TIÊU HEADCOUNT ── -->
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: #FFFFFF;">
-        <div class="card-body p-4">
-            <div class="row g-4 align-items-center">
-                <!-- Cột thông tin chức danh & cơ cấu -->
-                <div class="col-12 col-lg-5 border-lg-end pe-lg-4">
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace px-2 py-1" style="border-radius: 6px; font-size: 0.78rem;">
-                            @Model.RequisitionCode
-                        </span>
-                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1" style="border-radius: 6px; font-size: 0.78rem;">
-                            @Model.RequisitionStatusDisplay
-                        </span>
-                    </div>
-                    <h3 class="fw-bold text-dark mb-1" style="font-size: 1.45rem;">@Model.PositionTitle</h3>
-                    <div class="text-muted small d-flex flex-wrap align-items-center gap-3 mt-2">
-                        <span><i class="bi bi-building text-secondary me-1"></i>Phòng ban: <strong class="text-dark">@Model.DepartmentName</strong></span>
-                        <span><i class="bi bi-geo-alt text-secondary me-1"></i>Địa điểm: <strong class="text-dark">@Model.WorkLocation</strong></span>
-                    </div>
-                    <div class="d-flex align-items-center gap-2 mt-3 pt-3 border-top" style="border-color: #F1F5F9 !important;">
-                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-primary fw-bold" style="width: 34px; height: 34px; font-size: 0.85rem;">
-                            <i class="bi bi-person-badge"></i>
-                        </div>
-                        <div style="font-size: 0.82rem;">
-                            <span class="text-muted">Chuyên viên Nhân sự phụ trách:</span>
-                            <span class="fw-semibold text-dark ms-1">@Model.AssignedRecruiterName</span>
-                            @if (!string.IsNullOrEmpty(Model.AssignedRecruiterEmail))
+            <!-- Nút thao tác gọn nhẹ -->
+            <div class="d-flex align-items-center gap-2">
+                @if (Model.OwnedPositions.Count > 1)
+                {
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-white border shadow-xs px-2.5 py-1.5 d-flex align-items-center gap-1.5 text-dark fw-medium"
+                                type="button" id="positionSelectDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 6px; background: #FFFFFF; font-size: 0.8rem;">
+                            <i class="bi bi-briefcase text-primary"></i>
+                            <span>Đổi vị trí</span>
+                            <i class="bi bi-chevron-down small text-muted"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border p-2" aria-labelledby="positionSelectDropdown" style="border-radius: 8px; min-width: 320px; font-size: 0.82rem;">
+                            <li><h6 class="dropdown-header text-uppercase text-muted small" style="font-size: 0.72rem;">Vị trí tuyển dụng của bạn (@Model.OwnedPositions.Count)</h6></li>
+                            @foreach (var pos in Model.OwnedPositions)
                             {
-                                <a href="mailto:@Model.AssignedRecruiterEmail" class="text-primary text-decoration-none ms-1" title="Gửi email trao đổi">
-                                    <i class="bi bi-envelope"></i>
-                                </a>
+                                <li>
+                                    <a class="dropdown-item d-flex justify-content-between align-items-center py-2 px-2.5 rounded @(pos.IsSelected ? "active" : "")" 
+                                       href="@Url.Action("PositionProgress", "Requisitions", new { id = pos.RequisitionId })"
+                                       style="border-radius: 6px;">
+                                        <div>
+                                            <div class="fw-semibold">@pos.Title</div>
+                                            <small class="text-muted font-monospace">@pos.Code • @pos.HiredCount/@pos.Quantity người</small>
+                                        </div>
+                                        <span class="badge @pos.UrgencyBadgeClass font-monospace ms-2" style="border-radius: 6px; font-size: 0.7rem;">
+                                            @pos.TargetHireDateDisplay
+                                        </span>
+                                    </a>
+                                </li>
                             }
-                        </div>
+                        </ul>
                     </div>
-                </div>
+                }
 
-                <!-- Cột đếm ngược thời hạn & tiến độ Headcount -->
-                <div class="col-12 col-sm-6 col-lg-3 ps-lg-4 border-sm-end pe-sm-4">
-                    <div class="text-uppercase text-secondary fw-bold" style="font-size: 0.72rem; letter-spacing: 0.05em;">
-                        HẠN CẦN NGƯỜI (TARGET DATE)
-                    </div>
-                    <div class="d-flex align-items-baseline gap-2 mt-1">
-                        <span class="font-monospace fw-bold" style="font-size: 1.85rem; color: #0F172A; line-height: 1.2;">
-                            @Model.DaysRemainingDisplay
-                        </span>
-                    </div>
-                    <div class="text-muted small mt-1">
-                        Hạn chót: <strong class="text-dark font-monospace">@Model.TargetHireDateDisplay</strong>
-                    </div>
-                    <div class="mt-2">
-                        <span class="badge @Model.UrgencyBadgeClass px-2 py-1" style="border-radius: 6px; font-size: 0.75rem;">
-                            @Model.UrgencyMessage
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Cột chỉ tiêu tuyển dụng (Headcount) -->
-                <div class="col-12 col-sm-6 col-lg-4 ps-lg-4">
-                    <div class="text-uppercase text-secondary fw-bold" style="font-size: 0.72rem; letter-spacing: 0.05em;">
-                        CHỈ TIÊU TUYỂN DỤNG (HEADCOUNT)
-                    </div>
-                    <div class="d-flex align-items-baseline justify-content-between mt-1">
-                        <span class="font-monospace fw-bold text-dark" style="font-size: 1.85rem; line-height: 1.2;">
-                            @Model.HiredCount <span style="font-size: 1.1rem; color: #64748B; font-weight: normal;">/ @Model.Quantity nhân sự</span>
-                        </span>
-                        <span class="badge bg-success-subtle text-success border border-success-subtle font-monospace" style="border-radius: 6px; font-size: 0.8rem;">
-                            @Model.HeadcountFulfillmentPercentage%
-                        </span>
-                    </div>
-                    <!-- Thanh tiến độ mini -->
-                    <div class="progress mt-2" style="height: 8px; border-radius: 4px; background: #E2E8F0;">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: @Model.HeadcountFulfillmentPercentage%;" aria-valuenow="@Model.HeadcountFulfillmentPercentage" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mt-2 small text-muted">
-                        <span>Đã tuyển: <strong class="text-success">@Model.HiredCount</strong></span>
-                        <span>Còn thiếu: <strong class="text-danger">@Model.RemainingHeadcountNeeded</strong></span>
-                    </div>
-                </div>
+                <a href="@Url.Action("Details", "Requisitions", new { id = Model.SelectedRequisitionId })" 
+                   class="btn btn-sm btn-outline-secondary px-2.5 py-1.5 fw-medium d-flex align-items-center gap-1 shadow-xs" style="border-radius: 6px; font-size: 0.8rem;" title="Xem yêu cầu gốc">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span>Xem Yêu Cầu Gốc</span>
+                </a>
+                <a href="/yeu-cau-tuyen-dung" 
+                   class="btn btn-sm btn-outline-secondary px-2.5 py-1.5 fw-medium d-flex align-items-center gap-1 shadow-xs" style="border-radius: 6px; font-size: 0.8rem;" title="Quay lại danh sách yêu cầu">
+                    <i class="bi bi-arrow-left"></i>
+                    <span>Quay lại</span>
+                </a>
             </div>
         </div>
     </div>
@@ -332,7 +256,7 @@
         <div class="col-12 col-lg-4 d-flex flex-column gap-4">
             
             <!-- ── KHỐI 1: ỨNG VIÊN ĐANG CHỜ MÌNH CHO Ý KIẾN (PENDING FEEDBACK) ── -->
-            <div class="card border-0 shadow-sm" style="border-radius: 12px; background: #FFFFFF; border-top: 4px solid @(Model.PendingFeedbackCandidates.Any() ? "#D97706" : "#059669") !important;">
+            <div class="card border-0 shadow-sm" style="border-radius: 12px; background: #FFFFFF; border-top: 4px solid @(Model.PendingFeedbackCandidates.Any() ? "#D97706" : "#047857") !important;">
                 <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center gap-2">
                         <span class="d-inline-flex align-items-center justify-content-center rounded-circle @(Model.PendingFeedbackCandidates.Any() ? "bg-warning-subtle text-warning-emphasis" : "bg-success-subtle text-success")" style="width: 32px; height: 32px;">

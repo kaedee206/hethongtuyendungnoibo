@@ -17,7 +17,7 @@
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
                 <div class="p-2 bg-white rounded-3 shadow-xs border d-inline-flex align-items-center justify-content-center text-primary" style="border-radius: 8px !important; width: 42px; height: 42px;">
-                    <i class="bi bi-briefcase-fill fs-5" style="color: #059669;"></i>
+                    <i class="bi bi-briefcase-fill fs-5" style="color: #047857;"></i>
                 </div>
                 <h1 class="h3 fw-bold text-dark mb-0">Danh mục Chức danh & Khung lương chuẩn</h1>
             </div>
@@ -27,7 +27,7 @@
         @if (Model.CanManage)
         {
             <div class="d-flex align-items-center gap-2">
-                <a asp-action="Create" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" style="border-radius: 8px; background-color: #059669; border-color: #059669;">
+                <a asp-action="Create" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" style="border-radius: 8px; background-color: #047857; border-color: #047857;">
                     <i class="bi bi-plus-circle-fill"></i>
                     <span class="fw-semibold">Thêm chức danh mới</span>
                 </a>
@@ -92,7 +92,7 @@
 
     <div class="card border-0 shadow-sm rounded-3 position-relative overflow-hidden">
         <div id="tableLoadingState" class="position-absolute top-0 start-0 w-100 h-100 d-none flex-column align-items-center justify-content-center" style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(2px); z-index: 15; min-height: 220px;" role="status" aria-live="polite">
-            <div class="spinner-border text-success mb-2" role="status" style="width: 2.2rem; height: 2.2rem; color: #059669 !important;"></div>
+            <div class="spinner-border text-success mb-2" role="status" style="width: 2.2rem; height: 2.2rem; color: #047857 !important;"></div>
             <div class="fw-semibold text-dark small">Đang tải dữ liệu danh sách...</div>
             <div class="text-muted small" style="font-size: 0.75rem;">Vui lòng đợi trong giây lát</div>
         </div>
@@ -155,7 +155,7 @@
                                         <p class="text-muted small mb-3">Hệ thống chưa ghi nhận danh mục vị trí nào.</p>
                                         @if (Model.CanManage)
                                         {
-                                            <a asp-action="Create" class="btn btn-sm btn-primary px-3 shadow-sm" style="border-radius: 8px; background-color: #059669; border-color: #059669;">
+                                            <a asp-action="Create" class="btn btn-sm btn-primary px-3 shadow-sm" style="border-radius: 8px; background-color: #047857; border-color: #047857;">
                                                 <i class="bi bi-plus-circle-fill me-1"></i> Tạo chức danh đầu tiên
                                             </a>
                                         }
@@ -199,12 +199,12 @@
                                 @if (Model.CanViewSalary)
                                 {
                                     <td class="text-end font-monospace">
-                                        <span class="fw-semibold" style="color: #059669; font-size: 0.88rem;">
+                                        <span class="fw-semibold" style="color: #047857; font-size: 0.88rem;">
                                             @pos.MinSalaryFormatted
                                         </span>
                                     </td>
                                     <td class="text-end font-monospace">
-                                        <span class="fw-semibold" style="color: #059669; font-size: 0.88rem;">
+                                        <span class="fw-semibold" style="color: #047857; font-size: 0.88rem;">
                                             @pos.MaxSalaryFormatted
                                         </span>
                                     </td>
@@ -321,8 +321,8 @@
         background-color: #FFFFFF;
     }
     .pagination-ats .page-item.active .page-link {
-        background-color: #059669 !important;
-        border-color: #059669 !important;
+        background-color: #047857 !important;
+        border-color: #047857 !important;
         color: #FFFFFF !important;
     }
     .pagination-ats .page-item.disabled .page-link {
