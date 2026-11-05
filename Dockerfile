@@ -39,7 +39,6 @@ COPY src/Ats.Web/ src/Ats.Web/
 RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
     dotnet publish src/Ats.Web/Ats.Web.csproj \
     -c Release \
-    --no-restore \
     -o /app/publish \
     /p:UseAppHost=false \
     /p:TieredCompilation=true \
