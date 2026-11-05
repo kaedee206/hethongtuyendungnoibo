@@ -680,7 +680,6 @@ public class HomeController : Controller
                 .ToDictionaryAsync(x => x.JobPostingId, x => x.Count);
 
             var filterOptions = new List<JobPostingFilterOptionDto>();
-            Guid? defaultJobId = null;
 
             foreach (var job in jobPostings)
             {
@@ -696,14 +695,12 @@ public class HomeController : Controller
                     ActiveCandidateCount = count
                 });
 
-                if (isAssigned && defaultJobId == null)
-                {
-                    defaultJobId = job.Id;
-                }
+                // Do not auto-force defaultJobId to an assigned job: User should see 'ALL' by default
+                // so candidates are not unexpectedly hidden when visiting the candidate pipeline.
             }
 
             model.JobPostingFilterOptions = filterOptions;
-            model.DefaultJobPostingId = defaultJobId;
+            model.DefaultJobPostingId = null;
 
             // Danh sách vị trí tuyển dụng cho bộ lọc ứng viên (Filter & Export SCRUM-328)
             var availableJobs = await _dbContext.JobPostings

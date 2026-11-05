@@ -1,5 +1,74 @@
 @using System.Security.Claims
 @using Ats.Web.Constants
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Http
+@inject Ats.Web.Data.ApplicationDbContext AtsDbContext
+
+@{
+    var currentPath = (Context.Request.Path.Value ?? "").ToLowerInvariant().TrimEnd('/');
+
+    // Cổng thông tin Tuyển dụng công khai (Public Careers Portal) dành cho ứng viên và khách
+    var isPublicCareersPortal = currentPath == "" 
+        || currentPath == "/" 
+        || currentPath == "/gioi-thieu" 
+        || currentPath == "/landing" 
+        || currentPath == "/tra-cuu"
+        || (currentPath.StartsWith("/jobs") && !currentPath.StartsWith("/jobs/quan-ly") && !currentPath.StartsWith("/jobs/create") && !currentPath.StartsWith("/jobs/edit") && !currentPath.StartsWith("/jobs/manage"));
+
+    var isWorkspace = (ViewData["IsStaffWorkspace"] as bool? ?? false)
+        || (ViewData["IsCandidateWorkspace"] as bool? ?? false)
+        || (ViewData["IsDashboard"] as bool? ?? false)
+        || currentPath == "/dashboard"
+        || currentPath.StartsWith("/dashboard/")
+        || currentPath == "/hrm/dashboard"
+        || currentPath.StartsWith("/hrm/dashboard/")
+        || (!isPublicCareersPortal && User.Identity?.IsAuthenticated == true);
+
+    var shouldShowSidebar = (ViewData["ShowSidebar"] as bool?) ?? isWorkspace;
+    var isDashboard = shouldShowSidebar;
+
+    var userRoleClaims = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+    var normalizedRoles = userRoleClaims.Select(c => UserRoles.NormalizeRole(c)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+    var primaryRoleName = UserRoles.GetPrimaryRole(userRoleClaims);
+
+    var isAdmin = normalizedRoles.Contains(UserRoles.Admin);
+    var isHrManager = normalizedRoles.Contains(UserRoles.HRManager);
+    var isRecruiter = normalizedRoles.Contains(UserRoles.Recruiter);
+    var isHiringManager = normalizedRoles.Contains(UserRoles.HiringManager);
+    var isInterviewer = normalizedRoles.Contains(UserRoles.Interviewer);
+    var isApprover = normalizedRoles.Contains(UserRoles.Approver);
+    var hasStaffRole = isAdmin || isHrManager || isRecruiter || isHiringManager || isInterviewer || isApprover;
+    var isCandidate = !hasStaffRole;
+
+    var userName = User.Identity?.Name ?? "Người dùng";
+    var userEmail = User.FindFirstValue(ClaimTypes.Email) ?? "";
+    var userInitial = !string.IsNullOrEmpty(userName) ? userName.Substring(0, 1).ToUpper() : "U";
+
+    string? userAvatarUrl = User.FindFirst("AvatarUrl")?.Value ?? (Context.Session != null && Context.Session.TryGetValue("AvatarUrl", out var layoutAvatarBytes) ? System.Text.Encoding.UTF8.GetString(layoutAvatarBytes) : null);
+    if (string.IsNullOrEmpty(userAvatarUrl) && User.Identity?.IsAuthenticated == true)
+    {
+        try
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (Guid.TryParse(userIdClaim, out var currentUserId))
+            {
+                userAvatarUrl = AtsDbContext?.Users.AsNoTracking()
+                    .Where(u => u.Id == currentUserId)
+                    .Select(u => u.AvatarUrl)
+                    .FirstOrDefault();
+
+                if (!string.IsNullOrEmpty(userAvatarUrl) && Context.Session != null)
+                {
+                    Context.Session.Set("AvatarUrl", System.Text.Encoding.UTF8.GetBytes(userAvatarUrl));
+                }
+            }
+        }
+        catch
+        {
+            // Graceful fallback
+        }
+    }
+}
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -20,13 +89,13 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
-    <!-- Top Micro Progress Bar for Instant 0ms-50ms Navigation Transitions -->
-    <div id="atsProgressBar" class="ats-progress-bar" style="position: fixed; top: 0; left: 0; height: 3px; width: 0; background: linear-gradient(90deg, #059669 0%, #10B981 50%, #34D399 100%); z-index: 999999; transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; opacity: 0; pointer-events: none; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);"></div>
+    <!-- Top Micro Progress Bar for Instant 0ms-50ms Navigation Transitions (GPU Composited) -->
+    <div id="atsProgressBar" class="ats-progress-bar" style="position: fixed; top: 0; left: 0; height: 3px; width: 100%; transform: scaleX(0); transform-origin: left center; background: #047857; z-index: 999999; transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease; opacity: 0; pointer-events: none; will-change: transform;"></div>
     <header class="sticky-top" style="z-index: 1030;">
         <nav class="navbar navbar-expand-lg ats-navbar">
             <div class="container-fluid px-3 px-md-4">
                 <div class="d-flex align-items-center gap-2">
-                    @if (User.Identity?.IsAuthenticated == true)
+                    @if (User.Identity?.IsAuthenticated == true && isDashboard)
                     {
                         <button class="btn btn-sm btn-light border d-lg-none py-1 px-2" type="button" id="btnToggleSidebar" aria-label="Mở menu sidebar" style="border-radius: 6px;">
                             <i class="bi bi-list fs-5"></i>
@@ -36,9 +105,10 @@
                     <a class="navbar-brand d-flex align-items-center gap-2 py-1 ats-brand-logo" href="/gioi-thieu" title="Trang giới thiệu tuyển dụng NoveraTech">
                         <img src="~/img/logo-dark-transparent.png" 
                              alt="NoveraTech" 
+                             width="140" height="30"
                              style="height: 30px; width: auto; max-width: 140px; object-fit: contain;" 
                              asp-append-version="true" />
-                        <span class="badge fw-semibold px-2 py-0.5" style="font-size: 0.72rem; border-radius: 6px; background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; letter-spacing: 0.02em;">Careers</span>
+                        <span class="badge fw-semibold px-2 py-0.5" style="font-size: 0.72rem; border-radius: 6px; background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; letter-spacing: 0.02em;">Careers</span>
                     </a>
                 </div>
 
@@ -50,297 +120,308 @@
                 <div class="collapse navbar-collapse" id="atsNavbarContent">
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        <!-- Top Bar được tinh gọn hoàn toàn: Không hiển thị menu ngang trên top bar, mọi điều hướng nằm trong User Profile Dropdown -->
-                        <div class="me-auto"></div>
+                        @if (isDashboard)
+                        {
+                            <!-- Top Bar trong Dashboard: Bàn làm việc tinh gọn -->
+                            <div class="me-auto"></div>
 
-                        <ul class="navbar-nav me-auto mb-2 mb-lg-0 d-none">
-                            @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" asp-controller="JobPositions" asp-action="Index">
-                                        <i class="bi bi-person-badge-fill me-1"></i> Chức danh
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" asp-controller="CompetencyFrameworks" asp-action="Index">
-                                        <i class="bi bi-diagram-3-fill me-1"></i> Khung năng lực
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" asp-controller="EvaluationCriteria" asp-action="Index">
-                                        <i class="bi bi-ui-checks-grid me-1"></i> Tiêu chí & Thang điểm
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" asp-controller="Requisitions" asp-action="Create">
-                                        <i class="bi bi-file-earmark-plus me-1"></i> Yêu cầu tuyển dụng
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" asp-controller="Requisitions" asp-action="Drafts">
-                                        <i class="bi bi-file-earmark-text me-1"></i> Bản nháp
-                                    </a>
-                                </li>
-                            }
+                            <!-- User Profile & Action Dropdown (S1-04, S1-09) -->
+                            <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-2 mt-3 mt-lg-0">
+                                <!-- Primary Role Badge (Chỉ hiển thị vai trò có quyền cao nhất trên Navbar) -->
+                                <div class="d-flex align-items-center me-lg-2">
+                                    @{
+                                        var badgeStyle = primaryRoleName switch
+                                        {
+                                            UserRoles.Admin => "badge-admin",
+                                            UserRoles.HRManager => "badge-hrmanager",
+                                            UserRoles.Recruiter => "badge-recruiter",
+                                            UserRoles.HiringManager => "badge-hiringmanager",
+                                            UserRoles.Interviewer => "badge-interviewer",
+                                            UserRoles.Approver => "badge-approver",
+                                            _ => "bg-light text-secondary border"
+                                        };
+                                    }
+                                    <span class="badge @badgeStyle px-2.5 py-1 text-xs fw-semibold" style="border-radius:6px;" title="Vai trò quyền cao nhất: @UserRoles.GetDisplayName(primaryRoleName)">
+                                        @UserRoles.GetDisplayName(primaryRoleName)
+                                    </span>
+                                </div>
 
-                            @* Menu dành cho Admin, HR Manager & Recruiter *@
-                            @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" href="/kho-tiem-nang">
-                                        <i class="bi bi-stars me-1 text-warning"></i> Kho tiềm năng
-                                    </a>
-                                </li>
-                                <li class="nav-item dropdown">
-                                    <a class="nav-link ats-nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="bi bi-calendar2-check me-1 text-success"></i> Phỏng vấn
-                                    </a>
-                                    <ul class="dropdown-menu shadow-sm border-0" style="border: 1px solid #E2E8F0 !important; border-radius: 8px;">
-                                        <li>
-                                            <a class="dropdown-item py-2" href="/phong-van/dat-lich">
-                                                <i class="bi bi-calendar-plus me-2 text-success"></i>Lên lịch phỏng vấn (Wizard)
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item py-2" href="/phong-van/so-sanh-ung-vien">
-                                                <i class="bi bi-bar-chart-line me-2 text-primary"></i>So sánh đánh giá ứng viên
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" asp-controller="Jobs" asp-action="Create">
-                                        <i class="bi bi-megaphone me-1"></i> + Đăng tin tuyển dụng
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" asp-controller="QuestionBanks" asp-action="Index">
-                                        <i class="bi bi-journal-text me-1"></i> Ngân hàng câu hỏi
-                                    </a>
-                                </li>
-                            }
-
-                            @* Menu dành cho Hiring Manager *@
-                            @if (User.IsInRole(UserRoles.HiringManager))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" asp-controller="Requisitions" asp-action="Create">
-                                        <i class="bi bi-file-earmark-plus me-1"></i> + Đề xuất nhân sự
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" asp-controller="Requisitions" asp-action="Drafts">
-                                        <i class="bi bi-file-earmark-text me-1"></i> Bản nháp
-                                    </a>
-                                </li>
-                            }
-
-                            @* Menu dành cho Interviewer *@
-                            @if (User.IsInRole(UserRoles.Interviewer))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" asp-controller="EvaluationCriteria" asp-action="Index">
-                                        <i class="bi bi-ui-checks-grid me-1"></i> Tiêu chí & Thang điểm
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#interviewEvaluationModal">
-                                        <i class="bi bi-clipboard2-check me-1"></i> Đánh giá phỏng vấn
-                                    </a>
-                                </li>
-                            }
-
-                            @* Menu dành cho Approver *@
-                            @if (User.IsInRole(UserRoles.Approver))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link ats-nav-link" href="/#staff-workspace">
-                                        <i class="bi bi-check2-square me-1"></i> Duyệt Offer
-                                    </a>
-                                </li>
-                            }
-                        </ul>
-
-
-                        <!-- User Profile & Action Dropdown (S1-04, S1-09) -->
-                        <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-2 mt-3 mt-lg-0">
-                            <!-- Primary Role Badge (Chỉ hiển thị vai trò có quyền cao nhất trên Navbar) -->
-                            <div class="d-flex align-items-center me-lg-2">
-                                @{
-                                    var userRoleClaims = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
-                                    var primaryRoleName = UserRoles.GetPrimaryRole(userRoleClaims);
-                                    var badgeStyle = primaryRoleName switch
-                                    {
-                                        UserRoles.Admin => "badge-admin",
-                                        UserRoles.HRManager => "badge-hrmanager",
-                                        UserRoles.Recruiter => "badge-recruiter",
-                                        UserRoles.HiringManager => "badge-hiringmanager",
-                                        UserRoles.Interviewer => "badge-interviewer",
-                                        UserRoles.Approver => "badge-approver",
-                                        _ => "bg-light text-secondary border"
-                                    };
-                                }
-                                <span class="badge @badgeStyle px-2.5 py-1 text-xs fw-semibold" style="border-radius:6px;" title="Vai trò quyền cao nhất: @UserRoles.GetDisplayName(primaryRoleName)">
-                                    @UserRoles.GetDisplayName(primaryRoleName)
-                                </span>
-                            </div>
-
-                            @if (User.Identity?.IsAuthenticated == true && !User.IsInRole(UserRoles.Candidate))
-                            {
-                                <!-- Staff Notification Bell -->
-                                <div class="dropdown me-lg-1" id="staffNotificationDropdown">
-                                    <button class="btn btn-sm position-relative d-flex align-items-center justify-content-center" 
-                                            style="width: 36px; height: 36px; border-radius: 8px; border: 1px solid #E2E8F0; background: #F8FAFC;" 
-                                            type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo tuyển dụng" onclick="loadStaffNotifications()">
-                                        <i class="bi bi-bell text-secondary fs-6"></i>
-                                        <span id="staffNotifBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle d-none">
-                                            <span class="visually-hidden">Thông báo mới</span>
-                                        </span>
-                                    </button>
-                                    <div class="dropdown-menu dropdown-menu-end mt-2 shadow-sm border p-0" style="border-color: #E2E8F0; border-radius: 10px; width: 330px; max-width: 90vw;">
-                                        <div class="p-2.5 px-3 border-bottom d-flex justify-content-between align-items-center bg-light" style="border-top-left-radius: 10px; border-top-right-radius: 10px;">
-                                            <span class="fw-bold text-dark small"><i class="bi bi-bell-fill text-success me-1"></i>Thông báo tuyển dụng</span>
-                                            <span id="staffNotifCountText" class="badge bg-success-subtle text-success small" style="font-size: 0.7rem;">0 mới</span>
-                                        </div>
-                                        <div id="staffNotifList" class="overflow-auto" style="max-height: 320px;">
-                                            <div class="text-center py-4 text-muted small">
-                                                <i class="bi bi-bell-slash fs-4 d-block mb-1 text-secondary"></i>
-                                                Không có thông báo mới
+                                @if (hasStaffRole)
+                                {
+                                    <!-- Staff Notification Bell -->
+                                    <div class="dropdown me-lg-1" id="staffNotificationDropdown">
+                                        <button class="btn btn-sm position-relative d-flex align-items-center justify-content-center" 
+                                                style="width: 36px; height: 36px; border-radius: 8px; border: 1px solid #E2E8F0; background: #F8FAFC;" 
+                                                type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo tuyển dụng" onclick="loadStaffNotifications()">
+                                            <i class="bi bi-bell text-secondary fs-6"></i>
+                                            <span id="staffNotifBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle d-none">
+                                                <span class="visually-hidden">Thông báo mới</span>
+                                            </span>
+                                        </button>
+                                        <div class="dropdown-menu dropdown-menu-end mt-2 shadow-sm border p-0" style="border-color: #E2E8F0; border-radius: 10px; width: 330px; max-width: 90vw;">
+                                            <div class="p-2.5 px-3 border-bottom d-flex justify-content-between align-items-center bg-light" style="border-top-left-radius: 10px; border-top-right-radius: 10px;">
+                                                <span class="fw-bold text-dark small"><i class="bi bi-bell-fill text-success me-1"></i>Thông báo tuyển dụng</span>
+                                                <span id="staffNotifCountText" class="badge bg-success-subtle text-success small" style="font-size: 0.7rem;">0 mới</span>
+                                            </div>
+                                            <div id="staffNotifList" class="overflow-auto" style="max-height: 320px;">
+                                                <div class="text-center py-4 text-muted small">
+                                                    <i class="bi bi-bell-slash fs-4 d-block mb-1 text-secondary"></i>
+                                                    Không có thông báo mới
+                                                </div>
+                                            </div>
+                                            <div class="p-2 text-center border-top bg-light" style="border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
+                                                <a href="/#ung-vien" class="text-decoration-none small text-success fw-semibold" style="font-size: 0.75rem;">
+                                                    Xem danh sách ứng viên &rarr;
+                                                </a>
                                             </div>
                                         </div>
-                                        <div class="p-2 text-center border-top bg-light" style="border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
-                                            <a href="/#ung-vien" class="text-decoration-none small text-success fw-semibold" style="font-size: 0.75rem;">
-                                                Xem danh sách ứng viên &rarr;
-                                            </a>
-                                        </div>
                                     </div>
+                                }
+
+                                <!-- Dropdown User (Trong Dashboard) -->
+                                <div class="dropdown w-100 w-lg-auto">
+                                    <button class="btn-user-toggle d-flex align-items-center gap-2 px-3 py-1.5 w-100 w-lg-auto" style="border-radius: 8px; cursor: pointer; border: 1px solid #E2E8F0; background: #F8FAFC;" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        @if (!string.IsNullOrEmpty(userAvatarUrl))
+                                        {
+                                            <img src="@userAvatarUrl" alt="@userName" class="rounded-circle object-fit-cover shadow-2xs" style="width: 26px; height: 26px; border: 1.5px solid #10B981;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                                            <div class="align-items-center justify-content-center fw-bold rounded-lg" style="display:none; width: 26px; height: 26px; font-size: 11px; background: #ECFDF5; color: #047857; border-radius: 6px;">
+                                                @userInitial
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="d-flex align-items-center justify-content-center fw-bold rounded-lg" style="width: 26px; height: 26px; font-size: 11px; background: #ECFDF5; color: #047857; border-radius: 6px;">
+                                                @userInitial
+                                            </div>
+                                        }
+                                        <span class="fw-semibold text-truncate" style="max-width: 140px; color: #0F172A; font-size: 0.85rem;">
+                                            @userName
+                                        </span>
+                                        <i class="bi bi-chevron-down small" style="color: #64748B;"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end mt-2 shadow-sm border" style="border-color: #E2E8F0; border-radius: 10px; min-width: 240px;">
+                                        <li class="px-3 py-2" style="border-bottom: 1px solid #E2E8F0;">
+                                             <div class="small fw-bold" style="color: #0F172A;">@userName</div>
+                                            <div class="small text-truncate font-mono" style="color: #64748B; font-size: 0.75rem;">@userEmail</div>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item py-2 fw-semibold text-success" href="/dashboard">
+                                                <i class="bi bi-speedometer2 me-2"></i> Bàn làm việc
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item py-2" href="/ho-so">
+                                                <i class="bi bi-person-badge me-2 text-muted"></i> Thông tin cá nhân &amp; Vai trò
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item py-2" asp-controller="Jobs" asp-action="Index">
+                                                <i class="bi bi-briefcase me-2 text-muted"></i> Việc làm NoveraTech
+                                            </a>
+                                        </li>
+
+                                        @* Menu chức năng theo Phân quyền *@
+                                        @if (isCandidate)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item py-2" href="/dashboard/ho-so">
+                                                    <i class="bi bi-person-vcard me-2 text-muted"></i> Quản lý Hồ sơ &amp; CV
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item py-2" href="/dashboard/tien-do">
+                                                    <i class="bi bi-calendar2-check me-2 text-muted"></i> Tiến độ ứng tuyển
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (isAdmin)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item py-2" asp-controller="Users" asp-action="Index">
+                                                    <i class="bi bi-people-fill me-2 text-muted"></i> Quản lý tài khoản
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (isAdmin || isHrManager || isRecruiter || isHiringManager)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item py-2" href="/ung-vien">
+                                                    <i class="bi bi-person-lines-fill me-2 text-success"></i> Hồ sơ ứng viên hợp nhất
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item py-2" href="/kho-tiem-nang">
+                                                    <i class="bi bi-stars me-2 text-warning"></i> Kho ứng viên tiềm năng
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (isAdmin || isHrManager || isRecruiter)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item py-2" asp-controller="Jobs" asp-action="Create">
+                                                    <i class="bi bi-megaphone me-2 text-primary"></i> Đăng tin tuyển dụng
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (isHiringManager)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item py-2" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#createRequisitionModal">
+                                                    <i class="bi bi-file-earmark-plus me-2 text-muted"></i> Đề xuất nhân sự
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (isInterviewer)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item py-2" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#interviewEvaluationModal">
+                                                    <i class="bi bi-clipboard2-check me-2 text-muted"></i> Đánh giá phỏng vấn
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (isApprover)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item py-2" href="/dashboard/phe-duyet">
+                                                    <i class="bi bi-check2-square me-2 text-muted"></i> Phê duyệt Offer
+                                                </a>
+                                            </li>
+                                        }
+
+                                        <li><hr class="dropdown-divider my-1"></li>
+                                        <li>
+                                            <a class="dropdown-item py-2" asp-controller="Profiles" asp-action="Index">
+                                                <i class="bi bi-person me-2 text-primary"></i> Hồ sơ cá nhân
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item py-2" asp-controller="Account" asp-action="ChangePassword">
+                                                <i class="bi bi-key me-2 text-muted"></i> Đổi mật khẩu
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider my-1"></li>
+                                        <li>
+                                            <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="dropdown-item py-2" style="color: #EF4444;">
+                                                    <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
+                                                </button>
+                                            </form>
+                                        </li>
+                                    </ul>
                                 </div>
-                            }
-
-                            <!-- Dropdown User (RULE.MD: 8px radius, clean neutral, full navigation inside) -->
-                            <div class="dropdown w-100 w-lg-auto">
-                                <button class="btn-user-toggle d-flex align-items-center gap-2 px-3 py-1.5 w-100 w-lg-auto" style="border-radius: 8px; cursor: pointer; border: 1px solid #E2E8F0; background: #F8FAFC;" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <div class="d-flex align-items-center justify-content-center fw-bold rounded-lg" style="width: 26px; height: 26px; font-size: 11px; background: #ECFDF5; color: #059669; border-radius: 6px;">
-                                        @(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "U")
-                                    </div>
-                                    <span class="fw-semibold text-truncate" style="max-width: 140px; color: #0F172A; font-size: 0.85rem;">
-                                        @(User.Identity?.Name ?? "Nhân viên")
-                                    </span>
-                                    <i class="bi bi-chevron-down small" style="color: #64748B;"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end mt-2 shadow-sm border" style="border-color: #E2E8F0; border-radius: 10px; min-width: 240px;">
-                                    <li class="px-3 py-2" style="border-bottom: 1px solid #E2E8F0;">
-                                        <div class="small fw-bold" style="color: #0F172A;">@(User.Identity?.Name ?? "Người dùng")</div>
-                                        <div class="small text-truncate font-mono" style="color: #64748B; font-size: 0.75rem;">@User.FindFirstValue(ClaimTypes.Email)</div>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item py-2 fw-semibold text-success" href="/dashboard">
-                                            <i class="bi bi-speedometer2 me-2"></i> Bàn làm việc
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item py-2" href="/ho-so">
-                                            <i class="bi bi-person-badge me-2 text-muted"></i> Thông tin cá nhân &amp; Vai trò
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item py-2" asp-controller="Jobs" asp-action="Index">
-                                            <i class="bi bi-briefcase me-2 text-muted"></i> Việc làm NoveraTech
-                                        </a>
-                                    </li>
-
-                                    @* Menu chức năng theo Phân quyền *@
-                                    @if (User.IsInRole(UserRoles.Candidate))
-                                    {
-                                        <li>
-                                            <a class="dropdown-item py-2" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#updateCvModal">
-                                                <i class="bi bi-file-earmark-person me-2 text-muted"></i> Cập nhật hồ sơ &amp; CV
-                                            </a>
-                                        </li>
-                                    }
-
-                                    @if (User.IsInRole(UserRoles.Admin))
-                                    {
-                                        <li>
-                                            <a class="dropdown-item py-2" asp-controller="Users" asp-action="Index">
-                                                <i class="bi bi-people-fill me-2 text-muted"></i> Quản lý tài khoản
-                                            </a>
-                                        </li>
-                                    }
-
-                                    @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter) || User.IsInRole(UserRoles.HiringManager))
-                                    {
-                                        <li>
-                                            <a class="dropdown-item py-2" href="/ung-vien">
-                                                <i class="bi bi-person-lines-fill me-2 text-success"></i> Hồ sơ ứng viên hợp nhất
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item py-2" href="/kho-tiem-nang">
-                                                <i class="bi bi-stars me-2 text-warning"></i> Kho ứng viên tiềm năng
-                                            </a>
-                                        </li>
-                                    }
-
-                                    @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.HRManager) || User.IsInRole(UserRoles.Recruiter))
-                                    {
-                                        <li>
-                                            <a class="dropdown-item py-2" asp-controller="Jobs" asp-action="Create">
-                                                <i class="bi bi-megaphone me-2 text-primary"></i> Đăng tin tuyển dụng
-                                            </a>
-                                        </li>
-                                    }
-
-                                    @if (User.IsInRole(UserRoles.HiringManager))
-                                    {
-                                        <li>
-                                            <a class="dropdown-item py-2" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#createRequisitionModal">
-                                                <i class="bi bi-file-earmark-plus me-2 text-muted"></i> Đề xuất nhân sự
-                                            </a>
-                                        </li>
-                                    }
-
-                                    @if (User.IsInRole(UserRoles.Interviewer))
-                                    {
-                                        <li>
-                                            <a class="dropdown-item py-2" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#interviewEvaluationModal">
-                                                <i class="bi bi-clipboard2-check me-2 text-muted"></i> Đánh giá phỏng vấn
-                                            </a>
-                                        </li>
-                                    }
-
-                                    @if (User.IsInRole(UserRoles.Approver))
-                                    {
-                                        <li>
-                                            <a class="dropdown-item py-2" href="/dashboard/phe-duyet">
-                                                <i class="bi bi-check2-square me-2 text-muted"></i> Phê duyệt Offer
-                                            </a>
-                                        </li>
-                                    }
-
-                                    <li><hr class="dropdown-divider my-1"></li>
-                                    <li>
-                                        <a class="dropdown-item py-2" asp-controller="Profiles" asp-action="Index">
-                                            <i class="bi bi-person me-2 text-primary"></i> Hồ sơ cá nhân
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item py-2" asp-controller="Account" asp-action="ChangePassword">
-                                            <i class="bi bi-key me-2 text-muted"></i> Đổi mật khẩu
-                                        </a>
-                                    </li>
-                                    <li><hr class="dropdown-divider my-1"></li>
-                                    <li>
-                                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="dropdown-item py-2" style="color: #EF4444;">
-                                                <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
-                                            </button>
-                                        </form>
-                                    </li>
-                                </ul>
                             </div>
-                        </div>
+                        }
+                        else
+                        {
+                            <!-- Top Bar NGOÀI Dashboard: Menu website công khai + Góc trên bên phải CHỈ hiện tên người dùng & ảnh đại diện -->
+                            <ul class="navbar-nav me-auto align-items-center gap-1 gap-lg-2 mt-2 mt-lg-0 ps-lg-3">
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" href="/gioi-thieu#about">
+                                        Về NoveraTech
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" href="/gioi-thieu#benefits">
+                                        Đãi ngộ & Văn hóa
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link fw-semibold" asp-controller="Jobs" asp-action="Index" style="color: #047857;">
+                                        <i class="bi bi-briefcase me-1"></i> Cơ hội việc làm
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" asp-controller="Tracking" asp-action="Index">
+                                        <i class="bi bi-search me-1"></i> Tra cứu hồ sơ
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link" href="/gioi-thieu#process">
+                                        Quy trình tuyển dụng
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link ats-nav-link fw-semibold text-primary" href="/dashboard">
+                                        <i class="bi bi-speedometer2 me-1"></i> Bàn làm việc
+                                    </a>
+                                </li>
+                            </ul>
+
+                            <!-- Góc trên bên phải: CHỈ hiển thị tên account và ảnh đại diện -->
+                            <div class="d-flex align-items-center ms-auto mt-2 mt-lg-0">
+                                <div class="dropdown">
+                                    <button class="btn-user-toggle d-flex align-items-center gap-2 px-3 py-1.5" style="border-radius: 8px; cursor: pointer; border: 1px solid #E2E8F0; background: #FFFFFF; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.04);" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        @if (!string.IsNullOrEmpty(userAvatarUrl))
+                                        {
+                                            <img src="@userAvatarUrl" alt="@userName" class="rounded-circle object-fit-cover shadow-2xs" style="width: 28px; height: 28px; border: 1.5px solid #10B981;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                                            <div class="rounded-circle align-items-center justify-content-center fw-bold" style="display:none; width: 28px; height: 28px; font-size: 11px; background: #ECFDF5; color: #047857; border: 1.5px solid #A7F3D0;">
+                                                @userInitial
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 28px; height: 28px; font-size: 11px; background: #ECFDF5; color: #047857; border: 1.5px solid #A7F3D0;">
+                                                @userInitial
+                                            </div>
+                                        }
+                                        <span class="fw-semibold text-truncate" style="max-width: 150px; color: #0F172A; font-size: 0.85rem;">
+                                            @userName
+                                        </span>
+                                        <i class="bi bi-chevron-down text-muted" style="font-size: 0.75rem;"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end mt-2 shadow-sm border" style="border-color: #E2E8F0; border-radius: 10px; min-width: 230px;">
+                                        <li class="px-3 py-2 border-bottom">
+                                            <div class="small fw-bold text-dark">@userName</div>
+                                            <div class="small text-muted text-truncate font-mono" style="font-size: 0.75rem;">@userEmail</div>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item py-2 fw-semibold text-success" href="/dashboard">
+                                                <i class="bi bi-speedometer2 me-2"></i> Bàn làm việc
+                                            </a>
+                                        </li>
+                                        @if (isCandidate)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item py-2" href="/dashboard/ho-so">
+                                                    <i class="bi bi-person-vcard me-2 text-muted"></i> Hồ sơ &amp; CV
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item py-2" href="/dashboard/tien-do">
+                                                    <i class="bi bi-calendar2-check me-2 text-muted"></i> Tiến độ ứng tuyển
+                                                </a>
+                                            </li>
+                                        }
+                                        <li>
+                                            <a class="dropdown-item py-2" href="/ho-so">
+                                                <i class="bi bi-person me-2 text-muted"></i> Hồ sơ cá nhân
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item py-2" asp-controller="Account" asp-action="ChangePassword">
+                                                <i class="bi bi-key me-2 text-muted"></i> Đổi mật khẩu
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider my-1"></li>
+                                        <li>
+                                            <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="dropdown-item py-2 text-danger">
+                                                    <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
+                                                </button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        }
                     }
                     else
                     {
@@ -356,7 +437,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link ats-nav-link fw-semibold" asp-controller="Jobs" asp-action="Index" style="color: #059669;">
+                                <a class="nav-link ats-nav-link fw-semibold" asp-controller="Jobs" asp-action="Index" style="color: #047857;">
                                     <i class="bi bi-briefcase me-1"></i> Cơ hội việc làm
                                 </a>
                             </li>
@@ -371,7 +452,7 @@
                                 </a>
                             </li>
                             <li class="nav-item ms-lg-2">
-                                <a class="btn btn-sm px-3 fw-semibold text-white" style="background: #059669; border-radius: 8px;" asp-controller="Account" asp-action="CandidateAuth">
+                                <a class="btn btn-sm px-3 fw-semibold text-white" style="background: #047857; border-radius: 8px;" asp-controller="Account" asp-action="CandidateAuth">
                                     <i class="bi bi-send me-1"></i> Nộp hồ sơ
                                 </a>
                             </li>
@@ -388,7 +469,7 @@
         </nav>
     </header>
 
-    @if (User.Identity?.IsAuthenticated == true)
+    @if (User.Identity?.IsAuthenticated == true && isDashboard)
     {
         <div class="ats-layout-container">
             @await Html.PartialAsync("_Sidebar")
@@ -430,12 +511,20 @@
                     <span style="font-weight: 600; color: #0F172A;"><i class="bi bi-hexagon-fill text-success me-1"></i>NoveraTech</span>
                     <span>&copy; @DateTime.UtcNow.Year</span>
                     <span>&middot;</span>
-                    <span>Tham gia và làm việc với chúng mình ngay hôm nay!</span>
+                    <span>Hệ sinh thái Tuyển dụng &amp; Cơ hội Nghề nghiệp NoveraTech</span>
                 </div>
                 <div class="d-flex align-items-center gap-3">
                     <a href="/gioi-thieu" class="text-decoration-none text-muted" style="font-size: 0.8rem;">Cổng Tuyển Dụng</a>
-                    <a asp-controller="Tracking" asp-action="Index" class="text-decoration-none text-muted" style="font-size: 0.8rem;">Tra cứu hồ sơ</a>
-                    <a asp-controller="Account" asp-action="StaffLogin" class="text-decoration-none text-muted" style="font-size: 0.8rem;">Nhân sự</a>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a href="/dashboard" class="text-decoration-none text-muted" style="font-size: 0.8rem;">Bàn làm việc</a>
+                        <a href="/ho-so" class="text-decoration-none text-muted" style="font-size: 0.8rem;">Tài khoản</a>
+                    }
+                    else
+                    {
+                        <a asp-controller="Tracking" asp-action="Index" class="text-decoration-none text-muted" style="font-size: 0.8rem;">Tra cứu hồ sơ</a>
+                        <a asp-controller="Account" asp-action="StaffLogin" class="text-decoration-none text-muted" style="font-size: 0.8rem;">Nhân sự</a>
+                    }
                 </div>
             </div>
         </footer>

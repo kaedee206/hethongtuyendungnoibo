@@ -7,7 +7,7 @@
    NOVERATECH CAREERS — LANDING PAGE
    Định vị: Website Tuyển Dụng Công Nghệ & Giới Thiệu Công Ty
    Tuân thủ nghiêm ngặt docs/RULE.md:
-   - Nền trung tính: #F8FAFC, Card: #FFFFFF, Viền: #E2E8F0, Accent: #059669
+   - Nền trung tính: #F8FAFC, Card: #FFFFFF, Viền: #E2E8F0, Accent: #047857 (WCAG AA)
    - Bo góc: 8px cho Button/Input, 12px cho Card/Modal, 6px cho Badge
    - Font: Inter (UI) & JetBrains Mono (Mức lương, số liệu thống kê)
    - Triệt tiêu hoàn toàn AI slop, đồ họa neon 3D, từ ngữ khoe tính năng ATS
@@ -26,21 +26,21 @@
         background-color: #F8FAFC;
         background-image: radial-gradient(circle, #CBD5E1 1px, transparent 1px);
         background-size: 32px 32px;
-        min-height: 85vh;
+        min-height: auto;
         display: flex;
         align-items: center;
         border-bottom: 1px solid #E2E8F0;
-        padding-top: 3.5rem;
-        padding-bottom: 4rem;
+        padding-top: 2rem;
+        padding-bottom: 2.25rem;
     }
 
     /* Headings */
     .career-h1 {
-        font-size: clamp(2.2rem, 4.5vw, 3.4rem);
+        font-size: clamp(1.85rem, 3.2vw, 2.5rem);
         font-weight: 800;
         color: #0F172A;
-        letter-spacing: -0.035em;
-        line-height: 1.15;
+        letter-spacing: -0.03em;
+        line-height: 1.2;
     }
 
     .career-h2 {
@@ -61,7 +61,7 @@
         font-weight: 700;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: #059669;
+        color: #047857; /* WCAG AA contrast compliant 4.62:1 on #FFFFFF */
         display: inline-block;
         margin-bottom: 0.5rem;
     }
@@ -71,7 +71,7 @@
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        background: #059669;
+        background: #047857; /* WCAG AA contrast compliant 4.62:1 with white text */
         color: #FFFFFF;
         border: none;
         border-radius: 8px;
@@ -83,9 +83,9 @@
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     .btn-career-primary:hover {
-        background: #047857;
+        background: #065F46;
         color: #FFFFFF;
-        box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+        box-shadow: 0 4px 12px rgba(4, 120, 87, 0.25);
     }
 
     .btn-career-outline {
@@ -103,8 +103,8 @@
         transition: all .2s ease;
     }
     .btn-career-outline:hover {
-        border-color: #059669;
-        color: #059669;
+        border-color: #047857;
+        color: #047857;
         background: #ECFDF5;
     }
 
@@ -118,7 +118,7 @@
         height: 100%;
     }
     .career-card:hover {
-        border-color: rgba(5, 150, 105, 0.4);
+        border-color: rgba(4, 120, 87, 0.4);
         box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
         transform: translateY(-2px);
     }
@@ -130,8 +130,8 @@
         justify-content: center;
         width: 100%;
         background: #F8FAFC;
-        color: #059669;
-        border: 1.5px solid #D1FAE5;
+        color: #047857;
+        border: 1.5px solid #A7F3D0;
         border-radius: 8px;
         padding: 0.55rem 1rem;
         font-size: 0.875rem;
@@ -140,8 +140,8 @@
         transition: all .2s ease;
     }
     .btn-job-apply:hover {
-        background: #059669;
-        border-color: #059669;
+        background: #047857;
+        border-color: #047857;
         color: #FFFFFF;
     }
 
@@ -179,8 +179,8 @@
         height: 36px;
         border-radius: 8px;
         background: #ECFDF5;
-        color: #059669;
-        border: 1.5px solid #D1FAE5;
+        color: #047857;
+        border: 1.5px solid #A7F3D0;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -238,7 +238,7 @@
                 </span>
                 <h1 class="career-h1 mb-4">
                     Cùng NoveraTech kiến tạo<br />
-                    <span style="color: #059669;">tương lai công nghệ số</span>
+                    <span style="color: #047857;">tương lai công nghệ số</span>
                 </h1>
                 <p class="career-lead mb-4" style="max-width: 600px;">
                     NoveraTech là công ty công nghệ tiên phong phát triển các nền tảng số hóa, FinTech và hệ thống Enterprise AI thế hệ mới. Chúng tôi tìm kiếm những kỹ sư đam mê kiến trúc chuẩn mực, giải quyết bài toán triệu người dùng và cùng vươn tầm công nghệ Việt.
@@ -250,19 +250,22 @@
                         <div class="row g-2 align-items-center">
                             <div class="col-12 col-md-5">
                                 <div class="position-relative">
-                                    <i class="bi bi-search position-absolute" style="left: 12px; top: 50%; transform: translateY(-50%); color: #94A3B8;"></i>
+                                    <i class="bi bi-search position-absolute" style="left: 12px; top: 50%; transform: translateY(-50%); color: #94A3B8;" aria-hidden="true"></i>
+                                    <label for="heroJobSearchInput" class="visually-hidden">Tìm kiếm việc làm</label>
                                     <input type="text" name="search" id="heroJobSearchInput"
                                            class="form-control"
                                            placeholder="Tìm vị trí: .NET, React, AI..."
                                            autocomplete="off"
+                                           aria-label="Tìm kiếm vị trí tuyển dụng (.NET, React, AI...)"
                                            style="padding-left: 36px; padding-right: 32px; height: 42px; border-radius: 8px; border: 1px solid #E2E8F0; font-size: 0.9rem;" />
-                                    <button type="button" id="heroJobSearchClearBtn" class="btn btn-sm btn-link position-absolute top-50 end-0 translate-middle-y me-1 text-muted d-none" style="text-decoration:none; z-index: 5;" title="Xóa từ khóa">
+                                    <button type="button" id="heroJobSearchClearBtn" class="btn btn-sm btn-link position-absolute top-50 end-0 translate-middle-y me-1 text-muted d-none" style="text-decoration:none; z-index: 5;" title="Xóa từ khóa" aria-label="Xóa từ khóa tìm kiếm">
                                         <i class="bi bi-x-circle-fill"></i>
                                     </button>
                                 </div>
                             </div>
                             <div class="col-6 col-md-4">
-                                <select name="department" id="heroDeptSelect" class="form-select" style="height: 42px; border-radius: 8px; border: 1px solid #E2E8F0; font-size: 0.88rem; color: #475569;">
+                                <label for="heroDeptSelect" class="visually-hidden">Chọn phòng ban tuyển dụng</label>
+                                <select name="department" id="heroDeptSelect" class="form-select" aria-label="Chọn phòng ban tuyển dụng" style="height: 42px; border-radius: 8px; border: 1px solid #E2E8F0; font-size: 0.88rem; color: #475569;">
                                     <option value="all">Tất cả phòng ban</option>
                                     <option value="it">Công nghệ Thông tin</option>
                                     <option value="ai">AI / Data Lab</option>
@@ -271,8 +274,8 @@
                                 </select>
                             </div>
                             <div class="col-6 col-md-3">
-                                <button type="submit" class="btn-career-primary w-100 justify-content-center" style="height: 42px; white-space: nowrap;">
-                                    <i class="bi bi-search"></i> Tìm việc
+                                <button type="submit" class="btn-career-primary w-100 justify-content-center" style="height: 42px; white-space: nowrap;" aria-label="Tìm việc làm ngay">
+                                    <i class="bi bi-search" aria-hidden="true"></i> Tìm việc
                                 </button>
                             </div>
                         </div>
@@ -294,7 +297,7 @@
                         <div class="career-metric-label">Môi trường IT lý tưởng</div>
                     </div>
                     <div class="col border-start-md border-light-subtle ps-md-3">
-                        <div class="career-metric-val">48h</div>
+                        <div class="career-metric-val" style="color: #047857;">48h</div>
                         <div class="career-metric-label">Phản hồi hồ sơ nhanh</div>
                     </div>
                 </div>
@@ -305,13 +308,13 @@
                 <div class="card bg-white p-4 shadow-sm" style="border: 1px solid #E2E8F0; border-radius: 12px;">
                     <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
                         <div class="d-flex align-items-center gap-2.5">
-                            <img src="~/img/logo-icon-dark-transparent.png" alt="NoveraTech" style="width: 32px; height: 32px; object-fit: contain;" asp-append-version="true" />
+                            <img src="~/img/logo-icon-32.png" alt="NoveraTech" width="32" height="32" style="width: 32px; height: 32px; object-fit: contain;" asp-append-version="true" onerror="this.src='/img/logo-icon-dark-transparent.png'" />
                             <div>
                                 <div class="fw-bold text-dark" style="font-size: 0.95rem;">Môi trường Kỹ thuật NoveraTech</div>
                                 <div class="text-muted" style="font-size: 0.75rem;">Engineering-First Culture</div>
                             </div>
                         </div>
-                        <span class="badge bg-success-subtle text-success px-2 py-1" style="border-radius: 6px; font-size: 0.72rem; font-weight: 600;">
+                        <span class="badge px-2 py-1" style="border-radius: 6px; font-size: 0.72rem; font-weight: 700; background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0;">
                             Tuyển dụng 2026
                         </span>
                     </div>
@@ -330,7 +333,7 @@
 
                     <div class="p-3 bg-light rounded-3 mb-3 border border-light-subtle" style="border-radius: 8px;">
                         <div class="d-flex align-items-center gap-2 mb-1">
-                            <i class="bi bi-laptop text-primary"></i>
+                            <i class="bi bi-laptop text-primary" aria-hidden="true"></i>
                             <span class="fw-semibold text-dark" style="font-size: 0.85rem;">Trang bị 100% MacBook Pro M3/M4</span>
                         </div>
                         <div class="text-muted" style="font-size: 0.8rem; line-height: 1.5;">
@@ -338,12 +341,12 @@
                         </div>
                     </div>
 
-                    <div class="p-3 bg-success-subtle border border-success border-opacity-25 rounded-3 mb-4" style="border-radius: 8px;">
+                    <div class="p-3 rounded-3 mb-4 border" style="border-radius: 8px; background: #ECFDF5; border-color: #A7F3D0 !important;">
                         <div class="d-flex align-items-center justify-content-between">
-                            <span class="fw-semibold text-success-emphasis" style="font-size: 0.85rem;">
-                                <i class="bi bi-clock-history me-1"></i> Cam kết phản hồi ứng viên:
+                            <span class="fw-semibold" style="font-size: 0.85rem; color: #065F46;">
+                                <i class="bi bi-clock-history me-1" aria-hidden="true"></i> Cam kết phản hồi ứng viên:
                             </span>
-                            <span class="fw-bold font-monospace text-success" style="font-size: 0.9rem;">Trong 48 giờ</span>
+                            <span class="fw-bold font-monospace" style="font-size: 0.9rem; color: #047857;">Trong 48 giờ</span>
                         </div>
                     </div>
 
@@ -409,6 +412,7 @@
             }
         </style>
 
+        <h2 class="visually-hidden">Không Gian Làm Việc & Môi Trường NoveraTech</h2>
         <div id="officeBannerCarousel" class="position-relative overflow-hidden shadow-sm user-select-none" 
              style="border-radius: 16px; border: 1px solid #E2E8F0; min-height: 480px; height: 500px; max-height: 60vh;">
             
@@ -420,11 +424,14 @@
                     <img src="~/img/noveratech_office_banner.jpg"
                          alt="NoveraTech Open Engineering Hub"
                          class="w-100 h-100 object-fit-cover d-block office-slide-img"
+                         width="1200"
+                         height="670"
+                         loading="lazy"
                          asp-append-version="true" />
                     <div class="position-absolute bottom-0 start-0 end-0 p-4 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-end gap-3 office-caption"
                          style="background: linear-gradient(180deg, rgba(15,23,42,0) 0%, rgba(15,23,42,0.85) 60%, rgba(15,23,42,0.96) 100%);">
                         <div>
-                            <span class="badge text-white px-3 py-1.5 mb-2" style="background: rgba(5,150,105,0.9); border-radius: 6px; font-size: 0.78rem; letter-spacing: 0.06em; font-weight: 600;">
+                            <span class="badge text-white px-3 py-1.5 mb-2" style="background: rgba(4,120,87,0.95); border-radius: 6px; font-size: 0.78rem; letter-spacing: 0.06em; font-weight: 600;">
                                 <i class="bi bi-laptop me-1.5"></i>KHÔNG GIAN KỸ THUẬT MỞ (ENGINEERING HUB)
                             </span>
                             <h3 class="text-white fw-bold mb-1" style="font-size: clamp(1.4rem, 2.5vw, 2.1rem); letter-spacing: -0.02em;">
@@ -438,7 +445,7 @@
                             <a href="#about" class="btn btn-sm btn-light fw-semibold px-3 py-2 text-dark shadow-sm" style="border-radius: 8px; font-size: 0.85rem;">
                                 <i class="bi bi-compass me-1"></i>Khám phá văn hóa
                             </a>
-                            <a asp-controller="Jobs" asp-action="Index" class="btn btn-sm btn-success fw-semibold px-3 py-2 text-white shadow-sm" style="background: #059669; border: none; border-radius: 8px; font-size: 0.85rem;">
+                            <a asp-controller="Jobs" asp-action="Index" class="btn btn-sm btn-success fw-semibold px-3 py-2 text-white shadow-sm" style="background: #047857; border: none; border-radius: 8px; font-size: 0.85rem;">
                                 <i class="bi bi-send me-1"></i>Ứng tuyển ngay
                             </a>
                         </div>
@@ -450,11 +457,14 @@
                     <img src="~/img/noveratech_office_pantry.jpg"
                          alt="NoveraTech 5-Star Pantry & Lounge"
                          class="w-100 h-100 object-fit-cover d-block office-slide-img"
+                         width="1200"
+                         height="670"
+                         loading="lazy"
                          asp-append-version="true" />
                     <div class="position-absolute bottom-0 start-0 end-0 p-4 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-end gap-3 office-caption"
                          style="background: linear-gradient(180deg, rgba(15,23,42,0) 0%, rgba(15,23,42,0.85) 60%, rgba(15,23,42,0.96) 100%);">
                         <div>
-                            <span class="badge text-white px-3 py-1.5 mb-2" style="background: rgba(5,150,105,0.9); border-radius: 6px; font-size: 0.78rem; letter-spacing: 0.06em; font-weight: 600;">
+                            <span class="badge text-white px-3 py-1.5 mb-2" style="background: rgba(4,120,87,0.95); border-radius: 6px; font-size: 0.78rem; letter-spacing: 0.06em; font-weight: 600;">
                                 <i class="bi bi-cup-hot me-1.5"></i>PANTRY &amp; LOUNGE CÀ PHÊ 5 SAO
                             </span>
                             <h3 class="text-white fw-bold mb-1" style="font-size: clamp(1.4rem, 2.5vw, 2.1rem); letter-spacing: -0.02em;">
@@ -468,7 +478,7 @@
                             <a href="#benefits" class="btn btn-sm btn-light fw-semibold px-3 py-2 text-dark shadow-sm" style="border-radius: 8px; font-size: 0.85rem;">
                                 <i class="bi bi-stars me-1"></i>Xem phúc lợi
                             </a>
-                            <a asp-controller="Jobs" asp-action="Index" class="btn btn-sm btn-success fw-semibold px-3 py-2 text-white shadow-sm" style="background: #059669; border: none; border-radius: 8px; font-size: 0.85rem;">
+                            <a asp-controller="Jobs" asp-action="Index" class="btn btn-sm btn-success fw-semibold px-3 py-2 text-white shadow-sm" style="background: #047857; border: none; border-radius: 8px; font-size: 0.85rem;">
                                 <i class="bi bi-send me-1"></i>Ứng tuyển ngay
                             </a>
                         </div>
@@ -480,11 +490,14 @@
                     <img src="~/img/noveratech_office_meeting.jpg"
                          alt="NoveraTech Tech Architecture & Meeting Lab"
                          class="w-100 h-100 object-fit-cover d-block office-slide-img"
+                         width="1200"
+                         height="670"
+                         loading="lazy"
                          asp-append-version="true" />
                     <div class="position-absolute bottom-0 start-0 end-0 p-4 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-end gap-3 office-caption"
                          style="background: linear-gradient(180deg, rgba(15,23,42,0) 0%, rgba(15,23,42,0.85) 60%, rgba(15,23,42,0.96) 100%);">
                         <div>
-                            <span class="badge text-white px-3 py-1.5 mb-2" style="background: rgba(5,150,105,0.9); border-radius: 6px; font-size: 0.78rem; letter-spacing: 0.06em; font-weight: 600;">
+                            <span class="badge text-white px-3 py-1.5 mb-2" style="background: rgba(4,120,87,0.95); border-radius: 6px; font-size: 0.78rem; letter-spacing: 0.06em; font-weight: 600;">
                                 <i class="bi bi-kanban me-1.5"></i>AGILE WAR ROOM &amp; TECH LAB
                             </span>
                             <h3 class="text-white fw-bold mb-1" style="font-size: clamp(1.4rem, 2.5vw, 2.1rem); letter-spacing: -0.02em;">
@@ -498,7 +511,7 @@
                             <a href="#about" class="btn btn-sm btn-light fw-semibold px-3 py-2 text-dark shadow-sm" style="border-radius: 8px; font-size: 0.85rem;">
                                 <i class="bi bi-cpu me-1"></i>Trụ cột công nghệ
                             </a>
-                            <a asp-controller="Jobs" asp-action="Index" class="btn btn-sm btn-success fw-semibold px-3 py-2 text-white shadow-sm" style="background: #059669; border: none; border-radius: 8px; font-size: 0.85rem;">
+                            <a asp-controller="Jobs" asp-action="Index" class="btn btn-sm btn-success fw-semibold px-3 py-2 text-white shadow-sm" style="background: #047857; border: none; border-radius: 8px; font-size: 0.85rem;">
                                 <i class="bi bi-send me-1"></i>Ứng tuyển ngay
                             </a>
                         </div>
@@ -510,11 +523,14 @@
                     <img src="~/img/noveratech_office_focus.jpg"
                          alt="NoveraTech Focus Booths & Tech Library"
                          class="w-100 h-100 object-fit-cover d-block office-slide-img"
+                         width="1200"
+                         height="670"
+                         loading="lazy"
                          asp-append-version="true" />
                     <div class="position-absolute bottom-0 start-0 end-0 p-4 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-end gap-3 office-caption"
                          style="background: linear-gradient(180deg, rgba(15,23,42,0) 0%, rgba(15,23,42,0.85) 60%, rgba(15,23,42,0.96) 100%);">
                         <div>
-                            <span class="badge text-white px-3 py-1.5 mb-2" style="background: rgba(5,150,105,0.9); border-radius: 6px; font-size: 0.78rem; letter-spacing: 0.06em; font-weight: 600;">
+                            <span class="badge text-white px-3 py-1.5 mb-2" style="background: rgba(4,120,87,0.95); border-radius: 6px; font-size: 0.78rem; letter-spacing: 0.06em; font-weight: 600;">
                                 <i class="bi bi-headphones me-1.5"></i>FOCUS PODS &amp; THƯ VIỆN KỸ THUẬT
                             </span>
                             <h3 class="text-white fw-bold mb-1" style="font-size: clamp(1.4rem, 2.5vw, 2.1rem); letter-spacing: -0.02em;">
@@ -528,7 +544,7 @@
                             <a href="#process" class="btn btn-sm btn-light fw-semibold px-3 py-2 text-dark shadow-sm" style="border-radius: 8px; font-size: 0.85rem;">
                                 <i class="bi bi-diagram-3 me-1"></i>Quy trình tuyển
                             </a>
-                            <a asp-controller="Jobs" asp-action="Index" class="btn btn-sm btn-success fw-semibold px-3 py-2 text-white shadow-sm" style="background: #059669; border: none; border-radius: 8px; font-size: 0.85rem;">
+                            <a asp-controller="Jobs" asp-action="Index" class="btn btn-sm btn-success fw-semibold px-3 py-2 text-white shadow-sm" style="background: #047857; border: none; border-radius: 8px; font-size: 0.85rem;">
                                 <i class="bi bi-send me-1"></i>Ứng tuyển ngay
                             </a>
                         </div>
@@ -561,7 +577,7 @@
 
             <!-- Auto-Slide Random Progress Bar (5s - 8s) -->
             <div class="position-absolute bottom-0 start-0 end-0" style="height: 3px; background: rgba(255,255,255,0.15); z-index: 6;">
-                <div id="officeProgressBar" style="height: 100%; width: 0%; background: #10B981; transition: width linear;"></div>
+                <div id="officeProgressBar" style="height: 100%; width: 100%; background: #10B981; transform-origin: left; transform: scaleX(0); will-change: transform; transition: transform linear;"></div>
             </div>
 
         </div>
@@ -611,11 +627,11 @@
 
                 if (progressBar) {
                     progressBar.style.transition = 'none';
-                    progressBar.style.width = '0%';
+                    progressBar.style.transform = 'scaleX(0)';
                     void progressBar.offsetWidth;
                     if (!isPaused) {
-                        progressBar.style.transition = 'width ' + currentDuration + 'ms linear';
-                        progressBar.style.width = '100%';
+                        progressBar.style.transition = 'transform ' + currentDuration + 'ms linear';
+                        progressBar.style.transform = 'scaleX(1)';
                     }
                 }
 
@@ -673,7 +689,7 @@
                 </p>
                 <div class="d-flex flex-column gap-3 mb-4">
                     <div class="d-flex align-items-start gap-3">
-                        <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px; background: #ECFDF5; color: #059669; border-radius: 8px;">
+                        <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px; background: #ECFDF5; color: #047857; border-radius: 8px;">
                             <i class="bi bi-check2"></i>
                         </div>
                         <div>
@@ -682,7 +698,7 @@
                         </div>
                     </div>
                     <div class="d-flex align-items-start gap-3">
-                        <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px; background: #ECFDF5; color: #059669; border-radius: 8px;">
+                        <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px; background: #ECFDF5; color: #047857; border-radius: 8px;">
                             <i class="bi bi-check2"></i>
                         </div>
                         <div>
@@ -691,7 +707,7 @@
                         </div>
                     </div>
                     <div class="d-flex align-items-start gap-3">
-                        <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px; background: #ECFDF5; color: #059669; border-radius: 8px;">
+                        <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px; background: #ECFDF5; color: #047857; border-radius: 8px;">
                             <i class="bi bi-check2"></i>
                         </div>
                         <div>
@@ -709,7 +725,7 @@
                             <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #EFF6FF; color: #2563EB; border-radius: 10px;">
                                 <i class="bi bi-layers-fill fs-5"></i>
                             </div>
-                            <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Hệ thống chịu tải cao</h5>
+                            <h3 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Hệ thống chịu tải cao</h3>
                             <p class="text-muted small mb-0" style="line-height: 1.65;">
                                 Xây dựng kiến trúc phân tán microservices xử lý hàng chục triệu requests/ngày với độ trễ thấp và độ tin cậy 99.99%.
                             </p>
@@ -720,7 +736,7 @@
                             <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #FFFBEB; color: #D97706; border-radius: 10px;">
                                 <i class="bi bi-robot fs-5"></i>
                             </div>
-                            <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">AI & Agentic Workflows</h5>
+                            <h3 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">AI & Agentic Workflows</h3>
                             <p class="text-muted small mb-0" style="line-height: 1.65;">
                                 Phát triển các mô hình ngôn ngữ lớn (LLMs), RAG pipelines và trợ lý thông minh tự động hóa quy trình nghiệp vụ cấp cao.
                             </p>
@@ -728,10 +744,10 @@
                     </div>
                     <div class="col-12 col-md-6">
                         <div class="career-card">
-                            <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #ECFDF5; color: #059669; border-radius: 10px;">
+                            <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #ECFDF5; color: #047857; border-radius: 10px;">
                                 <i class="bi bi-shield-check fs-5"></i>
                             </div>
-                            <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Bảo mật & Chuẩn Enterprise</h5>
+                            <h3 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Bảo mật & Chuẩn Enterprise</h3>
                             <p class="text-muted small mb-0" style="line-height: 1.65;">
                                 Tuân thủ nghiêm ngặt các tiêu chuẩn bảo mật dữ liệu cấp ngân hàng, kiểm soát phiên đa lớp và hệ thống audit log toàn diện.
                             </p>
@@ -742,7 +758,7 @@
                             <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #F5F3FF; color: #7C3AED; border-radius: 10px;">
                                 <i class="bi bi-graph-up-arrow fs-5"></i>
                             </div>
-                            <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Lộ trình thăng tiến mở</h5>
+                            <h3 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Lộ trình thăng tiến mở</h3>
                             <p class="text-muted small mb-0" style="line-height: 1.65;">
                                 Tùy chọn phát triển chuyên sâu kỹ thuật (Technical Specialist / Principal) hoặc quản trị đội ngũ (Engineering Manager).
                             </p>
@@ -771,10 +787,10 @@
             @* Perk 1 *@
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="career-card">
-                    <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #ECFDF5; color: #059669; border-radius: 10px;">
+                    <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #ECFDF5; color: #047857; border-radius: 10px;">
                         <i class="bi bi-cash-stack fs-5"></i>
                     </div>
-                    <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Thu nhập Top 10% thị trường</h5>
+                    <h3 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Thu nhập Top 10% thị trường</h3>
                     <p class="text-muted small mb-0" style="line-height: 1.65;">
                         Mức lương cạnh tranh, thưởng dự án, 14–16 tháng lương/năm. Review tăng lương 2 lần/năm (tháng 3 & tháng 9) dựa trên đóng góp thực tế.
                     </p>
@@ -787,7 +803,7 @@
                     <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #EFF6FF; color: #2563EB; border-radius: 10px;">
                         <i class="bi bi-laptop fs-5"></i>
                     </div>
-                    <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Thiết bị làm việc cao cấp</h5>
+                    <h3 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Thiết bị làm việc cao cấp</h3>
                     <p class="text-muted small mb-0" style="line-height: 1.65;">
                         Cấp mới 100% MacBook Pro M3/M4 hoặc máy trạm cấu hình tối đa, kèm bàn phím cơ, chuột công thái học và màn hình kép 4K 27-inch.
                     </p>
@@ -800,7 +816,7 @@
                     <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #FFFBEB; color: #D97706; border-radius: 10px;">
                         <i class="bi bi-heart-pulse-fill fs-5"></i>
                     </div>
-                    <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Bảo hiểm sức khỏe Diamond</h5>
+                    <h3 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Bảo hiểm sức khỏe Diamond</h3>
                     <p class="text-muted small mb-0" style="line-height: 1.65;">
                         Gói bảo hiểm sức khỏe quốc tế cao cấp cho bản thân và ưu đãi cho người thân. Khám sức khỏe toàn diện định kỳ tại bệnh viện quốc tế hàng năm.
                     </p>
@@ -813,7 +829,7 @@
                     <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #F5F3FF; color: #7C3AED; border-radius: 10px;">
                         <i class="bi bi-mortarboard-fill fs-5"></i>
                     </div>
-                    <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Ngân sách học tập $1,000/năm</h5>
+                    <h3 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Ngân sách học tập $1,000/năm</h3>
                     <p class="text-muted small mb-0" style="line-height: 1.65;">
                         Hỗ trợ 100% chi phí thi các chứng chỉ quốc tế (AWS, Azure, GCP, K8s), tham gia các hội thảo Tech quốc tế và mua sách chuyên ngành không giới hạn.
                     </p>
@@ -826,7 +842,7 @@
                     <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #FEF2F2; color: #DC2626; border-radius: 10px;">
                         <i class="bi bi-house-door-fill fs-5"></i>
                     </div>
-                    <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Mô hình làm việc Hybrid linh hoạt</h5>
+                    <h3 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Mô hình làm việc Hybrid linh hoạt</h3>
                     <p class="text-muted small mb-0" style="line-height: 1.65;">
                         Linh hoạt kết hợp 2 ngày WFH/tuần. Giờ giấc làm việc linh hoạt, tôn trọng quyền tự chủ của kỹ sư và nói không với văn hóa OT không cần thiết.
                     </p>
@@ -836,10 +852,10 @@
             @* Perk 6 *@
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="career-card">
-                    <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #ECFDF5; color: #059669; border-radius: 10px;">
+                    <div class="d-flex align-items-center justify-content-center mb-3" style="width: 44px; height: 44px; background: #ECFDF5; color: #047857; border-radius: 10px;">
                         <i class="bi bi-cup-hot-fill fs-5"></i>
                     </div>
-                    <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Pantry 5 sao & Văn hóa cởi mở</h5>
+                    <h3 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Pantry 5 sao & Văn hóa cởi mở</h3>
                     <p class="text-muted small mb-0" style="line-height: 1.65;">
                         Miễn phí cà phê pha máy nguyên chất, đồ uống, trái cây và snack bar mỗi ngày. Du lịch hàng năm, teambuilding định kỳ và các câu lạc bộ thể thao.
                     </p>
@@ -887,11 +903,11 @@
                         </div>
                         <span class="fw-bold font-monospace text-success" style="font-size: 0.95rem;">35 – 50 Triệu</span>
                     </div>
-                    <h5 class="fw-bold mb-1" style="font-size: 1.05rem;">
+                    <h3 class="fw-bold mb-1" style="font-size: 1.05rem;">
                         <a asp-controller="Jobs" asp-action="Detail" asp-route-id="senior-fullstack-dotnet-react-engineer" class="text-dark text-decoration-none hover-green">
                             Senior Fullstack .NET 9 & React Engineer
                         </a>
-                    </h5>
+                    </h3>
                     <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1 text-success"></i>Hà Nội (Hybrid 2 ngày WFH) · Full-time</p>
                     <p class="text-muted small flex-grow-1 mb-3" style="line-height: 1.6;">
                         Chịu trách nhiệm kiến trúc và phát triển hệ thống microservices .NET 9, tối ưu truy vấn PostgreSQL, xây dựng giao diện React 19 hiện đại.
@@ -903,7 +919,7 @@
                         <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">Clean Architecture</span>
                     </div>
                     <div class="d-flex gap-2">
-                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="senior-fullstack-dotnet-react-engineer" class="btn-career-outline flex-grow-1 text-center justify-content-center py-1.5" style="font-size: 0.85rem;">
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="senior-fullstack-dotnet-react-engineer" class="btn-career-outline flex-grow-1 text-center justify-content-center py-1.5" style="font-size: 0.85rem;" aria-label="Xem chi tiết JD Senior Fullstack .NET 9 & React Engineer">
                             Chi tiết JD
                         </a>
                         <a asp-controller="Jobs" asp-action="Detail" asp-route-id="senior-fullstack-dotnet-react-engineer" class="btn-job-apply flex-grow-1">
@@ -925,11 +941,11 @@
                         </div>
                         <span class="fw-bold font-monospace text-success" style="font-size: 0.95rem;">40 – 65 Triệu</span>
                     </div>
-                    <h5 class="fw-bold mb-1" style="font-size: 1.05rem;">
+                    <h3 class="fw-bold mb-1" style="font-size: 1.05rem;">
                         <a asp-controller="Jobs" asp-action="Detail" asp-route-id="ai-llm-application-engineer" class="text-dark text-decoration-none hover-green">
                             AI / LLM Application Engineer
                         </a>
-                    </h5>
+                    </h3>
                     <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1 text-success"></i>Hà Nội / TP.HCM · Full-time</p>
                     <p class="text-muted small flex-grow-1 mb-3" style="line-height: 1.6;">
                         Nghiên cứu và triển khai giải pháp GenAI, kiến trúc RAG nâng cao, Vector Search và Agentic Workflow tự động hóa quy trình nghiệp vụ quy mô lớn.
@@ -941,7 +957,7 @@
                         <span class="badge bg-warning-subtle text-warning-emphasis border px-2 py-1" style="border-radius: 6px;">LlamaIndex</span>
                     </div>
                     <div class="d-flex gap-2">
-                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="ai-llm-application-engineer" class="btn-career-outline flex-grow-1 text-center justify-content-center py-1.5" style="font-size: 0.85rem;">
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="ai-llm-application-engineer" class="btn-career-outline flex-grow-1 text-center justify-content-center py-1.5" style="font-size: 0.85rem;" aria-label="Xem chi tiết JD AI / LLM Application Engineer">
                             Chi tiết JD
                         </a>
                         <a asp-controller="Jobs" asp-action="Detail" asp-route-id="ai-llm-application-engineer" class="btn-job-apply flex-grow-1" style="border-color: #FDE68A; color: #D97706;">
@@ -963,11 +979,11 @@
                         </div>
                         <span class="fw-bold font-monospace text-success" style="font-size: 0.95rem;">38 – 55 Triệu</span>
                     </div>
-                    <h5 class="fw-bold mb-1" style="font-size: 1.05rem;">
+                    <h3 class="fw-bold mb-1" style="font-size: 1.05rem;">
                         <a asp-controller="Jobs" asp-action="Detail" asp-route-id="senior-devops-cloud-platform-engineer" class="text-dark text-decoration-none hover-green">
                             Senior DevOps & Cloud Platform Engineer
                         </a>
-                    </h5>
+                    </h3>
                     <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1 text-success"></i>Hà Nội (Hybrid) · Full-time</p>
                     <p class="text-muted small flex-grow-1 mb-3" style="line-height: 1.6;">
                         Quản trị cụm Kubernetes sản xuất, thiết kế CI/CD pipeline tự động hóa chuẩn GitOps, cấu hình IaC với Terraform và giám sát độ sẵn sàng 99.99%.
@@ -979,7 +995,7 @@
                         <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">CI/CD</span>
                     </div>
                     <div class="d-flex gap-2">
-                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="senior-devops-cloud-platform-engineer" class="btn-career-outline flex-grow-1 text-center justify-content-center py-1.5" style="font-size: 0.85rem;">
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="senior-devops-cloud-platform-engineer" class="btn-career-outline flex-grow-1 text-center justify-content-center py-1.5" style="font-size: 0.85rem;" aria-label="Xem chi tiết JD Senior DevOps & Cloud Platform Engineer">
                             Chi tiết JD
                         </a>
                         <a asp-controller="Jobs" asp-action="Detail" asp-route-id="senior-devops-cloud-platform-engineer" class="btn-job-apply flex-grow-1">
@@ -1001,11 +1017,11 @@
                         </div>
                         <span class="fw-bold font-monospace text-success" style="font-size: 0.95rem;">40 – 55 Triệu</span>
                     </div>
-                    <h5 class="fw-bold mb-1" style="font-size: 1.05rem;">
+                    <h3 class="fw-bold mb-1" style="font-size: 1.05rem;">
                         <a asp-controller="Jobs" asp-action="Detail" asp-route-id="product-owner-fintech-ai-platforms" class="text-dark text-decoration-none hover-green">
                             Product Owner (Fintech & AI Platforms)
                         </a>
-                    </h5>
+                    </h3>
                     <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1 text-success"></i>Hà Nội · Full-time</p>
                     <p class="text-muted small flex-grow-1 mb-3" style="line-height: 1.6;">
                         Định hướng roadmap tính năng, quản trị Product Backlog, làm việc cùng Tech Lead và Stakeholders đưa sản phẩm tiếp cận hàng triệu người dùng.
@@ -1017,7 +1033,7 @@
                         <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">FinTech</span>
                     </div>
                     <div class="d-flex gap-2">
-                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="product-owner-fintech-ai-platforms" class="btn-career-outline flex-grow-1 text-center justify-content-center py-1.5" style="font-size: 0.85rem;">
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="product-owner-fintech-ai-platforms" class="btn-career-outline flex-grow-1 text-center justify-content-center py-1.5" style="font-size: 0.85rem;" aria-label="Xem chi tiết JD Product Owner Fintech & AI Platforms">
                             Chi tiết JD
                         </a>
                         <a asp-controller="Jobs" asp-action="Detail" asp-route-id="product-owner-fintech-ai-platforms" class="btn-job-apply flex-grow-1">
@@ -1032,18 +1048,18 @@
                 <div class="career-card d-flex flex-column">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <div class="d-flex align-items-center gap-1.5">
-                            <span class="badge bg-success-subtle text-success px-2.5 py-1" style="border-radius: 6px; font-weight: 600;">
+                            <span class="badge bg-success-subtle px-2.5 py-1" style="border-radius: 6px; font-weight: 600; color: #047857 !important;">
                                 Chất lượng Phần mềm
                             </span>
                             <span class="badge bg-danger text-white px-1.5 py-0.5" style="border-radius: 4px; font-size: 0.65rem; font-weight: 700;">HOT</span>
                         </div>
                         <span class="fw-bold font-monospace text-success" style="font-size: 0.95rem;">30 – 45 Triệu</span>
                     </div>
-                    <h5 class="fw-bold mb-1" style="font-size: 1.05rem;">
+                    <h3 class="fw-bold mb-1" style="font-size: 1.05rem;">
                         <a asp-controller="Jobs" asp-action="Detail" asp-route-id="qa-test-automation-lead" class="text-dark text-decoration-none hover-green">
                             QA / Test Automation Lead
                         </a>
-                    </h5>
+                    </h3>
                     <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1 text-success"></i>Hà Nội · Full-time</p>
                     <p class="text-muted small flex-grow-1 mb-3" style="line-height: 1.6;">
                         Xây dựng automation framework từ đầu cho Web và API microservices (Playwright / C#), thực hiện kiểm thử tải k6 và đảm bảo chất lượng phát hành.
@@ -1055,7 +1071,7 @@
                         <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">CI/CD</span>
                     </div>
                     <div class="d-flex gap-2">
-                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="qa-test-automation-lead" class="btn-career-outline flex-grow-1 text-center justify-content-center py-1.5" style="font-size: 0.85rem;">
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="qa-test-automation-lead" class="btn-career-outline flex-grow-1 text-center justify-content-center py-1.5" style="font-size: 0.85rem;" aria-label="Xem chi tiết JD QA / Test Automation Lead">
                             Chi tiết JD
                         </a>
                         <a asp-controller="Jobs" asp-action="Detail" asp-route-id="qa-test-automation-lead" class="btn-job-apply flex-grow-1">
@@ -1074,11 +1090,11 @@
                         </span>
                         <span class="fw-bold font-monospace text-success" style="font-size: 0.95rem;">18 – 28 Triệu</span>
                     </div>
-                    <h5 class="fw-bold mb-1" style="font-size: 1.05rem;">
+                    <h3 class="fw-bold mb-1" style="font-size: 1.05rem;">
                         <a asp-controller="Jobs" asp-action="Detail" asp-route-id="talent-acquisition-specialist-tech-recruiter" class="text-dark text-decoration-none hover-green">
                             Talent Acquisition Specialist (Tech Recruiter)
                         </a>
-                    </h5>
+                    </h3>
                     <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1 text-success"></i>Hà Nội (Văn phòng) · Full-time</p>
                     <p class="text-muted small flex-grow-1 mb-3" style="line-height: 1.6;">
                         Săn tìm và kết nối các ứng viên tài năng trong lĩnh vực công nghệ cao (.NET, AI, Cloud), điều phối quy trình phỏng vấn chuyên nghiệp và xây dựng thương hiệu.
@@ -1089,7 +1105,7 @@
                         <span class="badge bg-light text-secondary border px-2 py-1" style="border-radius: 6px;">Employer Branding</span>
                     </div>
                     <div class="d-flex gap-2">
-                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="talent-acquisition-specialist-tech-recruiter" class="btn-career-outline flex-grow-1 text-center justify-content-center py-1.5" style="font-size: 0.85rem;">
+                        <a asp-controller="Jobs" asp-action="Detail" asp-route-id="talent-acquisition-specialist-tech-recruiter" class="btn-career-outline flex-grow-1 text-center justify-content-center py-1.5" style="font-size: 0.85rem;" aria-label="Xem chi tiết JD Talent Acquisition Specialist">
                             Chi tiết JD
                         </a>
                         <a asp-controller="Jobs" asp-action="Detail" asp-route-id="talent-acquisition-specialist-tech-recruiter" class="btn-job-apply flex-grow-1">
@@ -1102,7 +1118,7 @@
             @* ── CALLOUT BOX: NÚT HIỂN THỊ THÊM CÔNG VIỆC DẪN TỚI /JOBS ── *@
             <div class="col-12 mt-4">
                 <div class="p-4 p-md-5 text-center bg-white border shadow-xs" style="border-radius: 12px; border-color: #E2E8F0 !important;">
-                    <span class="badge px-3 py-1 mb-2" style="background: #ECFDF5; color: #059669; border-radius: 6px; font-weight: 600; font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase;">
+                    <span class="badge px-3 py-1 mb-2" style="background: #ECFDF5; color: #047857; border-radius: 6px; font-weight: 600; font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase;">
                         <i class="bi bi-lightning-charge-fill me-1"></i> Nhu Cầu Tuyển Dụng Lớn Năm 2026
                     </span>
                     <h3 class="fw-bold text-dark mb-2" style="font-size: 1.5rem;">
@@ -1150,28 +1166,28 @@
         <div class="career-stepper">
             <div class="career-step-card">
                 <div class="career-step-badge">01</div>
-                <h5 class="fw-bold text-dark mb-2" style="font-size: 1rem;">Nộp hồ sơ trực tuyến</h5>
+                <h3 class="fw-bold text-dark mb-2" style="font-size: 1rem;">Nộp hồ sơ trực tuyến</h3>
                 <p class="text-muted small mb-0" style="line-height: 1.65;">
                     Tải lên CV (định dạng PDF) trực tiếp trên trang hoặc gửi qua email tuyển dụng. Quá trình chỉ mất chưa tới 1 phút.
                 </p>
             </div>
             <div class="career-step-card">
                 <div class="career-step-badge">02</div>
-                <h5 class="fw-bold text-dark mb-2" style="font-size: 1rem;">Sàng lọc & Phản hồi trong 48h</h5>
+                <h3 class="fw-bold text-dark mb-2" style="font-size: 1rem;">Sàng lọc & Phản hồi trong 48h</h3>
                 <p class="text-muted small mb-0" style="line-height: 1.65;">
                     Đội ngũ Talent Acquisition đánh giá hồ sơ và phản hồi kết quả trực tiếp cho bạn qua email trong vòng 48 giờ làm việc.
                 </p>
             </div>
             <div class="career-step-card">
                 <div class="career-step-badge">03</div>
-                <h5 class="fw-bold text-dark mb-2" style="font-size: 1rem;">Phỏng vấn kỹ thuật online</h5>
+                <h3 class="fw-bold text-dark mb-2" style="font-size: 1rem;">Phỏng vấn kỹ thuật online</h3>
                 <p class="text-muted small mb-0" style="line-height: 1.65;">
                     Buổi trao đổi chuyên môn qua Google Meet cùng Tech Lead, tập trung vào tư duy thiết kế hệ thống và kinh nghiệm thực chiến.
                 </p>
             </div>
             <div class="career-step-card">
                 <div class="career-step-badge">04</div>
-                <h5 class="fw-bold text-dark mb-2" style="font-size: 1rem;">Nhận Offer & Onboarding</h5>
+                <h3 class="fw-bold text-dark mb-2" style="font-size: 1rem;">Nhận Offer & Onboarding</h3>
                 <p class="text-muted small mb-0" style="line-height: 1.65;">
                     Gửi thư mời nhận việc với mức đãi ngộ minh bạch, nhận thiết bị làm việc MacBook Pro và chào đón thành viên mới gia nhập.
                 </p>
@@ -1185,6 +1201,10 @@
    ══════════════════════════════════════════════════════════ *@
 <section class="career-section career-section-alt">
     <div class="container-fluid px-4 px-md-5">
+        <div class="text-center mb-4">
+            <span class="career-section-label">TIẾNG NÓI TỪ BAN LÃNH ĐẠO · TRIẾT LÝ PHÁT TRIỂN</span>
+            <h2 class="career-h2">Văn hóa Kỹ thuật Trao quyền &amp; Môi trường Tự chủ</h2>
+        </div>
         <div class="row align-items-center justify-content-center">
             <div class="col-12 col-lg-10">
                 <div class="card bg-white p-4 p-md-5 shadow-sm" style="border: 1px solid #E2E8F0; border-radius: 12px;">
@@ -1237,7 +1257,7 @@
                 </p>
             </div>
             <div class="col-12 col-lg-4 d-flex gap-2 justify-content-lg-end flex-wrap">
-                <a asp-controller="Account" asp-action="CandidateAuth" class="btn-career-primary" style="background: #059669; padding: 0.75rem 1.5rem;">
+                <a asp-controller="Account" asp-action="CandidateAuth" class="btn-career-primary" style="background: #047857; padding: 0.75rem 1.5rem;">
                     <i class="bi bi-send-fill"></i> Nộp hồ sơ ngay
                 </a>
                 <a href="#open-jobs" class="btn-career-outline" style="border-color: #334155; color: #CBD5E1; background: transparent; padding: 0.75rem 1.5rem;">
@@ -1249,8 +1269,8 @@
         <div class="border-top mt-5 pt-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3" style="border-color: #1E293B !important;">
             <div>
                 <div class="d-flex align-items-center gap-2 mb-2">
-                    <img src="~/img/logo-dark-transparent.png" alt="NoveraTech" style="height: 26px; width: auto; filter: brightness(0) invert(1);" asp-append-version="true" />
-                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34D399; font-size: 0.7rem; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">Careers</span>
+                    <img src="~/img/logo-dark-transparent.png" alt="NoveraTech" width="140" height="26" style="height: 26px; width: auto; filter: brightness(0) invert(1);" asp-append-version="true" />
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10B981; font-weight: 700; font-size: 0.7rem; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.4);">Careers</span>
                 </div>
                 <div style="color: #64748B; font-size: 0.85rem;">
                     <i class="bi bi-geo-alt me-1 text-success"></i> Trụ sở chính: Tầng 18, Tòa nhà Novera Tower, Phố Duy Tân, Quận Cầu Giấy, Hà Nội

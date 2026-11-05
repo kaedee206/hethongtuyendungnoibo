@@ -65,7 +65,7 @@
             box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(5, 150, 105, 0.06);
         }
         .job-card-modern:hover .job-title-link {
-            color: #059669 !important;
+            color: #047857 !important;
         }
         .job-card-modern:hover .job-icon-box {
             transform: scale(1.05);
@@ -87,57 +87,6 @@
 <div class="container-fluid px-3 px-xl-4 py-3" style="max-width: 1600px;">
     @if (Model.IsAuthenticated)
     {
-        <!-- ── SINGLE OPERATIONAL HEADER (RULE.MD: Clean, No Stacked Banners) ── -->
-        <div class="mb-3 pb-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3"
-             style="border-bottom: 1px solid #E2E8F0;">
-            <div class="d-flex align-items-center gap-3">
-                <!-- User Avatar Badge -->
-                <div class="d-flex align-items-center justify-content-center fw-bold text-white shadow-sm"
-                     style="width: 42px; height: 42px; background: linear-gradient(135deg, #059669 0%, #047857 100%); border-radius: 10px; font-size: 1.05rem; flex-shrink: 0; letter-spacing: -0.02em;">
-                    @(Model.UserFullName.Length > 0 ? Model.UserFullName[..1].ToUpper() : "U")
-                </div>
-                <div>
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <span style="font-size: 0.95rem; font-weight: 700; color: #0F172A; letter-spacing: -0.01em;">
-                            @Model.UserFullName
-                        </span>
-                        <span style="color:#CBD5E1;">·</span>
-                        <span style="font-size: 0.8rem; color: #64748B;">
-                            @(Model.IsCandidate ? "Cổng Ứng Viên" : "Trung Tâm Điều Hành Tuyển Dụng")
-                        </span>
-                        @if (!string.IsNullOrWhiteSpace(Model.PrimaryRoleDisplayName))
-                        {
-                            <span style="background:#ECFDF5; color:#065F46; border: 1px solid #A7F3D0; border-radius:6px; font-size:0.75rem; padding:2px 10px; font-weight:600;" title="Vai trò quyền cao nhất">
-                                @Model.PrimaryRoleDisplayName
-                            </span>
-                        }
-                    </div>
-                    <div class="d-flex align-items-center gap-2 mt-0.5">
-                        <span style="font-size: 0.75rem; color: #94A3B8; font-family: 'JetBrains Mono', ui-monospace, monospace;">
-                            @Model.UserEmail
-                        </span>
-                        <span style="color:#E2E8F0;">•</span>
-                        <span style="font-size: 0.72rem; color: #059669; font-weight: 600;">
-                            <i class="bi bi-shield-check me-1"></i>Hệ thống bảo mật trực tuyến
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Global Shortcuts -->
-            <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                <a href="/Jobs" style="display:inline-flex; align-items:center; gap:0.4rem; font-size:0.8rem; font-weight:600; color:#065F46; background:#ECFDF5; text-decoration:none; padding:0.4rem 0.85rem; border:1px solid #A7F3D0; border-radius:8px; transition:all .2s;">
-                    <i class="bi bi-briefcase-fill" style="color:#059669;"></i> Vị Trí Đang Mở (@Model.TotalOpenJobs)
-                </a>
-                <a asp-controller="Account" asp-action="ChangePassword"
-                   style="display:inline-flex; align-items:center; gap:0.4rem; font-size:0.8rem; font-weight:500; color:#475569; background:#FFFFFF; text-decoration:none; padding:0.4rem 0.85rem; border:1px solid #E2E8F0; border-radius:8px; transition:all .2s;"
-                   onmouseover="this.style.borderColor='#059669'; this.style.color='#059669';"
-                   onmouseout="this.style.borderColor='#E2E8F0'; this.style.color='#475569';">
-                    <i class="bi bi-key"></i> Đổi mật khẩu
-                </a>
-            </div>
-        </div>
-
         @if (Model.IsCandidate)
         {
             <!-- ========================================== -->
@@ -158,7 +107,7 @@
                                     </button>
                                 </div>
                                 <div class="d-flex align-items-center gap-3 mb-3">
-                                    <div class="d-flex align-items-center justify-content-center fw-bold text-white rounded-circle" style="width: 44px; height: 44px; background: #059669; font-size: 1.1rem;">
+                                    <div class="d-flex align-items-center justify-content-center fw-bold text-white rounded-circle" style="width: 44px; height: 44px; background: #047857; font-size: 1.1rem;">
                                         @(Model.UserFullName.Length > 0 ? Model.UserFullName[..1].ToUpper() : "U")
                                     </div>
                                     <div>
@@ -234,7 +183,7 @@
 
                                     @if (Model.CandidateInterview != null)
                                     {
-                                        <div class="p-3 bg-light border border-success-subtle rounded-3" style="border-left: 4px solid #059669 !important;">
+                                        <div class="p-3 bg-light border border-success-subtle rounded-3" style="border-left: 4px solid #047857 !important;">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <span class="fw-bold text-dark"><i class="bi bi-camera-video text-success me-1"></i>@Model.CandidateInterview.RoundTitle</span>
                                                 <span class="badge @(Model.CandidateInterview.CandidateConfirmed == Ats.Web.Models.Enums.CandidateConfirmStatus.ACCEPTED ? "bg-success-subtle text-success" : (Model.CandidateInterview.CandidateConfirmed == Ats.Web.Models.Enums.CandidateConfirmStatus.DECLINED ? "bg-warning-subtle text-warning-emphasis" : "bg-secondary-subtle text-secondary"))">
@@ -305,7 +254,7 @@
                             <div id="feature-section-candidate-ho-so" class="card border-0 shadow-sm p-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                                 <div class="d-flex align-items-center justify-content-between mb-3 pb-2" style="border-bottom: 1px solid #F1F5F9;">
                                     <h6 class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">
-                                        <i class="bi bi-person-badge me-1.5" style="color: #059669;"></i>Hồ Sơ Ứng Tuyển &amp; CV Đính Kèm
+                                        <i class="bi bi-person-badge me-1.5" style="color: #047857;"></i>Hồ Sơ Ứng Tuyển &amp; CV Đính Kèm
                                     </h6>
                                     <span style="background: #ECFDF5; color: #047857; font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 6px; border: 1px solid #A7F3D0;">
                                         <i class="bi bi-check-circle-fill me-1"></i>Đã kích hoạt
@@ -357,7 +306,7 @@
                             <!-- Card Hướng Dẫn & Kênh Hỗ Trợ Tuyển Dụng -->
                             <div class="card border-0 shadow-sm p-4 bg-white" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                                 <div class="d-flex align-items-center gap-2 mb-3 pb-2" style="border-bottom: 1px solid #F1F5F9;">
-                                    <i class="bi bi-headset" style="color: #059669; font-size: 1.1rem;"></i>
+                                    <i class="bi bi-headset" style="color: #047857; font-size: 1.1rem;"></i>
                                     <h6 class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">Hỗ Trợ Ứng Viên NoveraTech</h6>
                                 </div>
                                 <p style="font-size: 0.8rem; color: #64748B; line-height: 1.5;" class="mb-3">
@@ -378,7 +327,7 @@
                                     </div>
                                 </div>
                                 <div class="p-2.5" style="background: #F1F5F9; border-radius: 8px; font-size: 0.75rem; color: #475569;">
-                                    <i class="bi bi-info-circle me-1" style="color: #059669;"></i>
+                                    <i class="bi bi-info-circle me-1" style="color: #047857;"></i>
                                     Mọi thông báo lịch phỏng vấn và kết quả sẽ được gửi tự động qua email của bạn.
                                 </div>
                             </div>
@@ -443,12 +392,12 @@
                                     <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748B;">
                                         Tiến độ xét tuyển hồ sơ
                                     </span>
-                                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700; color: @(Model.ActiveApplication.IsWithdrawn ? "#64748B" : "#059669");">
+                                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700; color: @(Model.ActiveApplication.IsWithdrawn ? "#64748B" : "#047857");">
                                         @(Model.ActiveApplication.ProgressPercentage)% Hoàn thành
                                     </span>
                                 </div>
                                 <div class="progress" style="height: 6px; background-color: #E2E8F0; border-radius: 999px;">
-                                    <div class="progress-bar" role="progressbar" style="width: @(Model.ActiveApplication.ProgressPercentage)%; background-color: @(Model.ActiveApplication.IsWithdrawn ? "#94A3B8" : "#059669"); border-radius: 999px;" aria-valuenow="@Model.ActiveApplication.ProgressPercentage" aria-valuemin="0" aria-valuemax="100"></div>
+                                    <div class="progress-bar" role="progressbar" style="width: @(Model.ActiveApplication.ProgressPercentage)%; background-color: @(Model.ActiveApplication.IsWithdrawn ? "#94A3B8" : "#047857"); border-radius: 999px;" aria-valuenow="@Model.ActiveApplication.ProgressPercentage" aria-valuemin="0" aria-valuemax="100"></div>
                                 </div>
 
                                 <!-- Step Nodes Grid -->
@@ -460,7 +409,7 @@
                                         <div class="text-center">
                                             <div class="d-inline-flex align-items-center justify-content-center fw-bold mb-1.5"
                                                  style="width: 28px; height: 28px; border-radius: 50%; font-size: 0.75rem; transition: all .2s;
-                                                        @(isDone ? "background:#059669; color:#fff;" : (isActive ? "background:#0F172A; color:#fff; box-shadow: 0 0 0 3px #A7F3D0;" : "background:#F1F5F9; color:#94A3B8; border:1px solid #CBD5E1;"))">
+                                                        @(isDone ? "background:#047857; color:#fff;" : (isActive ? "background:#0F172A; color:#fff; box-shadow: 0 0 0 3px #A7F3D0;" : "background:#F1F5F9; color:#94A3B8; border:1px solid #CBD5E1;"))">
                                                 @if (isDone)
                                                 {
                                                     <i class="bi bi-check-lg" style="font-size: 0.9rem;"></i>
@@ -470,10 +419,10 @@
                                                     <span>@step.StepNumber</span>
                                                 }
                                             </div>
-                                            <div class="fw-semibold text-truncate px-1" style="font-size: 0.78rem; color: @(isActive ? "#0F172A" : (isDone ? "#059669" : "#64748B"));">
+                                            <div class="fw-semibold text-truncate px-1" style="font-size: 0.78rem; color: @(isActive ? "#0F172A" : (isDone ? "#047857" : "#64748B"));">
                                                 @step.StepName
                                             </div>
-                                            <div class="text-truncate px-1" style="font-size: 0.7rem; color: @(isActive ? "#059669" : "#94A3B8");">
+                                            <div class="text-truncate px-1" style="font-size: 0.7rem; color: @(isActive ? "#047857" : "#94A3B8");">
                                                 @step.Subtitle
                                             </div>
                                         </div>
@@ -484,10 +433,10 @@
                             <!-- Phỏng vấn / Sự kiện Google Meet (Thẻ chuẩn mực Enterprise Event Ticket) -->
                             @if (Model.CandidateInterview != null)
                             {
-                                <div class="p-3.5 mb-0 mt-auto" style="background: #F8FAFC; border: 1px solid #CBD5E1; border-left: 4px solid #059669; border-radius: 8px;">
+                                <div class="p-3.5 mb-0 mt-auto" style="background: #F8FAFC; border: 1px solid #CBD5E1; border-left: 4px solid #047857; border-radius: 8px;">
                                     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 pb-2 gap-2" style="border-bottom: 1px solid #E2E8F0;">
                                         <div class="d-flex align-items-center gap-2">
-                                            <i class="bi bi-calendar2-check-fill" style="color: #059669; font-size: 1.15rem;"></i>
+                                            <i class="bi bi-calendar2-check-fill" style="color: #047857; font-size: 1.15rem;"></i>
                                             <div>
                                                 <span class="fw-bold text-dark" style="font-size: 0.95rem;">@Model.CandidateInterview.RoundTitle</span>
                                                 <span style="font-size: 0.75rem; color: #64748B;" class="ms-2">· Hình thức Trực tuyến</span>
@@ -502,20 +451,20 @@
                                         <div class="col-12 col-sm-6">
                                             <div style="font-size: 0.7rem; text-transform: uppercase; color: #64748B; font-weight: 600;">Thời gian phỏng vấn</div>
                                             <div class="fw-bold text-dark mt-0.5" style="font-family: 'JetBrains Mono', monospace;">
-                                                <i class="bi bi-clock me-1" style="color: #059669;"></i>@Model.CandidateInterview.TimeDisplay, @Model.CandidateInterview.DateDisplay
+                                                <i class="bi bi-clock me-1" style="color: #047857;"></i>@Model.CandidateInterview.TimeDisplay, @Model.CandidateInterview.DateDisplay
                                             </div>
                                         </div>
                                         <div class="col-12 col-sm-6">
                                             <div style="font-size: 0.7rem; text-transform: uppercase; color: #64748B; font-weight: 600;">Hội đồng chuyên môn</div>
                                             <div class="fw-semibold text-dark mt-0.5">
-                                                <i class="bi bi-people me-1" style="color: #059669;"></i>@Model.CandidateInterview.PanelistNames
+                                                <i class="bi bi-people me-1" style="color: #047857;"></i>@Model.CandidateInterview.PanelistNames
                                             </div>
                                         </div>
                                         <div class="col-12">
                                             <div style="font-size: 0.7rem; text-transform: uppercase; color: #64748B; font-weight: 600;">Đường link phòng họp (Google Meet)</div>
                                             <div class="fw-semibold text-dark mt-0.5 text-truncate" style="font-family: 'JetBrains Mono', monospace;">
-                                                <i class="bi bi-camera-video me-1" style="color: #059669;"></i>
-                                                <a href="@Model.CandidateInterview.LocationOrLink" target="_blank" class="text-decoration-none" style="color: #059669;">
+                                                <i class="bi bi-camera-video me-1" style="color: #047857;"></i>
+                                                <a href="@Model.CandidateInterview.LocationOrLink" target="_blank" class="text-decoration-none" style="color: #047857;">
                                                     @Model.CandidateInterview.LocationOrLink
                                                 </a>
                                             </div>
@@ -523,7 +472,7 @@
                                     </div>
 
                                     <div class="d-flex flex-wrap gap-2 pt-2" style="border-top: 1px solid #E2E8F0;">
-                                        <a href="@Model.CandidateInterview.LocationOrLink" target="_blank" class="btn btn-sm fw-semibold text-white px-3" style="background: #059669; border-radius: 8px; font-size: 0.8rem;">
+                                        <a href="@Model.CandidateInterview.LocationOrLink" target="_blank" class="btn btn-sm fw-semibold text-white px-3" style="background: #047857; border-radius: 8px; font-size: 0.8rem;">
                                             <i class="bi bi-box-arrow-up-right me-1"></i> Vào phòng họp Google Meet
                                         </a>
                                         @if (!string.IsNullOrWhiteSpace(Model.CandidateInterview.ConfirmationUrl))
@@ -553,7 +502,7 @@
                                 else
                                 {
                                     <div class="p-3 mb-0 mt-auto" style="background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 8px; font-size: 0.82rem; color: #475569;">
-                                        <i class="bi bi-info-circle me-1.5" style="color: #059669;"></i>
+                                        <i class="bi bi-info-circle me-1.5" style="color: #047857;"></i>
                                         Hồ sơ của bạn đang được bộ phận chuyên môn xem xét. Lịch phỏng vấn chi tiết sẽ được cập nhật tại đây và gửi qua email ngay khi hội đồng hoàn tất xếp lịch.
                                     </div>
                                 }
@@ -563,7 +512,7 @@
                         {
                             <div class="text-center py-5 my-auto">
                                 <div class="d-inline-flex align-items-center justify-content-center mb-3" style="width: 56px; height: 56px; background: #ECFDF5; border-radius: 12px;">
-                                    <i class="bi bi-briefcase" style="font-size: 1.75rem; color: #059669;"></i>
+                                    <i class="bi bi-briefcase" style="font-size: 1.75rem; color: #047857;"></i>
                                 </div>
                                 <h5 class="fw-bold text-dark mb-1">Bạn chưa nộp hồ sơ ứng tuyển nào</h5>
                                 <p class="text-muted small mb-4">Khám phá các vị trí tuyển dụng đang mở của NoveraTech bên dưới và nộp đơn ngay hôm nay!</p>
@@ -581,7 +530,7 @@
                         <!-- Header Section -->
                         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3 pb-3" style="border-bottom: 1px solid #F1F5F9;">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; background: #ECFDF5; color: #059669; border-radius: 12px; font-size: 1.25rem;">
+                                <div class="d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; background: #ECFDF5; color: #047857; border-radius: 12px; font-size: 1.25rem;">
                                     <i class="bi bi-briefcase-fill"></i>
                                 </div>
                                 <div>
@@ -611,7 +560,7 @@
                                     (titleLower.Contains("ai") || titleLower.Contains("llm") || titleLower.Contains("data")) ? ("bi-cpu-fill", "#EEF2FF", "#4F46E5") :
                                     (titleLower.Contains("design") || titleLower.Contains("ui/ux")) ? ("bi-palette-fill", "#FDF2F8", "#DB2777") :
                                     (titleLower.Contains("product") || titleLower.Contains("owner")) ? ("bi-kanban-fill", "#FFFBEB", "#D97706") :
-                                    (titleLower.Contains("architect") || titleLower.Contains("solution") || titleLower.Contains("devops")) ? ("bi-layers-half", "#F0FDF4", "#059669") :
+                                    (titleLower.Contains("architect") || titleLower.Contains("solution") || titleLower.Contains("devops")) ? ("bi-layers-half", "#F0FDF4", "#047857") :
                                     ("bi-briefcase-fill", "#F8FAFC", "#0284C7");
 
                                 var detailUrl = $"/Jobs/Detail/{(string.IsNullOrWhiteSpace(job.Slug) ? job.Id : job.Slug)}";
@@ -729,7 +678,7 @@
                                     <span style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748B;">
                                         Vị trí đang mở
                                     </span>
-                                    <div class="kpi-icon-box" style="background: #ECFDF5; color: #059669;">
+                                    <div class="kpi-icon-box" style="background: #ECFDF5; color: #047857;">
                                         <i class="bi bi-briefcase"></i>
                                     </div>
                                 </div>
@@ -738,7 +687,7 @@
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between mt-2 pt-1 border-top" style="border-color: #F1F5F9 !important;">
                                     <span style="font-size: 0.72rem; color: #64748B;">Tin đang hoạt động</span>
-                                    <span style="font-size: 0.72rem; color: #059669; font-weight: 600;">Xem chi tiết &rarr;</span>
+                                    <span style="font-size: 0.72rem; color: #047857; font-weight: 600;">Xem chi tiết &rarr;</span>
                                 </div>
                             </a>
                         </div>
@@ -814,7 +763,7 @@
                     {
                         var primaryPos = Model.MyPrimaryPositionProgress;
                         <!-- KHỐI TIẾN ĐỘ VỊ TRÍ SỞ HỮU DÀNH CHO TRƯỞNG BỘ PHẬN (SCRUM-351) -->
-                        <div class="card border-0 shadow-sm p-4 mb-4" style="background: linear-gradient(135deg, #F8FAFC 0%, #FFFFFF 100%); border: 1px solid #E2E8F0 !important; border-radius: 12px;">
+                        <div class="card border-0 shadow-sm p-4 mb-4" style="background: #FFFFFF; border: 1px solid #E2E8F0 !important; border-radius: 12px;">
                             <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 pb-3 border-bottom" style="border-color: #F1F5F9 !important;">
                                 <div class="d-flex align-items-center gap-3">
                                     <div class="rounded-3 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; background: #EEF2FF; color: #4F46E5; font-size: 1.25rem;">
@@ -973,7 +922,7 @@
                                             <i class="bi bi-person-check-fill text-primary fs-6"></i>
                                             <span>Chế độ Recruiter: Đang hiển thị ứng viên thuộc <strong>@Model.AssignedPositionsCount</strong> vị trí tuyển dụng bạn được phân công.</span>
                                         </div>
-                                        <span class="badge bg-primary text-white" style="font-size: 0.7rem;">Scrum-26 Scoped</span>
+                                        <span class="badge bg-primary text-white" style="font-size: 0.7rem;">Phụ trách chính</span>
                                     </div>
                                 }
                                 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 pb-2 gap-2" style="border-bottom: 1px solid #F1F5F9;">
@@ -1075,7 +1024,7 @@
                                 <!-- 2. Bộ lọc vị trí tuyển dụng (Mặc định vị trí Recruiter đang phụ trách) -->
                                 <div class="d-flex align-items-center gap-1.5" style="min-width: 200px;">
                                     <select id="kanbanJobFilter" class="form-select form-select-sm fw-semibold shadow-none" style="border-color: #CBD5E1; border-radius: 8px; font-size: 0.82rem;" onchange="onPipelineJobFilterChanged(this.value)">
-                                        <option value="ALL">📋 Tất cả vị trí (@Model.CandidatePipelineItems.Count)</option>
+                                        <option value="ALL" selected="@(Model.DefaultJobPostingId == null ? "selected" : null)">📋 Tất cả vị trí (@Model.CandidatePipelineItems.Count)</option>
                                         @foreach (var job in Model.JobPostingFilterOptions)
                                         {
                                             if (Model.DefaultJobPostingId == job.Id)
@@ -1103,12 +1052,12 @@
 
                                 <div class="vr mx-1 d-none d-sm-block text-muted opacity-25" style="height: 22px;"></div>
 
-                                <!-- 4. Chuyển đổi Kanban / Bảng -->
+                                <!-- 4. Chuyển đổi Kanban / Bảng (Mặc định: Dạng Bảng) -->
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <button type="button" id="btnPipelineTableView" class="btn btn-outline-secondary pipeline-view-btn" onclick="switchPipelineView('table')" title="Danh Sách Dạng Bảng">
+                                    <button type="button" id="btnPipelineTableView" class="btn btn-outline-success pipeline-view-btn active" onclick="switchPipelineView('table')" title="Danh Sách Dạng Bảng">
                                         <i class="bi bi-table me-1"></i> Bảng
                                     </button>
-                                    <button type="button" id="btnPipelineKanbanView" class="btn btn-outline-success pipeline-view-btn active" onclick="switchPipelineView('kanban')" title="Bảng Kanban Kéo Thả">
+                                    <button type="button" id="btnPipelineKanbanView" class="btn btn-outline-success pipeline-view-btn" onclick="switchPipelineView('kanban')" title="Bảng Kanban Kéo Thả">
                                         <i class="bi bi-kanban-fill me-1"></i> Kanban
                                     </button>
                                 </div>
@@ -1124,8 +1073,8 @@
                                 </div>
 
                                 <!-- SCRUM-328: Nút xuất Excel danh sách ứng viên rút gọn -->
-                                <button type="button" id="btnExportCandidateExcel" class="btn btn-sm btn-outline-success fw-semibold d-inline-flex align-items-center gap-1.5" style="border-radius: 8px; font-size: 0.82rem; padding: 0.35rem 0.75rem; border-color: #059669; color: #059669; white-space: nowrap;" onclick="exportCandidateShortlistExcel()" title="Xuất danh sách ứng viên theo bộ lọc hiện tại ra file Excel để gửi Trưởng bộ phận (SCRUM-328)">
-                                    <i class="bi bi-file-earmark-excel-fill" style="font-size: 0.95rem; color: #059669;"></i>
+                                <button type="button" id="btnExportCandidateExcel" class="btn btn-sm btn-outline-success fw-semibold d-inline-flex align-items-center gap-1.5" style="border-radius: 8px; font-size: 0.82rem; padding: 0.35rem 0.75rem; border-color: #047857; color: #047857; white-space: nowrap;" onclick="exportCandidateShortlistExcel()" title="Xuất danh sách ứng viên theo bộ lọc hiện tại ra file Excel để gửi Trưởng bộ phận (SCRUM-328)">
+                                    <i class="bi bi-file-earmark-excel-fill" style="font-size: 0.95rem; color: #047857;"></i>
                                     <span>Xuất Excel</span>
                                 </button>
 
@@ -1175,8 +1124,8 @@
                                 </div>
 
                                 <!-- SCRUM-52: Nút đặt lịch phỏng vấn hàng loạt nhanh trên Toolbar -->
-                                <button type="button" id="btnBatchScheduleInterview" class="btn btn-sm btn-outline-success fw-semibold d-inline-flex align-items-center gap-1.5" style="border-radius: 8px; font-size: 0.82rem; padding: 0.35rem 0.75rem; border-color: #059669; color: #059669; white-space: nowrap;" onclick="openBatchScheduleModal()" title="Đặt lịch phỏng vấn tập trung hàng loạt cho nhiều ứng viên (Scrum-52)">
-                                    <i class="bi bi-calendar-range" style="font-size: 0.95rem; color: #059669;"></i>
+                                <button type="button" id="btnBatchScheduleInterview" class="btn btn-sm btn-outline-success fw-semibold d-inline-flex align-items-center gap-1.5" style="border-radius: 8px; font-size: 0.82rem; padding: 0.35rem 0.75rem; border-color: #047857; color: #047857; white-space: nowrap;" onclick="openBatchScheduleModal()" title="Đặt lịch phỏng vấn tập trung hàng loạt cho nhiều ứng viên (Scrum-52)">
+                                    <i class="bi bi-calendar-range" style="font-size: 0.95rem; color: #047857;"></i>
                                     <span>Đặt lịch hàng loạt</span>
                                 </button>
                             </div>
@@ -1219,9 +1168,9 @@
                         </div>
 
                         <!-- ============================================================== -->
-                        <!-- SCRUM-319: KANBAN BOARD CONTAINER (Tự thích ứng & Thu gọn cột) -->
+                        <!-- SCRUM-319: KANBAN BOARD CONTAINER (Ẩn mặc định, hiện khi chọn Kanban) -->
                         <!-- ============================================================== -->
-                        <div id="candidateKanbanViewContainer" class="kanban-board-wrapper kanban-mode-compact mt-2">
+                        <div id="candidateKanbanViewContainer" class="kanban-board-wrapper kanban-mode-compact mt-2 d-none">
                             <div class="kanban-board-grid">
                                 <!-- 1. CỘT HỒ SƠ MỚI (StageOrder 1) -->
                                 <div class="kanban-column" id="kanbanCol-1" data-kanban-stage="1" onclick="handleKanbanColumnClick(1, event)">
@@ -1394,11 +1343,11 @@
                                 <!-- 5. CỘT NHẬN VIỆC (StageOrder 6) -->
                                 <div class="kanban-column" id="kanbanCol-6" data-kanban-stage="6" onclick="handleKanbanColumnClick(6, event)">
                                     <div class="kanban-column-header">
-                                        <div class="kanban-column-strip" style="background: #059669;"></div>
+                                        <div class="kanban-column-strip" style="background: #047857;"></div>
                                         <!-- Header khi mở rộng -->
                                         <div class="kanban-col-expanded-content d-flex justify-content-between align-items-center w-100" style="gap: 4px;">
                                             <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;">
-                                                <i class="bi bi-person-check-fill text-success" style="color: #059669; font-size: 0.85rem;"></i>
+                                                <i class="bi bi-person-check-fill text-success" style="color: #047857; font-size: 0.85rem;"></i>
                                                 <span class="fw-bold text-dark text-truncate" style="font-size: 0.8rem;">Nhận việc</span>
                                             </div>
                                             <div class="kanban-col-actions flex-shrink-0">
@@ -1478,9 +1427,9 @@
                         </div>
 
                         <!-- ============================================================== -->
-                        <!-- TABLE VIEW CONTAINER (Ẩn mặc định, hiển thị khi chọn chế độ Bảng) -->
+                        <!-- TABLE VIEW CONTAINER (Mặc định hiển thị chế độ Bảng) -->
                         <!-- ============================================================== -->
-                        <div id="candidateTableViewContainer" class="d-none mt-2">
+                        <div id="candidateTableViewContainer" class="mt-2">
                             <!-- Filter Stage Pills (Pipeline Funnel Stepper + Trạng thái đặc biệt - Chỉ hiện khi ở chế độ Bảng) -->
                             <div class="d-flex flex-wrap align-items-center gap-1.5 mb-3 p-2 rounded-3 bg-light border" id="candidateStageFilterGroup" style="border-color: #E2E8F0 !important;">
                                 <button type="button" class="candidate-stage-pill active" onclick="filterPipelineCandidates('ALL', this)">
@@ -1773,34 +1722,56 @@
                 <!-- 3. TÍNH NĂNG LỊCH PHỎNG VẤN (LICH-PHONG-VAN: FULL WIDTH) -->
                 <!-- ============================================================== -->
                 <div class="staff-feature-panel @(activeFeature == "lich-phong-van" ? "" : "d-none")" data-feature-panel="lich-phong-van">
-                    <div id="feature-section-staff-lich-phong-van" class="card border-0 shadow-sm p-4 bg-white mb-4 scroll-margin-nav" style="border: 1px solid #E2E8F0 !important; border-radius: 12px;">
-                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 pb-2 gap-2" style="border-bottom: 1px solid #F1F5F9;">
+                    <div id="feature-section-staff-lich-phong-van" class="card border-0 shadow-sm p-4 bg-white mb-4 scroll-margin-nav" style="border: 1px solid #F1F5F9 !important; border-radius: 14px;">
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 pb-3 gap-3" style="border-bottom: 1px solid #F1F5F9;">
                             <div>
-                                <h5 class="fw-bold text-dark mb-0" style="font-size: 1.15rem;">
-                                    <i class="bi bi-calendar3 text-success me-2"></i>Lịch Phỏng Vấn Tuần Này (Interview Schedule)
+                                <h5 class="fw-bold text-dark mb-0.5" style="font-size: 1.15rem; color: #0F172A;">
+                                    <i class="bi bi-calendar3 text-success me-2"></i>Lịch Phỏng Vấn Tuần Này
                                 </h5>
-                                <small class="text-muted">Các phiên làm việc trực tuyến và đánh giá chuyên môn đã được sắp xếp trong tuần</small>
+                                <small class="text-muted" style="font-size: 0.8rem;">Các phiên làm việc trực tuyến và đánh giá chuyên môn đã được sắp xếp trong tuần</small>
                             </div>
                             <div class="d-flex align-items-center gap-2 flex-wrap">
-                                <div class="btn-group btn-group-sm" role="group" aria-label="Bộ lọc phạm vi lịch phỏng vấn">
+                                <!-- Bộ lọc phạm vi dạng Segmented Control mềm -->
+                                <div class="d-inline-flex p-1 rounded-3" style="background: #F1F5F9;">
                                     <a href="/dashboard/lich-phong-van?interviewScope=all" 
-                                       class="btn @(Model.InterviewScope != "my" ? "btn-dark text-white fw-semibold" : "btn-outline-secondary") px-2.5 py-1" 
-                                       style="border-radius: 8px 0 0 8px; font-size: 0.78rem;">
+                                       class="text-decoration-none px-2.5 py-1 text-center transition" 
+                                       style="border-radius: 6px; font-size: 0.78rem; @(Model.InterviewScope != "my" ? "background:#FFFFFF; color:#0F172A; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,0.06);" : "color:#64748B; font-weight:500;")">
                                         <i class="bi bi-grid-fill me-1"></i>Tất cả lịch (@Model.UpcomingInterviews.Count)
                                     </a>
                                     <a href="/dashboard/lich-phong-van?interviewScope=my" 
-                                       class="btn @(Model.InterviewScope == "my" ? "btn-dark text-white fw-semibold" : "btn-outline-secondary") px-2.5 py-1" 
-                                       style="border-radius: 0 8px 8px 0; font-size: 0.78rem;">
+                                       class="text-decoration-none px-2.5 py-1 text-center transition" 
+                                       style="border-radius: 6px; font-size: 0.78rem; @(Model.InterviewScope == "my" ? "background:#FFFFFF; color:#0F172A; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,0.06);" : "color:#64748B; font-weight:500;")">
                                         <i class="bi bi-person-check-fill me-1"></i>Lịch của tôi (@Model.MyUpcomingInterviewsCount)
                                     </a>
                                 </div>
-                                <button type="button" class="btn btn-sm btn-primary" style="border-radius: 8px; font-size: 0.78rem; background: #059669; border-color: #059669;" onclick="openScheduleModal('', '', '', 1);">
-                                    <i class="bi bi-calendar-plus me-1"></i> Lên lịch phỏng vấn mới
+
+                                <!-- Đặt lịch hàng loạt (Secondary Button) -->
+                                <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold rounded-2 py-1.5 px-3" 
+                                        style="font-size: 0.8rem; border-color: #E2E8F0;" onclick="openBatchScheduleModal()" title="Đặt lịch hàng loạt cho nhiều ứng viên trong cùng một buổi chiều (Scrum-52)">
+                                    <i class="bi bi-calendar-range me-1 text-muted"></i>Đặt lịch hàng loạt
                                 </button>
-                                <button type="button" class="btn btn-sm text-white fw-semibold" style="border-radius: 8px; font-size: 0.78rem; background: #059669; border: 1px solid #047857;" onclick="openBatchScheduleModal()" title="Đặt lịch hàng loạt cho nhiều ứng viên trong cùng một buổi chiều (Scrum-52)">
-                                    <i class="bi bi-calendar-range me-1"></i> Đặt lịch hàng loạt
-                                </button>
-                                <span style="font-size:0.75rem; font-weight:600; color:#0F172A; background:#F1F5F9; padding:0.25rem 0.75rem; border-radius:6px; font-family:'JetBrains Mono',monospace; border: 1px solid #E2E8F0;">
+
+                                <!-- Nút Primary Emerald nổi bật kèm Coach Mark Onboarding -->
+                                <div class="position-relative d-inline-block">
+                                    <button type="button" id="btnOpenScheduleModal" class="btn btn-sm text-white fw-semibold rounded-2 py-1.5 px-3.5 d-inline-flex align-items-center gap-1.5 shadow-sm" 
+                                            style="font-size: 0.82rem; background: #059669; border: 1px solid #059669;" onclick="openScheduleModal('', '', '', 1);">
+                                        <i class="bi bi-plus-lg"></i>
+                                        <span>+ Lên lịch</span>
+                                    </button>
+                                    
+                                    <!-- Onboarding Tooltip / Coach Mark -->
+                                    <div id="coachMarkSchedule" class="position-absolute end-0 top-100 mt-2 shadow-lg p-2.5 bg-dark text-white rounded-3 d-flex align-items-center gap-2"
+                                         style="min-width: 270px; z-index: 1050; font-size: 0.78rem; display: none !important; border: 1px solid rgba(255,255,255,0.15);">
+                                        <span class="d-inline-flex align-items-center justify-content-center bg-success text-white rounded-circle flex-shrink-0" style="width: 22px; height: 22px; font-size: 0.75rem;">
+                                            <i class="bi bi-lightbulb-fill"></i>
+                                        </span>
+                                        <span class="flex-grow-1">Bạn muốn tạo lịch mới? Hãy ấn vào đây</span>
+                                        <button type="button" class="btn-close btn-close-white p-1 ms-1" style="font-size: 0.65rem;" onclick="dismissScheduleCoachMark(event)" title="Đóng"></button>
+                                        <div style="position: absolute; top: -6px; right: 28px; width: 12px; height: 12px; background: #212529; transform: rotate(45deg); border-left: 1px solid rgba(255,255,255,0.15); border-top: 1px solid rgba(255,255,255,0.15);"></div>
+                                    </div>
+                                </div>
+
+                                <span class="badge rounded-pill border px-2.5 py-1.5" style="font-size:0.75rem; font-weight:600; color:#475569; background:#F8FAFC; border-color:#E2E8F0 !important; font-family:'JetBrains Mono',monospace;">
                                     @Model.UpcomingInterviews.Count phiên họp
                                 </span>
                             </div>
@@ -1808,15 +1779,15 @@
 
                         <div class="ats-mobile-table-hint"><i class="bi bi-arrow-left-right"></i> Vuốt ngang để xem đủ lịch phỏng vấn & thao tác</div>
                         <div class="ats-mobile-table-wrapper dashboard-table-responsive mb-0">
-                            <table class="table align-middle mb-0" style="min-width: 820px; font-size: 0.85rem;">
+                            <table class="table align-middle mb-0 border-0" style="min-width: 840px; font-size: 0.86rem;">
                                 <thead>
-                                    <tr style="border-bottom: 1px solid #E2E8F0; color: #64748B; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">
-                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-nowrap" style="border-top-left-radius: 8px; border-bottom-left-radius: 8px;">Ứng viên</th>
-                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-nowrap">Vị trí ứng tuyển</th>
-                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-nowrap">Thời gian</th>
-                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-nowrap">Hội đồng</th>
-                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-nowrap">Trạng thái</th>
-                                        <th class="py-2.5 px-3 bg-light border-0 fw-semibold text-end text-nowrap" style="border-top-right-radius: 8px; border-bottom-right-radius: 8px;">Thao tác</th>
+                                    <tr style="border-bottom: 1px solid #F1F5F9; color: #64748B; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                        <th class="py-3 px-3 bg-transparent border-0 fw-semibold text-nowrap">Ứng viên</th>
+                                        <th class="py-3 px-3 bg-transparent border-0 fw-semibold text-nowrap">Vị trí ứng tuyển</th>
+                                        <th class="py-3 px-3 bg-transparent border-0 fw-semibold text-nowrap">Thời gian</th>
+                                        <th class="py-3 px-3 bg-transparent border-0 fw-semibold text-nowrap">Hội đồng</th>
+                                        <th class="py-3 px-3 bg-transparent border-0 fw-semibold text-nowrap">Trạng thái</th>
+                                        <th class="py-3 px-3 bg-transparent border-0 fw-semibold text-end text-nowrap">Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody id="interviewTableBody">
@@ -1824,62 +1795,99 @@
                                     {
                                         @foreach (var interview in Model.UpcomingInterviews)
                                         {
-                                            <tr id="interview-row-@interview.InterviewId" style="border-bottom: 1px solid #F1F5F9; transition: background .15s;"
-                                                onmouseover="this.style.background='#F8FAFC';" onmouseout="this.style.background='#FFFFFF';">
-                                                <td class="py-3 px-3 text-nowrap">
+                                            var ch = string.IsNullOrEmpty(interview.CandidateAvatarLetter) ? 'A' : char.ToUpperInvariant(interview.CandidateAvatarLetter[0]);
+                                            var (avBg, avText) = (ch % 6) switch
+                                            {
+                                                0 => ("#EFF6FF", "#1D4ED8"),
+                                                1 => ("#ECFDF5", "#047857"),
+                                                2 => ("#F5F3FF", "#6D28D9"),
+                                                3 => ("#FFF7ED", "#C2410C"),
+                                                4 => ("#FDF2F8", "#BE185D"),
+                                                _ => ("#F0FDFA", "#0F766E")
+                                            };
+
+                                            <tr id="interview-row-@interview.InterviewId" style="border-bottom: 1px solid #F1F5F9; transition: background .15s ease-in-out;"
+                                                onmouseover="this.style.backgroundColor='#F8FAFC';" onmouseout="this.style.backgroundColor='#FFFFFF';">
+                                                <td class="py-4 px-3 text-nowrap">
                                                     <div class="d-flex align-items-center gap-2.5">
-                                                        <div class="d-flex align-items-center justify-content-center fw-bold text-white rounded-circle"
-                                                             style="width: 34px; height: 34px; background: #334155; font-size: 0.82rem; flex-shrink: 0;">
+                                                        <div class="d-flex align-items-center justify-content-center fw-bold rounded-circle flex-shrink-0"
+                                                             style="width: 36px; height: 36px; background: @avBg; color: @avText; font-size: 0.88rem; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
                                                             @interview.CandidateAvatarLetter
                                                         </div>
                                                         <div>
-                                                            <div class="fw-bold text-dark" style="font-size: 0.88rem;">@interview.CandidateName</div>
+                                                            <div class="fw-semibold text-dark" style="font-size: 0.9rem; color: #0F172A;">@interview.CandidateName</div>
                                                             <div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:#64748B;">@interview.CandidateEmail</div>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td class="py-3 px-3 text-nowrap">
-                                                    <span class="fw-semibold text-dark">@interview.JobTitle</span>
+                                                <td class="py-4 px-3 text-nowrap">
+                                                    <span class="fw-medium text-dark" style="font-size: 0.86rem;">@interview.JobTitle</span>
                                                 </td>
-                                                <td class="py-3 px-3 text-nowrap" style="font-family:'JetBrains Mono',monospace;">
-                                                    <div class="fw-bold text-dark" style="font-size: 0.82rem;">
+                                                <td class="py-4 px-3 text-nowrap" style="font-family:'JetBrains Mono',monospace;">
+                                                    <div class="fw-semibold text-dark" style="font-size: 0.84rem;">
                                                         <i class="bi bi-clock me-1 text-muted"></i>@interview.TimeDisplay
                                                     </div>
                                                     <div class="text-muted" style="font-size: 0.72rem;">@interview.DateDisplay</div>
                                                 </td>
-                                                <td class="py-3 px-3 text-nowrap">
-                                                    <span style="background: #F1F5F9; color: #475569; font-size: 0.75rem; padding: 2px 8px; border-radius: 6px; border: 1px solid #E2E8F0;">
-                                                        @interview.PanelistNames
-                                                    </span>
+                                                <td class="py-4 px-3 text-nowrap">
+                                                    <div class="d-flex align-items-center gap-1.5 text-secondary" style="font-size: 0.82rem;">
+                                                        <i class="bi bi-people text-muted" style="font-size: 0.85rem;"></i>
+                                                        <span class="text-dark">@interview.PanelistNames</span>
+                                                    </div>
                                                 </td>
-                                                <td class="py-3 px-3 text-nowrap">
-                                                    <div class="d-flex flex-column gap-1">
-                                                        <span class="badge @interview.StatusBadgeClass" style="border-radius: 6px; font-weight: 600; font-size: 0.72rem; width: fit-content;">
-                                                            @interview.StatusDisplay
-                                                        </span>
-                                                        @if (interview.CandidateConfirmed == Ats.Web.Models.Enums.CandidateConfirmStatus.ACCEPTED)
+                                                <td class="py-4 px-3 text-nowrap">
+                                                    <div class="d-flex flex-column align-items-start gap-1">
+                                                        @if (interview.Status == InterviewStatus.COMPLETED)
                                                         {
-                                                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.68rem; font-weight: 600; width: fit-content;" title="Ứng viên đã bấm xác nhận tham dự qua thư mời">
-                                                                <i class="bi bi-check2-circle me-1"></i>UV đã xác nhận
+                                                            <span class="badge rounded-pill px-2.5 py-1 fw-semibold" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 0.72rem;">
+                                                                Đã hoàn thành
                                                             </span>
                                                         }
-                                                        else if (interview.CandidateConfirmed == Ats.Web.Models.Enums.CandidateConfirmStatus.DECLINED)
+                                                        else if (interview.Status == InterviewStatus.CANCELLED)
                                                         {
-                                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size: 0.68rem; font-weight: 600; width: fit-content; cursor: pointer;"
-                                                                  onclick="showCandidateRescheduleModal('@interview.CandidateName', '@Html.Raw(Html.Encode(interview.CandidateNotes ?? "Ứng viên yêu cầu đổi lịch phỏng vấn"))', '@interview.InterviewId', '@interview.ApplicationId', '@interview.JobTitle')"
-                                                                  title="Bấm để xem lý do &amp; đề xuất đổi lịch của ứng viên">
-                                                                <i class="bi bi-clock-history me-1"></i>UV xin đổi lịch <i class="bi bi-info-circle ms-0.5"></i>
+                                                            <span class="badge rounded-pill px-2.5 py-1 fw-semibold" style="background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; font-size: 0.72rem;">
+                                                                Đã hủy
+                                                            </span>
+                                                        }
+                                                        else if (interview.Status == InterviewStatus.RESCHEDULED)
+                                                        {
+                                                            <span class="badge rounded-pill px-2.5 py-1 fw-semibold" style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-size: 0.72rem;">
+                                                                Đã đổi lịch
                                                             </span>
                                                         }
                                                         else
                                                         {
-                                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="font-size: 0.68rem; font-weight: 500; width: fit-content;" title="Đang chờ ứng viên phản hồi email thư mời">
-                                                                <i class="bi bi-envelope me-1"></i>UV chờ phản hồi
+                                                            <span class="badge rounded-pill px-2.5 py-1 fw-semibold" style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-size: 0.72rem;">
+                                                                Chờ phỏng vấn
                                                             </span>
+                                                        }
+
+                                                        @if (interview.CandidateConfirmed == Ats.Web.Models.Enums.CandidateConfirmStatus.ACCEPTED)
+                                                        {
+                                                            <div class="d-inline-flex align-items-center gap-1.5 text-success" style="font-size: 0.72rem; font-weight: 500;" title="Ứng viên đã bấm xác nhận tham dự qua thư mời">
+                                                                <span class="rounded-circle bg-success" style="width: 6px; height: 6px; display: inline-block;"></span>
+                                                                <span>UV đã xác nhận</span>
+                                                            </div>
+                                                        }
+                                                        else if (interview.CandidateConfirmed == Ats.Web.Models.Enums.CandidateConfirmStatus.DECLINED)
+                                                        {
+                                                            <div class="d-inline-flex align-items-center gap-1.5 text-warning cursor-pointer" style="font-size: 0.72rem; font-weight: 500;"
+                                                                 onclick="showCandidateRescheduleModal('@interview.CandidateName', '@Html.Raw(Html.Encode(interview.CandidateNotes ?? "Ứng viên yêu cầu đổi lịch phỏng vấn"))', '@interview.InterviewId', '@interview.ApplicationId', '@interview.JobTitle')"
+                                                                 title="Bấm để xem lý do &amp; đề xuất đổi lịch của ứng viên">
+                                                                <span class="rounded-circle bg-warning" style="width: 6px; height: 6px; display: inline-block;"></span>
+                                                                <span>UV xin đổi lịch <i class="bi bi-info-circle ms-0.5"></i></span>
+                                                            </div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="d-inline-flex align-items-center gap-1.5 text-muted" style="font-size: 0.72rem; font-weight: 500;" title="Đang chờ ứng viên phản hồi email thư mời">
+                                                                <span class="rounded-circle bg-secondary" style="width: 6px; height: 6px; display: inline-block; opacity: 0.6;"></span>
+                                                                <span>UV chờ phản hồi</span>
+                                                            </div>
                                                         }
                                                     </div>
                                                 </td>
-                                                <td class="py-3 px-3 text-end text-nowrap">
+                                                <td class="py-4 px-3 text-end text-nowrap">
                                                     <div class="d-inline-flex align-items-center justify-content-end gap-1.5">
                                                         @* 1. Vào phòng họp trực tuyến Google Meet *@
                                                         @if (!string.IsNullOrWhiteSpace(interview.LocationOrLink) && interview.Status != InterviewStatus.CANCELLED)
@@ -2033,53 +2041,80 @@
                                     @foreach (var offer in Model.PendingOffers)
                                     {
                                         <div class="col-12 col-md-6 col-xl-4">
-                                            <div class="p-3.5 h-100 d-flex flex-column justify-content-between" style="background: #FFFFFF; border: 1px solid #E2E8F0; border-left: 4px solid @(offer.IsOutsideBand ? "#F59E0B" : "#0D9488") !important; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                                            <div class="offer-approval-card @(offer.IsOutsideBand ? "band-outside" : "band-within")">
                                                 <div>
-                                                    <div class="d-flex justify-content-between align-items-start mb-1.5 gap-2">
-                                                        <span class="fw-bold text-dark" style="font-size: 0.95rem;">@offer.CandidateName</span>
-                                                        <span class="fw-bold font-mono" style="font-size: 0.95rem; font-family: 'JetBrains Mono', monospace; color: @(offer.IsOutsideBand ? "#D97706" : "#0D9488");">
-                                                            @offer.SalaryDisplay
-                                                        </span>
-                                                    </div>
-                                                    <div class="text-muted mb-1" style="font-size: 0.82rem;">
-                                                        Vị trí: <b class="text-dark">@offer.JobTitle</b>
+                                                    <!-- Hàng trên: Avatar, Tên ứng viên, Vị trí & Lương đề xuất -->
+                                                    <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                                                        <div class="d-flex align-items-center" style="min-width: 0; gap: 10px;">
+                                                            <div class="offer-approval-avatar" style="background: @(offer.IsOutsideBand ? "#FEF3C7; color: #B45309;" : "#ECFDF5; color: #047857;");">
+                                                                @(string.IsNullOrEmpty(offer.CandidateName) ? "?" : offer.CandidateName.Substring(0, 1).ToUpper())
+                                                            </div>
+                                                            <div style="min-width: 0;">
+                                                                <h6 class="fw-bold text-dark mb-0 text-truncate" style="font-size: 0.98rem;" title="@offer.CandidateName">
+                                                                    @offer.CandidateName
+                                                                </h6>
+                                                                <div class="text-muted text-truncate small" style="font-size: 0.78rem;" title="@offer.JobTitle">
+                                                                    <i class="bi bi-briefcase me-1 text-secondary"></i>@offer.JobTitle
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-end flex-shrink-0">
+                                                            <div class="fw-bold font-mono" style="font-size: 1.05rem; color: @(offer.IsOutsideBand ? "#D97706" : "#047857"); line-height: 1.2;">
+                                                                @offer.SalaryDisplay
+                                                            </div>
+                                                            <span class="text-muted" style="font-size: 0.68rem;">Lương Gross/tháng</span>
+                                                        </div>
                                                     </div>
 
-                                                    <!-- Dải lương chuẩn & Trạng thái hạn mức (SCRUM-341) -->
-                                                    <div class="p-2 my-2 rounded-2" style="background: #F8FAFC; border: 1px solid #E2E8F0; font-size: 0.76rem;">
-                                                        <div class="text-muted mb-1">
-                                                            Dải lương chuẩn: <span class="fw-semibold text-dark font-mono" style="font-family: 'JetBrains Mono', monospace;">@offer.StandardBandDisplay</span>
+                                                    <!-- Khung Đối chiếu Dải lương chuẩn (Salary Band) -->
+                                                    <div class="offer-salary-box">
+                                                        <div class="d-flex align-items-center justify-content-between mb-2" style="font-size: 0.76rem;">
+                                                            <span class="text-muted"><i class="bi bi-sliders me-1 text-secondary"></i>Dải chuẩn vị trí:</span>
+                                                            <span class="fw-bold font-mono text-dark">@offer.StandardBandDisplay</span>
                                                         </div>
-                                                        <div class="d-flex align-items-center justify-content-between mt-1">
+                                                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
                                                             @if (offer.IsOutsideBand)
                                                             {
-                                                                <span class="badge border" style="background:#FEF3C7; color:#78350F; border-color:#FCD34D !important; border-radius:6px; font-size:0.7rem;">
-                                                                    <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>Vượt dải chuẩn (2 cấp)
+                                                                <span class="badge border py-1 px-2 d-inline-flex align-items-center gap-1" style="background: #FEF3C7; color: #92400E; border-color: #FDE68A !important; border-radius: 6px; font-size: 0.7rem; font-weight: 600;">
+                                                                    <i class="bi bi-exclamation-triangle-fill text-warning"></i> Vượt dải chuẩn (2 cấp - Cần BGĐ)
                                                                 </span>
                                                             }
                                                             else
                                                             {
-                                                                <span class="badge border" style="background:#D1FAE5; color:#065F46; border-color:#A7F3D0 !important; border-radius:6px; font-size:0.7rem;">
-                                                                    <i class="bi bi-shield-check text-emerald-600 me-1"></i>Trong dải chuẩn (1 cấp)
+                                                                <span class="badge border py-1 px-2 d-inline-flex align-items-center gap-1" style="background: #ECFDF5; color: #047857; border-color: #A7F3D0 !important; border-radius: 6px; font-size: 0.7rem; font-weight: 600;">
+                                                                    <i class="bi bi-shield-check text-success"></i> Trong dải chuẩn (1 cấp)
                                                                 </span>
                                                             }
-                                                            <span class="text-muted font-monospace" style="font-size: 0.7rem;">@offer.CreatedDateDisplay</span>
+                                                            <span class="text-muted font-mono" style="font-size: 0.7rem;" title="Ngày tạo đề xuất offer">
+                                                                <i class="bi bi-calendar3 me-1"></i>@offer.CreatedDateDisplay
+                                                            </span>
                                                         </div>
                                                     </div>
 
-                                                    <div class="text-muted small mt-1" style="font-size: 0.75rem;">
-                                                        <i class="bi bi-hourglass-split me-1 text-secondary"></i>Đang chờ: <span class="fw-semibold text-slate-800">@offer.CurrentLevelDisplay</span>
+                                                    <!-- Trạng thái quy trình phê duyệt (Cấp phê duyệt & Người duyệt) -->
+                                                    <div class="d-flex align-items-center justify-content-between text-muted small py-1" style="font-size: 0.76rem;">
+                                                        <div class="d-flex align-items-center gap-2 text-truncate">
+                                                            <i class="bi bi-hourglass-split text-warning flex-shrink-0"></i>
+                                                            <span>Đang chờ:</span>
+                                                            <span class="fw-semibold text-dark text-truncate">@offer.CurrentLevelDisplay</span>
+                                                        </div>
+                                                        @if (!string.IsNullOrEmpty(offer.CandidateEmail))
+                                                        {
+                                                            <span class="text-truncate ms-2 font-mono text-muted d-none d-sm-inline" style="font-size: 0.7rem;" title="@offer.CandidateEmail">
+                                                                @offer.CandidateEmail
+                                                            </span>
+                                                        }
                                                     </div>
                                                 </div>
 
-                                                <div class="mt-3 pt-2" style="border-top: 1px solid #E2E8F0;">
-                                                    <div class="d-flex gap-1.5">
-                                                        <button type="button" class="btn btn-sm w-100 fw-semibold py-1.5 @(offer.CanCurrentUserApprove ? "btn-primary" : "btn-light border")" 
-                                                                style="border-radius: 8px; font-size: 0.82rem; @(offer.CanCurrentUserApprove ? "background: #0F172A; border-color: #0F172A;" : "")"
-                                                                onclick="openOfferApprovalModal('@offer.OfferId')">
-                                                            <i class="bi bi-shield-check me-1.5"></i>@(offer.CanCurrentUserApprove ? "Xem xét & Phê duyệt" : "Xem chi tiết đề xuất")
-                                                        </button>
-                                                    </div>
+                                                <!-- Nút hành động phê duyệt -->
+                                                <div class="mt-3 pt-2.5 border-top" style="border-color: #F1F5F9 !important;">
+                                                    <button type="button" class="btn btn-sm w-100 fw-semibold py-2 d-inline-flex align-items-center justify-content-center gap-2 shadow-xs" 
+                                                            style="border-radius: 8px; font-size: 0.82rem; @(offer.CanCurrentUserApprove ? "background: #047857; border-color: #047857; color: #FFFFFF;" : "background: #F8FAFC; border: 1px solid #CBD5E1; color: #334155;")"
+                                                            onclick="openOfferApprovalModal('@offer.OfferId')">
+                                                        <i class="bi @(offer.CanCurrentUserApprove ? "bi-check2-circle" : "bi-eye")" style="font-size: 0.95rem;"></i>
+                                                        <span>@(offer.CanCurrentUserApprove ? "Xem xét & Phê duyệt Offer" : "Xem chi tiết đề xuất")</span>
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -2120,10 +2155,10 @@
                                 <div class="col-12 col-md-6 col-xl-4">
                                     <a href="/Jobs/Create" class="btn w-100 text-start p-3.5 d-flex align-items-center justify-content-between text-decoration-none h-100 bg-white"
                                        style="border: 1px solid #E2E8F0; border-radius: 10px; transition: all .15s;"
-                                       onmouseover="this.style.background='#F8FAFC'; this.style.borderColor='#059669'; this.style.transform='translateY(-2px)';"
+                                       onmouseover="this.style.background='#F8FAFC'; this.style.borderColor='#047857'; this.style.transform='translateY(-2px)';"
                                        onmouseout="this.style.background='#FFFFFF'; this.style.borderColor='#E2E8F0'; this.style.transform='none';">
                                         <div class="d-flex align-items-center gap-3">
-                                            <div class="d-flex align-items-center justify-content-center rounded-3" style="width: 42px; height: 42px; background: #ECFDF5; color: #059669;">
+                                            <div class="d-flex align-items-center justify-content-center rounded-3" style="width: 42px; height: 42px; background: #ECFDF5; color: #047857;">
                                                 <i class="bi bi-megaphone-fill" style="font-size: 1.15rem;"></i>
                                             </div>
                                             <div>
@@ -2143,7 +2178,7 @@
                                     <button type="button" class="btn w-100 text-start p-3.5 d-flex align-items-center justify-content-between h-100 bg-white"
                                             style="border: 1px solid #E2E8F0; border-radius: 10px; transition: all .15s;"
                                             data-bs-toggle="modal" data-bs-target="#createRequisitionModal"
-                                            onmouseover="this.style.background='#F8FAFC'; this.style.borderColor='#059669'; this.style.transform='translateY(-2px)';"
+                                            onmouseover="this.style.background='#F8FAFC'; this.style.borderColor='#047857'; this.style.transform='translateY(-2px)';"
                                             onmouseout="this.style.background='#FFFFFF'; this.style.borderColor='#E2E8F0'; this.style.transform='none';">
                                         <div class="d-flex align-items-center gap-3">
                                             <div class="d-flex align-items-center justify-content-center rounded-3" style="width: 42px; height: 42px; background: #FEF3C7; color: #D97706;">
@@ -2166,7 +2201,7 @@
                                     <button type="button" class="btn w-100 text-start p-3.5 d-flex align-items-center justify-content-between h-100 bg-white"
                                             style="border: 1px solid #E2E8F0; border-radius: 10px; transition: all .15s;"
                                             data-bs-toggle="modal" data-bs-target="#interviewEvaluationModal"
-                                            onmouseover="this.style.background='#F8FAFC'; this.style.borderColor='#059669'; this.style.transform='translateY(-2px)';"
+                                            onmouseover="this.style.background='#F8FAFC'; this.style.borderColor='#047857'; this.style.transform='translateY(-2px)';"
                                             onmouseout="this.style.background='#FFFFFF'; this.style.borderColor='#E2E8F0'; this.style.transform='none';">
                                         <div class="d-flex align-items-center gap-3">
                                             <div class="d-flex align-items-center justify-content-center rounded-3" style="width: 42px; height: 42px; background: #ECFDF5; color: #047857;">
@@ -2188,7 +2223,7 @@
                                 <div class="col-12 col-md-6 col-xl-4">
                                     <a asp-controller="Users" asp-action="Index" class="btn w-100 text-start p-3.5 d-flex align-items-center justify-content-between text-decoration-none h-100 bg-white"
                                        style="border: 1px solid #E2E8F0; border-radius: 10px; transition: all .15s;"
-                                       onmouseover="this.style.background='#F8FAFC'; this.style.borderColor='#059669'; this.style.transform='translateY(-2px)';"
+                                       onmouseover="this.style.background='#F8FAFC'; this.style.borderColor='#047857'; this.style.transform='translateY(-2px)';"
                                        onmouseout="this.style.background='#FFFFFF'; this.style.borderColor='#E2E8F0'; this.style.transform='none';">
                                         <div class="d-flex align-items-center gap-3">
                                             <div class="d-flex align-items-center justify-content-center rounded-3" style="width: 42px; height: 42px; background: #FEE2E2; color: #DC2626;">
@@ -2209,7 +2244,7 @@
                                 <button type="button" class="btn w-100 text-start p-3.5 d-flex align-items-center justify-content-between h-100 bg-white"
                                         style="border: 1px solid #E2E8F0; border-radius: 10px; transition: all .15s;"
                                         onclick="switchDashboardFeature('ung-vien', event); filterPipelineCandidates('ALL');"
-                                        onmouseover="this.style.background='#F8FAFC'; this.style.borderColor='#059669'; this.style.transform='translateY(-2px)';"
+                                        onmouseover="this.style.background='#F8FAFC'; this.style.borderColor='#047857'; this.style.transform='translateY(-2px)';"
                                         onmouseout="this.style.background='#FFFFFF'; this.style.borderColor='#E2E8F0'; this.style.transform='none';">
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="d-flex align-items-center justify-content-center rounded-3" style="width: 42px; height: 42px; background: #EFF6FF; color: #2563EB;">
@@ -2228,7 +2263,7 @@
                         <!-- Khối Quy Chuẩn Tuyển Dụng & Bảo Mật NoveraTech -->
                         <div class="p-3.5 rounded-3" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px;">
                             <div class="d-flex align-items-center gap-2 mb-2 pb-2" style="border-bottom: 1px solid #E2E8F0;">
-                                <i class="bi bi-shield-lock" style="color: #059669; font-size: 1.1rem;"></i>
+                                <i class="bi bi-shield-lock" style="color: #047857; font-size: 1.1rem;"></i>
                                 <h6 class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">Quy Chuẩn Tuyển Dụng Nội Bộ</h6>
                             </div>
                             <p style="font-size: 0.8rem; color: #64748B; line-height: 1.5;" class="mb-2">
@@ -2257,7 +2292,7 @@
                             <a href="/ho-so-gioi-thieu" class="btn btn-sm btn-outline-secondary fw-semibold" style="border-radius: 8px;">
                                 <i class="bi bi-box-arrow-up-right me-1"></i> Trang theo dõi riêng
                             </a>
-                            <a href="/gioi-thieu-ung-vien" class="btn btn-sm btn-success fw-semibold" style="border-radius: 8px; background: #059669; border-color: #059669;">
+                            <a href="/gioi-thieu-ung-vien" class="btn btn-sm btn-success fw-semibold" style="border-radius: 8px; background: #047857; border-color: #047857;">
                                 <i class="bi bi-plus-circle me-1"></i> Giới thiệu ứng viên mới
                             </a>
                         </div>
@@ -2436,7 +2471,7 @@
                     Bạn đang ứng tuyển vào vị trí: <b class="text-dark" id="modalJobTitle"></b> thuộc phòng ban <b class="text-dark" id="modalJobDept"></b>.
                 </p>
                 <div class="p-2.5 mb-3" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; font-size: 0.78rem; color: #475569;">
-                    <i class="bi bi-info-circle me-1" style="color: #059669;"></i> Hệ thống sẽ sử dụng hồ sơ CV và thông tin liên hệ trong tài khoản của bạn để lưu trực tiếp vào cơ sở dữ liệu tuyển dụng NoveraTech.
+                    <i class="bi bi-info-circle me-1" style="color: #047857;"></i> Hệ thống sẽ sử dụng hồ sơ CV và thông tin liên hệ trong tài khoản của bạn để lưu trực tiếp vào cơ sở dữ liệu tuyển dụng NoveraTech.
                 </div>
                 <input type="hidden" id="modalJobId" />
                 <div class="mb-3">
@@ -3206,7 +3241,7 @@
                                 <span class="spinner-border spinner-border-sm me-1 d-none" id="spinnerDraftOffer"></span>
                                 <i class="bi bi-save me-1"></i>Lưu nháp
                             </button>
-                            <button type="button" class="btn btn-success px-4 fw-semibold text-white" style="border-radius:8px; font-size:0.85rem; background:#059669; border-color:#059669;" id="btnSubmitOffer" onclick="submitOfferForm(false)">
+                            <button type="button" class="btn btn-success px-4 fw-semibold text-white" style="border-radius:8px; font-size:0.85rem; background:#047857; border-color:#047857;" id="btnSubmitOffer" onclick="submitOfferForm(false)">
                                 <span class="spinner-border spinner-border-sm me-1 d-none" id="spinnerSubmitOffer"></span>
                                 <i class="bi bi-send-check me-1"></i>Gửi duyệt Offer
                             </button>
@@ -4250,7 +4285,7 @@
         // ==============================================================
         window.currentPipelineStage = 'ALL';
         window.currentPipelineJob = '@(Model.DefaultJobPostingId?.ToString() ?? "ALL")';
-        window.pipelineViewMode = localStorage.getItem('ats_pipeline_view_mode') || 'kanban';
+        window.pipelineViewMode = localStorage.getItem('ats_pipeline_view_mode_v2') || 'table';
         window.candCurrentPage = 1;
         window.candPageSize = 10;
 
@@ -4260,7 +4295,7 @@
 
         function switchPipelineView(mode) {
             window.pipelineViewMode = mode;
-            try { localStorage.setItem('ats_pipeline_view_mode', mode); } catch (_) {}
+            try { localStorage.setItem('ats_pipeline_view_mode_v2', mode); } catch (_) {}
 
             const kanbanContainer = document.getElementById('candidateKanbanViewContainer');
             const tableContainer = document.getElementById('candidateTableViewContainer');
@@ -4283,12 +4318,9 @@
                 if (stageFilterGroup) stageFilterGroup.classList.add('d-none');
                 if (btnKanban) {
                     btnKanban.classList.add('active');
-                    btnKanban.classList.remove('btn-outline-success');
-                    btnKanban.classList.add('btn-success', 'text-white');
                 }
                 if (btnTable) {
-                    btnTable.classList.remove('active', 'btn-secondary', 'text-white');
-                    btnTable.classList.add('btn-outline-secondary');
+                    btnTable.classList.remove('active');
                 }
                 applyKanbanFilters();
             } else {
@@ -4296,12 +4328,10 @@
                 if (tableContainer) tableContainer.classList.remove('d-none');
                 if (stageFilterGroup) stageFilterGroup.classList.remove('d-none');
                 if (btnTable) {
-                    btnTable.classList.add('active', 'btn-secondary', 'text-white');
-                    btnTable.classList.remove('btn-outline-secondary');
+                    btnTable.classList.add('active');
                 }
                 if (btnKanban) {
-                    btnKanban.classList.remove('active', 'btn-success', 'text-white');
-                    btnKanban.classList.add('btn-outline-success');
+                    btnKanban.classList.remove('active');
                 }
                 applyPipelineFilters(true, false);
             }
@@ -5051,7 +5081,12 @@
                 if (!noResultsRow && tbody) {
                     noResultsRow = document.createElement('tr');
                     noResultsRow.id = 'pipelineNoResultsRow';
-                    noResultsRow.innerHTML = '<td colspan="5" class="text-center py-4 text-muted"><i class="bi bi-search me-1"></i> Không tìm thấy ứng viên nào phù hợp với bộ lọc hiện tại.</td>';
+                    noResultsRow.innerHTML = `<td colspan="5" class="text-center py-4 text-muted">
+                        <i class="bi bi-search me-1"></i> Không tìm thấy ứng viên nào phù hợp với bộ lọc hiện tại.
+                        <button type="button" class="btn btn-sm btn-outline-success ms-2 rounded-2 fw-semibold" onclick="resetAllPipelineFilters()">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Xem tất cả ứng viên
+                        </button>
+                    </td>`;
                     tbody.appendChild(noResultsRow);
                 }
             } else if (noResultsRow) {
@@ -5078,7 +5113,7 @@
                 window.NoveraInstantSearch.syncUrlParams({
                     cand_search: query || null,
                     cand_stage: stageOrder !== 'ALL' ? stageOrder : null,
-                    cand_job: selectedJobId || null,
+                    cand_job: (selectedJobId && selectedJobId !== 'ALL') ? selectedJobId : null,
                     cand_page: window.candCurrentPage > 1 ? window.candCurrentPage : null
                 });
             }
@@ -5105,7 +5140,7 @@
                     const li = document.createElement('li');
                     const isActive = (p === curr);
                     li.className = `page-item ${isActive ? 'active' : ''}`;
-                    li.innerHTML = `<button class="page-link ${isActive ? 'text-white fw-bold' : 'text-dark'}" type="button" ${isActive ? '' : `onclick="goToCandidatePage(${p})"`} style="border-radius: 6px; padding: 0.28rem 0.65rem; font-size: 0.8rem; ${isActive ? 'background-color:#059669; border-color:#059669;' : 'border-color:#CBD5E1;'}">${p}</button>`;
+                    li.innerHTML = `<button class="page-link ${isActive ? 'text-white fw-bold' : 'text-dark'}" type="button" ${isActive ? '' : `onclick="goToCandidatePage(${p})"`} style="border-radius: 6px; padding: 0.28rem 0.65rem; font-size: 0.8rem; ${isActive ? 'background-color:#047857; border-color:#047857;' : 'border-color:#CBD5E1;'}">${p}</button>`;
                     ul.appendChild(li);
                 }
             } else {
@@ -5129,7 +5164,7 @@
                     const li = document.createElement('li');
                     const isActive = (p === curr);
                     li.className = `page-item ${isActive ? 'active' : ''}`;
-                    li.innerHTML = `<button class="page-link ${isActive ? 'text-white fw-bold' : 'text-dark'}" type="button" ${isActive ? '' : `onclick="goToCandidatePage(${p})"`} style="border-radius: 6px; padding: 0.28rem 0.65rem; font-size: 0.8rem; ${isActive ? 'background-color:#059669; border-color:#059669;' : 'border-color:#CBD5E1;'}">${p}</button>`;
+                    li.innerHTML = `<button class="page-link ${isActive ? 'text-white fw-bold' : 'text-dark'}" type="button" ${isActive ? '' : `onclick="goToCandidatePage(${p})"`} style="border-radius: 6px; padding: 0.28rem 0.65rem; font-size: 0.8rem; ${isActive ? 'background-color:#047857; border-color:#047857;' : 'border-color:#CBD5E1;'}">${p}</button>`;
                     ul.appendChild(li);
                 }
 
@@ -5202,6 +5237,31 @@
         }
 
         function searchPipelineCandidates(query) {
+            applyPipelineFilters(true, true);
+        }
+
+        function resetAllPipelineFilters() {
+            const jobSelect = document.getElementById('candidateJobFilter') || document.getElementById('kanbanJobFilter');
+            if (jobSelect) jobSelect.value = 'ALL';
+            window.currentPipelineJob = 'ALL';
+            window.currentPipelineJobId = 'ALL';
+            window.currentPipelineStage = 'ALL';
+            window.filterSlaOverdueOnly = false;
+            const btnSla = document.getElementById('btnFilterSlaOverdue');
+            if (btnSla) {
+                btnSla.classList.remove('btn-danger', 'text-white', 'active');
+                btnSla.classList.add('btn-outline-danger');
+            }
+            const input = document.getElementById('candidateSearchInput');
+            if (input) input.value = '';
+            const clearBtn = document.getElementById('candidateSearchClearBtn');
+            if (clearBtn) clearBtn.classList.add('d-none');
+            const pills = document.querySelectorAll('#candidateStageFilterGroup .candidate-stage-pill');
+            pills.forEach((p, idx) => {
+                if (idx === 0) p.classList.add('active');
+                else p.classList.remove('active');
+            });
+            applyKanbanFilters();
             applyPipelineFilters(true, true);
         }
 
@@ -5288,12 +5348,32 @@
             window.addEventListener('popstate', hydrateCandidatePipelineFromUrl);
             hydrateCandidatePipelineFromUrl();
 
-            // Khởi tạo chế độ xem Kanban và lọc ban đầu
-            switchPipelineView(window.pipelineViewMode || 'kanban');
+            // Khởi tạo chế độ xem mặc định dạng Bảng (Table mode) và lọc ban đầu
+            switchPipelineView(window.pipelineViewMode || 'table');
             applyKanbanFilters();
             restoreKanbanPreferences();
             initMobileKanbanSwipeObserver();
+            initScheduleCoachMark();
         });
+
+        // Onboarding Coach Mark cho Lên lịch phỏng vấn
+        function initScheduleCoachMark() {
+            const coachMark = document.getElementById('coachMarkSchedule');
+            if (!coachMark) return;
+            const dismissed = localStorage.getItem('ats_coachmark_schedule_dismissed');
+            if (!dismissed) {
+                coachMark.style.setProperty('display', 'flex', 'important');
+            }
+        }
+
+        function dismissScheduleCoachMark(e) {
+            if (e) e.stopPropagation();
+            const coachMark = document.getElementById('coachMarkSchedule');
+            if (coachMark) {
+                coachMark.style.setProperty('display', 'none', 'important');
+            }
+            try { localStorage.setItem('ats_coachmark_schedule_dismissed', 'true'); } catch (_) {}
+        }
 
         // 8.2. Chuyển tiếp giai đoạn tuyển chọn nhanh (Advance Stage)
         async function advanceStageQuick(applicationId, nextStage, candidateName) {

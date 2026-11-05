@@ -34,7 +34,10 @@
 {
     <script>
         (function() {
+            var executed = false;
             function triggerToasts() {
+                if (executed) return;
+                executed = true;
                 if (!window.NoveraToast) return;
                 @if (!string.IsNullOrWhiteSpace(successMsg))
                 {
@@ -59,7 +62,7 @@
             }
 
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', triggerToasts);
+                document.addEventListener('DOMContentLoaded', triggerToasts, { once: true });
             } else {
                 triggerToasts();
             }

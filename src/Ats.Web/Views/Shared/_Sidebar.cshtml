@@ -1,15 +1,20 @@
 @using System.Security.Claims
 @using Ats.Web.Constants
+@using Microsoft.AspNetCore.Http
 
 @{
-    var isAdmin = User.IsInRole(UserRoles.Admin);
-    var isHrManager = User.IsInRole(UserRoles.HRManager);
-    var isRecruiter = User.IsInRole(UserRoles.Recruiter);
-    var isHiringManager = User.IsInRole(UserRoles.HiringManager);
-    var isInterviewer = User.IsInRole(UserRoles.Interviewer);
-    var isApprover = User.IsInRole(UserRoles.Approver);
+    var userRoles = User.FindAll(ClaimTypes.Role)
+        .Select(c => UserRoles.NormalizeRole(c.Value))
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    var isAdmin = userRoles.Contains(UserRoles.Admin);
+    var isHrManager = userRoles.Contains(UserRoles.HRManager);
+    var isRecruiter = userRoles.Contains(UserRoles.Recruiter);
+    var isHiringManager = userRoles.Contains(UserRoles.HiringManager);
+    var isInterviewer = userRoles.Contains(UserRoles.Interviewer);
+    var isApprover = userRoles.Contains(UserRoles.Approver);
     var hasStaffRole = isAdmin || isHrManager || isRecruiter || isHiringManager || isInterviewer || isApprover;
-    var isCandidate = !hasStaffRole && User.IsInRole(UserRoles.Candidate);
+    var isCandidate = !hasStaffRole;
     var userInitial = (User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "U");
     var userName = User.Identity?.Name ?? "Người dùng";
     var userEmail = User.FindFirstValue(ClaimTypes.Email) ?? "";
@@ -22,7 +27,7 @@
         <div class="sidebar-header-bar">
             <!-- Workspace Context (hidden when collapsed) -->
             <div class="d-flex align-items-center gap-2 sidebar-nav-link-text" style="overflow:hidden;">
-                <span class="badge px-2 py-1 font-mono text-uppercase" style="background: rgba(13, 92, 77, 0.08); color: #0D5C4D; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; border-radius: 4px;">
+                <span class="badge px-2 py-1 font-mono text-uppercase" style="background: var(--brand-surface, #ECFDF5); color: var(--brand-primary, #047857); border: 1px solid var(--brand-border, rgba(4, 120, 87, 0.2)); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; border-radius: var(--radius-sm, 6px);">
                     @(isCandidate ? "Cổng Ứng Viên" : "Quản Trị Nội Bộ")
                 </span>
             </div>
@@ -31,7 +36,8 @@
                     class="sidebar-collapse-btn d-none d-lg-flex"
                     id="btnToggleSidebarCollapse"
                     aria-label="Thu gọn / Mở rộng menu"
-                    title="Thu gọn / Mở rộng">
+                    title="Thu gọn / Mở rộng menu"
+                    data-tooltip="Thu gọn / Mở rộng menu">
                 <i class="bi bi-layout-sidebar-reverse" id="sidebarCollapseIcon" style="font-size:0.85rem;"></i>
             </button>
             <!-- Mobile close button -->
@@ -347,13 +353,16 @@
                         </span>
                     </a>
                     <a href="/jobs"
+                       target="_blank"
+                       rel="noopener noreferrer"
                        class="sidebar-nav-link"
                        data-path="/jobs"
-                       data-tooltip="Xem cổng tuyển dụng công khai dành cho ứng viên">
+                       data-tooltip="Xem cổng việc làm công khai dành cho ứng viên (Mở tab mới)">
                         <span class="sidebar-nav-link-content">
                             <i class="bi bi-briefcase"></i>
                             <span class="sidebar-nav-link-text">Cổng việc làm công khai</span>
                         </span>
+                        <i class="bi bi-box-arrow-up-right ms-auto text-muted" style="font-size:0.75rem;"></i>
                     </a>
                     @if (isAdmin || isHrManager)
                     {
@@ -434,9 +443,20 @@
 
         <!-- ── Sidebar Footer: Compact User Card ── -->
         <div class="pt-2 border-top mt-2 sidebar-footer-container">
-            <div class="sidebar-footer-card">
+            <div class="sidebar-footer-card" data-tooltip="@userName (@userEmail)">
                 <!-- Avatar -->
-                <div class="sidebar-footer-avatar">@userInitial</div>
+                @{
+                    var sidebarAvatarUrl = User.FindFirst("AvatarUrl")?.Value ?? (Context.Session != null && Context.Session.TryGetValue("AvatarUrl", out var avatarBytes) ? System.Text.Encoding.UTF8.GetString(avatarBytes) : null);
+                }
+                @if (!string.IsNullOrEmpty(sidebarAvatarUrl))
+                {
+                    <img src="@sidebarAvatarUrl" alt="@userName" class="sidebar-footer-avatar object-fit-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                    <div class="sidebar-footer-avatar" style="display:none;">@userInitial</div>
+                }
+                else
+                {
+                    <div class="sidebar-footer-avatar">@userInitial</div>
+                }
                 <!-- Info (hidden when collapsed) -->
                 <div class="sidebar-footer-info">
                     <div class="fw-semibold text-dark text-truncate" style="font-size:0.82rem;">@userName</div>
@@ -448,7 +468,8 @@
                     <button type="submit"
                             class="btn btn-sm btn-light border text-danger p-1"
                             style="border-radius:6px; width:28px; height:28px; display:flex; align-items:center; justify-content:center;"
-                            title="Đăng xuất">
+                            title="Đăng xuất"
+                            data-tooltip="Đăng xuất">
                         <i class="bi bi-box-arrow-right" style="font-size:0.85rem;"></i>
                     </button>
                 </form>
@@ -459,3 +480,5 @@
     <div class="sidebar-resizer d-none d-lg-block" id="sidebarResizer" title="Kéo để điều chỉnh độ rộng menu" aria-hidden="true"></div>
 </aside>
 <div class="ats-sidebar-backdrop" id="atsSidebarBackdrop"></div>
+<div id="atsSidebarFloatingTooltip" class="ats-sidebar-floating-tooltip" role="tooltip" aria-hidden="true"></div>
+
