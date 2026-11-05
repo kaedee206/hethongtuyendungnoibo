@@ -733,6 +733,8 @@ deploy/update_passwords.sh
 # UI/UX & E2E Testing Artifacts
 screenshots/
 .playwright-mcp/
+tmpUI/
+.taste-skill/
 
 
 

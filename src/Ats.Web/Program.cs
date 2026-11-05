@@ -28,10 +28,15 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 });
 
 // Add services to the container.
-builder.Services.AddControllersWithViews(options =>
+var mvcBuilder = builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute());
 });
+
+if (builder.Environment.IsDevelopment())
+{
+    mvcBuilder.AddRazorRuntimeCompilation();
+}
 builder.Services.AddMemoryCache();
 
 // Lưu trữ khóa mã hóa cố định tránh mất session và token xác thực khi khởi động lại server
@@ -180,7 +185,7 @@ builder.Services.AddRateLimiter(options =>
             partitionKey: clientIp,
             factory: _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 10,
+                PermitLimit = builder.Environment.IsDevelopment() ? 100 : 10,
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             });
@@ -392,7 +397,6 @@ app.UseStaticFiles(new StaticFileOptions
         }
     }
 });
-app.MapStaticAssets();
 
 // Phục vụ ảnh đại diện và media kèm fallback ảnh mặc định nếu file không tồn tại
 app.MapMethods("/uploads/{folder:regex(^(avatars|media)$)}/{fileName}", new[] { "GET", "HEAD" }, (string folder, string fileName, IWebHostEnvironment env) =>
@@ -438,8 +442,7 @@ app.MapMethods("/uploads/{folder:regex(^(avatars|media)$)}/{fileName}", new[] { 
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 
 // Khởi tạo seed data tự động và đảm bảo schema bảng đầy đủ

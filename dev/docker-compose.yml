@@ -42,6 +42,10 @@ services:
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres_dev_pass}
     volumes:
+      - ../src/Ats.Web/Views:/app/Views:ro
+      - ../src/Ats.Web/wwwroot/css:/app/wwwroot/css:ro
+      - ../src/Ats.Web/wwwroot/js:/app/wwwroot/js:ro
+      - ../src/Ats.Web/wwwroot/img:/app/wwwroot/img:ro
       - ats_dev_uploads:/app/wwwroot/uploads
       - ats_dev_dataprotection_keys:/app/dataprotection-keys
     depends_on:

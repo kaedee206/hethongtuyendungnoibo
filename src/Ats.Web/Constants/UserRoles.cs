@@ -1,3 +1,5 @@
+using System.Security.Claims;
+
 namespace Ats.Web.Constants;
 
 /// <summary>
@@ -176,5 +178,39 @@ public static class UserRoles
             Candidate => false,
             _ => false
         };
+    }
+
+    /// <summary>
+    /// Lấy danh sách toàn bộ các vai trò chuẩn hóa từ ClaimsPrincipal của người dùng hiện tại
+    /// </summary>
+    public static List<string> GetRoles(ClaimsPrincipal? user)
+    {
+        if (user == null) return [Candidate];
+        var roleClaims = user.FindAll(ClaimTypes.Role)
+            .Select(c => NormalizeRole(c.Value))
+            .Distinct()
+            .ToList();
+        return roleClaims.Count > 0 ? roleClaims : [Candidate];
+    }
+
+    /// <summary>
+    /// Lấy vai trò chính ưu tiên cao nhất từ ClaimsPrincipal
+    /// </summary>
+    public static string GetPrimaryRole(ClaimsPrincipal? user)
+    {
+        if (user == null) return Candidate;
+        var roles = GetRoles(user);
+        return GetPrimaryRole(roles);
+    }
+
+    /// <summary>
+    /// Kiểm tra người dùng có phải là nhân sự nội bộ (Admin, HRManager, HiringManager, Recruiter, Approver, Interviewer)
+    /// Loại trừ tuyệt đối vai trò Candidate đơn thuần (Rule 11, Rule 12).
+    /// </summary>
+    public static bool IsStaff(ClaimsPrincipal? user)
+    {
+        if (user == null) return false;
+        var roles = GetRoles(user);
+        return roles.Any(r => r != Candidate);
     }
 }

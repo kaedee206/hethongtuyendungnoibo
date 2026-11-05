@@ -55,6 +55,9 @@ access_control:
     - domain:
         - "tuyendung.noveratech.digital"
       policy: one_factor
+    - domain:
+        - "hotel.noveratech.digital"
+      policy: bypass
 
 # 4. Storage Engine (Sử dụng PostgreSQL nội bộ của VPS)
 storage:
@@ -135,6 +138,23 @@ identity_providers:
           - https://tuyendung.noveratech.digital/signin-oidc
           - https://tuyendung.noveratech.digital/Account/ExternalCallback
           - http://localhost:5000/signin-oidc
+        scopes:
+          - openid
+          - profile
+          - email
+          - groups
+        userinfo_signed_response_alg: none
+
+      - client_id: hotel_pms
+        client_name: Sun Hotel PMS Luxury Portal
+        public: true
+        authorization_policy: one_factor
+        token_endpoint_auth_method: none
+        consent_mode: implicit
+        redirect_uris:
+          - https://hotel.noveratech.digital
+          - https://hotel.noveratech.digital/
+          - https://hotel.noveratech.digital/?view=admin
         scopes:
           - openid
           - profile
