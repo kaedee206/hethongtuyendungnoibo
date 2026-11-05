@@ -736,5 +736,12 @@ screenshots/
 tmpUI/
 .taste-skill/
 
+# Project Reports, Jira Tracking & Sprint Handoffs
+bao_cao_dong_gop_nhom.md
+baocao/
+context/
+taskjira.md
+
+
 
 
