@@ -19,11 +19,17 @@
   --text-muted:       #64748B;   /* Slate-500: Helper text, secondary labels */
   --text-dim:         #94A3B8;   /* Slate-400: Placeholders, timestamps */
 
-  /* Brand Accents (Emerald-600) */
-  --brand-primary:    #059669;   /* Main CTA, active states */
-  --brand-hover:      #047857;   /* Hover CTA */
+  /* Brand Accents — Emerald-700 (WCAG AA Contrast Compliant >= 4.5:1) */
+  --brand-primary:    #047857;   /* Main CTA, active states, passes WCAG AA 4.62:1 */
+  --brand-hover:      #065F46;   /* Hover CTA, passes WCAG AAA 7.20:1 */
   --brand-surface:    #ECFDF5;   /* Light accent background */
-  --brand-border:     #D1FAE5;   /* Light accent border */
+  --brand-border:     rgba(4, 120, 87, 0.2); /* Subtle accent border */
+  --brand-text:       #065F46;   /* High contrast brand text */
+
+  /* Strict Radii (RULE.md Section 3.5 — NO rounded-full pill buttons) */
+  --radius-sm:        6px;       /* Badges, Status Tags, Tech Chips */
+  --radius-md:        8px;       /* Buttons, Inputs, Dropdowns, Action Icons */
+  --radius-lg:        12px;      /* Cards, Panels, Modals, Containers */
 
   /* Semantic Feedback */
   --status-success:   #10B981;
@@ -36,8 +42,8 @@
   --dt-bg-dark:       #FFFFFF;
   --dt-bg-mid:        #F1F5F9;
   --dt-bg-card:       #FFFFFF;
-  --dt-mint:          #059669;
-  --dt-mint-hover:    #047857;
+  --dt-mint:          #047857;
+  --dt-mint-hover:    #065F46;
   --dt-mint-light:    #ECFDF5;
   --dt-aqua:          #10B981;
   --dt-text-primary:  #0F172A;
@@ -429,11 +435,11 @@ header.sticky-top {
 
 .text-emerald-800 { color: #065F46 !important; }
 .text-emerald-700 { color: #047857 !important; }
-.text-emerald-600 { color: #059669 !important; }
+.text-emerald-600 { color: #047857 !important; }
 .text-emerald-500 { color: #10B981 !important; }
 .bg-emerald-50    { background-color: #ECFDF5 !important; }
 .bg-emerald-500   { background-color: #10B981 !important; }
-.bg-emerald-600   { background-color: #059669 !important; }
+.bg-emerald-600   { background-color: #047857 !important; }
 .border-emerald-200 { border-color: #A7F3D0 !important; }
 
 .text-amber-900 { color: #78350F !important; }
@@ -475,7 +481,7 @@ header.sticky-top {
 .badge-hrmanager     { background-color: #EFF6FF !important; color: #2563EB !important; border: 1px solid #DBEAFE; }
 .badge-recruiter     { background-color: #EEF2FF !important; color: #4F46E5 !important; border: 1px solid #E0E7FF; }
 .badge-hiringmanager { background-color: #FFFBEB !important; color: #D97706 !important; border: 1px solid #FEF3C7; }
-.badge-interviewer   { background-color: #ECFDF5 !important; color: #059669 !important; border: 1px solid #D1FAE5; }
+.badge-interviewer   { background-color: #ECFDF5 !important; color: #047857 !important; border: 1px solid #D1FAE5; }
 .badge-approver      { background-color: #FAF5FF !important; color: #9333EA !important; border: 1px solid #F3E8FF; }
 
 /* ─── Card Standardization (RULE.MD: 12px radius) ───────── */
@@ -655,7 +661,7 @@ footer {
 
 /* Toast Semantic Types */
 .novera-toast-success {
-  border-left: 4px solid var(--brand-primary, #059669) !important;
+  border-left: 4px solid var(--brand-primary, #047857) !important;
 }
 .novera-toast-reject {
   border-left: 4px solid #E11D48 !important;
@@ -692,7 +698,7 @@ footer {
 
 .novera-toast-success .novera-toast-icon-wrap {
   background-color: #ECFDF5;
-  color: #059669;
+  color: #047857;
 }
 .novera-toast-reject .novera-toast-icon-wrap {
   background-color: #FFF1F2;
@@ -765,7 +771,7 @@ footer {
   transition: width linear;
 }
 
-.novera-toast-success .novera-toast-progress-bar { background-color: #059669; }
+.novera-toast-success .novera-toast-progress-bar { background-color: #047857; }
 .novera-toast-reject .novera-toast-progress-bar { background-color: #E11D48; }
 .novera-toast-error .novera-toast-progress-bar { background-color: #DC2626; }
 .novera-toast-warning .novera-toast-progress-bar { background-color: #D97706; }
@@ -947,7 +953,7 @@ footer {
 .badge-hrmanager     { background-color: #EFF6FF !important; color: #2563EB !important; border: 1px solid #DBEAFE; }
 .badge-recruiter     { background-color: #EEF2FF !important; color: #4F46E5 !important; border: 1px solid #E0E7FF; }
 .badge-hiringmanager { background-color: #FFFBEB !important; color: #D97706 !important; border: 1px solid #FEF3C7; }
-.badge-interviewer   { background-color: #ECFDF5 !important; color: #059669 !important; border: 1px solid #D1FAE5; }
+.badge-interviewer   { background-color: #ECFDF5 !important; color: #047857 !important; border: 1px solid #D1FAE5; }
 .badge-approver      { background-color: #FAF5FF !important; color: #9333EA !important; border: 1px solid #F3E8FF; }
 
 /* ─── Card Standardization (RULE.MD: 12px radius) ───────── */
@@ -1210,37 +1216,53 @@ footer {
     border-radius: 8px;
     justify-content: center;
     background: #ECFDF5;
-    color: #059669;
+    color: #047857;
   }
 
-  /* Tooltip on hover when collapsed */
-  .ats-sidebar.collapsed .sidebar-nav-link {
-    position: relative;
-  }
-
+  /* Tooltip on hover when collapsed - Managed by Floating Tooltip Controller */
   .ats-sidebar.collapsed .sidebar-nav-link::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    left: calc(100% + 10px);
-    top: 50%;
-    transform: translateY(-50%);
-    background: #0F172A;
-    color: #F8FAFC;
-    font-size: 0.78rem;
-    font-weight: 500;
-    padding: 0.3rem 0.65rem;
-    border-radius: 6px;
-    white-space: nowrap;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.15s ease;
-    z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: none !important;
   }
 
-  .ats-sidebar.collapsed .sidebar-nav-link:hover::after {
-    opacity: 1;
-  }
+/* Floating Tooltip Controller when Sidebar is Collapsed */
+.ats-sidebar-floating-tooltip {
+  position: fixed;
+  z-index: 999999;
+  background: #0F172A;
+  color: #FFFFFF;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-50%) scale(0.96);
+  transition: opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1), transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25), 0 1px 3px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  will-change: opacity, transform, top, left;
+}
+
+.ats-sidebar-floating-tooltip::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-right: 5px solid #0F172A;
+}
+
+.ats-sidebar-floating-tooltip.visible {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
 
   /* Sidebar group collapse chevron */
   .sidebar-group-toggle {
@@ -1450,12 +1472,12 @@ footer {
   background-color: #ECFDF5;
   color: #047857;
   font-weight: 600;
-  border-left: 3px solid #059669;
+  border-left: 3px solid #047857;
   padding-left: calc(0.65rem - 3px);
 }
 
 .sidebar-nav-link.active i {
-  color: #059669;
+  color: #047857;
 }
 
 /* Text span inside link */
@@ -1498,7 +1520,7 @@ footer {
   border-radius: 6px;
   width: 32px;
   height: 32px;
-  background: #059669;
+  background: #047857;
   font-size: 0.8rem;
   flex-shrink: 0;
 }
@@ -1671,13 +1693,13 @@ body.sidebar-resizing .ats-main-area {
   white-space: nowrap;
 }
 .candidate-stage-pill:hover {
-  border-color: #059669;
-  color: #059669;
+  border-color: #047857;
+  color: #047857;
   background: #F0FDF4;
 }
 .candidate-stage-pill.active {
-  background: #059669 !important;
-  border-color: #059669 !important;
+  background: #047857 !important;
+  border-color: #047857 !important;
   color: #FFFFFF !important;
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
@@ -1899,7 +1921,7 @@ body.sidebar-resizing .ats-main-area {
 .pipeline-step-item {
   background: #FFFFFF;
   border: 1px solid #E2E8F0;
-  border-top: 3.5px solid var(--stage-color, #059669);
+  border-top: 3.5px solid var(--stage-color, #047857);
   border-radius: 12px;
   padding: 0.9rem 0.85rem;
   cursor: pointer;
@@ -1921,7 +1943,7 @@ body.sidebar-resizing .ats-main-area {
 
 .pipeline-step-item.active {
   background: #F0FDF4;
-  border-color: #059669 !important;
+  border-color: #047857 !important;
   box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
 }
 
@@ -2069,6 +2091,8 @@ body.sidebar-resizing .ats-main-area {
   flex: 1 1 0%;
   transition: flex .35s cubic-bezier(0.4, 0, 0.2, 1), width .35s ease, max-width .35s ease, border-color .15s, background-color .15s, box-shadow .2s;
   position: relative;
+  overflow-x: hidden !important;
+  box-sizing: border-box;
 }
 
 .kanban-column:hover {
@@ -2078,7 +2102,7 @@ body.sidebar-resizing .ats-main-area {
 /* Cột khi được Phóng to tối đa (Maximized) */
 .kanban-column.kanban-column-maximized {
   background: #FFFFFF !important;
-  border-color: #059669 !important;
+  border-color: #047857 !important;
   box-shadow: 0 4px 18px rgba(5, 150, 105, 0.12) !important;
 }
 
@@ -2138,7 +2162,7 @@ body.sidebar-resizing .ats-main-area {
 }
 .kanban-col-btn.active {
   background: #ECFDF5;
-  color: #059669;
+  color: #047857;
 }
 
 /* =========================================================
@@ -2218,12 +2242,16 @@ body.sidebar-resizing .ats-main-area {
 .kanban-cards-container {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden !important;
   padding: 6px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   transition: background-color .2s, border-color .2s;
   min-height: 140px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .kanban-cards-container::-webkit-scrollbar {
@@ -2242,7 +2270,7 @@ body.sidebar-resizing .ats-main-area {
 
 .kanban-drop-zone-active {
   background: #ECFDF5 !important;
-  border: 2px dashed #059669 !important;
+  border: 2px dashed #047857 !important;
   border-radius: 8px;
 }
 
@@ -2260,6 +2288,10 @@ body.sidebar-resizing .ats-main-area {
   transition: box-shadow .15s ease, border-color .15s ease;
   position: relative;
   min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .kanban-candidate-card:hover {
@@ -2274,7 +2306,7 @@ body.sidebar-resizing .ats-main-area {
 .kanban-candidate-card.card-dragging {
   opacity: 0.35;
   transform: scale(0.98);
-  border: 2px dashed #059669;
+  border: 2px dashed #047857;
 }
 
 .kanban-card-avatar {
@@ -2303,6 +2335,7 @@ body.sidebar-resizing .ats-main-area {
   display: inline-flex;
   align-items: center;
   max-width: 100%;
+  min-width: 0;
   font-size: 0.67rem;
   font-weight: 600;
   color: #047857;
@@ -2312,6 +2345,13 @@ body.sidebar-resizing .ats-main-area {
   padding: 1px 5px;
   line-height: 1.2;
   margin-top: 2px;
+  overflow: hidden;
+}
+
+.kanban-job-badge span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Thông tin liên hệ Email & Phone */
@@ -2323,6 +2363,15 @@ body.sidebar-resizing .ats-main-area {
   flex-direction: column;
   gap: 2px;
   transition: opacity .15s ease;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.kanban-card-contact-info > div {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 /* Chế độ Thu gọn (Compact View): Ẩn Email & SĐT */
@@ -2363,13 +2412,74 @@ body.sidebar-resizing .ats-main-area {
   background-color: #F8FAFC;
 }
 
+/* Footer thẻ Kanban: Tự co giãn và xuống hàng linh hoạt khi cột hẹp */
 .kanban-card-footer {
-  margin-top: 5px;
-  padding-top: 4px;
+  margin-top: 6px;
+  padding-top: 5px;
   border-top: 1px solid #F1F5F9;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  row-gap: 4px;
+  column-gap: 4px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.kanban-card-date-badge {
+  font-size: 0.65rem !important;
+  font-weight: 500;
+  color: #64748B !important;
+  background: #F8FAFC !important;
+  border: 1px solid #E2E8F0 !important;
+  padding: 2px 5px !important;
+  line-height: 1.2;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.kanban-card-badges-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 100%;
+}
+
+.kanban-card-sla-badge {
+  background: #FEF2F2 !important;
+  color: #DC2626 !important;
+  border: 1px solid #FECACA !important;
+  font-size: 0.63rem !important;
+  font-weight: 700 !important;
+  padding: 1.5px 5px !important;
+  line-height: 1.2;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.kanban-card-cv-pill {
+  font-size: 0.63rem !important;
+  padding: 1.5px 6px !important;
+  border-radius: 4px;
+  line-height: 1.2;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.kanban-card-stage-badge {
+  font-size: 0.62rem !important;
+  font-weight: 600;
+  padding: 1.5px 4.5px !important;
+  border-radius: 4px;
+  line-height: 1.2;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .kanban-empty-placeholder {
@@ -2392,9 +2502,9 @@ body.sidebar-resizing .ats-main-area {
 }
 
 .pipeline-view-btn.active {
-  background: #059669;
+  background: #047857;
   color: #FFFFFF !important;
-  border-color: #059669;
+  border-color: #047857;
   box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
 }
 
@@ -2459,7 +2569,7 @@ body.sidebar-resizing .ats-main-area {
 .kanban-mobile-dot.active {
   width: 20px;
   border-radius: 4px;
-  background: #059669;
+  background: #047857;
 }
 
 /* =========================================================
@@ -2627,7 +2737,7 @@ body.sidebar-resizing .ats-main-area {
   height: 16px;
   border-radius: 4px;
   border-color: #94A3B8;
-  accent-color: #059669;
+  accent-color: #047857;
   flex-shrink: 0;
 }
 .custom-panelist-badge {
@@ -2643,4 +2753,59 @@ body.sidebar-resizing .ats-main-area {
   font-weight: 500;
   margin-right: 4px;
   margin-bottom: 2px;
+}
+
+/* =========================================================
+   OFFER APPROVAL QUEUE CARD (SCRUM-341)
+   - Layout thông thoáng, padding chuẩn mực không chạm viền
+   - Hiển thị dải lương chuẩn và hạn mức phê duyệt nổi bật
+   ========================================================= */
+.offer-approval-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 1.25rem 1.35rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.offer-approval-card:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 10px 24px -4px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+  transform: translateY(-2px);
+}
+
+.offer-approval-card.band-within {
+  border-left: 4.5px solid #047857 !important;
+}
+
+.offer-approval-card.band-outside {
+  border-left: 4.5px solid #F59E0B !important;
+}
+
+.offer-approval-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.88rem;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+.offer-salary-box {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 0.8rem 0.95rem;
+  margin: 0.85rem 0;
 }

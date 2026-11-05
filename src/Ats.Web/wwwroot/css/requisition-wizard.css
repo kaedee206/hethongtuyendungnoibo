@@ -1,7 +1,7 @@
 /**
  * Requisition Multi-Step Form (Wizard) Styles
  * Tuân thủ nghiêm ngặt RULE.md: Không dùng icon viễn tưởng, bo góc 12px cho card, 8px cho button,
- * bảng màu chuẩn Emerald (#059669) và Slate-50 (#F8FAFC).
+ * bảng màu chuẩn Emerald (#047857) và Slate-50 (#F8FAFC).
  */
 
 /* 1. Wizard Header & Progress Bar */
@@ -88,19 +88,19 @@
 }
 
 .wizard-step-connector.is-completed {
-    background-color: #059669;
+    background-color: #047857;
 }
 
 /* Trạng thái Bước: Active */
 .wizard-step-item.is-active .wizard-step-circle {
-    background-color: #059669;
-    border-color: #059669;
+    background-color: #047857;
+    border-color: #047857;
     color: #FFFFFF;
     box-shadow: 0 0 0 4px #ECFDF5;
 }
 
 .wizard-step-item.is-active .wizard-step-title {
-    color: #059669;
+    color: #047857;
     font-weight: 700;
 }
 
@@ -111,8 +111,8 @@
 /* Trạng thái Bước: Completed */
 .wizard-step-item.is-completed .wizard-step-circle {
     background-color: #ECFDF5;
-    border-color: #059669;
-    color: #059669;
+    border-color: #047857;
+    color: #047857;
 }
 
 .wizard-step-item.is-completed .wizard-step-title {

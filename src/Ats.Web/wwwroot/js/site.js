@@ -94,7 +94,7 @@ window.escapeHtml = function(text) {
                 '</button>' +
             '</div>' +
             '<div class="novera-toast-progress-track">' +
-                '<div class="novera-toast-progress-bar" style="width: 100%;"></div>' +
+                '<div class="novera-toast-progress-bar" style="width: 100%; transform: scaleX(1); transform-origin: left center;"></div>' +
             '</div>';
 
         container.appendChild(toast);
@@ -133,9 +133,9 @@ window.escapeHtml = function(text) {
             if (isDismissed) return;
             if (!isPaused && duration > 0) {
                 var elapsed = Date.now() - startTime;
-                var percent = Math.max(0, 100 - (elapsed / duration) * 100);
+                var ratio = Math.max(0, 1 - (elapsed / duration));
                 if (progressBar) {
-                    progressBar.style.width = percent + '%';
+                    progressBar.style.transform = 'scaleX(' + ratio + ')';
                 }
             }
             if (!isDismissed && remainingTime > 0) {

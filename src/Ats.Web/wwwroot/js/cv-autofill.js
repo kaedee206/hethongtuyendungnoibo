@@ -168,7 +168,7 @@
                     <button type="button" class="btn btn-sm btn-light border py-1 px-2.5 text-muted" id="btnDismissCvAutofill" style="border-radius: 6px; font-size: 0.78rem;">
                         <i class="bi bi-x me-1"></i>Bỏ qua (Giữ nguyên form)
                     </button>
-                    <button type="button" class="btn btn-sm btn-success py-1 px-3 fw-semibold text-white d-inline-flex align-items-center gap-1" id="btnApplyCvAutofill" style="border-radius: 6px; font-size: 0.78rem; background: #059669; border-color: #059669;">
+                    <button type="button" class="btn btn-sm btn-success py-1 px-3 fw-semibold text-white d-inline-flex align-items-center gap-1" id="btnApplyCvAutofill" style="border-radius: 6px; font-size: 0.78rem; background: #047857; border-color: #047857;">
                         <i class="bi bi-check-lg"></i>Xác nhận &amp; Điền vào form
                     </button>
                 </div>
@@ -223,8 +223,8 @@
         inputEl.dispatchEvent(new Event('input', { bubbles: true }));
         inputEl.dispatchEvent(new Event('change', { bubbles: true }));
         inputEl.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease';
-        inputEl.style.boxShadow = '0 0 0 3px rgba(5, 150, 105, 0.25)';
-        inputEl.style.borderColor = '#059669';
+        inputEl.style.boxShadow = '0 0 0 3px rgba(4, 120, 87, 0.25)';
+        inputEl.style.borderColor = '#047857';
         setTimeout(() => {
             inputEl.style.boxShadow = '';
             inputEl.style.borderColor = '';

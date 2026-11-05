@@ -28,7 +28,7 @@
             if (!progressBar) {
                 progressBar = document.createElement('div');
                 progressBar.id = 'atsProgressBar';
-                progressBar.style.cssText = 'position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg, #059669 0%, #10B981 50%, #34D399 100%);z-index:999999;transition:width 0.2s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease;opacity:0;pointer-events:none;box-shadow:0 0 10px rgba(16,185,129,0.5);';
+                progressBar.style.cssText = 'position:fixed;top:0;left:0;height:3px;width:100%;transform:scaleX(0);transform-origin:left center;background:linear-gradient(90deg, #047857 0%, #059669 50%, #10B981 100%);z-index:999999;transition:transform 0.15s cubic-bezier(0.16,1,0.3,1), opacity 0.3s ease;opacity:0;pointer-events:none;will-change:transform;';
                 document.body.appendChild(progressBar);
             }
         }
@@ -38,15 +38,15 @@
     function startProgressBar() {
         var bar = getOrCreateProgressBar();
         if (progressTimer) clearInterval(progressTimer);
-        bar.style.transition = 'width 0.15s ease, opacity 0.1s ease';
+        bar.style.transition = 'transform 0.15s ease, opacity 0.1s ease';
         bar.style.opacity = '1';
-        bar.style.width = '20%';
+        bar.style.transform = 'scaleX(0.2)';
 
-        var currentWidth = 20;
+        var currentProgress = 0.2;
         progressTimer = setInterval(function () {
-            if (currentWidth < 80) {
-                currentWidth += (80 - currentWidth) * 0.15;
-                bar.style.width = currentWidth + '%';
+            if (currentProgress < 0.8) {
+                currentProgress += (0.8 - currentProgress) * 0.15;
+                bar.style.transform = 'scaleX(' + currentProgress + ')';
             }
         }, 80);
     }
@@ -57,12 +57,12 @@
             progressTimer = null;
         }
         var bar = getOrCreateProgressBar();
-        bar.style.transition = 'width 0.15s ease, opacity 0.25s ease 0.1s';
-        bar.style.width = '100%';
+        bar.style.transition = 'transform 0.15s ease, opacity 0.25s ease 0.1s';
+        bar.style.transform = 'scaleX(1)';
         setTimeout(function () {
             bar.style.opacity = '0';
             setTimeout(function () {
-                bar.style.width = '0%';
+                bar.style.transform = 'scaleX(0)';
             }, 250);
         }, 150);
     }
@@ -273,6 +273,7 @@
         scripts.forEach(function (oldScript) {
             try {
                 var newScript = document.createElement('script');
+                newScript.async = false;
                 Array.from(oldScript.attributes).forEach(function (attr) {
                     newScript.setAttribute(attr.name, attr.value);
                 });
@@ -418,11 +419,11 @@
                 // 9. Re-initialize Tooltips & Bootstrap widgets
                 reinitializeBootstrapComponents(currentMain);
 
-                // 10. Kích hoạt lại sự kiện DOMContentLoaded cho các script trên trang mới
-                try {
-                    document.dispatchEvent(new Event('DOMContentLoaded'));
-                    window.dispatchEvent(new Event('load'));
-                } catch (evtErr) { }
+                // 10. Dọn dẹp toast container cũ chống spam thông báo khi chuyển trang
+                var toastContainer = document.getElementById('novera-toast-container');
+                if (toastContainer) {
+                    toastContainer.innerHTML = '';
+                }
 
                 // 11. Dispatch custom event for page listeners
                 window.dispatchEvent(new CustomEvent('ats:navigated', {

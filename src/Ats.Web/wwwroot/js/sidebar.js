@@ -9,10 +9,17 @@
     var STORAGE_KEY_COLLAPSED = 'ats_sidebar_collapsed';
     var STORAGE_KEY_GROUPS    = 'ats_sidebar_groups';
 
-    document.addEventListener('DOMContentLoaded', function () {
+    function initSidebar() {
         var sidebar  = document.getElementById('atsSidebar');
         var backdrop = document.getElementById('atsSidebarBackdrop');
         if (!sidebar) return;
+        if (sidebar.dataset.atsSidebarInitialized === 'true') {
+            if (typeof window.updateAtsSidebarActive === 'function') {
+                window.updateAtsSidebarActive();
+            }
+            return;
+        }
+        sidebar.dataset.atsSidebarInitialized = 'true';
 
         /* ─────────────────────────────────────────
            1. MOBILE: Open / Close slide-drawer
@@ -58,6 +65,10 @@
                     collapseIcon.classList.remove('bi-layout-sidebar-reverse');
                     collapseIcon.classList.add('bi-layout-sidebar');
                 }
+                if (btnCollapse) {
+                    btnCollapse.setAttribute('data-tooltip', 'Mở rộng menu');
+                    btnCollapse.removeAttribute('title');
+                }
                 localStorage.setItem(STORAGE_KEY_COLLAPSED, '1');
             } else {
                 sidebar.classList.remove('collapsed');
@@ -67,6 +78,13 @@
                 if (collapseIcon) {
                     collapseIcon.classList.remove('bi-layout-sidebar');
                     collapseIcon.classList.add('bi-layout-sidebar-reverse');
+                }
+                if (btnCollapse) {
+                    btnCollapse.setAttribute('data-tooltip', 'Thu gọn menu');
+                    btnCollapse.removeAttribute('title');
+                }
+                if (typeof hideSidebarTooltip === 'function') {
+                    hideSidebarTooltip();
                 }
                 localStorage.setItem(STORAGE_KEY_COLLAPSED, '0');
 
@@ -344,5 +362,101 @@
                 if (window.innerWidth < 992) closeSidebar();
             }
         });
+        /* ─────────────────────────────────────────
+           6. COLLAPSED TOOLTIP ON-HOVER CONTROLLER
+        ───────────────────────────────────────── */
+        var floatingTooltip = document.getElementById('atsSidebarFloatingTooltip');
+        if (!floatingTooltip) {
+            floatingTooltip = document.createElement('div');
+            floatingTooltip.id = 'atsSidebarFloatingTooltip';
+            floatingTooltip.className = 'ats-sidebar-floating-tooltip';
+            floatingTooltip.setAttribute('role', 'tooltip');
+            floatingTooltip.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(floatingTooltip);
+        }
+
+        var activeTooltipTarget = null;
+
+        function showSidebarTooltip(target) {
+            if (!sidebar.classList.contains('collapsed')) return;
+            if (window.innerWidth < 992) return;
+
+            var tooltipText = target.getAttribute('data-tooltip') || target.getAttribute('title');
+            if (!tooltipText && target.classList.contains('sidebar-collapse-btn')) {
+                tooltipText = 'Mở rộng menu';
+            }
+            if (!tooltipText || !tooltipText.trim()) return;
+
+            if (target.hasAttribute('title')) {
+                target.setAttribute('data-stored-title', target.getAttribute('title'));
+                target.removeAttribute('title');
+            }
+
+            activeTooltipTarget = target;
+            floatingTooltip.textContent = tooltipText.trim();
+
+            var rect = target.getBoundingClientRect();
+            var sidebarRect = sidebar.getBoundingClientRect();
+            var targetCenterY = rect.top + (rect.height / 2);
+            var targetLeft = sidebarRect.right + 8;
+
+            floatingTooltip.style.top = Math.round(targetCenterY) + 'px';
+            floatingTooltip.style.left = Math.round(targetLeft) + 'px';
+            floatingTooltip.classList.add('visible');
+        }
+
+        function hideSidebarTooltip() {
+            if (activeTooltipTarget && activeTooltipTarget.hasAttribute('data-stored-title')) {
+                activeTooltipTarget.setAttribute('title', activeTooltipTarget.getAttribute('data-stored-title'));
+                activeTooltipTarget.removeAttribute('data-stored-title');
+            }
+            activeTooltipTarget = null;
+            if (floatingTooltip) {
+                floatingTooltip.classList.remove('visible');
+            }
+        }
+
+        sidebar.addEventListener('mouseover', function (e) {
+            if (!sidebar.classList.contains('collapsed')) return;
+            var target = e.target.closest('.sidebar-nav-link, .sidebar-collapse-btn, .sidebar-footer-logout button, .sidebar-footer-card');
+            if (target && sidebar.contains(target)) {
+                if (target !== activeTooltipTarget) {
+                    showSidebarTooltip(target);
+                }
+            }
+        });
+
+        sidebar.addEventListener('mouseout', function (e) {
+            if (!sidebar.classList.contains('collapsed')) return;
+            var target = e.target.closest('.sidebar-nav-link, .sidebar-collapse-btn, .sidebar-footer-logout button, .sidebar-footer-card');
+            if (target) {
+                var related = e.relatedTarget;
+                if (!related || !target.contains(related)) {
+                    hideSidebarTooltip();
+                }
+            }
+        });
+
+        var navBody = sidebar.querySelector('.sidebar-nav-body');
+        if (navBody) {
+            navBody.addEventListener('scroll', hideSidebarTooltip, { passive: true });
+        }
+        sidebar.addEventListener('click', hideSidebarTooltip);
+        window.addEventListener('scroll', hideSidebarTooltip, { passive: true });
+
+        window.initAtsSidebar = initSidebar;
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSidebar);
+    } else {
+        initSidebar();
+    }
+
+    window.addEventListener('ats:navigated', function () {
+        initSidebar();
+        if (typeof window.updateAtsSidebarActive === 'function') {
+            window.updateAtsSidebarActive();
+        }
     });
 })();
